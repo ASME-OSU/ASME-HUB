@@ -1,0 +1,65 @@
+/**
+ * ASME OSU Hub aggregate feed starter
+ *
+ * Bind this script to the private spreadsheet that contains a safe,
+ * aggregate-only "Dashboard Export" tab. Never return raw form responses or
+ * member identifiers from a publicly readable web app.
+ *
+ * Expected Dashboard Export layout:
+ *   B2  Academic year label
+ *   B3  Unique attendees
+ *   B4  Total check-ins
+ *   B5  Events held
+ *   B6  Average turnout
+ *   B7  Repeat attendance percentage
+ *   B8  Engagement goal
+ *
+ * Add custom functions below when the tab also holds attendance trend,
+ * event-type, upcoming-event, or operations tables.
+ */
+
+const EXPORT_TAB = "Dashboard Export";
+
+function doGet() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(EXPORT_TAB);
+
+  if (!sheet) {
+    return jsonResponse_({
+      error: `Missing required sheet: ${EXPORT_TAB}`,
+    });
+  }
+
+  const values = sheet.getRange("B2:B8").getValues().flat();
+  const payload = {
+    meta: {
+      academicYear: String(values[0] || ""),
+      lastUpdated: new Date().toISOString(),
+      isDemo: false,
+    },
+    kpis: {
+      uniqueAttendees: number_(values[1]),
+      totalCheckIns: number_(values[2]),
+      eventsHeld: number_(values[3]),
+      averageTurnout: number_(values[4]),
+      repeatAttendanceRate: number_(values[5]),
+      engagementGoal: number_(values[6]),
+    },
+    attendanceTrend: [],
+    eventTypes: [],
+    upcomingEvents: [],
+    operations: [],
+  };
+
+  return jsonResponse_(payload);
+}
+
+function number_(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function jsonResponse_(value) {
+  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
+}
