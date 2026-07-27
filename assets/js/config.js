@@ -7,6 +7,13 @@ window.ASME_HUB_CONFIG = {
       "90fe069c9b7c414f4bd9c545989cd7759c80b1bdfccbb7507ab85e0ed818f417",
     sessionHours: 12,
   },
+  sharedSettings: {
+    spreadsheetUrl:
+      "https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit",
+    sheetTab: "Hub_Settings_Public",
+    editUrl:
+      "https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit#gid=844317022",
+  },
   dataSources: {
     "2026-2027": {
       label: "2026–2027",
@@ -19,6 +26,8 @@ window.ASME_HUB_CONFIG = {
       pointsMasterUrl:
         "https://docs.google.com/spreadsheets/d/1cDoumWy2ZN5BJ5I4UfvdkuWM6NXCivlMggDswdgJsrM/edit",
       calendarUrl: "https://org.osu.edu/asme/calendar/",
+      calendarIcalUrl:
+        "https://calendar.google.com/calendar/ical/c93730cdacb567b0f010d1367080e3028ec5c7657d9713b675ac9e5c437b9fba%40group.calendar.google.com/public/basic.ics",
       engagementGoal: 250,
     },
   },
@@ -102,6 +111,14 @@ window.ASME_HUB_CONFIG = {
       url: "https://org.osu.edu/asme/calendar/",
       category: "Events",
       settingKey: "calendarUrl",
+    },
+    {
+      title: "Calendar Subscription",
+      description: "Subscribe to the chapter calendar from Google Calendar, Apple Calendar, Outlook, or another iCal-compatible app.",
+      label: "Open iCal feed",
+      url: "",
+      category: "Events",
+      settingKey: "calendarIcalUrl",
     },
     {
       title: "ASME OSU GitHub",
