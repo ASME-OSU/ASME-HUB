@@ -524,31 +524,56 @@
       .map((link) => document.querySelector(link.getAttribute("href")))
       .filter(Boolean);
 
+    const setActiveNavigation = (sectionId) => {
+      navLinks.forEach((link) => {
+        const isActive = link.getAttribute("href") === `#${sectionId}`;
+        link.classList.toggle("is-active", isActive);
+        if (isActive) {
+          link.setAttribute("aria-current", "location");
+        } else {
+          link.removeAttribute("aria-current");
+        }
+      });
+    };
+
     navLinks.forEach((link) => {
       link.addEventListener("click", () => {
+        setActiveNavigation(link.getAttribute("href").slice(1));
         document.body.classList.remove("nav-open");
         elements.mobileMenuButton.setAttribute("aria-expanded", "false");
       });
     });
 
-    if ("IntersectionObserver" in window) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const visible = entries
-            .filter((entry) => entry.isIntersecting)
-            .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-          if (!visible) return;
-          navLinks.forEach((link) => {
-            link.classList.toggle(
-              "is-active",
-              link.getAttribute("href") === `#${visible.target.id}`,
-            );
-          });
-        },
-        { rootMargin: "-25% 0px -60% 0px", threshold: [0, 0.25, 0.5] },
-      );
-      sections.forEach((section) => observer.observe(section));
-    }
+    let scrollFrame = 0;
+    const updateNavigationFromScroll = () => {
+      const pageBottom = window.scrollY + window.innerHeight;
+      const documentBottom = document.documentElement.scrollHeight;
+
+      if (pageBottom >= documentBottom - 12) {
+        setActiveNavigation(sections[sections.length - 1].id);
+        return;
+      }
+
+      const readingLine =
+        window.scrollY + Math.min(window.innerHeight * 0.3, 260);
+      const activeSection = sections.reduce((current, section) => {
+        return section.offsetTop <= readingLine ? section : current;
+      }, sections[0]);
+      setActiveNavigation(activeSection.id);
+    };
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (scrollFrame) return;
+        scrollFrame = window.requestAnimationFrame(() => {
+          scrollFrame = 0;
+          updateNavigationFromScroll();
+        });
+      },
+      { passive: true },
+    );
+    updateNavigationFromScroll();
   }
 
   function setText(id, value) {
