@@ -10,8 +10,16 @@ window.ASME_HUB_CONFIG = {
   dataSources: {
     "2026-2027": {
       label: "2026–2027",
-      type: "json",
-      url: "data/demo-dashboard.json",
+      dashboardUrl: "",
+      attendanceSheetUrl:
+        "https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit",
+      attendanceSheetTab: "Leaderboard_Public",
+      attendanceFormUrl:
+        "https://docs.google.com/forms/d/1cPIevIbm1AUu-oFy9-Y6zRSq9doHiPes3drFazNhs4E/viewform",
+      pointsMasterUrl:
+        "https://docs.google.com/spreadsheets/d/1cDoumWy2ZN5BJ5I4UfvdkuWM6NXCivlMggDswdgJsrM/edit",
+      calendarUrl: "https://org.osu.edu/asme/calendar/",
+      engagementGoal: 250,
     },
   },
   resources: [
@@ -44,18 +52,20 @@ window.ASME_HUB_CONFIG = {
       category: "Operations",
     },
     {
-      title: "2026–27 Attendance Check-In",
+      title: "Attendance Check-In",
       description: "Member check-in form populated from the current academic-year event list.",
       label: "Open check-in form",
       url: "https://docs.google.com/forms/d/1cPIevIbm1AUu-oFy9-Y6zRSq9doHiPes3drFazNhs4E/viewform",
       category: "Attendance",
+      settingKey: "attendanceFormUrl",
     },
     {
-      title: "2026–27 Points Master",
+      title: "Points Master",
       description: "Officer workbook for events, attendance, member points, review items, and website exports.",
       label: "Open Points Master",
       url: "https://docs.google.com/spreadsheets/d/1cDoumWy2ZN5BJ5I4UfvdkuWM6NXCivlMggDswdgJsrM/edit",
       category: "Attendance",
+      settingKey: "pointsMasterUrl",
     },
     {
       title: "Member Points Dashboard",
@@ -91,6 +101,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open calendar",
       url: "https://org.osu.edu/asme/calendar/",
       category: "Events",
+      settingKey: "calendarUrl",
     },
     {
       title: "ASME OSU GitHub",

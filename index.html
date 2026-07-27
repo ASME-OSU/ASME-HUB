@@ -86,6 +86,10 @@
           View public website
           <span aria-hidden="true">↗</span>
         </a>
+        <button id="sidebar-settings" type="button">
+          Year settings
+          <span aria-hidden="true">⚙</span>
+        </button>
         <button id="lock-dashboard" type="button">Lock dashboard</button>
       </div>
     </aside>
@@ -102,6 +106,9 @@
         <div class="topbar-actions">
           <label class="year-select-label" for="academic-year">Academic year</label>
           <select id="academic-year" class="year-select"></select>
+          <button class="icon-button" id="settings-button" type="button" aria-label="Open academic year settings" title="Academic year settings">
+            <span class="settings-icon" aria-hidden="true">⚙</span>
+          </button>
           <button class="icon-button" id="theme-toggle" type="button" aria-label="Switch color theme">
             <span class="theme-icon" aria-hidden="true">◐</span>
           </button>
@@ -255,7 +262,7 @@
               <p class="eyebrow">Open a workspace</p>
               <h2>Tools and resources</h2>
             </div>
-            <p>Current officer workspaces, member tools, and public chapter resources for the 2026–27 academic year.</p>
+            <p id="resource-year-description">Current officer workspaces, member tools, and public chapter resources for the selected academic year.</p>
           </div>
           <div class="resource-grid" id="resource-grid"></div>
         </section>
@@ -272,6 +279,92 @@
     <div class="spinner" aria-hidden="true"></div>
     <p>Loading chapter data…</p>
   </div>
+
+  <dialog class="settings-dialog" id="year-settings-dialog" aria-labelledby="settings-title">
+    <form class="settings-form" id="year-settings-form" method="dialog" novalidate>
+      <div class="settings-header">
+        <div>
+          <p class="eyebrow">Academic year</p>
+          <h2 id="settings-title">Data and resource settings</h2>
+        </div>
+        <button class="settings-close" id="settings-close" type="button" aria-label="Close settings">×</button>
+      </div>
+
+      <p class="settings-intro">Paste the current year’s privacy-safe data and resource links. Changes are stored only in this browser.</p>
+
+      <div class="settings-grid settings-grid-year">
+        <label>
+          <span>Academic year key</span>
+          <input id="settings-year-key" name="yearKey" type="text" inputmode="numeric" placeholder="2026-2027" pattern="\d{4}-\d{4}" required>
+        </label>
+        <label>
+          <span>Display label</span>
+          <input id="settings-year-label" name="label" type="text" placeholder="2026–2027" required>
+        </label>
+        <label>
+          <span>Engagement goal</span>
+          <input id="settings-engagement-goal" name="engagementGoal" type="number" min="1" step="1" placeholder="250">
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-heading">
+          <h3>Attendance data</h3>
+          <span>Use either source</span>
+        </div>
+        <label>
+          <span>Public leaderboard Google Sheet</span>
+          <input id="settings-attendance-sheet" name="attendanceSheetUrl" type="text" inputmode="url" placeholder="Paste a Google Sheets link">
+          <small>Pulls safe aggregate attendance totals and event-type counts from the public export.</small>
+        </label>
+        <div class="settings-grid">
+          <label>
+            <span>Leaderboard tab</span>
+            <input id="settings-attendance-tab" name="attendanceSheetTab" type="text" placeholder="Leaderboard_Public">
+          </label>
+          <label>
+            <span>Full dashboard JSON URL</span>
+            <input id="settings-dashboard-url" name="dashboardUrl" type="text" inputmode="url" placeholder="Optional aggregate JSON endpoint">
+          </label>
+        </div>
+        <p class="settings-note">A full dashboard JSON URL takes priority and can also supply events held, turnout trends, and upcoming events. Never paste a raw form-response sheet.</p>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-heading">
+          <h3>Year-specific resources</h3>
+          <span>Updates launcher cards</span>
+        </div>
+        <div class="settings-grid">
+          <label>
+            <span>Attendance form</span>
+            <input id="settings-attendance-form" name="attendanceFormUrl" type="text" inputmode="url" placeholder="Paste the Google Form link">
+          </label>
+          <label>
+            <span>Points Master</span>
+            <input id="settings-points-master" name="pointsMasterUrl" type="text" inputmode="url" placeholder="Paste the officer Sheet link">
+          </label>
+          <label>
+            <span>Events calendar</span>
+            <input id="settings-calendar" name="calendarUrl" type="text" inputmode="url" placeholder="Paste the calendar link">
+          </label>
+        </div>
+      </div>
+
+      <p class="settings-status" id="settings-status" role="status" aria-live="polite"></p>
+
+      <div class="settings-actions">
+        <div>
+          <button class="secondary-button" id="settings-new-year" type="button">Add next year</button>
+          <button class="text-button" id="settings-reset" type="button">Reset this year</button>
+        </div>
+        <div>
+          <button class="secondary-button" id="settings-cancel" type="button">Cancel</button>
+          <button class="primary-button" type="submit">Save and refresh</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
 
   <script src="assets/js/config.js"></script>
   <script src="assets/js/app.js"></script>

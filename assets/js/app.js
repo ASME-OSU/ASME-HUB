@@ -4,7 +4,18 @@
   const config = window.ASME_HUB_CONFIG;
   const unlockStorageKey = "asmeHubUnlockedUntil";
   const themeStorageKey = "asmeHubTheme";
+  const yearSettingsStorageKey = "asmeHubYearSettingsV1";
   const numberFormatter = new Intl.NumberFormat("en-US");
+  const eventTypeColumns = [
+    { column: 7, name: "General Body", color: "#184a7d" },
+    { column: 8, name: "Social", color: "#4f7cac" },
+    { column: 9, name: "Company Info Sessions", color: "#ba0c2f" },
+    { column: 10, name: "Technical Workshops", color: "#d69e2e" },
+    { column: 11, name: "Build Nights / Projects", color: "#427aa1" },
+    { column: 12, name: "Volunteering / Outreach", color: "#6b7f52" },
+    { column: 13, name: "Committee Work", color: "#7b8797" },
+  ];
+  let yearSources = loadYearSources();
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -19,6 +30,28 @@
     sidebarYear: document.getElementById("sidebar-year-label"),
     themeToggle: document.getElementById("theme-toggle"),
     mobileMenuButton: document.getElementById("mobile-menu-button"),
+    settingsButton: document.getElementById("settings-button"),
+    sidebarSettings: document.getElementById("sidebar-settings"),
+    settingsDialog: document.getElementById("year-settings-dialog"),
+    settingsForm: document.getElementById("year-settings-form"),
+    settingsClose: document.getElementById("settings-close"),
+    settingsCancel: document.getElementById("settings-cancel"),
+    settingsNewYear: document.getElementById("settings-new-year"),
+    settingsReset: document.getElementById("settings-reset"),
+    settingsStatus: document.getElementById("settings-status"),
+    settingsYearKey: document.getElementById("settings-year-key"),
+    settingsYearLabel: document.getElementById("settings-year-label"),
+    settingsEngagementGoal: document.getElementById("settings-engagement-goal"),
+    settingsAttendanceSheet: document.getElementById(
+      "settings-attendance-sheet",
+    ),
+    settingsAttendanceTab: document.getElementById("settings-attendance-tab"),
+    settingsDashboardUrl: document.getElementById("settings-dashboard-url"),
+    settingsAttendanceForm: document.getElementById(
+      "settings-attendance-form",
+    ),
+    settingsPointsMaster: document.getElementById("settings-points-master"),
+    settingsCalendar: document.getElementById("settings-calendar"),
   };
 
   function getUnlockedUntil() {
@@ -41,6 +74,164 @@
       .join("");
   }
 
+  function cloneDefaultSources() {
+    return Object.fromEntries(
+      Object.entries(config.dataSources || {}).map(([year, source]) => [
+        year,
+        { ...source },
+      ]),
+    );
+  }
+
+  function loadYearSources() {
+    const defaults = cloneDefaultSources();
+
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem(yearSettingsStorageKey) || "{}",
+      );
+      if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
+        return defaults;
+      }
+
+      Object.entries(stored).forEach(([year, source]) => {
+        if (!source || typeof source !== "object" || Array.isArray(source)) {
+          return;
+        }
+        defaults[year] = { ...(defaults[year] || {}), ...source };
+      });
+    } catch (error) {
+      console.warn("Academic-year settings could not be read.", error);
+    }
+
+    return defaults;
+  }
+
+  function saveYearSources() {
+    localStorage.setItem(yearSettingsStorageKey, JSON.stringify(yearSources));
+  }
+
+  function getYearSource(year = elements.academicYear.value) {
+    return yearSources[year] || null;
+  }
+
+  function normalizeYearKey(value) {
+    return String(value || "")
+      .trim()
+      .replace(/[–—]/g, "-")
+      .replace(/\s+/g, "");
+  }
+
+  function displayLabelForYear(year) {
+    return normalizeYearKey(year).replace("-", "–");
+  }
+
+  function nextAcademicYear(year) {
+    const match = normalizeYearKey(year).match(/^(\d{4})-(\d{4})$/);
+    if (!match) return "";
+    return `${Number(match[1]) + 1}-${Number(match[2]) + 1}`;
+  }
+
+  function isUsableUrl(value, options = {}) {
+    const clean = String(value || "").trim();
+    if (!clean) return true;
+    if (options.allowSheetId && /^[\w-]{20,}$/.test(clean)) return true;
+
+    try {
+      const parsed = new URL(clean, window.location.href);
+      return ["http:", "https:"].includes(parsed.protocol);
+    } catch {
+      return false;
+    }
+  }
+
+  function fillSettingsForm(yearKey, source = {}, isNew = false) {
+    elements.settingsForm.dataset.originalYear = isNew ? "" : yearKey;
+    elements.settingsYearKey.value = yearKey || "";
+    elements.settingsYearLabel.value =
+      source.label || displayLabelForYear(yearKey);
+    elements.settingsEngagementGoal.value =
+      source.engagementGoal || source.goal || "";
+    elements.settingsAttendanceSheet.value =
+      source.attendanceSheetUrl || "";
+    elements.settingsAttendanceTab.value =
+      source.attendanceSheetTab || "Leaderboard_Public";
+    elements.settingsDashboardUrl.value = source.dashboardUrl || "";
+    elements.settingsAttendanceForm.value = source.attendanceFormUrl || "";
+    elements.settingsPointsMaster.value = source.pointsMasterUrl || "";
+    elements.settingsCalendar.value = source.calendarUrl || "";
+    elements.settingsStatus.textContent = "";
+    elements.settingsReset.hidden =
+      isNew || !config.dataSources || !config.dataSources[yearKey];
+  }
+
+  function openSettings(year = elements.academicYear.value) {
+    const selectedYear = year || config.currentAcademicYear;
+    fillSettingsForm(
+      selectedYear,
+      getYearSource(selectedYear) || {},
+      !getYearSource(selectedYear),
+    );
+    document.body.classList.remove("nav-open");
+    elements.mobileMenuButton.setAttribute("aria-expanded", "false");
+
+    if (typeof elements.settingsDialog.showModal === "function") {
+      elements.settingsDialog.showModal();
+    } else {
+      elements.settingsDialog.setAttribute("open", "");
+    }
+    window.setTimeout(() => {
+      elements.settingsForm.scrollTop = 0;
+      elements.settingsYearLabel.focus({ preventScroll: true });
+    }, 50);
+  }
+
+  function closeSettings() {
+    if (typeof elements.settingsDialog.close === "function") {
+      elements.settingsDialog.close();
+    } else {
+      elements.settingsDialog.removeAttribute("open");
+    }
+  }
+
+  function readSettingsForm() {
+    return {
+      yearKey: normalizeYearKey(elements.settingsYearKey.value),
+      label: elements.settingsYearLabel.value.trim(),
+      engagementGoal: Number(elements.settingsEngagementGoal.value) || 250,
+      attendanceSheetUrl: elements.settingsAttendanceSheet.value.trim(),
+      attendanceSheetTab:
+        elements.settingsAttendanceTab.value.trim() || "Leaderboard_Public",
+      dashboardUrl: elements.settingsDashboardUrl.value.trim(),
+      attendanceFormUrl: elements.settingsAttendanceForm.value.trim(),
+      pointsMasterUrl: elements.settingsPointsMaster.value.trim(),
+      calendarUrl: elements.settingsCalendar.value.trim(),
+    };
+  }
+
+  function validateSettings(settings) {
+    if (!/^\d{4}-\d{4}$/.test(settings.yearKey)) {
+      return "Use an academic year in the format 2026-2027.";
+    }
+    if (!settings.label) return "Add a display label for this year.";
+    if (!settings.dashboardUrl && !settings.attendanceSheetUrl) {
+      return "Add either a public leaderboard Sheet or a full dashboard JSON URL.";
+    }
+
+    const urls = [
+      ["public leaderboard Sheet", settings.attendanceSheetUrl, true],
+      ["dashboard JSON", settings.dashboardUrl, false],
+      ["attendance form", settings.attendanceFormUrl, false],
+      ["Points Master", settings.pointsMasterUrl, false],
+      ["events calendar", settings.calendarUrl, false],
+    ];
+    const invalid = urls.find(
+      ([, value, allowSheetId]) =>
+        !isUsableUrl(value, { allowSheetId: Boolean(allowSheetId) }),
+    );
+    return invalid ? `Check the ${invalid[0]} link.` : "";
+  }
+
   function showGate() {
     sessionStorage.removeItem(unlockStorageKey);
     elements.appShell.hidden = true;
@@ -58,58 +249,297 @@
     await loadDashboard(elements.academicYear.value);
   }
 
-  function populateYears() {
-    const years = Object.entries(config.dataSources);
+  function populateYears(preferredYear) {
+    const previousYear =
+      preferredYear || elements.academicYear.value || config.currentAcademicYear;
+    const years = Object.entries(yearSources).sort(([a], [b]) =>
+      b.localeCompare(a),
+    );
 
     elements.academicYear.replaceChildren(
       ...years.map(([value, source]) => {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = source.label || value;
-        option.selected = value === config.currentAcademicYear;
+        option.selected = value === previousYear;
         return option;
       }),
     );
 
     if (!elements.academicYear.value && years.length) {
-      elements.academicYear.value = years[0][0];
+      elements.academicYear.value = yearSources[config.currentAcademicYear]
+        ? config.currentAcademicYear
+        : years[0][0];
     }
 
     updateYearLabel();
   }
 
   function updateYearLabel() {
-    const source = config.dataSources[elements.academicYear.value];
-    elements.sidebarYear.textContent =
-      (source && source.label) || elements.academicYear.value;
+    const source = getYearSource();
+    const label = (source && source.label) || elements.academicYear.value;
+    elements.sidebarYear.textContent = label;
+    setText(
+      "resource-year-description",
+      `Current officer workspaces, member tools, and public chapter resources for ${label}.`,
+    );
   }
 
   function showLoading(isLoading) {
     elements.loadingLayer.hidden = !isLoading;
   }
 
+  function spreadsheetIdFrom(value) {
+    const clean = String(value || "").trim();
+    const urlMatch = clean.match(/\/spreadsheets\/d\/([\w-]+)/i);
+    if (urlMatch) return urlMatch[1];
+    return /^[\w-]{20,}$/.test(clean) ? clean : "";
+  }
+
+  function queryPublicSheet(spreadsheetId, sheet, query) {
+    return new Promise((resolve, reject) => {
+      const callback = `__asmeHubSheet_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+      const script = document.createElement("script");
+      const timer = window.setTimeout(() => {
+        cleanup();
+        reject(new Error("The Google Sheet request timed out."));
+      }, 15000);
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        delete window[callback];
+        script.remove();
+      };
+
+      window[callback] = (data) => {
+        cleanup();
+        if (!data || !data.table) {
+          reject(new Error("The Google Sheet returned an unexpected response."));
+          return;
+        }
+        resolve(data.table);
+      };
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("The public Google Sheet could not be loaded."));
+      };
+
+      const base = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq`;
+      const params = new URLSearchParams({
+        sheet,
+        headers: "1",
+        tqx: `out:json;responseHandler:${callback}`,
+        tq: query,
+        _: String(Date.now()),
+      });
+      script.src = `${base}?${params.toString()}`;
+      document.head.appendChild(script);
+    });
+  }
+
+  function sheetCell(row, index, formatted = false) {
+    const cell = row && row.c && row.c[index];
+    if (!cell) return "";
+    if (formatted && cell.f !== null && cell.f !== undefined) return cell.f;
+    return cell.v !== null && cell.v !== undefined ? cell.v : "";
+  }
+
+  function sheetTimestamp(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+    if (typeof value === "number") {
+      const epoch = Date.UTC(1899, 11, 30);
+      return new Date(epoch + value * 86400000);
+    }
+
+    const dateConstructor = String(value || "").match(
+      /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/,
+    );
+    if (dateConstructor) {
+      return new Date(
+        Number(dateConstructor[1]),
+        Number(dateConstructor[2]),
+        Number(dateConstructor[3]),
+        Number(dateConstructor[4] || 0),
+        Number(dateConstructor[5] || 0),
+        Number(dateConstructor[6] || 0),
+      );
+    }
+
+    const clean = String(value || "").trim();
+    const parsed = new Date(clean);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+    const isoLike = new Date(clean.replace(" ", "T"));
+    return Number.isNaN(isoLike.getTime()) ? null : isoLike;
+  }
+
+  async function loadLeaderboardDashboard(source) {
+    const spreadsheetId = spreadsheetIdFrom(source.attendanceSheetUrl);
+    if (!spreadsheetId) {
+      throw new Error("The public leaderboard Google Sheet link is not valid.");
+    }
+
+    const leaderboardTab =
+      source.attendanceSheetTab || "Leaderboard_Public";
+    const [leaderboard, statusTable] = await Promise.all([
+      queryPublicSheet(
+        spreadsheetId,
+        leaderboardTab,
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where B is not null",
+      ),
+      queryPublicSheet(
+        spreadsheetId,
+        "System_Status",
+        "select A,B where A is not null",
+      ).catch(() => ({ rows: [] })),
+    ]);
+
+    const members = (leaderboard.rows || [])
+      .map((row) => ({
+        name: String(sheetCell(row, 1) || "").trim(),
+        events: Number(sheetCell(row, 4)) || 0,
+        updated: sheetTimestamp(
+          sheetCell(row, 6, true) || sheetCell(row, 6),
+        ),
+        eventTypes: eventTypeColumns.map((type) => ({
+          ...type,
+          count: Number(sheetCell(row, type.column)) || 0,
+        })),
+      }))
+      .filter((member) => member.name);
+
+    const totalCheckIns = members.reduce(
+      (sum, member) => sum + member.events,
+      0,
+    );
+    const repeatAttendees = members.filter(
+      (member) => member.events >= 2,
+    ).length;
+    const latestUpdate = members
+      .map((member) => member.updated)
+      .filter(Boolean)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    const systemStatus =
+      (statusTable.rows || [])
+        .map((row) => [
+          String(sheetCell(row, 0) || "").toLowerCase(),
+          String(sheetCell(row, 1) || "").toUpperCase(),
+        ])
+        .find(([key]) => key === "system_status")?.[1] || "LIVE";
+    const eventTypes = eventTypeColumns
+      .map((type) => ({
+        name: type.name,
+        count: members.reduce(
+          (sum, member) =>
+            sum +
+            (member.eventTypes.find((item) => item.column === type.column)
+              ?.count || 0),
+          0,
+        ),
+        events: null,
+        color: type.color,
+      }))
+      .filter((type) => type.count > 0);
+
+    return {
+      meta: {
+        academicYear: source.label,
+        lastUpdated: latestUpdate
+          ? latestUpdate.toISOString()
+          : new Date().toISOString(),
+        isDemo: false,
+        isPartial: true,
+        sourceLabel: "Public leaderboard export",
+      },
+      kpis: {
+        uniqueAttendees: members.length,
+        totalCheckIns,
+        eventsHeld: null,
+        averageTurnout: null,
+        repeatAttendanceRate: members.length
+          ? (repeatAttendees / members.length) * 100
+          : 0,
+        engagementGoal: Number(source.engagementGoal) || 250,
+      },
+      attendanceTrend: [],
+      eventTypes,
+      upcomingEvents: [],
+      operations: [
+        {
+          severity: systemStatus === "LIVE" ? "success" : "warning",
+          title:
+            systemStatus === "LIVE"
+              ? "Public attendance totals are connected"
+              : `Point system status: ${systemStatus.toLowerCase()}`,
+          detail:
+            "Member totals, repeat attendance, and event-type counts are loading from the privacy-safe website export.",
+          actionLabel: "Open public export",
+          actionUrl: source.attendanceSheetUrl,
+        },
+        {
+          severity: "info",
+          title: "Event-level feed is optional",
+          detail:
+            "Add a full aggregate JSON URL in Year Settings to populate events held, average turnout, the trend chart, and upcoming events.",
+          actionLabel: "Open year settings",
+          actionUrl: "#year-settings",
+        },
+      ],
+    };
+  }
+
+  function resolveYearResources(source) {
+    return (config.resources || []).map((resource) => {
+      if (!resource.settingKey) return { ...resource };
+      const url = source?.[resource.settingKey] || resource.url || "";
+      const title =
+        resource.settingKey === "attendanceFormUrl"
+          ? `${source?.label || "Current year"} Attendance Check-In`
+          : resource.settingKey === "pointsMasterUrl"
+            ? `${source?.label || "Current year"} Points Master`
+            : resource.title;
+      return { ...resource, title, url };
+    });
+  }
+
   async function loadDashboard(year) {
-    const source = config.dataSources[year];
+    const source = getYearSource(year);
     if (!source) {
       showDataError("No data source is configured for this academic year.");
       return;
     }
 
+    renderResources(resolveYearResources(source));
+    const calendarLink = document.querySelector(".upcoming-panel .text-link");
+    if (calendarLink && source.calendarUrl) {
+      calendarLink.href = source.calendarUrl;
+    }
     showLoading(true);
 
     try {
-      const response = await fetch(source.url, { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`Data request failed with status ${response.status}.`);
+      let data;
+      if (source.dashboardUrl) {
+        const response = await fetch(source.dashboardUrl, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Data request failed with status ${response.status}.`);
+        }
+        data = await response.json();
+      } else if (source.attendanceSheetUrl) {
+        data = await loadLeaderboardDashboard(source);
+      } else if (source.url) {
+        const response = await fetch(source.url, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Data request failed with status ${response.status}.`);
+        }
+        data = await response.json();
+      } else {
+        throw new Error("No attendance data source is configured.");
       }
-      const data = await response.json();
-      renderDashboard(data);
+      renderDashboard(data, source);
       updateYearLabel();
     } catch (error) {
       console.error(error);
-      showDataError(
-        "The dashboard data could not be loaded. Check the year URL in assets/js/config.js.",
-      );
+      showDataError(error.message || "The dashboard data could not be loaded.");
     } finally {
       showLoading(false);
     }
@@ -129,13 +559,12 @@
 
   function renderDashboard(data) {
     renderFreshness(data.meta || {});
-    renderKpis(data.kpis || {});
+    renderKpis(data.kpis || {}, data.meta || {});
     renderAttendanceChart(data.attendanceTrend || []);
     renderGoal(data.kpis || {});
     renderEventTypes(data.eventTypes || []);
     renderUpcomingEvents(data.upcomingEvents || []);
     renderOperations(data.operations || []);
-    renderResources(config.resources || []);
   }
 
   function renderFreshness(meta) {
@@ -157,22 +586,42 @@
     target.textContent = `${formatted}${meta.isDemo ? " · Demo" : ""}`;
   }
 
-  function renderKpis(kpis) {
+  function renderKpis(kpis, meta) {
     setText("kpi-unique-attendees", formatNumber(kpis.uniqueAttendees));
     setText("kpi-total-checkins", formatNumber(kpis.totalCheckIns));
     setText("kpi-events-held", formatNumber(kpis.eventsHeld));
     setText(
       "kpi-average-turnout",
-      Number.isFinite(Number(kpis.averageTurnout))
+      hasMetric(kpis.averageTurnout)
         ? Number(kpis.averageTurnout).toFixed(1)
         : "—",
     );
     setText(
       "kpi-repeat-rate",
-      Number.isFinite(Number(kpis.repeatAttendanceRate))
+      hasMetric(kpis.repeatAttendanceRate)
         ? `${Math.round(Number(kpis.repeatAttendanceRate))}%`
         : "—",
     );
+
+    if (meta.isPartial) {
+      setText(
+        "kpi-unique-attendees-context",
+        "Members with public attendance totals",
+      );
+      setText(
+        "kpi-total-checkins-context",
+        "Summed from member event totals",
+      );
+      setText("kpi-events-held-context", "Add a full aggregate JSON feed");
+      setText("kpi-average-turnout-context", "Add a full aggregate JSON feed");
+      setText("kpi-repeat-rate-context", "Attended two or more events");
+    } else {
+      setText("kpi-unique-attendees-context", "Across all recorded events");
+      setText("kpi-total-checkins-context", "All attendance submissions");
+      setText("kpi-events-held-context", "Approved events this year");
+      setText("kpi-average-turnout-context", "Check-ins per event");
+      setText("kpi-repeat-rate-context", "Attended two or more events");
+    }
   }
 
   function renderAttendanceChart(items) {
@@ -374,7 +823,9 @@
           document.createTextNode(" "),
         );
         const small = document.createElement("small");
-        small.textContent = `· ${formatNumber(item.events)} events`;
+        small.textContent = hasMetric(item.events)
+          ? `· ${formatNumber(item.events)} events`
+          : "· public total";
         values.append(small);
 
         row.append(dot, name, values);
@@ -457,7 +908,12 @@
           const action = document.createElement("a");
           action.href = item.actionUrl;
           action.textContent = `${item.actionLabel} →`;
-          if (!item.actionUrl.startsWith("#")) {
+          if (item.actionUrl === "#year-settings") {
+            action.addEventListener("click", (event) => {
+              event.preventDefault();
+              openSettings();
+            });
+          } else if (!item.actionUrl.startsWith("#")) {
             action.target = "_blank";
             action.rel = "noopener";
           }
@@ -581,11 +1037,15 @@
     if (element) element.textContent = value;
   }
 
+  function hasMetric(value) {
+    return value !== null && value !== undefined && value !== "" &&
+      Number.isFinite(Number(value));
+  }
+
   function formatNumber(value) {
+    if (!hasMetric(value)) return "—";
     const numericValue = Number(value);
-    return Number.isFinite(numericValue)
-      ? numberFormatter.format(numericValue)
-      : "—";
+    return numberFormatter.format(numericValue);
   }
 
   function parseDate(dateValue) {
@@ -601,6 +1061,86 @@
     );
     return element;
   }
+
+  [elements.settingsButton, elements.sidebarSettings].forEach((button) => {
+    button.addEventListener("click", () => openSettings());
+  });
+
+  [elements.settingsClose, elements.settingsCancel].forEach((button) => {
+    button.addEventListener("click", closeSettings);
+  });
+
+  elements.settingsNewYear.addEventListener("click", () => {
+    let newYear = nextAcademicYear(
+      elements.settingsYearKey.value || elements.academicYear.value,
+    );
+    while (newYear && yearSources[newYear]) {
+      newYear = nextAcademicYear(newYear);
+    }
+    if (!newYear) {
+      elements.settingsStatus.textContent =
+        "Enter the current year in the format 2026-2027 first.";
+      return;
+    }
+
+    const current = readSettingsForm();
+    fillSettingsForm(
+      newYear,
+      {
+        label: displayLabelForYear(newYear),
+        attendanceSheetTab: "Leaderboard_Public",
+        engagementGoal: current.engagementGoal,
+        calendarUrl: current.calendarUrl,
+      },
+      true,
+    );
+  });
+
+  elements.settingsReset.addEventListener("click", () => {
+    const year = normalizeYearKey(elements.settingsYearKey.value);
+    const defaults = config.dataSources && config.dataSources[year];
+    if (!defaults) return;
+    yearSources[year] = { ...defaults };
+    saveYearSources();
+    fillSettingsForm(year, yearSources[year], false);
+    populateYears(year);
+    loadDashboard(year);
+    elements.settingsStatus.textContent =
+      "This year has been restored to the shared defaults.";
+  });
+
+  elements.settingsForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const settings = readSettingsForm();
+    const validationMessage = validateSettings(settings);
+    if (validationMessage) {
+      elements.settingsStatus.textContent = validationMessage;
+      return;
+    }
+
+    const originalYear = normalizeYearKey(
+      elements.settingsForm.dataset.originalYear,
+    );
+    if (
+      !originalYear &&
+      yearSources[settings.yearKey] &&
+      settings.yearKey !== elements.academicYear.value
+    ) {
+      elements.settingsStatus.textContent =
+        "That academic year already exists. Select it from the dashboard to edit it.";
+      return;
+    }
+
+    if (originalYear && originalYear !== settings.yearKey) {
+      delete yearSources[originalYear];
+    }
+    const { yearKey, ...source } = settings;
+    yearSources[yearKey] = source;
+    saveYearSources();
+    populateYears(yearKey);
+    closeSettings();
+    loadDashboard(yearKey);
+  });
 
   elements.accessForm.addEventListener("submit", async (event) => {
     event.preventDefault();
