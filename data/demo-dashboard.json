@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "academicYear": "2026–2027",
+    "lastUpdated": "2026-07-27T09:30:00-04:00",
+    "isDemo": true,
+    "note": "Sample aggregate data for layout review"
+  },
+  "kpis": {
+    "uniqueAttendees": 186,
+    "totalCheckIns": 428,
+    "eventsHeld": 17,
+    "averageTurnout": 25.2,
+    "repeatAttendanceRate": 41,
+    "engagementGoal": 250
+  },
+  "attendanceTrend": [
+    {
+      "label": "Welcome Meeting",
+      "shortLabel": "Welcome",
+      "date": "2026-08-27",
+      "attendance": 54,
+      "type": "General Body"
+    },
+    {
+      "label": "Honda Info Session",
+      "shortLabel": "Honda",
+      "date": "2026-09-03",
+      "attendance": 42,
+      "type": "Industry"
+    },
+    {
+      "label": "Design Workshop",
+      "shortLabel": "Design",
+      "date": "2026-09-17",
+      "attendance": 31,
+      "type": "Professional Development"
+    },
+    {
+      "label": "Fall Social",
+      "shortLabel": "Social",
+      "date": "2026-10-01",
+      "attendance": 38,
+      "type": "Social"
+    },
+    {
+      "label": "Service Project",
+      "shortLabel": "Service",
+      "date": "2026-10-15",
+      "attendance": 22,
+      "type": "Service"
+    },
+    {
+      "label": "Pratt & Whitney Night",
+      "shortLabel": "P&W",
+      "date": "2026-10-29",
+      "attendance": 47,
+      "type": "Industry"
+    },
+    {
+      "label": "Finals Study Break",
+      "shortLabel": "Study",
+      "date": "2026-11-19",
+      "attendance": 29,
+      "type": "Social"
+    }
+  ],
+  "eventTypes": [
+    {
+      "name": "Industry",
+      "count": 168,
+      "events": 5,
+      "color": "#ba0c2f"
+    },
+    {
+      "name": "General Body",
+      "count": 94,
+      "events": 4,
+      "color": "#184a7d"
+    },
+    {
+      "name": "Professional Development",
+      "count": 72,
+      "events": 3,
+      "color": "#d69e2e"
+    },
+    {
+      "name": "Social",
+      "count": 63,
+      "events": 3,
+      "color": "#4f7cac"
+    },
+    {
+      "name": "Service",
+      "count": 31,
+      "events": 2,
+      "color": "#7b8797"
+    }
+  ],
+  "upcomingEvents": [
+    {
+      "title": "Fall Welcome Meeting",
+      "date": "2026-08-27",
+      "time": "6:30 PM",
+      "location": "Hitchcock Hall 131",
+      "type": "General Body",
+      "status": "Confirmed"
+    },
+    {
+      "title": "Industry Info Session",
+      "date": "2026-09-03",
+      "time": "7:00 PM",
+      "location": "Scott Lab E100",
+      "type": "Industry",
+      "status": "Planning"
+    },
+    {
+      "title": "Member Social",
+      "date": "2026-09-10",
+      "time": "6:00 PM",
+      "location": "TBD",
+      "type": "Social",
+      "status": "Needs location"
+    }
+  ],
+  "operations": [
+    {
+      "severity": "warning",
+      "title": "One event needs a location",
+      "detail": "The September 10 member social is still marked TBD.",
+      "actionLabel": "Review events",
+      "actionUrl": "https://org.osu.edu/asme/calendar/"
+    },
+    {
+      "severity": "info",
+      "title": "Connect the live attendance source",
+      "detail": "This preview is using aggregate demo data. Add the Apps Script endpoint before launch.",
+      "actionLabel": "Read setup guide",
+      "actionUrl": "#resources"
+    },
+    {
+      "severity": "success",
+      "title": "Academic-year structure is ready",
+      "detail": "The year selector is driven by one configuration entry per academic year.",
+      "actionLabel": "",
+      "actionUrl": ""
+    }
+  ]
+}

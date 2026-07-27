@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07182d">
+  <meta name="description" content="The internal operations dashboard for ASME at The Ohio State University.">
+  <title>ASME OSU Hub</title>
+  <link rel="icon" href="assets/hub-mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to dashboard</a>
+
+  <section class="access-gate" id="access-gate" aria-labelledby="access-title">
+    <div class="gate-backdrop" aria-hidden="true">
+      <span class="gate-orbit gate-orbit-one"></span>
+      <span class="gate-orbit gate-orbit-two"></span>
+    </div>
+    <div class="gate-card">
+      <div class="brand-mark brand-mark-large" aria-hidden="true">A</div>
+      <p class="eyebrow">ASME at Ohio State</p>
+      <h1 id="access-title">Officer Hub</h1>
+      <p class="gate-intro">One place to understand chapter activity and open the tools that keep ASME moving.</p>
+      <form id="access-form" class="access-form" novalidate>
+        <label for="hub-password">Dashboard password</label>
+        <div class="password-field">
+          <input id="hub-password" name="password" type="password" autocomplete="current-password" required>
+          <button class="password-toggle" id="password-toggle" type="button" aria-label="Show password">Show</button>
+        </div>
+        <p class="form-error" id="access-error" role="alert" aria-live="polite"></p>
+        <button class="primary-button gate-submit" type="submit">
+          Open dashboard
+          <span aria-hidden="true">→</span>
+        </button>
+      </form>
+      <p class="gate-footnote">Prototype access gate · Use aggregate or sample data only</p>
+    </div>
+  </section>
+
+  <div class="app-shell" id="app-shell" hidden>
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand" href="#overview" aria-label="ASME OSU Hub home">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span>
+          <strong>ASME OSU</strong>
+          <small>Officer Hub</small>
+        </span>
+      </a>
+
+      <nav class="sidebar-nav" aria-label="Dashboard navigation">
+        <a class="nav-link is-active" href="#overview">
+          <span class="nav-icon" aria-hidden="true">⌂</span>
+          Overview
+        </a>
+        <a class="nav-link" href="#events">
+          <span class="nav-icon" aria-hidden="true">◫</span>
+          Events
+        </a>
+        <a class="nav-link" href="#members">
+          <span class="nav-icon" aria-hidden="true">◎</span>
+          Members
+        </a>
+        <a class="nav-link" href="#operations">
+          <span class="nav-icon" aria-hidden="true">✓</span>
+          Operations
+          <span class="nav-count" id="nav-alert-count">0</span>
+        </a>
+        <a class="nav-link" href="#resources">
+          <span class="nav-icon" aria-hidden="true">↗</span>
+          Resources
+        </a>
+      </nav>
+
+      <div class="sidebar-year">
+        <span>Academic year</span>
+        <strong id="sidebar-year-label">2026–2027</strong>
+        <small>Change it from the top bar</small>
+      </div>
+
+      <div class="sidebar-footer">
+        <a href="https://org.osu.edu/asme/" target="_blank" rel="noopener">
+          View public website
+          <span aria-hidden="true">↗</span>
+        </a>
+        <button id="lock-dashboard" type="button">Lock dashboard</button>
+      </div>
+    </aside>
+
+    <div class="content-shell">
+      <header class="topbar">
+        <button class="mobile-menu-button" id="mobile-menu-button" type="button" aria-label="Open navigation" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-title">
+          <p class="eyebrow">Chapter operations</p>
+          <strong>Dashboard</strong>
+        </div>
+        <div class="topbar-actions">
+          <label class="year-select-label" for="academic-year">Academic year</label>
+          <select id="academic-year" class="year-select"></select>
+          <button class="icon-button" id="theme-toggle" type="button" aria-label="Switch color theme">
+            <span class="theme-icon" aria-hidden="true">◐</span>
+          </button>
+        </div>
+      </header>
+
+      <main id="main-content">
+        <section class="hero-panel dashboard-section" id="overview">
+          <div>
+            <p class="eyebrow">Chapter snapshot</p>
+            <h1>Good decisions start with a clear view.</h1>
+            <p class="hero-copy">Track participation, spot operational issues, and jump into the tools your team uses every week.</p>
+          </div>
+          <div class="freshness-card">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>
+              <small>Data refreshed</small>
+              <strong id="last-updated">Loading…</strong>
+            </span>
+          </div>
+        </section>
+
+        <section class="kpi-grid" aria-label="Chapter key performance indicators">
+          <article class="kpi-card">
+            <div class="kpi-topline">
+              <span>Unique attendees</span>
+              <span class="metric-icon" aria-hidden="true">◎</span>
+            </div>
+            <strong class="kpi-value" id="kpi-unique-attendees">—</strong>
+            <p id="kpi-unique-attendees-context">Across all recorded events</p>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-topline">
+              <span>Total check-ins</span>
+              <span class="metric-icon" aria-hidden="true">✓</span>
+            </div>
+            <strong class="kpi-value" id="kpi-total-checkins">—</strong>
+            <p id="kpi-total-checkins-context">All attendance submissions</p>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-topline">
+              <span>Events held</span>
+              <span class="metric-icon" aria-hidden="true">◫</span>
+            </div>
+            <strong class="kpi-value" id="kpi-events-held">—</strong>
+            <p id="kpi-events-held-context">Approved events this year</p>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-topline">
+              <span>Average turnout</span>
+              <span class="metric-icon" aria-hidden="true">↗</span>
+            </div>
+            <strong class="kpi-value" id="kpi-average-turnout">—</strong>
+            <p id="kpi-average-turnout-context">Check-ins per event</p>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-topline">
+              <span>Repeat attendance</span>
+              <span class="metric-icon" aria-hidden="true">↻</span>
+            </div>
+            <strong class="kpi-value" id="kpi-repeat-rate">—</strong>
+            <p id="kpi-repeat-rate-context">Attended two or more events</p>
+          </article>
+        </section>
+
+        <div class="dashboard-grid dashboard-grid-primary" id="events">
+          <section class="panel trend-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Attendance pulse</p>
+                <h2>Turnout by event</h2>
+              </div>
+              <span class="panel-chip" id="trend-summary">Recent events</span>
+            </div>
+            <div class="chart-wrap">
+              <svg id="attendance-chart" class="attendance-chart" role="img" aria-labelledby="attendance-chart-title attendance-chart-desc"></svg>
+              <p class="sr-only" id="attendance-chart-title">Attendance by recent event</p>
+              <p class="sr-only" id="attendance-chart-desc">A line chart showing attendance totals for the most recent events.</p>
+            </div>
+            <div class="chart-legend" id="attendance-chart-legend"></div>
+          </section>
+
+          <section class="panel goal-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Year progress</p>
+                <h2>Engagement goal</h2>
+              </div>
+            </div>
+            <div class="goal-ring-wrap">
+              <div class="goal-ring" id="goal-ring" role="img" aria-label="Engagement goal progress">
+                <div>
+                  <strong id="goal-percent">—</strong>
+                  <span>of goal</span>
+                </div>
+              </div>
+            </div>
+            <div class="goal-copy">
+              <strong id="goal-current">—</strong>
+              <span>of <span id="goal-target">—</span> unique attendees</span>
+            </div>
+            <p class="goal-note" id="goal-note">Loading goal progress…</p>
+          </section>
+        </div>
+
+        <div class="dashboard-grid dashboard-grid-secondary" id="members">
+          <section class="panel event-types-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Participation mix</p>
+                <h2>Attendance by event type</h2>
+              </div>
+            </div>
+            <div class="event-type-layout">
+              <div class="donut-chart" id="event-type-donut" role="img" aria-label="Attendance share by event type">
+                <div class="donut-center">
+                  <strong id="donut-total">—</strong>
+                  <span>check-ins</span>
+                </div>
+              </div>
+              <div class="type-list" id="event-type-list"></div>
+            </div>
+          </section>
+
+          <section class="panel upcoming-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Coming up</p>
+                <h2>Next events</h2>
+              </div>
+              <a class="text-link" href="https://org.osu.edu/asme/calendar/" target="_blank" rel="noopener">Calendar ↗</a>
+            </div>
+            <div class="upcoming-list" id="upcoming-events"></div>
+          </section>
+        </div>
+
+        <section class="panel operations-panel dashboard-section" id="operations">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Needs attention</p>
+              <h2>Operations queue</h2>
+            </div>
+            <span class="panel-chip panel-chip-alert" id="operations-count">0 items</span>
+          </div>
+          <div class="operations-list" id="operations-list"></div>
+        </section>
+
+        <section class="resources-section dashboard-section" id="resources">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Open a workspace</p>
+              <h2>Tools and resources</h2>
+            </div>
+            <p>Keep the links officers use most in one reliable place. Items marked “Setup needed” are ready for your real URLs.</p>
+          </div>
+          <div class="resource-grid" id="resource-grid"></div>
+        </section>
+
+        <footer class="dashboard-footer">
+          <p>ASME OSU Officer Hub</p>
+          <p>Configuration-driven for a smooth academic-year handoff.</p>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <div class="loading-layer" id="loading-layer" hidden>
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Loading chapter data…</p>
+  </div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
