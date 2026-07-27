@@ -12,7 +12,7 @@ designed to remain easy to maintain through annual officer transitions.
 
 - A polished desktop, tablet, and mobile dashboard
 - A session-based access screen
-- An academic-year selector driven by one configuration file
+- An academic-year selector and no-code Year Settings panel
 - Aggregate attendance and event KPIs
 - Attendance, engagement-goal, and event-type visualizations
 - Upcoming events and an operations queue
@@ -21,9 +21,10 @@ designed to remain easy to maintain through annual officer transitions.
 - A documented path from Google Forms/Sheets to a safe aggregate JSON feed
 
 The 2026–27 officer, attendance, member, communications, website, and source
-code destinations are preconfigured. The KPI panels currently use sample
-aggregate data so the interface can be reviewed without exposing member
-information.
+code destinations are preconfigured. The live baseline reads the same
+privacy-safe public leaderboard export used by the chapter website. It
+calculates unique attendees, total check-ins, repeat attendance, and attendance
+by event type without reading emails or raw form responses.
 
 ## Security boundary
 
@@ -62,8 +63,8 @@ It is case-sensitive. Successful access lasts for the current browser tab for
 | --- | --- |
 | `index.html` | Dashboard structure and accessible labels |
 | `assets/css/styles.css` | Brand, layout, light/dark themes, and responsive rules |
-| `assets/js/config.js` | Academic years, access digest, data URLs, and resource links |
-| `assets/js/app.js` | Password check, data loading, charts, and interface behavior |
+| `assets/js/config.js` | Shared academic-year defaults, access digest, and resource links |
+| `assets/js/app.js` | Password check, settings storage, Google Sheets loading, charts, and interface behavior |
 | `data/demo-dashboard.json` | Safe sample aggregate dataset |
 | `integrations/apps-script/Code.gs.example` | Optional Google Sheets aggregate-feed starter |
 
@@ -80,12 +81,43 @@ the launcher. It currently includes:
 - The public website, event calendar, and ASME OSU GitHub organization
 
 SharePoint and the private Google workbook enforce their own account access
-after an officer follows a link from the hub. When a destination changes, edit
-only its `url` in `assets/js/config.js`.
+after an officer follows a link from the hub.
+
+## Year Settings
+
+Use the gear button beside the academic-year selector, or choose **Year
+settings** in the sidebar. The panel can:
+
+- edit the current academic-year label and engagement goal
+- paste a public leaderboard Google Sheet and tab name
+- paste an optional full aggregate dashboard JSON URL
+- update that year's attendance form, Points Master, and calendar links
+- add the next academic year without editing code
+- restore a shared year to the defaults in `assets/js/config.js`
+
+Settings saved through the interface stay in that browser's `localStorage`.
+They are not shared with every officer and must not be treated as secrets. To
+make a new value the organization-wide default, copy the verified values into
+the matching `dataSources` entry in `assets/js/config.js`.
+
+The full dashboard JSON takes priority when both sources are present. Without
+it, the public leaderboard source leaves event count, average turnout, the
+event-by-event trend, and upcoming events blank because those values cannot be
+derived accurately from member totals alone.
 
 ## Connect Google Sheets safely
 
-Recommended flow:
+The included live baseline uses:
+
+```text
+private Points Master → sanitized Website Export → Officer Hub aggregates
+```
+
+The Website Export must contain `Leaderboard_Public` and `System_Status`. The
+leaderboard columns are the same privacy-safe columns consumed by the public
+member-points page.
+
+For the complete event-level dashboard, the recommended flow is:
 
 ```text
 Google Form → private response sheet → aggregate Apps Script endpoint → dashboard
@@ -97,7 +129,7 @@ Google Form → private response sheet → aggregate Apps Script endpoint → da
    project.
 4. Update the tab name or aggregation logic in the script.
 5. Deploy it as a web app whose output can be read by the dashboard.
-6. Replace the relevant `url` in `assets/js/config.js` with the `/exec` URL.
+6. Paste the `/exec` URL into **Year Settings → Full dashboard JSON URL**.
 7. Open the endpoint directly and confirm it contains no names, emails, or raw
    attendance submissions.
 
@@ -170,22 +202,29 @@ Optional arrays may be empty. KPI values should be numbers, and
 
 The annual rollover does not require changing the dashboard code.
 
-1. Create a new aggregate endpoint or JSON file for the new academic year.
-2. Add one entry to `dataSources` in `assets/js/config.js`:
+1. Open **Year Settings** and choose **Add next year**.
+2. Paste the new privacy-safe public leaderboard Sheet.
+3. Paste the new attendance form and Points Master links.
+4. Add the calendar and optional full aggregate JSON feed.
+5. Save and verify the year selector can still load the prior year.
+6. To publish the setup as a default for every officer, add the verified entry
+   to `dataSources` in `assets/js/config.js`:
 
    ```js
    "2027-2028": {
      label: "2027–2028",
-     type: "json",
-     url: "https://script.google.com/macros/s/YOUR_NEW_DEPLOYMENT/exec",
+     dashboardUrl: "",
+     attendanceSheetUrl: "https://docs.google.com/spreadsheets/d/...",
+     attendanceSheetTab: "Leaderboard_Public",
+     attendanceFormUrl: "https://docs.google.com/forms/d/.../viewform",
+     pointsMasterUrl: "https://docs.google.com/spreadsheets/d/.../edit",
+     calendarUrl: "https://org.osu.edu/asme/calendar/",
+     engagementGoal: 250,
    },
    ```
 
-3. Change `currentAcademicYear` to `"2027-2028"`.
-4. Update the academic year in the attendance-form and Points Master titles,
-   then replace those two URLs in `resources`.
-5. Verify the year selector can still load the prior year.
-6. Check that the refreshed timestamp and figures match the source.
+7. Change `currentAcademicYear` when the new year should become the shared
+   default.
 
 Keep prior `dataSources` entries when historical comparisons should remain
 available. Remove an entry only when officers should no longer see that year.
@@ -216,9 +255,9 @@ After the dashboard branch is reviewed and merged:
 
 ## Officer handoff checklist
 
-- Confirm the current academic year in `assets/js/config.js`.
+- Confirm the current academic year in Year Settings.
 - Confirm that the aggregate endpoint has no member-level data.
-- Update SharePoint, form, sheet, and calendar links.
+- Update the public export, form, Points Master, and calendar links.
 - Rotate the convenience password if needed.
 - Verify the refreshed timestamp and all five KPI values.
 - Check one desktop width, one tablet width, and one mobile width.
