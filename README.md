@@ -20,8 +20,10 @@ designed to remain easy to maintain through annual officer transitions.
 - Light and dark color themes
 - A documented path from Google Forms/Sheets to a safe aggregate JSON feed
 
-The repository currently uses sample aggregate data so the interface can be
-reviewed without exposing member information.
+The 2026–27 officer, attendance, member, communications, website, and source
+code destinations are preconfigured. The KPI panels currently use sample
+aggregate data so the interface can be reviewed without exposing member
+information.
 
 ## Security boundary
 
@@ -65,23 +67,21 @@ It is case-sensitive. Successful access lasts for the current browser tab for
 | `data/demo-dashboard.json` | Safe sample aggregate dataset |
 | `integrations/apps-script/Code.gs.example` | Optional Google Sheets aggregate-feed starter |
 
-## Connect the real tools
+## Current tool connections
 
-Edit the `resources` array in `assets/js/config.js`. Replace each empty `url`
-with the official SharePoint, form, sheet, or other officer link:
+The `resources` array in `assets/js/config.js` is the single source of truth for
+the launcher. It currently includes:
 
-```js
-{
-  title: "Officer SharePoint",
-  description: "Files, templates, handoffs, and internal chapter documentation.",
-  label: "Open SharePoint",
-  url: "https://your-sharepoint-url",
-  category: "Operations",
-}
-```
+- Executive Board SharePoint and shared document library
+- Event Operations and Officer Task Tracker SharePoint lists
+- The 2026–27 attendance check-in form and Points Master
+- The public member points dashboard
+- Newsletter Builder and Career Packet
+- The public website, event calendar, and ASME OSU GitHub organization
 
-An empty URL intentionally appears as **Setup needed** instead of opening a
-broken link.
+SharePoint and the private Google workbook enforce their own account access
+after an officer follows a link from the hub. When a destination changes, edit
+only its `url` in `assets/js/config.js`.
 
 ## Connect Google Sheets safely
 
@@ -182,7 +182,8 @@ The annual rollover does not require changing the dashboard code.
    ```
 
 3. Change `currentAcademicYear` to `"2027-2028"`.
-4. Update the attendance-form and point-system links in `resources`.
+4. Update the academic year in the attendance-form and Points Master titles,
+   then replace those two URLs in `resources`.
 5. Verify the year selector can still load the prior year.
 6. Check that the refreshed timestamp and figures match the source.
 
