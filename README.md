@@ -92,13 +92,24 @@ settings** in the sidebar. The panel can:
 - paste a public leaderboard Google Sheet and tab name
 - paste an optional full aggregate dashboard JSON URL
 - update that year's attendance form, Points Master, and calendar links
+- keep the calendar page and Google Calendar iCal subscription URL separate
 - add the next academic year without editing code
-- restore a shared year to the defaults in `assets/js/config.js`
+- preview changes for the current browser tab
+- restore a preview to the organization-wide shared values
 
-Settings saved through the interface stay in that browser's `localStorage`.
-They are not shared with every officer and must not be treated as secrets. To
-make a new value the organization-wide default, copy the verified values into
-the matching `dataSources` entry in `assets/js/config.js`.
+Organization-wide settings live in the `Hub_Settings_Public` tab of the
+[Website Export Sheet](https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit#gid=844317022).
+The hub loads that tab before displaying an academic year, so one edit applies
+to every viewer. Use one row per academic year and preserve the existing column
+headers.
+
+Changes made directly in the hub are temporary previews stored in
+`sessionStorage`; they disappear when that browser tab is closed. This avoids
+one officer's test values silently replacing the shared configuration.
+
+The **Events calendar page** is the human-facing web page. The **Google Calendar
+iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,
+Apple Calendar, Outlook, and other compatible apps.
 
 The full dashboard JSON takes priority when both sources are present. Without
 it, the public leaderboard source leaves event count, average turnout, the
@@ -203,31 +214,16 @@ Optional arrays may be empty. KPI values should be numbers, and
 The annual rollover does not require changing the dashboard code.
 
 1. Open **Year Settings** and choose **Add next year**.
-2. Paste the new privacy-safe public leaderboard Sheet.
-3. Paste the new attendance form and Points Master links.
-4. Add the calendar and optional full aggregate JSON feed.
-5. Save and verify the year selector can still load the prior year.
-6. To publish the setup as a default for every officer, add the verified entry
-   to `dataSources` in `assets/js/config.js`:
+2. Use the preview to confirm the generated key, label, and links.
+3. Open **Edit shared settings**.
+4. Add one new row to `Hub_Settings_Public` for the academic year.
+5. Paste the new public Website Export Sheet, attendance form, Points Master,
+   calendar page, iCal feed, and optional full aggregate JSON feed.
+6. Reload the hub and verify the year selector can load both the new year and
+   any prior years that should remain available.
 
-   ```js
-   "2027-2028": {
-     label: "2027–2028",
-     dashboardUrl: "",
-     attendanceSheetUrl: "https://docs.google.com/spreadsheets/d/...",
-     attendanceSheetTab: "Leaderboard_Public",
-     attendanceFormUrl: "https://docs.google.com/forms/d/.../viewform",
-     pointsMasterUrl: "https://docs.google.com/spreadsheets/d/.../edit",
-     calendarUrl: "https://org.osu.edu/asme/calendar/",
-     engagementGoal: 250,
-   },
-   ```
-
-7. Change `currentAcademicYear` when the new year should become the shared
-   default.
-
-Keep prior `dataSources` entries when historical comparisons should remain
-available. Remove an entry only when officers should no longer see that year.
+The academic years shown in the selector come from the shared settings rows.
+Remove a row only when officers should no longer see that year.
 
 ## Change the dashboard password
 

@@ -4,7 +4,7 @@
   const config = window.ASME_HUB_CONFIG;
   const unlockStorageKey = "asmeHubUnlockedUntil";
   const themeStorageKey = "asmeHubTheme";
-  const yearSettingsStorageKey = "asmeHubYearSettingsV1";
+  const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const numberFormatter = new Intl.NumberFormat("en-US");
   const eventTypeColumns = [
     { column: 7, name: "General Body", color: "#184a7d" },
@@ -15,7 +15,9 @@
     { column: 12, name: "Volunteering / Outreach", color: "#6b7f52" },
     { column: 13, name: "Committee Work", color: "#7b8797" },
   ];
+  let sharedYearSources = cloneConfiguredSources();
   let yearSources = loadYearSources();
+  let sharedSettingsReady = Promise.resolve();
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -52,6 +54,9 @@
     ),
     settingsPointsMaster: document.getElementById("settings-points-master"),
     settingsCalendar: document.getElementById("settings-calendar"),
+    settingsCalendarIcal: document.getElementById("settings-calendar-ical"),
+    settingsSharedLink: document.getElementById("settings-shared-link"),
+    settingsSharedAction: document.getElementById("settings-shared-action"),
   };
 
   function getUnlockedUntil() {
@@ -74,7 +79,7 @@
       .join("");
   }
 
-  function cloneDefaultSources() {
+  function cloneConfiguredSources() {
     return Object.fromEntries(
       Object.entries(config.dataSources || {}).map(([year, source]) => [
         year,
@@ -84,11 +89,16 @@
   }
 
   function loadYearSources() {
-    const defaults = cloneDefaultSources();
+    const defaults = Object.fromEntries(
+      Object.entries(sharedYearSources || {}).map(([year, source]) => [
+        year,
+        { ...source },
+      ]),
+    );
 
     try {
       const stored = JSON.parse(
-        localStorage.getItem(yearSettingsStorageKey) || "{}",
+        sessionStorage.getItem(yearSettingsStorageKey) || "{}",
       );
       if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
         return defaults;
@@ -108,7 +118,14 @@
   }
 
   function saveYearSources() {
-    localStorage.setItem(yearSettingsStorageKey, JSON.stringify(yearSources));
+    const previews = {};
+    Object.entries(yearSources).forEach(([year, source]) => {
+      const shared = sharedYearSources[year];
+      if (!shared || JSON.stringify(source) !== JSON.stringify(shared)) {
+        previews[year] = source;
+      }
+    });
+    sessionStorage.setItem(yearSettingsStorageKey, JSON.stringify(previews));
   }
 
   function getYearSource(year = elements.academicYear.value) {
@@ -160,9 +177,10 @@
     elements.settingsAttendanceForm.value = source.attendanceFormUrl || "";
     elements.settingsPointsMaster.value = source.pointsMasterUrl || "";
     elements.settingsCalendar.value = source.calendarUrl || "";
+    elements.settingsCalendarIcal.value = source.calendarIcalUrl || "";
     elements.settingsStatus.textContent = "";
     elements.settingsReset.hidden =
-      isNew || !config.dataSources || !config.dataSources[yearKey];
+      isNew || !sharedYearSources || !sharedYearSources[yearKey];
   }
 
   function openSettings(year = elements.academicYear.value) {
@@ -206,6 +224,7 @@
       attendanceFormUrl: elements.settingsAttendanceForm.value.trim(),
       pointsMasterUrl: elements.settingsPointsMaster.value.trim(),
       calendarUrl: elements.settingsCalendar.value.trim(),
+      calendarIcalUrl: elements.settingsCalendarIcal.value.trim(),
     };
   }
 
@@ -223,7 +242,8 @@
       ["dashboard JSON", settings.dashboardUrl, false],
       ["attendance form", settings.attendanceFormUrl, false],
       ["Points Master", settings.pointsMasterUrl, false],
-      ["events calendar", settings.calendarUrl, false],
+      ["events calendar page", settings.calendarUrl, false],
+      ["Google Calendar iCal", settings.calendarIcalUrl, false],
     ];
     const invalid = urls.find(
       ([, value, allowSheetId]) =>
@@ -241,6 +261,7 @@
   }
 
   async function unlockDashboard() {
+    await sharedSettingsReady;
     const expiresAt =
       Date.now() + Number(config.access.sessionHours || 12) * 60 * 60 * 1000;
     sessionStorage.setItem(unlockStorageKey, String(expiresAt));
@@ -371,6 +392,49 @@
     if (!Number.isNaN(parsed.getTime())) return parsed;
     const isoLike = new Date(clean.replace(" ", "T"));
     return Number.isNaN(isoLike.getTime()) ? null : isoLike;
+  }
+
+  async function loadSharedYearSources() {
+    const settings = config.sharedSettings || {};
+    const spreadsheetId = spreadsheetIdFrom(settings.spreadsheetUrl);
+    if (!spreadsheetId || !settings.sheetTab) return;
+
+    try {
+      const table = await queryPublicSheet(
+        spreadsheetId,
+        settings.sheetTab,
+        "select A,B,C,D,E,F,G,H,I,J where A is not null",
+      );
+      const remoteSources = {};
+
+      (table.rows || []).forEach((row) => {
+        const yearKey = normalizeYearKey(sheetCell(row, 0));
+        if (!/^\d{4}-\d{4}$/.test(yearKey)) return;
+        remoteSources[yearKey] = {
+          ...(sharedYearSources[yearKey] || {}),
+          label: String(sheetCell(row, 1) || displayLabelForYear(yearKey)),
+          engagementGoal: Number(sheetCell(row, 2)) || 250,
+          attendanceSheetUrl: String(sheetCell(row, 3) || "").trim(),
+          attendanceSheetTab:
+            String(sheetCell(row, 4) || "").trim() || "Leaderboard_Public",
+          dashboardUrl: String(sheetCell(row, 5) || "").trim(),
+          attendanceFormUrl: String(sheetCell(row, 6) || "").trim(),
+          pointsMasterUrl: String(sheetCell(row, 7) || "").trim(),
+          calendarUrl: String(sheetCell(row, 8) || "").trim(),
+          calendarIcalUrl: String(sheetCell(row, 9) || "").trim(),
+        };
+      });
+
+      if (Object.keys(remoteSources).length) {
+        sharedYearSources = { ...sharedYearSources, ...remoteSources };
+        yearSources = loadYearSources();
+      }
+    } catch (error) {
+      console.warn(
+        "Shared academic-year settings could not be loaded; using the deployed defaults.",
+        error,
+      );
+    }
   }
 
   async function loadLeaderboardDashboard(source) {
@@ -1091,6 +1155,7 @@
         attendanceSheetTab: "Leaderboard_Public",
         engagementGoal: current.engagementGoal,
         calendarUrl: current.calendarUrl,
+        calendarIcalUrl: current.calendarIcalUrl,
       },
       true,
     );
@@ -1098,7 +1163,7 @@
 
   elements.settingsReset.addEventListener("click", () => {
     const year = normalizeYearKey(elements.settingsYearKey.value);
-    const defaults = config.dataSources && config.dataSources[year];
+    const defaults = sharedYearSources && sharedYearSources[year];
     if (!defaults) return;
     yearSources[year] = { ...defaults };
     saveYearSources();
@@ -1106,7 +1171,7 @@
     populateYears(year);
     loadDashboard(year);
     elements.settingsStatus.textContent =
-      "This year has been restored to the shared defaults.";
+      "This preview has been restored to the shared settings.";
   });
 
   elements.settingsForm.addEventListener("submit", (event) => {
@@ -1206,15 +1271,30 @@
     }
   });
 
-  populateYears();
-  setupNavigation();
-  applyTheme(localStorage.getItem(themeStorageKey) || "light");
+  async function initialize() {
+    sharedSettingsReady = loadSharedYearSources();
+    await sharedSettingsReady;
 
-  if (isUnlocked()) {
-    elements.gate.hidden = true;
-    elements.appShell.hidden = false;
-    loadDashboard(elements.academicYear.value);
-  } else {
-    showGate();
+    const sharedSettingsUrl =
+      config.sharedSettings && config.sharedSettings.editUrl;
+    [elements.settingsSharedLink, elements.settingsSharedAction].forEach(
+      (link) => {
+        if (link && sharedSettingsUrl) link.href = sharedSettingsUrl;
+      },
+    );
+
+    populateYears();
+    setupNavigation();
+    applyTheme(localStorage.getItem(themeStorageKey) || "light");
+
+    if (isUnlocked()) {
+      elements.gate.hidden = true;
+      elements.appShell.hidden = false;
+      loadDashboard(elements.academicYear.value);
+    } else {
+      showGate();
+    }
   }
+
+  initialize();
 })();
