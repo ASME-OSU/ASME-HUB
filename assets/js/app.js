@@ -5,6 +5,7 @@
   const unlockStorageKey = "asmeHubUnlockedUntil";
   const themeStorageKey = "asmeHubTheme";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
+  const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
   const numberFormatter = new Intl.NumberFormat("en-US");
   const eventTypeColumns = [
     { column: 7, name: "General Body", color: "#184a7d" },
@@ -213,6 +214,9 @@
   }
 
   function readSettingsForm() {
+    const existing = getYearSource(
+      normalizeYearKey(elements.settingsYearKey.value),
+    );
     return {
       yearKey: normalizeYearKey(elements.settingsYearKey.value),
       label: elements.settingsYearLabel.value.trim(),
@@ -225,6 +229,8 @@
       pointsMasterUrl: elements.settingsPointsMaster.value.trim(),
       calendarUrl: elements.settingsCalendar.value.trim(),
       calendarIcalUrl: elements.settingsCalendarIcal.value.trim(),
+      eventMetricsSheetTab:
+        existing?.eventMetricsSheetTab || "Event_Metrics_Public",
     };
   }
 
@@ -369,8 +375,17 @@
   function sheetTimestamp(value) {
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     if (typeof value === "number") {
-      const epoch = Date.UTC(1899, 11, 30);
-      return new Date(epoch + value * 86400000);
+      const serialDate = new Date(
+        Date.UTC(1899, 11, 30) + value * 86400000,
+      );
+      return new Date(
+        serialDate.getUTCFullYear(),
+        serialDate.getUTCMonth(),
+        serialDate.getUTCDate(),
+        serialDate.getUTCHours(),
+        serialDate.getUTCMinutes(),
+        serialDate.getUTCSeconds(),
+      );
     }
 
     const dateConstructor = String(value || "").match(
@@ -394,6 +409,13 @@
     return Number.isNaN(isoLike.getTime()) ? null : isoLike;
   }
 
+  function sheetBoolean(value, fallback = false) {
+    if (value === true || value === false) return value;
+    const clean = String(value ?? "").trim().toLowerCase();
+    if (!clean) return fallback;
+    return ["true", "yes", "1"].includes(clean);
+  }
+
   async function loadSharedYearSources() {
     const settings = config.sharedSettings || {};
     const spreadsheetId = spreadsheetIdFrom(settings.spreadsheetUrl);
@@ -403,13 +425,18 @@
       const table = await queryPublicSheet(
         spreadsheetId,
         settings.sheetTab,
-        "select A,B,C,D,E,F,G,H,I,J where A is not null",
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null",
       );
       const remoteSources = {};
+      let currentYear = "";
 
       (table.rows || []).forEach((row) => {
         const yearKey = normalizeYearKey(sheetCell(row, 0));
         if (!/^\d{4}-\d{4}$/.test(yearKey)) return;
+        const isActive = sheetBoolean(sheetCell(row, 10), true);
+        if (!isActive) return;
+        const isCurrent = sheetBoolean(sheetCell(row, 11), false);
+        if (isCurrent) currentYear = yearKey;
         remoteSources[yearKey] = {
           ...(sharedYearSources[yearKey] || {}),
           label: String(sheetCell(row, 1) || displayLabelForYear(yearKey)),
@@ -422,11 +449,21 @@
           pointsMasterUrl: String(sheetCell(row, 7) || "").trim(),
           calendarUrl: String(sheetCell(row, 8) || "").trim(),
           calendarIcalUrl: String(sheetCell(row, 9) || "").trim(),
+          isActive,
+          isCurrent,
+          settingsUpdated: sheetTimestamp(
+            sheetCell(row, 12, true) || sheetCell(row, 12),
+          ),
+          settingsStatus: String(sheetCell(row, 13) || "").trim(),
+          eventMetricsSheetTab:
+            String(sheetCell(row, 14) || "").trim() ||
+            "Event_Metrics_Public",
         };
       });
 
       if (Object.keys(remoteSources).length) {
         sharedYearSources = { ...sharedYearSources, ...remoteSources };
+        if (currentYear) config.currentAcademicYear = currentYear;
         yearSources = loadYearSources();
       }
     } catch (error) {
@@ -445,7 +482,9 @@
 
     const leaderboardTab =
       source.attendanceSheetTab || "Leaderboard_Public";
-    const [leaderboard, statusTable] = await Promise.all([
+    const eventMetricsTab =
+      source.eventMetricsSheetTab || "Event_Metrics_Public";
+    const [leaderboard, statusTable, metricsResult] = await Promise.all([
       queryPublicSheet(
         spreadsheetId,
         leaderboardTab,
@@ -456,6 +495,13 @@
         "System_Status",
         "select A,B where A is not null",
       ).catch(() => ({ rows: [] })),
+      queryPublicSheet(
+        spreadsheetId,
+        eventMetricsTab,
+        "select A,B,C,D,E,F,G,H,I,J,K,L",
+      )
+        .then((table) => ({ table, error: null }))
+        .catch((error) => ({ table: { rows: [] }, error })),
     ]);
 
     const members = (leaderboard.rows || [])
@@ -490,6 +536,33 @@
           String(sheetCell(row, 1) || "").toUpperCase(),
         ])
         .find(([key]) => key === "system_status")?.[1] || "LIVE";
+    const metricRows = metricsResult.table.rows || [];
+    const eventRows = metricRows
+      .map((row) => ({
+        id: String(sheetCell(row, 0) || "").trim(),
+        name: String(sheetCell(row, 1) || "").trim(),
+        date: sheetTimestamp(sheetCell(row, 2)),
+        type: normalizeEventType(sheetCell(row, 3)),
+        attendance: Number(sheetCell(row, 4)) || 0,
+        formStatus: String(sheetCell(row, 5) || "").trim(),
+        status: String(sheetCell(row, 6) || "").trim(),
+      }))
+      .filter((event) => event.id && event.name);
+    const healthMetrics = {};
+    metricRows.forEach((row) => {
+      const key = String(sheetCell(row, 8) || "").trim();
+      if (!key || key.toLowerCase() === "metric") return;
+      healthMetrics[key] = {
+        value: sheetCell(row, 9),
+        status: String(sheetCell(row, 10) || "").toUpperCase(),
+        detail: String(sheetCell(row, 11) || "").trim(),
+      };
+    });
+    const attendedEvents = eventRows.filter((event) => event.attendance > 0);
+    const metricsAvailable = !metricsResult.error && eventRows.length > 0;
+    const aggregateUpdated = sheetTimestamp(
+      healthMetrics.last_updated?.value,
+    );
     const eventTypes = eventTypeColumns
       .map((type) => ({
         name: type.name,
@@ -500,55 +573,358 @@
               ?.count || 0),
           0,
         ),
-        events: null,
+        events: metricsAvailable
+          ? eventRows.filter((event) => event.type === type.name).length
+          : null,
         color: type.color,
       }))
-      .filter((type) => type.count > 0);
+      .filter((type) => type.count > 0 || Number(type.events) > 0);
+    const attendanceTrend = attendedEvents
+      .filter((event) => event.date)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(-8)
+      .map((event) => ({
+        label: event.name,
+        shortLabel:
+          event.name.length > 13
+            ? `${event.name.slice(0, 12).trim()}…`
+            : event.name,
+        date: event.date.toISOString(),
+        attendance: event.attendance,
+        type: event.type,
+      }));
+    const operations = [];
+    const reviewCount = Number(healthMetrics.open_review_items?.value) || 0;
+    const pastFormsOpen = Number(healthMetrics.past_forms_open?.value) || 0;
+
+    if (reviewCount > 0) {
+      operations.push({
+        severity: "warning",
+        title: `${formatNumber(reviewCount)} attendance review item${
+          reviewCount === 1 ? "" : "s"
+        } open`,
+        detail:
+          "Review duplicate, unmatched, or otherwise flagged submissions before the next website refresh.",
+        actionLabel: "Open review queue",
+        actionUrl: `${source.pointsMasterUrl || ""}#gid=635067478`,
+      });
+    }
+    if (pastFormsOpen > 0) {
+      operations.push({
+        severity: "warning",
+        title: `${formatNumber(pastFormsOpen)} past event form${
+          pastFormsOpen === 1 ? "" : "s"
+        } still open`,
+        detail:
+          "Close attendance choices for completed events so members cannot select an old event.",
+        actionLabel: "Open events sheet",
+        actionUrl: `${source.pointsMasterUrl || ""}#gid=1941217076`,
+      });
+    }
+    if (!metricsAvailable) {
+      operations.push({
+        severity: "warning",
+        title: "Event metrics feed needs attention",
+        detail:
+          "The privacy-safe Event_Metrics_Public tab could not be read, so event-level KPIs are temporarily unavailable.",
+        actionLabel: "Open public export",
+        actionUrl: source.attendanceSheetUrl,
+      });
+    }
+    operations.push({
+      severity: systemStatus === "LIVE" ? "success" : "warning",
+      title:
+        systemStatus === "LIVE"
+          ? "Public attendance totals are connected"
+          : `Point system status: ${systemStatus.toLowerCase()}`,
+      detail:
+        "Member totals and event aggregates are loading from the privacy-safe website export.",
+      actionLabel: "Open public export",
+      actionUrl: source.attendanceSheetUrl,
+    });
 
     return {
       meta: {
         academicYear: source.label,
-        lastUpdated: latestUpdate
-          ? latestUpdate.toISOString()
+        lastUpdated: aggregateUpdated
+          ? aggregateUpdated.toISOString()
+          : latestUpdate
+            ? latestUpdate.toISOString()
           : new Date().toISOString(),
         isDemo: false,
-        isPartial: true,
-        sourceLabel: "Public leaderboard export",
+        isPartial: !metricsAvailable,
+        sourceLabel: metricsAvailable
+          ? "Public aggregate exports"
+          : "Public leaderboard export",
       },
       kpis: {
         uniqueAttendees: members.length,
         totalCheckIns,
-        eventsHeld: null,
-        averageTurnout: null,
+        eventsHeld: metricsAvailable ? attendedEvents.length : null,
+        averageTurnout:
+          metricsAvailable && attendedEvents.length
+            ? totalCheckIns / attendedEvents.length
+            : metricsAvailable
+              ? 0
+              : null,
         repeatAttendanceRate: members.length
           ? (repeatAttendees / members.length) * 100
           : 0,
         engagementGoal: Number(source.engagementGoal) || 250,
       },
-      attendanceTrend: [],
+      attendanceTrend,
       eventTypes,
       upcomingEvents: [],
-      operations: [
+      operations,
+      health: [
         {
-          severity: systemStatus === "LIVE" ? "success" : "warning",
-          title:
-            systemStatus === "LIVE"
-              ? "Public attendance totals are connected"
-              : `Point system status: ${systemStatus.toLowerCase()}`,
+          label: "Year settings",
+          status: source.isCurrent === false ? "NOTICE" : "LIVE",
           detail:
-            "Member totals, repeat attendance, and event-type counts are loading from the privacy-safe website export.",
-          actionLabel: "Open public export",
-          actionUrl: source.attendanceSheetUrl,
+            source.settingsStatus ||
+            (source.settingsUpdated
+              ? `Updated ${formatCompactDate(source.settingsUpdated)}`
+              : "Shared settings loaded"),
         },
         {
-          severity: "info",
-          title: "Event-level feed is optional",
-          detail:
-            "Add a full aggregate JSON URL in Year Settings to populate events held, average turnout, the trend chart, and upcoming events.",
-          actionLabel: "Open year settings",
-          actionUrl: "#year-settings",
+          label: "Attendance",
+          status: systemStatus === "LIVE" ? "LIVE" : "ACTION",
+          detail: `${formatNumber(members.length)} member totals available`,
+        },
+        {
+          label: "Event metrics",
+          status: metricsAvailable ? "LIVE" : "ACTION",
+          detail: metricsAvailable
+            ? `${formatNumber(eventRows.length)} configured events`
+            : "Aggregate event feed unavailable",
         },
       ],
+    };
+  }
+
+  function normalizeEventType(value) {
+    const clean = String(value || "").trim().toLowerCase();
+    const match = [
+      ["general body", "General Body"],
+      ["social", "Social"],
+      ["tabling", "Social"],
+      ["company", "Company Info Sessions"],
+      ["sponsor", "Company Info Sessions"],
+      ["technical", "Technical Workshops"],
+      ["workshop", "Technical Workshops"],
+      ["build", "Build Nights / Projects"],
+      ["project", "Build Nights / Projects"],
+      ["volunteer", "Volunteering / Outreach"],
+      ["outreach", "Volunteering / Outreach"],
+      ["committee", "Committee Work"],
+    ].find(([needle]) => clean.includes(needle));
+    return match ? match[1] : String(value || "Other").trim();
+  }
+
+  function unescapeIcalText(value) {
+    return String(value || "")
+      .replace(/\\n/gi, " · ")
+      .replace(/\\,/g, ",")
+      .replace(/\\;/g, ";")
+      .replace(/\\\\/g, "\\")
+      .trim();
+  }
+
+  function parseIcalDate(value) {
+    const clean = String(value || "").trim();
+    const match = clean.match(
+      /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/,
+    );
+    if (!match) return null;
+    const parts = match.slice(1, 7).map((part) => Number(part || 0));
+    return match[7]
+      ? new Date(
+          Date.UTC(
+            parts[0],
+            parts[1] - 1,
+            parts[2],
+            parts[3],
+            parts[4],
+            parts[5],
+          ),
+        )
+      : new Date(
+          parts[0],
+          parts[1] - 1,
+          parts[2],
+          parts[3],
+          parts[4],
+          parts[5],
+        );
+  }
+
+  function parseIcalEvents(text) {
+    const unfolded = String(text || "").replace(/\r?\n[ \t]/g, "");
+    const blocks = unfolded.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
+    const now = new Date();
+    const horizon = new Date(now.getTime() + 180 * 86400000);
+    const results = [];
+
+    blocks.forEach((block) => {
+      const property = (name) => {
+        const line = block
+          .split(/\r?\n/)
+          .find((entry) => entry.toUpperCase().startsWith(`${name}`));
+        return line ? line.slice(line.indexOf(":") + 1) : "";
+      };
+      const rawStart = property("DTSTART");
+      const start = parseIcalDate(rawStart);
+      if (!start) return;
+      const isAllDay = /^\d{8}$/.test(rawStart);
+      const base = {
+        title: unescapeIcalText(property("SUMMARY")) || "ASME event",
+        location: unescapeIcalText(property("LOCATION")),
+        type: "Chapter event",
+      };
+      const recurrence = property("RRULE");
+      const countMatch = recurrence.match(/(?:^|;)COUNT=(\d+)/);
+      const untilMatch = recurrence.match(/(?:^|;)UNTIL=([^;]+)/);
+      const until = untilMatch ? parseIcalDate(untilMatch[1]) : horizon;
+      const maxOccurrences = Math.min(Number(countMatch?.[1]) || 30, 60);
+      const occurrences =
+        recurrence.includes("FREQ=WEEKLY") ? maxOccurrences : 1;
+
+      for (let index = 0; index < occurrences; index += 1) {
+        const date = new Date(start.getTime() + index * 7 * 86400000);
+        if (date > horizon || (until && date > until)) break;
+        if (date.getTime() < now.getTime() - 2 * 60 * 60 * 1000) continue;
+        results.push({
+          ...base,
+          date: date.toISOString(),
+          time: isAllDay
+            ? "All day"
+            : new Intl.DateTimeFormat("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              }).format(date),
+          status: base.location ? "Confirmed" : "Needs location",
+        });
+      }
+    });
+
+    return results
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .filter(
+        (event, index, all) =>
+          index ===
+          all.findIndex(
+            (candidate) =>
+              candidate.title === event.title && candidate.date === event.date,
+          ),
+      )
+      .slice(0, 4);
+  }
+
+  async function fetchTextWithTimeout(url, timeoutMs = 6000) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`Calendar request: ${response.status}`);
+      return await response.text();
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  async function loadCalendarEvents(source) {
+    const feed = String(source.calendarIcalUrl || "").trim();
+    if (!feed) {
+      return {
+        events: [],
+        health: {
+          label: "Calendar",
+          status: "ACTION",
+          detail: "No iCal feed configured",
+        },
+        operations: [
+          {
+            severity: "warning",
+            title: "Calendar feed is not configured",
+            detail:
+              "Add the public Google Calendar basic.ics URL in the shared year settings.",
+            actionLabel: "Open year settings",
+            actionUrl: "#year-settings",
+          },
+        ],
+      };
+    }
+
+    const cacheKey = `${calendarCacheKeyPrefix}${source.label || feed}`;
+    const candidates = [
+      feed,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(feed)}`,
+      `https://corsproxy.io/?${encodeURIComponent(feed)}`,
+      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feed)}`,
+    ];
+    for (const candidate of candidates) {
+      try {
+        const text = await fetchTextWithTimeout(candidate);
+        const events = parseIcalEvents(text);
+        localStorage.setItem(
+          cacheKey,
+          JSON.stringify({ savedAt: Date.now(), events }),
+        );
+        return calendarResult(events, "LIVE", "Public iCal feed connected");
+      } catch (error) {
+        console.warn("Calendar source failed.", error);
+      }
+    }
+
+    try {
+      const cached = JSON.parse(localStorage.getItem(cacheKey) || "{}");
+      if (Array.isArray(cached.events)) {
+        return calendarResult(
+          cached.events.filter((event) => new Date(event.date) >= new Date()),
+          "NOTICE",
+          `Using cache from ${formatCompactDate(new Date(cached.savedAt))}`,
+        );
+      }
+    } catch (error) {
+      console.warn("Calendar cache could not be read.", error);
+    }
+    return calendarResult([], "ACTION", "iCal feed unavailable");
+  }
+
+  function calendarResult(events, status, detail) {
+    const missingLocation = events.filter(
+      (event) => !event.location || event.status === "Needs location",
+    );
+    const operations = [];
+    if (missingLocation.length) {
+      operations.push({
+        severity: "warning",
+        title: `${missingLocation.length} upcoming event${
+          missingLocation.length === 1 ? "" : "s"
+        } need${missingLocation.length === 1 ? "s" : ""} a location`,
+        detail:
+          "Add locations in Google Calendar so members and officers see complete event details.",
+        actionLabel: "Open calendar",
+        actionUrl: "#calendar",
+      });
+    }
+    if (status === "ACTION") {
+      operations.push({
+        severity: "warning",
+        title: "Upcoming calendar could not refresh",
+        detail:
+          "The dashboard could not reach the public iCal feed and no usable cached events were available.",
+        actionLabel: "Open calendar",
+        actionUrl: "#calendar",
+      });
+    }
+    return {
+      events,
+      health: { label: "Calendar", status, detail },
+      operations,
     };
   }
 
@@ -599,6 +975,19 @@
       } else {
         throw new Error("No attendance data source is configured.");
       }
+      const calendar = await loadCalendarEvents(source);
+      data.upcomingEvents = calendar.events;
+      data.health = [...(data.health || []), calendar.health];
+      data.operations = [
+        ...(data.operations || []),
+        ...calendar.operations.map((item) => ({
+          ...item,
+          actionUrl:
+            item.actionUrl === "#calendar"
+              ? source.calendarUrl || source.calendarIcalUrl
+              : item.actionUrl,
+        })),
+      ];
       renderDashboard(data, source);
       updateYearLabel();
     } catch (error) {
@@ -619,6 +1008,13 @@
     `;
     document.getElementById("operations-count").textContent = "1 item";
     document.getElementById("nav-alert-count").textContent = "1";
+    renderHealth([
+      {
+        label: "Dashboard data",
+        status: "ACTION",
+        detail: message,
+      },
+    ]);
   }
 
   function renderDashboard(data) {
@@ -628,6 +1024,7 @@
     renderGoal(data.kpis || {});
     renderEventTypes(data.eventTypes || []);
     renderUpcomingEvents(data.upcomingEvents || []);
+    renderHealth(data.health || []);
     renderOperations(data.operations || []);
   }
 
@@ -682,7 +1079,7 @@
     } else {
       setText("kpi-unique-attendees-context", "Across all recorded events");
       setText("kpi-total-checkins-context", "All attendance submissions");
-      setText("kpi-events-held-context", "Approved events this year");
+      setText("kpi-events-held-context", "Events with recorded attendance");
       setText("kpi-average-turnout-context", "Check-ins per event");
       setText("kpi-repeat-rate-context", "Attended two or more events");
     }
@@ -989,6 +1386,28 @@
     );
   }
 
+  function renderHealth(items) {
+    const container = document.getElementById("health-grid");
+    if (!container) return;
+    container.replaceChildren(
+      ...items.map((item) => {
+        const article = document.createElement("article");
+        const status = String(item.status || "NOTICE").toLowerCase();
+        article.className = `health-item is-${status}`;
+        const header = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = item.label;
+        const pill = document.createElement("span");
+        pill.textContent = item.status || "NOTICE";
+        header.append(title, pill);
+        const detail = document.createElement("p");
+        detail.textContent = item.detail || "No detail provided";
+        article.append(header, detail);
+        return article;
+      }),
+    );
+  }
+
   function renderResources(resources) {
     const container = document.getElementById("resource-grid");
     container.replaceChildren(
@@ -1116,6 +1535,17 @@
     const value = String(dateValue || "");
     const date = new Date(value.includes("T") ? value : `${value}T12:00:00`);
     return Number.isNaN(date.getTime()) ? new Date() : date;
+  }
+
+  function formatCompactDate(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "unknown";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
   }
 
   function svgElement(name, attributes = {}) {
