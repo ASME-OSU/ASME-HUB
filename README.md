@@ -15,7 +15,8 @@ designed to remain easy to maintain through annual officer transitions.
 - An academic-year selector and no-code Year Settings panel
 - Aggregate attendance and event KPIs
 - Attendance, engagement-goal, and event-type visualizations
-- Upcoming events and an operations queue
+- Upcoming events from the chapter iCal feed and an operations queue
+- A compact system-health view for settings, attendance, event metrics, and calendar connections
 - A central resource launcher
 - Light and dark color themes
 - A documented path from Google Forms/Sheets to a safe aggregate JSON feed
@@ -23,8 +24,9 @@ designed to remain easy to maintain through annual officer transitions.
 The 2026–27 officer, attendance, member, communications, website, and source
 code destinations are preconfigured. The live baseline reads the same
 privacy-safe public leaderboard export used by the chapter website. It
-calculates unique attendees, total check-ins, repeat attendance, and attendance
-by event type without reading emails or raw form responses.
+calculates unique attendees, total check-ins, events with attendance, average
+turnout, repeat attendance, recent-event turnout, and attendance by event type
+without reading emails or raw form responses.
 
 ## Security boundary
 
@@ -103,6 +105,14 @@ The hub loads that tab before displaying an academic year, so one edit applies
 to every viewer. Use one row per academic year and preserve the existing column
 headers.
 
+The shared settings row also contains these rollover controls:
+
+- `is_active`: show or hide the year for every viewer
+- `is_current`: identify the year the hub should select by default
+- `last_updated`: shared-settings freshness timestamp
+- `status_note`: short officer-facing status message
+- `event_metrics_tab`: privacy-safe event aggregate tab, normally `Event_Metrics_Public`
+
 Changes made directly in the hub are temporary previews stored in
 `sessionStorage`; they disappear when that browser tab is closed. This avoids
 one officer's test values silently replacing the shared configuration.
@@ -111,10 +121,11 @@ The **Events calendar page** is the human-facing web page. The **Google Calendar
 iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,
 Apple Calendar, Outlook, and other compatible apps.
 
-The full dashboard JSON takes priority when both sources are present. Without
-it, the public leaderboard source leaves event count, average turnout, the
-event-by-event trend, and upcoming events blank because those values cannot be
-derived accurately from member totals alone.
+The full dashboard JSON still takes priority when both sources are present.
+Without it, the hub combines `Leaderboard_Public`, `System_Status`,
+`Event_Metrics_Public`, and the public iCal feed. This built-in path now fills
+all five KPIs, the recent-event chart, event-type event counts, upcoming
+events, aggregate review reminders, and connection health.
 
 ## Connect Google Sheets safely
 
@@ -124,25 +135,33 @@ The included live baseline uses:
 private Points Master → sanitized Website Export → Officer Hub aggregates
 ```
 
-The Website Export must contain `Leaderboard_Public` and `System_Status`. The
-leaderboard columns are the same privacy-safe columns consumed by the public
-member-points page.
+The Website Export contains:
 
-For the complete event-level dashboard, the recommended flow is:
+- `Leaderboard_Public`: privacy-safe member totals used by the member-points page
+- `System_Status`: point-system status
+- `Hub_Settings_Public`: one organization-wide row per academic year
+- `Event_Metrics_Public`: event names, dates, types, attendance totals, form state, and aggregate health counts
+
+`Event_Metrics_Public` imports from the private Points Master
+`Dashboard Staging` tab. That staging tab performs the aggregation; the public
+tab must never contain name.# values, emails, notes, or raw submissions.
+
+The current no-code dashboard flow is:
 
 ```text
-Google Form → private response sheet → aggregate Apps Script endpoint → dashboard
+Google Form → private Points Master → Dashboard Staging
+→ privacy-safe Website Export → Officer Hub
 ```
 
-1. Keep the response sheet private.
-2. Make a separate `Dashboard Export` tab containing aggregate values only.
-3. Copy `integrations/apps-script/Code.gs.example` into a bound Apps Script
-   project.
-4. Update the tab name or aggregation logic in the script.
-5. Deploy it as a web app whose output can be read by the dashboard.
-6. Paste the `/exec` URL into **Year Settings → Full dashboard JSON URL**.
-7. Open the endpoint directly and confirm it contains no names, emails, or raw
-   attendance submissions.
+1. Keep form responses, the Point Log, Roster, Review Queue, and Adjustments private.
+2. Let `Dashboard Staging` calculate only event totals and aggregate health counts.
+3. Let `Event_Metrics_Public` import the approved staging range.
+4. Keep `event_metrics_tab` set to `Event_Metrics_Public` in shared settings.
+5. Verify the public tab contains no names, emails, notes, or raw submissions.
+6. Keep the public `basic.ics` URL current so the upcoming-events panel can refresh.
+
+The Apps Script example remains available if a future officer needs a more
+custom aggregate JSON feed.
 
 Because a URL included in static JavaScript is public, a token stored in this
 repository would not secure the endpoint. Only publish non-sensitive aggregate
@@ -219,7 +238,11 @@ The annual rollover does not require changing the dashboard code.
 4. Add one new row to `Hub_Settings_Public` for the academic year.
 5. Paste the new public Website Export Sheet, attendance form, Points Master,
    calendar page, iCal feed, and optional full aggregate JSON feed.
-6. Reload the hub and verify the year selector can load both the new year and
+6. Mark only the new row `is_current`, leave desired historical rows
+   `is_active`, and set `event_metrics_tab` to the new public aggregate tab.
+7. Create the new private `Dashboard Staging` and public
+   `Event_Metrics_Public` tabs with the same column contracts.
+8. Reload the hub and verify the year selector can load both the new year and
    any prior years that should remain available.
 
 The academic years shown in the selector come from the shared settings rows.
@@ -252,9 +275,11 @@ After the dashboard branch is reviewed and merged:
 ## Officer handoff checklist
 
 - Confirm the current academic year in Year Settings.
-- Confirm that the aggregate endpoint has no member-level data.
+- Confirm that `Event_Metrics_Public` has no member-level data.
 - Update the public export, form, Points Master, and calendar links.
 - Rotate the convenience password if needed.
 - Verify the refreshed timestamp and all five KPI values.
+- Clear or document every warning in the operations queue.
+- Confirm all four system-health cards are live or intentionally noted.
 - Check one desktop width, one tablet width, and one mobile width.
 - Keep this README with the repository when ownership changes.

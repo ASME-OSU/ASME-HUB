@@ -21,6 +21,7 @@ window.ASME_HUB_CONFIG = {
       attendanceSheetUrl:
         "https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit",
       attendanceSheetTab: "Leaderboard_Public",
+      eventMetricsSheetTab: "Event_Metrics_Public",
       attendanceFormUrl:
         "https://docs.google.com/forms/d/1cPIevIbm1AUu-oFy9-Y6zRSq9doHiPes3drFazNhs4E/viewform",
       pointsMasterUrl:
