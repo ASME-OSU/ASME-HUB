@@ -1343,16 +1343,27 @@ main {
 
 .settings-form .settings-toggle {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-weight: 650;
 }
 
 .settings-form .settings-toggle input {
+  flex: 0 0 auto;
   width: 17px;
   height: 17px;
+  margin-top: 1px;
   padding: 0;
   accent-color: var(--scarlet);
+}
+
+.settings-form .settings-toggle > span {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-form .settings-toggle strong {
+  font: inherit;
 }
 
 .settings-publish-button {
