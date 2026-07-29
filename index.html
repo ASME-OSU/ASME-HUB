@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260728b">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260728d">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -301,33 +301,42 @@
       </div>
 
       <p class="settings-intro">
-        Shared values load from the
+        Choose the academic year, data sources, and officer links used throughout the Hub. Shared values load from the
         <a id="settings-shared-link" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener">Hub Settings Sheet</a>
-        for every viewer. Preview changes stay in this browser tab; once the writer is connected, Publish for everyone saves the shared academic-year row.
+        for every viewer. Preview changes affect only this browser; Publish for everyone saves them for the whole chapter.
       </p>
 
       <div class="settings-grid settings-grid-year">
         <label>
           <span>Academic year key</span>
           <input id="settings-year-key" name="yearKey" type="text" inputmode="numeric" placeholder="2026-2027" pattern="\d{4}-\d{4}" required>
+          <small>Permanent ID for this year. Use the format YYYY-YYYY, such as 2026-2027.</small>
         </label>
         <label>
           <span>Display label</span>
           <input id="settings-year-label" name="label" type="text" placeholder="2026–2027" required>
+          <small>The year name officers see in the dashboard selector.</small>
         </label>
         <label>
           <span>Engagement goal</span>
           <input id="settings-engagement-goal" name="engagementGoal" type="number" min="1" step="1" placeholder="250">
+          <small>Target number of unique participating members shown in the goal ring.</small>
         </label>
       </div>
       <div class="settings-toggle-row">
         <label class="settings-toggle">
           <input id="settings-is-active" name="isActive" type="checkbox" checked>
-          <span>Show this year in the dashboard selector</span>
+          <span>
+            <strong>Show this year in the dashboard selector</strong>
+            <small>Turn this off to keep an archived year without offering it to viewers.</small>
+          </span>
         </label>
         <label class="settings-toggle">
           <input id="settings-is-current" name="isCurrent" type="checkbox">
-          <span>Use this as the default academic year</span>
+          <span>
+            <strong>Use this as the default academic year</strong>
+            <small>Opens this year first when someone visits the Hub.</small>
+          </span>
         </label>
       </div>
 
@@ -339,19 +348,21 @@
         <label>
           <span>Public leaderboard Google Sheet</span>
           <input id="settings-attendance-sheet" name="attendanceSheetUrl" type="text" inputmode="url" placeholder="Paste a Google Sheets link">
-          <small>Pulls safe aggregate attendance totals and event-type counts from the public export.</small>
+          <small>Public, aggregate-only sheet used for member totals and event-type counts. Never use a raw response sheet.</small>
         </label>
         <div class="settings-grid">
           <label>
             <span>Leaderboard tab</span>
             <input id="settings-attendance-tab" name="attendanceSheetTab" type="text" placeholder="Leaderboard_Public">
+            <small>Exact tab name inside the public leaderboard sheet.</small>
           </label>
           <label>
             <span>Full dashboard JSON URL</span>
             <input id="settings-dashboard-url" name="dashboardUrl" type="text" inputmode="url" placeholder="Optional aggregate JSON endpoint">
+            <small>Optional richer data feed for events held, trends, and upcoming events.</small>
           </label>
         </div>
-        <p class="settings-note">A full dashboard JSON URL takes priority and can also supply events held, turnout trends, and upcoming events. Never paste a raw form-response sheet.</p>
+        <p class="settings-note">If both sources are entered, the full dashboard JSON URL takes priority.</p>
       </div>
 
       <div class="settings-section">
@@ -363,19 +374,22 @@
           <label>
             <span>Attendance form</span>
             <input id="settings-attendance-form" name="attendanceFormUrl" type="text" inputmode="url" placeholder="Paste the Google Form link">
+            <small>Member check-in form opened from the Hub’s quick links.</small>
           </label>
           <label>
             <span>Points Master</span>
             <input id="settings-points-master" name="pointsMasterUrl" type="text" inputmode="url" placeholder="Paste the officer Sheet link">
+            <small>Officer workbook for events, attendance, member points, and reporting.</small>
           </label>
           <label>
             <span>Events calendar page</span>
             <input id="settings-calendar" name="calendarUrl" type="text" inputmode="url" placeholder="Paste the calendar link">
+            <small>Public webpage officers open to browse upcoming chapter events.</small>
           </label>
           <label>
             <span>Google Calendar iCal URL</span>
             <input id="settings-calendar-ical" name="calendarIcalUrl" type="text" inputmode="url" placeholder="Paste the public basic.ics link">
-            <small>Used for subscribing from Google Calendar, Apple Calendar, Outlook, and other calendar apps.</small>
+            <small>Public basic.ics feed used for upcoming events and calendar subscriptions.</small>
           </label>
         </div>
       </div>
