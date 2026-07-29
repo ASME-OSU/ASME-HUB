@@ -266,52 +266,61 @@
     return invalid ? `Check the ${invalid[0]} link.` : "";
   }
 
-  function requestSettingsWrite(settings) {
+  async function requestSettingsWrite(settings) {
     const writeUrl = String(config.sharedSettings?.writeUrl || "").trim();
     if (!writeUrl) {
-      return Promise.reject(
-        new Error("Organization-wide publishing has not been connected yet."),
-      );
+      throw new Error("Organization-wide publishing has not been connected yet.");
     }
 
-    return new Promise((resolve, reject) => {
-      const callback = `__asmeHubSettings_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2)}`;
-      const script = document.createElement("script");
-      const timer = window.setTimeout(() => {
-        cleanup();
-        reject(new Error("The shared settings request timed out."));
-      }, 15000);
-      const cleanup = () => {
-        window.clearTimeout(timer);
-        delete window[callback];
-        script.remove();
-      };
-
-      window[callback] = (result) => {
-        cleanup();
-        if (!result?.ok) {
-          reject(new Error(result?.error || "The shared settings save failed."));
-          return;
-        }
-        resolve(result);
-      };
-      script.onerror = () => {
-        cleanup();
-        reject(new Error("The shared settings service could not be reached."));
-      };
-
-      const params = new URLSearchParams({
-        action: "saveSettings",
-        callback,
-        token: config.access.passwordSha256,
-        payload: JSON.stringify(settings),
-        _: String(Date.now()),
-      });
-      script.src = `${writeUrl}${writeUrl.includes("?") ? "&" : "?"}${params}`;
-      document.head.appendChild(script);
+    const callback = `__asmeHubSettings_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2)}`;
+    const params = new URLSearchParams({
+      action: "saveSettings",
+      callback,
+      token: config.access.passwordSha256,
+      payload: JSON.stringify(settings),
+      _: String(Date.now()),
     });
+    const url = `${writeUrl}${writeUrl.includes("?") ? "&" : "?"}${params}`;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const response = await fetch(url, {
+        cache: "no-store",
+        redirect: "follow",
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        throw new Error(`The shared settings service returned ${response.status}.`);
+      }
+
+      const text = (await response.text()).trim();
+      const prefix = `${callback}(`;
+      const suffix = ");";
+      if (!text.startsWith(prefix) || !text.endsWith(suffix)) {
+        throw new Error("The shared settings service returned an unexpected response.");
+      }
+
+      const result = JSON.parse(text.slice(prefix.length, -suffix.length));
+      if (!result?.ok) {
+        throw new Error(result?.error || "The shared settings save failed.");
+      }
+      return result;
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        throw new Error("The shared settings request timed out. Please try again.");
+      }
+      if (error instanceof TypeError) {
+        throw new Error(
+          "Chrome could not connect to the shared settings service. Check your connection and try again.",
+        );
+      }
+      throw error;
+    } finally {
+      window.clearTimeout(timer);
+    }
   }
 
   async function publishSettings() {
