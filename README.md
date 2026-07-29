@@ -53,7 +53,7 @@ Then open `http://localhost:8080`.
 The initial dashboard password is:
 
 ```text
-ASME OSU
+ASMEOSU
 ```
 
 It is case-sensitive. Successful access lasts for the current browser tab for
@@ -69,6 +69,7 @@ It is case-sensitive. Successful access lasts for the current browser tab for
 | `assets/js/app.js` | Password check, settings storage, Google Sheets loading, charts, and interface behavior |
 | `data/demo-dashboard.json` | Safe sample aggregate dataset |
 | `integrations/apps-script/Code.gs.example` | Optional Google Sheets aggregate-feed starter |
+| `integrations/apps-script/SettingsWriter.gs.example` | Optional no-sign-in shared-settings writer |
 
 ## Current tool connections
 
@@ -97,10 +98,11 @@ settings** in the sidebar. The panel can:
 - keep the calendar page and Google Calendar iCal subscription URL separate
 - add the next academic year without editing code
 - preview changes for the current browser tab
+- publish a new or updated year for every viewer when the settings writer is connected
 - restore a preview to the organization-wide shared values
 
 Organization-wide settings live in the `Hub_Settings_Public` tab of the
-[Website Export Sheet](https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit#gid=844317022).
+[ASME Hub Control Center](https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343).
 The hub loads that tab before displaying an academic year, so one edit applies
 to every viewer. Use one row per academic year and preserve the existing column
 headers.
@@ -113,9 +115,35 @@ The shared settings row also contains these rollover controls:
 - `status_note`: short officer-facing status message
 - `event_metrics_tab`: privacy-safe event aggregate tab, normally `Event_Metrics_Public`
 
-Changes made directly in the hub are temporary previews stored in
-`sessionStorage`; they disappear when that browser tab is closed. This avoids
-one officer's test values silently replacing the shared configuration.
+Before the settings writer is connected, changes made directly in the hub are
+temporary previews stored in `sessionStorage`; they disappear when that browser
+tab is closed. Once connected, **Publish for everyone** creates a new year row
+or updates the matching existing year and records the change in
+`Settings_Audit`.
+
+### Enable no-sign-in shared saves
+
+This option deliberately uses the same convenience barrier as the dashboard.
+It is suitable only for non-sensitive links, labels, and aggregate-data
+configuration. Anyone who inspects the deployed source can recover the write
+token and submit a settings change.
+
+1. Create a dedicated `ASME Hub Control Center` Google spreadsheet.
+2. Copy `Hub_Settings_Public` into it.
+3. Create a standalone Apps Script project in the ASME admin account.
+4. Copy in `integrations/apps-script/SettingsWriter.gs.example` and set its
+   `SPREADSHEET_ID` to the dedicated workbook.
+5. Run `setupSettingsWriter()` once and approve the requested spreadsheet
+   access.
+6. Deploy it as a web app that executes as the owner and allows anyone with the
+   link to run it.
+7. Paste the deployment `/exec` URL into
+   `sharedSettings.writeUrl` in `assets/js/config.js`.
+8. Update `sharedSettings.spreadsheetUrl` and `editUrl` to the dedicated
+   workbook, then verify preview and organization-wide publishing separately.
+
+The writer updates the matching academic-year row, appends new academic years,
+allows one row to be marked current, and keeps a timestamped audit record.
 
 The **Events calendar page** is the human-facing web page. The **Google Calendar
 iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,
@@ -234,8 +262,8 @@ The annual rollover does not require changing the dashboard code.
 
 1. Open **Year Settings** and choose **Add next year**.
 2. Use the preview to confirm the generated key, label, and links.
-3. Open **Edit shared settings**.
-4. Add one new row to `Hub_Settings_Public` for the academic year.
+3. Choose **Publish for everyone** when the settings writer is connected.
+   Otherwise open **Edit shared settings** and add the row manually.
 5. Paste the new public Website Export Sheet, attendance form, Points Master,
    calendar page, iCal feed, and optional full aggregate JSON feed.
 6. Mark only the new row `is_current`, leave desired historical rows
@@ -256,9 +284,10 @@ Generate a SHA-256 digest locally:
 printf %s 'NEW ACCESS PHRASE' | shasum -a 256
 ```
 
-Copy only the digest into `access.passwordSha256` in
-`assets/js/config.js`. Do not write the new phrase into the repository or commit
-message.
+Copy the digest into `access.passwordSha256` in `assets/js/config.js`. When the
+no-sign-in settings writer is enabled, copy the same digest into
+`ACCESS_TOKEN` in `SettingsWriter.gs` and redeploy the web app. Do not write the
+plain access phrase into the repository or commit message.
 
 Again, this deters casual access only; it does not make GitHub Pages private.
 

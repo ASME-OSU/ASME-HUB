@@ -1,0 +1,179 @@
+/**
+ * ASME OSU Hub shared-settings writer
+ *
+ * Deploy this script from the ASME admin account and point it at the dedicated
+ * ASME Hub Control Center spreadsheet.
+ * Deploy it as a web app that executes as the owner and is available to anyone
+ * who can reach the URL. The dashboard access phrase is a convenience barrier,
+ * not secure authentication; keep every value in this workbook non-sensitive.
+ */
+
+const SETTINGS_TAB = "Hub_Settings_Public";
+const AUDIT_TAB = "Settings_Audit";
+const SPREADSHEET_ID = "156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM";
+const ACCESS_TOKEN =
+  "d65fec5d48028b790a9bb8b1210179cba85fc1416076f9a11cb816cca6da0a20";
+const SETTINGS_HEADERS = [
+  "academic_year",
+  "display_label",
+  "engagement_goal",
+  "attendance_sheet_url",
+  "leaderboard_tab",
+  "dashboard_json_url",
+  "attendance_form_url",
+  "points_master_url",
+  "calendar_page_url",
+  "calendar_ical_url",
+  "is_active",
+  "is_current",
+  "last_updated",
+  "status_note",
+  "event_metrics_tab",
+];
+
+function doGet(event) {
+  const callback = safeCallback_(event.parameter.callback);
+  if (event.parameter.action !== "saveSettings") {
+    return javascriptResponse_(callback, {
+      ok: false,
+      error: "Unsupported action.",
+    });
+  }
+  if (event.parameter.token !== ACCESS_TOKEN) {
+    return javascriptResponse_(callback, {
+      ok: false,
+      error: "Access phrase did not match.",
+    });
+  }
+
+  try {
+    const payload = JSON.parse(event.parameter.payload || "{}");
+    return javascriptResponse_(callback, saveSettings_(payload));
+  } catch (error) {
+    return javascriptResponse_(callback, {
+      ok: false,
+      error: String(error.message || error),
+    });
+  }
+}
+
+function setupSettingsWriter() {
+  const spreadsheet = getSpreadsheet_();
+  const settings =
+    spreadsheet.getSheetByName(SETTINGS_TAB) ||
+    spreadsheet.insertSheet(SETTINGS_TAB);
+  const audit =
+    spreadsheet.getSheetByName(AUDIT_TAB) ||
+    spreadsheet.insertSheet(AUDIT_TAB);
+
+  settings.getRange(1, 1, 1, SETTINGS_HEADERS.length).setValues([
+    SETTINGS_HEADERS,
+  ]);
+  settings.setFrozenRows(1);
+  audit.getRange("A1:E1").setValues([
+    ["timestamp", "academic_year", "action", "status", "payload"],
+  ]);
+  audit.setFrozenRows(1);
+}
+
+function saveSettings_(payload) {
+  const year = String(payload.yearKey || "").trim();
+  if (!/^\d{4}-\d{4}$/.test(year)) {
+    throw new Error("Academic year must use YYYY-YYYY.");
+  }
+  if (!payload.label) throw new Error("Display label is required.");
+  if (!payload.attendanceSheetUrl && !payload.dashboardUrl) {
+    throw new Error("An aggregate attendance source is required.");
+  }
+  [
+    ["attendance Sheet", payload.attendanceSheetUrl],
+    ["dashboard JSON", payload.dashboardUrl],
+    ["attendance form", payload.attendanceFormUrl],
+    ["Points Master", payload.pointsMasterUrl],
+    ["calendar page", payload.calendarUrl],
+    ["iCal feed", payload.calendarIcalUrl],
+  ].forEach(([label, value]) => validateUrl_(label, value));
+
+  const spreadsheet = getSpreadsheet_();
+  const sheet = spreadsheet.getSheetByName(SETTINGS_TAB);
+  if (!sheet) throw new Error(`Missing ${SETTINGS_TAB}. Run setup first.`);
+  const audit =
+    spreadsheet.getSheetByName(AUDIT_TAB) ||
+    spreadsheet.insertSheet(AUDIT_TAB);
+  const values = sheet.getDataRange().getValues();
+  const existingIndex = values.findIndex(
+    (row, index) => index > 0 && String(row[0]).trim() === year,
+  );
+  const targetRow =
+    existingIndex >= 1 ? existingIndex + 1 : sheet.getLastRow() + 1;
+  const action = existingIndex >= 1 ? "updated" : "created";
+
+  if (Boolean(payload.isCurrent) && sheet.getLastRow() > 1) {
+    sheet
+      .getRange(2, 12, sheet.getLastRow() - 1, 1)
+      .setValues(
+        Array.from({ length: sheet.getLastRow() - 1 }, () => [false]),
+      );
+  }
+
+  const row = [
+    year,
+    plainText_(payload.label),
+    Number(payload.engagementGoal) || 250,
+    plainText_(payload.attendanceSheetUrl),
+    plainText_(payload.attendanceSheetTab || "Leaderboard_Public"),
+    plainText_(payload.dashboardUrl),
+    plainText_(payload.attendanceFormUrl),
+    plainText_(payload.pointsMasterUrl),
+    plainText_(payload.calendarUrl),
+    plainText_(payload.calendarIcalUrl),
+    payload.isActive !== false,
+    Boolean(payload.isCurrent),
+    new Date(),
+    plainText_(payload.settingsStatus || "Published from the Officer Hub"),
+    plainText_(payload.eventMetricsSheetTab || "Event_Metrics_Public"),
+  ];
+  sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
+  audit.appendRow([
+    new Date(),
+    year,
+    action,
+    "SUCCESS",
+    JSON.stringify(payload),
+  ]);
+  audit
+    .getRange(audit.getLastRow(), 1)
+    .setNumberFormat("m/d/yyyy h:mm AM/PM");
+  SpreadsheetApp.flush();
+
+  return { ok: true, action, yearKey: year };
+}
+
+function getSpreadsheet_() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function safeCallback_(value) {
+  const callback = String(value || "");
+  return /^__asmeHubSettings_[A-Za-z0-9_]+$/.test(callback)
+    ? callback
+    : "__asmeHubSettings_invalid";
+}
+
+function validateUrl_(label, value) {
+  const clean = String(value || "").trim();
+  if (clean && !/^https:\/\//i.test(clean)) {
+    throw new Error(`${label} must be a secure https:// URL.`);
+  }
+}
+
+function plainText_(value) {
+  const clean = String(value || "").trim();
+  return /^[=+\-@]/.test(clean) ? `'${clean}` : clean;
+}
+
+function javascriptResponse_(callback, value) {
+  return ContentService.createTextOutput(
+    `${callback}(${JSON.stringify(value)});`,
+  ).setMimeType(ContentService.MimeType.JAVASCRIPT);
+}

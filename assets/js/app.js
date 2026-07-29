@@ -45,6 +45,8 @@
     settingsYearKey: document.getElementById("settings-year-key"),
     settingsYearLabel: document.getElementById("settings-year-label"),
     settingsEngagementGoal: document.getElementById("settings-engagement-goal"),
+    settingsIsActive: document.getElementById("settings-is-active"),
+    settingsIsCurrent: document.getElementById("settings-is-current"),
     settingsAttendanceSheet: document.getElementById(
       "settings-attendance-sheet",
     ),
@@ -58,6 +60,7 @@
     settingsCalendarIcal: document.getElementById("settings-calendar-ical"),
     settingsSharedLink: document.getElementById("settings-shared-link"),
     settingsSharedAction: document.getElementById("settings-shared-action"),
+    settingsPublish: document.getElementById("settings-publish"),
   };
 
   function getUnlockedUntil() {
@@ -179,6 +182,8 @@
     elements.settingsPointsMaster.value = source.pointsMasterUrl || "";
     elements.settingsCalendar.value = source.calendarUrl || "";
     elements.settingsCalendarIcal.value = source.calendarIcalUrl || "";
+    elements.settingsIsActive.checked = source.isActive !== false;
+    elements.settingsIsCurrent.checked = source.isCurrent === true;
     elements.settingsStatus.textContent = "";
     elements.settingsReset.hidden =
       isNew || !sharedYearSources || !sharedYearSources[yearKey];
@@ -231,6 +236,9 @@
       calendarIcalUrl: elements.settingsCalendarIcal.value.trim(),
       eventMetricsSheetTab:
         existing?.eventMetricsSheetTab || "Event_Metrics_Public",
+      isActive: elements.settingsIsActive.checked,
+      isCurrent: elements.settingsIsCurrent.checked,
+      settingsStatus: "Published from the Officer Hub",
     };
   }
 
@@ -256,6 +264,97 @@
         !isUsableUrl(value, { allowSheetId: Boolean(allowSheetId) }),
     );
     return invalid ? `Check the ${invalid[0]} link.` : "";
+  }
+
+  function requestSettingsWrite(settings) {
+    const writeUrl = String(config.sharedSettings?.writeUrl || "").trim();
+    if (!writeUrl) {
+      return Promise.reject(
+        new Error("Organization-wide publishing has not been connected yet."),
+      );
+    }
+
+    return new Promise((resolve, reject) => {
+      const callback = `__asmeHubSettings_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+      const script = document.createElement("script");
+      const timer = window.setTimeout(() => {
+        cleanup();
+        reject(new Error("The shared settings request timed out."));
+      }, 15000);
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        delete window[callback];
+        script.remove();
+      };
+
+      window[callback] = (result) => {
+        cleanup();
+        if (!result?.ok) {
+          reject(new Error(result?.error || "The shared settings save failed."));
+          return;
+        }
+        resolve(result);
+      };
+      script.onerror = () => {
+        cleanup();
+        reject(new Error("The shared settings service could not be reached."));
+      };
+
+      const params = new URLSearchParams({
+        action: "saveSettings",
+        callback,
+        token: config.access.passwordSha256,
+        payload: JSON.stringify(settings),
+        _: String(Date.now()),
+      });
+      script.src = `${writeUrl}${writeUrl.includes("?") ? "&" : "?"}${params}`;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function publishSettings() {
+    const settings = readSettingsForm();
+    const validationMessage = validateSettings(settings);
+    if (validationMessage) {
+      elements.settingsStatus.textContent = validationMessage;
+      return;
+    }
+
+    elements.settingsPublish.disabled = true;
+    elements.settingsStatus.textContent = "Publishing shared settings…";
+    try {
+      const result = await requestSettingsWrite(settings);
+      const { yearKey, ...source } = settings;
+      if (source.isCurrent) {
+        Object.values(sharedYearSources).forEach((item) => {
+          item.isCurrent = false;
+        });
+        config.currentAcademicYear = yearKey;
+      }
+      sharedYearSources[yearKey] = {
+        ...(sharedYearSources[yearKey] || {}),
+        ...source,
+        settingsUpdated: new Date(),
+      };
+      sessionStorage.removeItem(yearSettingsStorageKey);
+      yearSources = loadYearSources();
+      populateYears(yearKey);
+      elements.settingsStatus.textContent =
+        result.action === "created"
+          ? "The new academic year is now available to every viewer."
+          : "Shared settings updated for every viewer.";
+      window.setTimeout(() => {
+        closeSettings();
+        loadDashboard(yearKey);
+      }, 700);
+    } catch (error) {
+      elements.settingsStatus.textContent =
+        error.message || "The shared settings save failed.";
+    } finally {
+      elements.settingsPublish.disabled = false;
+    }
   }
 
   function showGate() {
@@ -1586,10 +1685,14 @@
         engagementGoal: current.engagementGoal,
         calendarUrl: current.calendarUrl,
         calendarIcalUrl: current.calendarIcalUrl,
+        isActive: true,
+        isCurrent: false,
       },
       true,
     );
   });
+
+  elements.settingsPublish.addEventListener("click", publishSettings);
 
   elements.settingsReset.addEventListener("click", () => {
     const year = normalizeYearKey(elements.settingsYearKey.value);
@@ -1712,6 +1815,9 @@
         if (link && sharedSettingsUrl) link.href = sharedSettingsUrl;
       },
     );
+    elements.settingsPublish.hidden = !String(
+      config.sharedSettings?.writeUrl || "",
+    ).trim();
 
     populateYears();
     setupNavigation();
