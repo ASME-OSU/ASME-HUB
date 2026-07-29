@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260728b">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -302,8 +302,8 @@
 
       <p class="settings-intro">
         Shared values load from the
-        <a id="settings-shared-link" href="https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit#gid=844317022" target="_blank" rel="noopener">Hub Settings Sheet</a>
-        for every viewer. Changes made below are a temporary preview for this browser tab.
+        <a id="settings-shared-link" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener">Hub Settings Sheet</a>
+        for every viewer. Preview changes stay in this browser tab; once the writer is connected, Publish for everyone saves the shared academic-year row.
       </p>
 
       <div class="settings-grid settings-grid-year">
@@ -318,6 +318,16 @@
         <label>
           <span>Engagement goal</span>
           <input id="settings-engagement-goal" name="engagementGoal" type="number" min="1" step="1" placeholder="250">
+        </label>
+      </div>
+      <div class="settings-toggle-row">
+        <label class="settings-toggle">
+          <input id="settings-is-active" name="isActive" type="checkbox" checked>
+          <span>Show this year in the dashboard selector</span>
+        </label>
+        <label class="settings-toggle">
+          <input id="settings-is-current" name="isCurrent" type="checkbox">
+          <span>Use this as the default academic year</span>
         </label>
       </div>
 
@@ -378,15 +388,16 @@
           <button class="text-button" id="settings-reset" type="button">Reset this year</button>
         </div>
         <div>
-          <a class="secondary-button settings-sheet-button" id="settings-shared-action" href="https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit#gid=844317022" target="_blank" rel="noopener">Edit shared settings</a>
+          <a class="secondary-button settings-sheet-button" id="settings-shared-action" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener">Edit shared settings</a>
           <button class="secondary-button" id="settings-cancel" type="button">Cancel</button>
           <button class="primary-button" type="submit">Preview and refresh</button>
+          <button class="primary-button settings-publish-button" id="settings-publish" type="button" hidden>Publish for everyone</button>
         </div>
       </div>
     </form>
   </dialog>
 
-  <script src="assets/js/config.js"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/config.js?v=20260728c"></script>
+  <script src="assets/js/app.js?v=20260728c"></script>
 </body>
 </html>

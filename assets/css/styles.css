@@ -678,6 +678,7 @@ main {
 
 .dashboard-grid-secondary {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: start;
 }
 
 .panel {
@@ -1333,6 +1334,31 @@ main {
   grid-template-columns: 1fr 1fr 0.65fr;
 }
 
+.settings-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 14px;
+}
+
+.settings-form .settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+}
+
+.settings-form .settings-toggle input {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  accent-color: var(--scarlet);
+}
+
+.settings-publish-button {
+  box-shadow: 0 8px 18px rgba(186, 12, 47, 0.18);
+}
+
 .settings-form label {
   display: grid;
   gap: 7px;
@@ -1503,6 +1529,7 @@ main {
 /* Dark mode */
 
 body[data-theme="dark"] {
+  --scarlet: #ee6a84;
   --ink: #e8edf4;
   --muted: #a4b0c0;
   --muted-light: #7f8da0;
@@ -1524,8 +1551,15 @@ body[data-theme="dark"] .event-detail strong,
 body[data-theme="dark"] .goal-ring strong,
 body[data-theme="dark"] .goal-copy strong,
 body[data-theme="dark"] .donut-center strong,
-body[data-theme="dark"] .operation-item strong {
+body[data-theme="dark"] .operation-item strong,
+body[data-theme="dark"] .date-tile,
+body[data-theme="dark"] .health-item strong {
   color: #edf2f8;
+}
+
+body[data-theme="dark"] .panel-chip-alert {
+  color: #ff9aae;
+  background: rgba(238, 106, 132, 0.12);
 }
 
 body[data-theme="dark"] .goal-ring {

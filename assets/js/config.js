@@ -4,15 +4,19 @@ window.ASME_HUB_CONFIG = {
   access: {
     // SHA-256 digest of the current access phrase. See README.md to rotate it.
     passwordSha256:
-      "90fe069c9b7c414f4bd9c545989cd7759c80b1bdfccbb7507ab85e0ed818f417",
+      "d65fec5d48028b790a9bb8b1210179cba85fc1416076f9a11cb816cca6da0a20",
     sessionHours: 12,
   },
   sharedSettings: {
     spreadsheetUrl:
-      "https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit",
+      "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit",
     sheetTab: "Hub_Settings_Public",
     editUrl:
-      "https://docs.google.com/spreadsheets/d/1otAJV_pDkj6xWCVBHbhXPq99sT9L33ZFOdQU59uKXLg/edit#gid=844317022",
+      "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343",
+    // Deploy integrations/apps-script/SettingsWriter.gs.example and paste its
+    // /exec URL here to enable organization-wide saves from the settings dialog.
+    writeUrl:
+      "https://script.google.com/macros/s/AKfycbzRlYj9CE3TsoY4IGuvAUD0c3CQJsfK44XUezydV6qGvesOtxcHlkzzHiNry5CeET3KmQ/exec",
   },
   dataSources: {
     "2026-2027": {
