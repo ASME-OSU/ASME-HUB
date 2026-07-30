@@ -14,6 +14,7 @@ designed to remain easy to maintain through annual officer transitions.
 - A session-based access screen
 - An academic-year selector and no-code Year Settings panel
 - Aggregate attendance and event KPIs
+- A year-to-date/monthly review selector with prior-month KPI comparisons
 - Attendance, engagement-goal, and event-type visualizations
 - Upcoming events from the chapter iCal feed and an operations queue
 - A compact system-health view for settings, attendance, event metrics, and calendar connections
@@ -151,9 +152,10 @@ Apple Calendar, Outlook, and other compatible apps.
 
 The full dashboard JSON still takes priority when both sources are present.
 Without it, the hub combines `Leaderboard_Public`, `System_Status`,
-`Event_Metrics_Public`, and the public iCal feed. This built-in path now fills
-all five KPIs, the recent-event chart, event-type event counts, upcoming
-events, aggregate review reminders, and connection health.
+`Event_Metrics_Public`, `Monthly_Metrics_Public`, and the public iCal feed.
+This built-in path fills all five KPIs, monthly comparisons, event-level
+turnout, event-type attendance, upcoming events, aggregate review reminders,
+and connection health.
 
 ## Connect Google Sheets safely
 
@@ -169,24 +171,42 @@ The Website Export contains:
 - `System_Status`: point-system status
 - `Hub_Settings_Public`: one organization-wide row per academic year
 - `Event_Metrics_Public`: event names, dates, types, attendance totals, form state, and aggregate health counts
+- `Monthly_Metrics_Public`: one privacy-safe aggregate row per month for participation, turnout, retention, and top-event summaries
 
 `Event_Metrics_Public` imports from the private Points Master
 `Dashboard Staging` tab. That staging tab performs the aggregation; the public
 tab must never contain name.# values, emails, notes, or raw submissions.
 
+`Monthly_Metrics_Public` imports from the private
+`Monthly Dashboard Staging` tab. The staging tab generates July through June
+from the academic year in `Config!B3` and excludes synthetic `test.*` members.
+Its monthly contract is:
+
+| Column | Meaning |
+| --- | --- |
+| `month_key`, `month_label`, `month_start` | Stable month identifiers used by the dashboard filter |
+| `unique_attendees`, `total_checkins`, `events_held` | Monthly participation volume |
+| `average_turnout` | Check-ins divided by events with attendance |
+| `repeat_attendees`, `repeat_rate` | Members who attended at least two events during that month |
+| `new_attendees` | Members whose first valid attendance falls in that month |
+| `top_event_type` | Event category with the most monthly check-ins |
+| `top_event_name`, `top_event_attendance` | Highest-attended event in the month |
+| `last_updated` | Aggregate freshness timestamp |
+
 The current no-code dashboard flow is:
 
 ```text
-Google Form → private Points Master → Dashboard Staging
+Google Form → private Points Master → Dashboard Staging + Monthly Dashboard Staging
 → privacy-safe Website Export → Officer Hub
 ```
 
 1. Keep form responses, the Point Log, Roster, Review Queue, and Adjustments private.
 2. Let `Dashboard Staging` calculate only event totals and aggregate health counts.
-3. Let `Event_Metrics_Public` import the approved staging range.
-4. Keep `event_metrics_tab` set to `Event_Metrics_Public` in shared settings.
-5. Verify the public tab contains no names, emails, notes, or raw submissions.
-6. Keep the public `basic.ics` URL current so the upcoming-events panel can refresh.
+3. Let `Monthly Dashboard Staging` calculate July–June aggregate review rows.
+4. Let `Event_Metrics_Public` and `Monthly_Metrics_Public` import only their approved staging ranges.
+5. Keep `event_metrics_tab` set to `Event_Metrics_Public` in shared settings.
+6. Verify both public tabs contain no names, emails, notes, or raw submissions.
+7. Keep the public `basic.ics` URL current so the upcoming-events panel can refresh.
 
 The Apps Script example remains available if a future officer needs a more
 custom aggregate JSON feed.
@@ -264,13 +284,18 @@ The annual rollover does not require changing the dashboard code.
 2. Use the preview to confirm the generated key, label, and links.
 3. Choose **Publish for everyone** when the settings writer is connected.
    Otherwise open **Edit shared settings** and add the row manually.
-5. Paste the new public Website Export Sheet, attendance form, Points Master,
+4. Paste the new public Website Export Sheet, attendance form, Points Master,
    calendar page, iCal feed, and optional full aggregate JSON feed.
-6. Mark only the new row `is_current`, leave desired historical rows
+5. Mark only the new row `is_current`, leave desired historical rows
    `is_active`, and set `event_metrics_tab` to the new public aggregate tab.
-7. Create the new private `Dashboard Staging` and public
-   `Event_Metrics_Public` tabs with the same column contracts.
-8. Reload the hub and verify the year selector can load both the new year and
+6. Create the new private `Dashboard Staging` and
+   `Monthly Dashboard Staging` tabs plus the public `Event_Metrics_Public` and
+   `Monthly_Metrics_Public` tabs with the same column contracts.
+7. Confirm the new private monthly tab starts in July of the correct academic
+   year and ends in June of the next calendar year.
+8. Reload the hub and verify the year and monthly selectors can load both the
+   new year and every expected review period.
+9. Confirm the year selector can still load
    any prior years that should remain available.
 
 The academic years shown in the selector come from the shared settings rows.
