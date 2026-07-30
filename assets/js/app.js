@@ -4,6 +4,7 @@
   const config = window.ASME_HUB_CONFIG;
   const unlockStorageKey = "asmeHubUnlockedUntil";
   const themeStorageKey = "asmeHubTheme";
+  const sidebarStorageKey = "asmeHubSidebarCollapsed";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
   const numberFormatter = new Intl.NumberFormat("en-US");
@@ -21,6 +22,7 @@
   let sharedSettingsReady = Promise.resolve();
   let activeDashboardData = null;
   let selectedPeriod = "ytd";
+  let refreshNavigation = () => {};
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -36,6 +38,7 @@
     sidebarYear: document.getElementById("sidebar-year-label"),
     themeToggle: document.getElementById("theme-toggle"),
     mobileMenuButton: document.getElementById("mobile-menu-button"),
+    sidebarCollapse: document.getElementById("sidebar-collapse"),
     settingsButton: document.getElementById("settings-button"),
     sidebarSettings: document.getElementById("sidebar-settings"),
     settingsDialog: document.getElementById("year-settings-dialog"),
@@ -385,6 +388,14 @@
     elements.gate.hidden = true;
     elements.appShell.hidden = false;
     await loadDashboard(elements.academicYear.value);
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+    const hashTarget = window.location.hash
+      ? document.querySelector(window.location.hash)
+      : null;
+    if (hashTarget) {
+      hashTarget.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+    refreshNavigation();
   }
 
   function populateYears(preferredYear) {
@@ -2093,11 +2104,27 @@
     );
   }
 
+  function applySidebarState(collapsed) {
+    const desktop = window.matchMedia("(min-width: 1081px)").matches;
+    const resolved = Boolean(collapsed && desktop);
+    document.body.classList.toggle("sidebar-collapsed", resolved);
+    elements.sidebarCollapse.setAttribute("aria-expanded", String(!resolved));
+    elements.sidebarCollapse.setAttribute(
+      "aria-label",
+      resolved ? "Expand sidebar" : "Collapse sidebar",
+    );
+    elements.sidebarCollapse.title = resolved
+      ? "Expand sidebar"
+      : "Collapse sidebar";
+  }
+
   function setupNavigation() {
     const navLinks = [...document.querySelectorAll(".nav-link")];
     const sections = navLinks
       .map((link) => document.querySelector(link.getAttribute("href")))
       .filter(Boolean);
+    let navigationTargetId = "";
+    let navigationTimer = 0;
 
     const setActiveNavigation = (sectionId) => {
       navLinks.forEach((link) => {
@@ -2111,16 +2138,9 @@
       });
     };
 
-    navLinks.forEach((link) => {
-      link.addEventListener("click", () => {
-        setActiveNavigation(link.getAttribute("href").slice(1));
-        document.body.classList.remove("nav-open");
-        elements.mobileMenuButton.setAttribute("aria-expanded", "false");
-      });
-    });
-
     let scrollFrame = 0;
     const updateNavigationFromScroll = () => {
+      if (elements.appShell.hidden || navigationTargetId) return;
       const pageBottom = window.scrollY + window.innerHeight;
       const documentBottom = document.documentElement.scrollHeight;
 
@@ -2137,6 +2157,41 @@
       setActiveNavigation(activeSection.id);
     };
 
+    const releaseNavigationLock = () => {
+      if (!navigationTargetId) return;
+      navigationTargetId = "";
+      window.clearTimeout(navigationTimer);
+      navigationTimer = 0;
+      updateNavigationFromScroll();
+    };
+
+    const navigateToSection = (sectionId, updateHistory = true) => {
+      const target = document.getElementById(sectionId);
+      if (!target) return;
+      navigationTargetId = sectionId;
+      setActiveNavigation(sectionId);
+      if (updateHistory && window.location.hash !== `#${sectionId}`) {
+        window.history.pushState(null, "", `#${sectionId}`);
+      }
+      target.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+      window.clearTimeout(navigationTimer);
+      navigationTimer = window.setTimeout(releaseNavigationLock, 850);
+      document.body.classList.remove("nav-open");
+      elements.mobileMenuButton.setAttribute("aria-expanded", "false");
+    };
+
+    navLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        navigateToSection(link.getAttribute("href").slice(1));
+      });
+    });
+
     window.addEventListener(
       "scroll",
       () => {
@@ -2148,7 +2203,16 @@
       },
       { passive: true },
     );
-    updateNavigationFromScroll();
+    if ("onscrollend" in window) {
+      window.addEventListener("scrollend", releaseNavigationLock);
+    }
+    window.addEventListener("popstate", () => {
+      const sectionId = window.location.hash.slice(1) || "overview";
+      navigateToSection(sectionId, false);
+    });
+
+    refreshNavigation = updateNavigationFromScroll;
+    if (!elements.appShell.hidden) updateNavigationFromScroll();
   }
 
   function setText(id, value) {
@@ -2333,6 +2397,18 @@
     applyTheme(nextTheme);
   });
 
+  elements.sidebarCollapse.addEventListener("click", () => {
+    const nextCollapsed = !document.body.classList.contains(
+      "sidebar-collapsed",
+    );
+    localStorage.setItem(sidebarStorageKey, String(nextCollapsed));
+    applySidebarState(nextCollapsed);
+  });
+
+  window.addEventListener("resize", () => {
+    applySidebarState(localStorage.getItem(sidebarStorageKey) === "true");
+  });
+
   elements.mobileMenuButton.addEventListener("click", () => {
     const opening = !document.body.classList.contains("nav-open");
     document.body.classList.toggle("nav-open", opening);
@@ -2368,11 +2444,20 @@
     populateYears();
     setupNavigation();
     applyTheme(localStorage.getItem(themeStorageKey) || "light");
+    applySidebarState(localStorage.getItem(sidebarStorageKey) === "true");
 
     if (isUnlocked()) {
       elements.gate.hidden = true;
       elements.appShell.hidden = false;
-      loadDashboard(elements.academicYear.value);
+      await loadDashboard(elements.academicYear.value);
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      const hashTarget = window.location.hash
+        ? document.querySelector(window.location.hash)
+        : null;
+      if (hashTarget) {
+        hashTarget.scrollIntoView({ behavior: "auto", block: "start" });
+      }
+      refreshNavigation();
     } else {
       showGate();
     }
