@@ -11,6 +11,7 @@ designed to remain easy to maintain through annual officer transitions.
 ## What is included
 
 - A polished desktop, tablet, and mobile dashboard
+- Official ASME OSU branding and a persistent collapsible desktop navigation rail
 - A session-based access screen
 - An academic-year selector and no-code Year Settings panel
 - Aggregate attendance and event KPIs
@@ -32,6 +33,12 @@ privacy-safe public leaderboard export used by the chapter website. It
 calculates unique attendees, total check-ins, events with attendance, average
 turnout, repeat attendance, recent-event turnout, and attendance by event type
 without reading emails or raw form responses.
+
+The desktop sidebar can collapse to an icon rail; that preference is saved in
+the browser. Tablet and mobile widths always use the full slide-out drawer so
+navigation labels remain visible. Section links update the URL hash, preserve
+one active highlight throughout smooth scrolling, and support browser
+back/forward navigation.
 
 ## Security boundary
 

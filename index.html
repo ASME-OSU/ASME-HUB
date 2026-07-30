@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#07182d">
   <meta name="description" content="The internal operations dashboard for ASME at The Ohio State University.">
   <title>ASME OSU Hub</title>
-  <link rel="icon" href="assets/hub-mark.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/asme-osu-logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260730b">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260730c">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -21,7 +21,9 @@
       <span class="gate-orbit gate-orbit-two"></span>
     </div>
     <div class="gate-card">
-      <div class="brand-mark brand-mark-large" aria-hidden="true">A</div>
+      <div class="gate-logo-wrap">
+        <img class="gate-logo" src="assets/asme-osu-logo.png" alt="ASME at The Ohio State University">
+      </div>
       <p class="eyebrow">ASME at Ohio State</p>
       <h1 id="access-title">Officer Hub</h1>
       <p class="gate-intro">One place to understand chapter activity and open the tools that keep ASME moving.</p>
@@ -43,35 +45,40 @@
 
   <div class="app-shell" id="app-shell" hidden>
     <aside class="sidebar" id="sidebar">
-      <a class="sidebar-brand" href="#overview" aria-label="ASME OSU Hub home">
-        <span class="brand-mark" aria-hidden="true">A</span>
-        <span>
-          <strong>ASME OSU</strong>
-          <small>Officer Hub</small>
-        </span>
-      </a>
+      <div class="sidebar-header">
+        <a class="sidebar-brand" href="#overview" aria-label="ASME OSU Hub home">
+          <img class="sidebar-logo" src="assets/asme-osu-logo.png" alt="">
+          <span class="sidebar-brand-copy">
+            <strong>ASME OSU</strong>
+            <small>Officer Hub</small>
+          </span>
+        </a>
+        <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+          <span aria-hidden="true">‹</span>
+        </button>
+      </div>
 
       <nav class="sidebar-nav" aria-label="Dashboard navigation">
-        <a class="nav-link is-active" href="#overview">
+        <a class="nav-link is-active" href="#overview" aria-label="Overview" title="Overview">
           <span class="nav-icon" aria-hidden="true">⌂</span>
-          Overview
+          <span class="nav-label">Overview</span>
         </a>
-        <a class="nav-link" href="#events">
+        <a class="nav-link" href="#events" aria-label="Events" title="Events">
           <span class="nav-icon" aria-hidden="true">◫</span>
-          Events
+          <span class="nav-label">Events</span>
         </a>
-        <a class="nav-link" href="#members">
+        <a class="nav-link" href="#members" aria-label="Members" title="Members">
           <span class="nav-icon" aria-hidden="true">◎</span>
-          Members
+          <span class="nav-label">Members</span>
         </a>
-        <a class="nav-link" href="#operations">
+        <a class="nav-link" href="#operations" aria-label="Operations" title="Operations">
           <span class="nav-icon" aria-hidden="true">✓</span>
-          Operations
+          <span class="nav-label">Operations</span>
           <span class="nav-count" id="nav-alert-count">0</span>
         </a>
-        <a class="nav-link" href="#resources">
+        <a class="nav-link" href="#resources" aria-label="Resources" title="Resources">
           <span class="nav-icon" aria-hidden="true">↗</span>
-          Resources
+          <span class="nav-label">Resources</span>
         </a>
       </nav>
 
@@ -82,15 +89,18 @@
       </div>
 
       <div class="sidebar-footer">
-        <a href="https://org.osu.edu/asme/" target="_blank" rel="noopener">
-          View public website
+        <a href="https://org.osu.edu/asme/" target="_blank" rel="noopener" aria-label="View public website" title="View public website">
+          <span class="sidebar-footer-label">View public website</span>
           <span aria-hidden="true">↗</span>
         </a>
-        <button id="sidebar-settings" type="button">
-          Year settings
+        <button id="sidebar-settings" type="button" aria-label="Year settings" title="Year settings">
+          <span class="sidebar-footer-label">Year settings</span>
           <span aria-hidden="true">⚙</span>
         </button>
-        <button id="lock-dashboard" type="button">Lock dashboard</button>
+        <button id="lock-dashboard" type="button" aria-label="Lock dashboard" title="Lock dashboard">
+          <span class="sidebar-footer-label">Lock dashboard</span>
+          <span aria-hidden="true">⌁</span>
+        </button>
       </div>
     </aside>
 
@@ -495,6 +505,6 @@
   </dialog>
 
   <script src="assets/js/config.js?v=20260728c"></script>
-  <script src="assets/js/app.js?v=20260730b"></script>
+  <script src="assets/js/app.js?v=20260730c"></script>
 </body>
 </html>
