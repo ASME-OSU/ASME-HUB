@@ -597,7 +597,9 @@
       source.eventMetricsSheetTab || "Event_Metrics_Public";
     const monthlyMetricsTab =
       source.monthlyMetricsSheetTab || "Monthly_Metrics_Public";
-    const [leaderboard, statusTable, metricsResult, monthlyResult] =
+    const semesterMetricsTab =
+      source.semesterMetricsSheetTab || "Semester_Metrics_Public";
+    const [leaderboard, statusTable, metricsResult, monthlyResult, semesterResult] =
       await Promise.all([
       queryPublicSheet(
         spreadsheetId,
@@ -619,7 +621,14 @@
       queryPublicSheet(
         spreadsheetId,
         monthlyMetricsTab,
-        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N where A is not null",
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null",
+      )
+        .then((table) => ({ table, error: null }))
+        .catch((error) => ({ table: { rows: [] }, error })),
+      queryPublicSheet(
+        spreadsheetId,
+        semesterMetricsTab,
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null",
       )
         .then((table) => ({ table, error: null }))
         .catch((error) => ({ table: { rows: [] }, error })),
@@ -645,6 +654,9 @@
     );
     const repeatAttendees = members.filter(
       (member) => member.events >= 2,
+    ).length;
+    const highlyEngagedAttendees = members.filter(
+      (member) => member.events >= 4,
     ).length;
     const latestUpdate = members
       .map((member) => member.updated)
@@ -681,30 +693,36 @@
     });
     const attendedEvents = eventRows.filter((event) => event.attendance > 0);
     const metricsAvailable = !metricsResult.error && eventRows.length > 0;
+    const parsePeriodMetric = (row, keyName) => {
+      const rawRepeatRate = Number(sheetCell(row, 8)) || 0;
+      return {
+        periodKey: String(sheetCell(row, 0) || "").trim(),
+        [keyName]: String(sheetCell(row, 0) || "").trim(),
+        label: String(sheetCell(row, 1) || "").trim(),
+        start: sheetTimestamp(sheetCell(row, 2)),
+        uniqueAttendees: Number(sheetCell(row, 3)) || 0,
+        totalCheckIns: Number(sheetCell(row, 4)) || 0,
+        eventsHeld: Number(sheetCell(row, 5)) || 0,
+        averageTurnout: Number(sheetCell(row, 6)) || 0,
+        repeatAttendees: Number(sheetCell(row, 7)) || 0,
+        repeatAttendanceRate:
+          rawRepeatRate <= 1 ? rawRepeatRate * 100 : rawRepeatRate,
+        newAttendees: Number(sheetCell(row, 9)) || 0,
+        topEventType: normalizeEventType(sheetCell(row, 10)),
+        topEventName: String(sheetCell(row, 11) || "").trim(),
+        topEventAttendance: Number(sheetCell(row, 12)) || 0,
+        updated: sheetTimestamp(
+          sheetCell(row, 13, true) || sheetCell(row, 13),
+        ),
+        highlyEngagedAttendees: Number(sheetCell(row, 14)) || 0,
+      };
+    };
     const monthlyMetrics = (monthlyResult.table.rows || [])
-      .map((row) => {
-        const rawRepeatRate = Number(sheetCell(row, 8)) || 0;
-        return {
-          monthKey: String(sheetCell(row, 0) || "").trim(),
-          label: String(sheetCell(row, 1) || "").trim(),
-          start: sheetTimestamp(sheetCell(row, 2)),
-          uniqueAttendees: Number(sheetCell(row, 3)) || 0,
-          totalCheckIns: Number(sheetCell(row, 4)) || 0,
-          eventsHeld: Number(sheetCell(row, 5)) || 0,
-          averageTurnout: Number(sheetCell(row, 6)) || 0,
-          repeatAttendees: Number(sheetCell(row, 7)) || 0,
-          repeatAttendanceRate:
-            rawRepeatRate <= 1 ? rawRepeatRate * 100 : rawRepeatRate,
-          newAttendees: Number(sheetCell(row, 9)) || 0,
-          topEventType: normalizeEventType(sheetCell(row, 10)),
-          topEventName: String(sheetCell(row, 11) || "").trim(),
-          topEventAttendance: Number(sheetCell(row, 12)) || 0,
-          updated: sheetTimestamp(
-            sheetCell(row, 13, true) || sheetCell(row, 13),
-          ),
-        };
-      })
+      .map((row) => parsePeriodMetric(row, "monthKey"))
       .filter((month) => /^\d{4}-\d{2}$/.test(month.monthKey));
+    const semesterMetrics = (semesterResult.table.rows || [])
+      .map((row) => parsePeriodMetric(row, "semesterKey"))
+      .filter((semester) => ["fall", "spring"].includes(semester.semesterKey));
     const aggregateUpdated = sheetTimestamp(
       healthMetrics.last_updated?.value,
     );
@@ -815,12 +833,15 @@
         repeatAttendanceRate: members.length
           ? (repeatAttendees / members.length) * 100
           : 0,
+        repeatAttendees,
+        highlyEngagedAttendees,
         engagementGoal: Number(source.engagementGoal) || 250,
       },
       attendanceTrend,
       eventTypes,
       allEvents: eventRows,
       monthlyMetrics,
+      semesterMetrics,
       upcomingEvents: [],
       operations,
       health: [
@@ -851,6 +872,13 @@
           detail: monthlyResult.error
             ? "Monthly aggregate feed unavailable"
             : `${formatNumber(monthlyMetrics.length)} review periods ready`,
+        },
+        {
+          label: "Semester reporting",
+          status: semesterResult.error ? "ACTION" : "LIVE",
+          detail: semesterResult.error
+            ? "Semester aggregate feed unavailable"
+            : `${formatNumber(semesterMetrics.length)} semester presets ready`,
         },
       ],
     };
@@ -1172,34 +1200,58 @@
   }
 
   function renderDashboard(data) {
+    data.monthlyMetrics = (data.monthlyMetrics || []).map((item) => ({
+      ...item,
+      periodKey: item.periodKey || item.monthKey,
+    }));
+    data.semesterMetrics = (data.semesterMetrics || []).map((item) => ({
+      ...item,
+      periodKey: item.periodKey || item.semesterKey,
+    }));
     activeDashboardData = data;
     selectedPeriod = "ytd";
-    populatePeriodFilter(data.monthlyMetrics || []);
+    populatePeriodFilter(
+      data.semesterMetrics || [],
+      data.monthlyMetrics || [],
+    );
     renderSelectedPeriod();
     renderUpcomingEvents(data.upcomingEvents || []);
     renderHealth(data.health || []);
     renderOperations(data.operations || []);
   }
 
-  function populatePeriodFilter(months) {
+  function populatePeriodFilter(semesters, months) {
     if (!elements.periodFilter) return;
-    const options = [
-      { value: "ytd", label: "Year to date" },
-      ...months.map((month) => ({
-        value: month.monthKey,
-        label: month.label || month.monthKey,
-      })),
-    ];
-    elements.periodFilter.replaceChildren(
-      ...options.map((item) => {
+    const yearOption = document.createElement("option");
+    yearOption.value = "ytd";
+    yearOption.textContent = "Year to date";
+    const semesterGroup = document.createElement("optgroup");
+    semesterGroup.label = "Semesters";
+    semesterGroup.append(
+      ...semesters.map((semester) => {
         const option = document.createElement("option");
-        option.value = item.value;
-        option.textContent = item.label;
+        option.value = semester.semesterKey;
+        option.textContent = semester.label || semester.semesterKey;
         return option;
       }),
     );
+    const monthGroup = document.createElement("optgroup");
+    monthGroup.label = "Months";
+    monthGroup.append(
+      ...months.map((month) => {
+        const option = document.createElement("option");
+        option.value = month.monthKey;
+        option.textContent = month.label || month.monthKey;
+        return option;
+      }),
+    );
+    const children = [yearOption];
+    if (semesters.length) children.push(semesterGroup);
+    if (months.length) children.push(monthGroup);
+    elements.periodFilter.replaceChildren(...children);
     elements.periodFilter.value = selectedPeriod;
-    elements.periodFilter.disabled = months.length === 0;
+    elements.periodFilter.disabled =
+      months.length === 0 && semesters.length === 0;
   }
 
   function eventTrendFromRows(events) {
@@ -1236,85 +1288,135 @@
       .filter((type) => type.count > 0 || type.events > 0);
   }
 
-  function priorMonthFor(month, months) {
-    const index = months.findIndex(
-      (candidate) => candidate.monthKey === month.monthKey,
+  function priorPeriodFor(period, periods) {
+    const index = periods.findIndex(
+      (candidate) => candidate.periodKey === period.periodKey,
     );
-    return index > 0 ? months[index - 1] : null;
+    return index > 0 ? periods[index - 1] : null;
   }
 
-  function deltaFromPrior(current, previous, precision = 0) {
+  function deltaFromPrior(current, previous, precision = 0, unit = "period") {
     if (previous === null || previous === undefined) {
-      return "First month in this academic year";
+      return `First ${unit} in this academic year`;
     }
     const difference = Number(current || 0) - Number(previous || 0);
-    if (Math.abs(difference) < 0.0001) return "No change vs prior month";
+    if (Math.abs(difference) < 0.0001) return `No change vs prior ${unit}`;
     const formatted = Math.abs(difference).toFixed(precision);
-    return `${difference > 0 ? "+" : "−"}${formatted} vs prior month`;
+    return `${difference > 0 ? "+" : "−"}${formatted} vs prior ${unit}`;
+  }
+
+  function eventFallsInPeriod(event, period) {
+    if (!event.date || !period?.start) return false;
+    const start = new Date(period.start);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + (period.kind === "semester" ? 6 : 1));
+    return event.date >= start && event.date < end;
+  }
+
+  function periodView(data) {
+    const months = data.monthlyMetrics || [];
+    const semesters = data.semesterMetrics || [];
+    const month = months.find((item) => item.monthKey === selectedPeriod);
+    const semester = semesters.find(
+      (item) => item.semesterKey === selectedPeriod,
+    );
+    const period = month || semester;
+    if (!period) {
+      return {
+        period: null,
+        previous: null,
+        kind: "year",
+        unit: "period",
+        label: "Year to date",
+        events: data.allEvents || [],
+      };
+    }
+    const kind = month ? "month" : "semester";
+    period.kind = kind;
+    return {
+      period,
+      previous: priorPeriodFor(period, month ? months : semesters),
+      kind,
+      unit: kind,
+      label: period.label,
+      events: (data.allEvents || []).filter((event) =>
+        eventFallsInPeriod(event, period),
+      ),
+    };
   }
 
   function renderSelectedPeriod() {
     const data = activeDashboardData;
     if (!data) return;
     const months = data.monthlyMetrics || [];
-    const month = months.find((item) => item.monthKey === selectedPeriod);
+    const view = periodView(data);
+    const { period, previous, kind, unit, label, events } = view;
 
-    if (!month) {
+    if (!period) {
       renderFreshness(data.meta || {});
       renderKpis(data.kpis || {}, data.meta || {});
       renderAttendanceChart(data.attendanceTrend || []);
-      renderGoal(data.kpis || {});
+      renderGoal(data.kpis || {}, data.meta || {});
       renderEventTypes(data.eventTypes || []);
+      renderParticipationFunnel(data.kpis || {}, label);
+      renderEventPerformance(events, label);
+      const latestActive = [...months]
+        .reverse()
+        .find((month) => month.totalCheckIns > 0);
+      renderHealthInsight(
+        latestActive || null,
+        latestActive ? priorPeriodFor(latestActive, months) : null,
+        latestActive ? "month" : "year",
+      );
       setText("period-summary", "All available activity");
       setText(
         "period-detail",
-        "Compare monthly attendance, turnout, and retention.",
+        "Use a semester or month preset for a focused meeting review.",
       );
       return;
     }
 
-    const monthEvents = (data.allEvents || []).filter((event) => {
-      if (!event.date) return false;
-      const monthKey = `${event.date.getFullYear()}-${String(
-        event.date.getMonth() + 1,
-      ).padStart(2, "0")}`;
-      return monthKey === month.monthKey && event.attendance > 0;
-    });
-    const previous = priorMonthFor(month, months);
-    const monthKpis = {
-      uniqueAttendees: month.uniqueAttendees,
-      totalCheckIns: month.totalCheckIns,
-      eventsHeld: month.eventsHeld,
-      averageTurnout: month.averageTurnout,
-      repeatAttendanceRate: month.repeatAttendanceRate,
+    const periodKpis = {
+      uniqueAttendees: period.uniqueAttendees,
+      totalCheckIns: period.totalCheckIns,
+      eventsHeld: period.eventsHeld,
+      averageTurnout: period.averageTurnout,
+      repeatAttendanceRate: period.repeatAttendanceRate,
+      repeatAttendees: period.repeatAttendees,
+      highlyEngagedAttendees: period.highlyEngagedAttendees,
       engagementGoal: data.kpis?.engagementGoal,
     };
-    const monthMeta = {
+    const periodMeta = {
       ...(data.meta || {}),
-      lastUpdated: month.updated
-        ? month.updated.toISOString()
+      lastUpdated: period.updated
+        ? sheetTimestamp(period.updated)?.toISOString() ||
+          data.meta?.lastUpdated
         : data.meta?.lastUpdated,
       isPartial: false,
     };
 
-    renderFreshness(monthMeta);
-    renderKpis(monthKpis, monthMeta, {
-      month,
+    renderFreshness(periodMeta);
+    renderKpis(periodKpis, periodMeta, {
+      period,
       previous,
+      unit,
     });
-    renderAttendanceChart(eventTrendFromRows(monthEvents), month.label);
-    renderGoal(data.kpis || {}, month);
-    renderEventTypes(eventTypesFromRows(monthEvents));
-    setText("period-summary", month.label);
+    renderAttendanceChart(eventTrendFromRows(events), label);
+    renderGoal(data.kpis || {}, data.meta || {}, period);
+    renderEventTypes(eventTypesFromRows(events));
+    renderParticipationFunnel(periodKpis, label);
+    renderEventPerformance(events, label);
+    renderHealthInsight(period, previous, kind);
+    setText("period-summary", label);
     setText(
       "period-detail",
-      month.eventsHeld
-        ? `Top event: ${month.topEventName} · ${formatNumber(
-            month.topEventAttendance,
+      period.eventsHeld
+        ? `Top event: ${period.topEventName} · ${formatNumber(
+            period.topEventAttendance,
           )} check-in${
-            month.topEventAttendance === 1 ? "" : "s"
-          } · Leading type: ${month.topEventType}`
-        : "No recorded attendance for this month yet.",
+            period.topEventAttendance === 1 ? "" : "s"
+          } · Leading type: ${period.topEventType}`
+        : `No recorded attendance for this ${kind} yet.`,
     );
   }
 
@@ -1354,38 +1456,42 @@
         : "—",
     );
 
-    if (period?.month) {
-      const month = period.month;
+    if (period?.period) {
+      const selected = period.period;
       const previous = period.previous;
+      const unit = period.unit || "period";
       setText(
         "kpi-unique-attendees-context",
-        `${formatNumber(month.newAttendees)} new participant${
-          month.newAttendees === 1 ? "" : "s"
+        `${formatNumber(selected.newAttendees)} new participant${
+          selected.newAttendees === 1 ? "" : "s"
         }`,
       );
       setText(
         "kpi-total-checkins-context",
         deltaFromPrior(
-          month.totalCheckIns,
+          selected.totalCheckIns,
           previous?.totalCheckIns,
+          0,
+          unit,
         ),
       );
       setText(
         "kpi-events-held-context",
-        deltaFromPrior(month.eventsHeld, previous?.eventsHeld),
+        deltaFromPrior(selected.eventsHeld, previous?.eventsHeld, 0, unit),
       );
       setText(
         "kpi-average-turnout-context",
         deltaFromPrior(
-          month.averageTurnout,
+          selected.averageTurnout,
           previous?.averageTurnout,
           1,
+          unit,
         ),
       );
       setText(
         "kpi-repeat-rate-context",
-        `${formatNumber(month.repeatAttendees)} repeat participant${
-          month.repeatAttendees === 1 ? "" : "s"
+        `${formatNumber(selected.repeatAttendees)} repeat participant${
+          selected.repeatAttendees === 1 ? "" : "s"
         }`,
       );
     } else if (meta.isPartial) {
@@ -1544,12 +1650,200 @@
       : `${items.length} recent event${items.length === 1 ? "" : "s"}`;
   }
 
-  function renderGoal(kpis, month = null) {
+  function renderHealthInsight(period, previous, kind) {
+    const container = document.getElementById("health-insight");
+    const status = document.getElementById("health-insight-status");
+    const copy = document.getElementById("health-insight-copy");
+    container.classList.remove("is-positive", "is-watch", "is-alert", "is-neutral");
+
+    if (!period) {
+      container.classList.add("is-neutral");
+      status.textContent = "Chapter pulse";
+      copy.textContent =
+        "Attendance will become more useful after the first recorded event.";
+      return;
+    }
+
+    const checkIns = Number(period.totalCheckIns) || 0;
+    const previousCheckIns = Number(previous?.totalCheckIns) || 0;
+    const repeatRate = Math.round(Number(period.repeatAttendanceRate) || 0);
+    const previousRepeat = Math.round(
+      Number(previous?.repeatAttendanceRate) || 0,
+    );
+    const comparison = previousCheckIns
+      ? Math.round(((checkIns - previousCheckIns) / previousCheckIns) * 100)
+      : null;
+    let tone = "is-neutral";
+    let label = "Chapter pulse";
+
+    if (checkIns === 0) {
+      tone = "is-watch";
+      label = "No activity yet";
+    } else if (comparison === null) {
+      tone = "is-positive";
+      label = "Baseline established";
+    } else if (comparison >= 0 && repeatRate >= previousRepeat) {
+      tone = "is-positive";
+      label = "Momentum building";
+    } else if (comparison <= -20) {
+      tone = "is-alert";
+      label = "Turnout needs attention";
+    } else {
+      tone = "is-watch";
+      label = "Worth watching";
+    }
+    container.classList.add(tone);
+    status.textContent = label;
+
+    if (!checkIns) {
+      copy.textContent = `No check-ins are recorded for this ${kind} yet. Confirm upcoming events and attendance forms are ready.`;
+      return;
+    }
+
+    const turnoutText =
+      comparison === null
+        ? `${formatNumber(checkIns)} check-ins establish the first ${kind} baseline`
+        : `${formatNumber(checkIns)} check-ins are ${
+            comparison >= 0 ? "up" : "down"
+          } ${Math.abs(comparison)}% from the prior ${kind}`;
+    const topEventText = period.topEventName
+      ? `${period.topEventName} led turnout with ${formatNumber(
+          period.topEventAttendance,
+        )} check-in${period.topEventAttendance === 1 ? "" : "s"}.`
+      : "No top event is available yet.";
+    copy.textContent = `${turnoutText}; repeat participation is ${repeatRate}%. ${topEventText}`;
+  }
+
+  function renderParticipationFunnel(kpis, periodLabel) {
+    const participated = Number(kpis.uniqueAttendees) || 0;
+    const returned = Number(kpis.repeatAttendees) || 0;
+    const engaged = Number(kpis.highlyEngagedAttendees) || 0;
+    const widthFor = (value) =>
+      `${participated ? Math.max(3, Math.round((value / participated) * 100)) : 0}%`;
+
+    setText("funnel-period", periodLabel || "Year to date");
+    setText("funnel-participated", formatNumber(participated));
+    setText("funnel-returned", formatNumber(returned));
+    setText("funnel-engaged", formatNumber(engaged));
+    document.getElementById("funnel-participated-bar").style.width =
+      widthFor(participated);
+    document.getElementById("funnel-returned-bar").style.width =
+      widthFor(returned);
+    document.getElementById("funnel-engaged-bar").style.width = widthFor(engaged);
+  }
+
+  function renderEventPerformance(events, periodLabel) {
+    const body = document.getElementById("event-performance-body");
+    const sorted = [...events].sort(
+      (a, b) => Number(b.attendance || 0) - Number(a.attendance || 0),
+    );
+    const attended = sorted.filter((event) => Number(event.attendance) > 0);
+    const average = attended.length
+      ? attended.reduce(
+          (sum, event) => sum + Number(event.attendance || 0),
+          0,
+        ) / attended.length
+      : 0;
+    setText(
+      "performance-summary",
+      sorted.length
+        ? `${formatNumber(sorted.length)} event${
+            sorted.length === 1 ? "" : "s"
+          } · ${periodLabel}`
+        : `No events · ${periodLabel}`,
+    );
+
+    if (!sorted.length) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      cell.colSpan = 5;
+      cell.className = "performance-empty";
+      cell.textContent = "No configured events fall within this review period.";
+      row.append(cell);
+      body.replaceChildren(row);
+      return;
+    }
+
+    body.replaceChildren(
+      ...sorted.slice(0, 8).map((event, index) => {
+        const row = document.createElement("tr");
+        const name = document.createElement("td");
+        const nameStrong = document.createElement("strong");
+        nameStrong.textContent = event.name;
+        name.append(nameStrong);
+        const type = document.createElement("td");
+        type.textContent = event.type || "Other";
+        const date = document.createElement("td");
+        date.textContent = event.date
+          ? new Intl.DateTimeFormat("en-US", {
+              month: "short",
+              day: "numeric",
+            }).format(event.date)
+          : "TBD";
+        const attendance = document.createElement("td");
+        attendance.className = "performance-number";
+        attendance.textContent = formatNumber(event.attendance);
+        const statusCell = document.createElement("td");
+        const chip = document.createElement("span");
+        const count = Number(event.attendance) || 0;
+        if (count === 0) {
+          chip.className = "performance-status is-empty";
+          chip.textContent = "No check-ins";
+        } else if (index === 0) {
+          chip.className = "performance-status is-top";
+          chip.textContent = "Top turnout";
+        } else if (count >= average) {
+          chip.className = "performance-status is-above";
+          chip.textContent = "Above average";
+        } else {
+          chip.className = "performance-status is-below";
+          chip.textContent = "Below average";
+        }
+        statusCell.append(chip);
+        row.append(name, type, date, attendance, statusCell);
+        return row;
+      }),
+    );
+  }
+
+  function goalPace(kpis, meta) {
+    const target = Number(kpis.engagementGoal) || 0;
+    const current = Number(kpis.uniqueAttendees) || 0;
+    const yearMatch = String(meta.academicYear || "").match(/(\d{4})/);
+    const startYear = Number(yearMatch?.[1]);
+    if (!target || !startYear) {
+      return { label: "Goal set", tone: "is-neutral", variance: null };
+    }
+    const start = new Date(startYear, 6, 1);
+    const end = new Date(startYear + 1, 6, 1);
+    const referenceCandidate = new Date(meta.lastUpdated || Date.now());
+    const reference = Number.isNaN(referenceCandidate.getTime())
+      ? new Date()
+      : referenceCandidate;
+    const clamped = new Date(
+      Math.min(end.getTime(), Math.max(start.getTime(), reference.getTime())),
+    );
+    const elapsed =
+      (clamped.getTime() - start.getTime()) / (end.getTime() - start.getTime());
+    const actual = current / target;
+    const variance = Math.round((actual - elapsed) * 100);
+    if (variance >= 0) {
+      return { label: "On pace", tone: "is-positive", variance };
+    }
+    if (variance >= -10) {
+      return { label: "Watch", tone: "is-watch", variance };
+    }
+    return { label: "Behind pace", tone: "is-alert", variance };
+  }
+
+  function renderGoal(kpis, meta, period = null) {
     const current = Number(kpis.uniqueAttendees) || 0;
     const target = Number(kpis.engagementGoal) || 0;
     const percent = target ? Math.min(100, Math.round((current / target) * 100)) : 0;
     const remaining = Math.max(0, target - current);
     const ring = document.getElementById("goal-ring");
+    const pace = goalPace(kpis, meta);
+    const paceChip = document.getElementById("goal-status");
 
     ring.style.setProperty("--goal-progress", `${percent}%`);
     ring.setAttribute(
@@ -1559,16 +1853,26 @@
     setText("goal-percent", `${percent}%`);
     setText("goal-current", formatNumber(current));
     setText("goal-target", formatNumber(target));
+    paceChip.className = `pace-chip ${pace.tone}`;
+    paceChip.textContent = pace.label;
     setText(
       "goal-note",
-      month
-        ? `${formatNumber(month.uniqueAttendees)} participant${
-            month.uniqueAttendees === 1 ? "" : "s"
-          } in ${month.label} · ${formatNumber(
+      period
+        ? `${formatNumber(period.uniqueAttendees)} participant${
+            period.uniqueAttendees === 1 ? "" : "s"
+          } in ${period.label} · ${formatNumber(
             remaining,
           )} remaining to the annual goal.`
         : remaining
-          ? `${formatNumber(remaining)} more unique attendees to reach the annual goal.`
+          ? `${formatNumber(
+              remaining,
+            )} more unique attendees to reach the annual goal${
+              pace.variance === null
+                ? "."
+                : ` · ${Math.abs(pace.variance)} points ${
+                    pace.variance >= 0 ? "ahead of" : "behind"
+                  } expected pace.`
+            }`
           : "Annual engagement goal reached.",
     );
   }
@@ -2017,6 +2321,10 @@
   elements.periodFilter.addEventListener("change", () => {
     selectedPeriod = elements.periodFilter.value;
     renderSelectedPeriod();
+  });
+
+  document.getElementById("print-snapshot").addEventListener("click", () => {
+    window.print();
   });
 
   elements.themeToggle.addEventListener("click", () => {
