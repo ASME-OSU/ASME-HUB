@@ -611,6 +611,74 @@ main {
   box-shadow: 0 0 0 5px rgba(67, 211, 149, 0.12);
 }
 
+.period-toolbar {
+  display: flex;
+  min-height: 76px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--surface);
+  box-shadow: 0 4px 20px rgba(10, 30, 55, 0.04);
+}
+
+.period-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.period-control label {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.period-select {
+  min-width: 178px;
+  height: 42px;
+  padding: 0 38px 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: 700 0.78rem var(--sans);
+  cursor: pointer;
+}
+
+.period-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.period-summary {
+  min-width: 0;
+  text-align: right;
+}
+
+.period-summary strong,
+.period-summary span {
+  display: block;
+}
+
+.period-summary strong {
+  color: var(--navy-900);
+  font-size: 0.8rem;
+}
+
+.period-summary span {
+  margin-top: 4px;
+  color: var(--muted-light);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1556,6 +1624,7 @@ body[data-theme="dark"] .topbar {
 }
 
 body[data-theme="dark"] .kpi-value,
+body[data-theme="dark"] .period-summary strong,
 body[data-theme="dark"] .panel-heading h2,
 body[data-theme="dark"] .type-values,
 body[data-theme="dark"] .event-detail strong,
@@ -1696,6 +1765,28 @@ body[data-theme="dark"] .settings-dialog {
   .freshness-card {
     width: 100%;
     min-width: 0;
+  }
+
+  .period-toolbar {
+    padding: 14px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .period-control {
+    justify-content: space-between;
+  }
+
+  .period-select {
+    width: min(62%, 220px);
+    min-width: 0;
+  }
+
+  .period-summary {
+    padding-top: 9px;
+    border-top: 1px solid var(--border);
+    text-align: left;
   }
 
   .kpi-grid {

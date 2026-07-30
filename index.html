@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260728d">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260730a">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -128,6 +128,19 @@
               <small>Data refreshed</small>
               <strong id="last-updated">Loading…</strong>
             </span>
+          </div>
+        </section>
+
+        <section class="period-toolbar" aria-labelledby="period-filter-label">
+          <div class="period-control">
+            <label id="period-filter-label" for="period-filter">Review period</label>
+            <select id="period-filter" class="period-select">
+              <option value="ytd">Year to date</option>
+            </select>
+          </div>
+          <div class="period-summary" aria-live="polite">
+            <strong id="period-summary">All available activity</strong>
+            <span id="period-detail">Compare monthly attendance, turnout, and retention.</span>
           </div>
         </section>
 
@@ -412,6 +425,6 @@
   </dialog>
 
   <script src="assets/js/config.js?v=20260728c"></script>
-  <script src="assets/js/app.js?v=20260729a"></script>
+  <script src="assets/js/app.js?v=20260730a"></script>
 </body>
 </html>
