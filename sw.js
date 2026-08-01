@@ -1,4 +1,4 @@
-const SHELL_CACHE = "asme-hub-shell-v4";
+const SHELL_CACHE = "asme-hub-shell-v6";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
