@@ -31,6 +31,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: hidden;
   color: var(--ink);
   background: var(--canvas);
   font-family: var(--sans);
@@ -133,14 +134,21 @@ button {
   inset: 0;
   display: grid;
   min-height: 100svh;
-  padding: 24px;
+  height: 100dvh;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
   place-items: center;
-  overflow: hidden;
-  color: white;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--navy-900);
   background:
-    radial-gradient(circle at 20% 15%, rgba(186, 12, 47, 0.28), transparent 28rem),
-    radial-gradient(circle at 85% 82%, rgba(34, 91, 143, 0.3), transparent 30rem),
-    var(--navy-950);
+    radial-gradient(circle at 20% 15%, rgba(186, 12, 47, 0.12), transparent 28rem),
+    radial-gradient(circle at 85% 82%, rgba(34, 91, 143, 0.16), transparent 30rem),
+    var(--canvas);
 }
 
 .gate-backdrop {
@@ -154,8 +162,8 @@ button {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(7, 24, 45, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 24, 45, 0.035) 1px, transparent 1px);
   background-size: 54px 54px;
   content: "";
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
@@ -164,7 +172,7 @@ button {
 .gate-orbit {
   position: absolute;
   display: block;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(7, 24, 45, 0.1);
   border-radius: 50%;
 }
 
@@ -185,16 +193,18 @@ button {
 .gate-card {
   position: relative;
   width: min(100%, 490px);
+  min-width: 0;
+  margin: auto;
   padding: clamp(30px, 5vw, 52px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(7, 24, 45, 0.1);
   border-radius: 28px;
-  background: rgba(11, 32, 56, 0.83);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 30px 90px rgba(7, 24, 45, 0.16);
   backdrop-filter: blur(18px);
 }
 
 .gate-card .eyebrow {
-  color: #f17a91;
+  color: var(--scarlet);
 }
 
 .gate-card h1 {
@@ -206,7 +216,7 @@ button {
 .gate-intro {
   max-width: 390px;
   margin: 20px 0 30px;
-  color: #bdc8d5;
+  color: var(--muted);
   font-size: 1rem;
   line-height: 1.65;
 }
@@ -214,7 +224,7 @@ button {
 .access-form label {
   display: block;
   margin-bottom: 9px;
-  color: #d8e0ea;
+  color: var(--navy-800);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -224,9 +234,9 @@ button {
   display: flex;
   height: 54px;
   overflow: hidden;
-  border: 1px solid #40536b;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: rgba(1, 11, 24, 0.45);
+  background: var(--surface-soft);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -241,14 +251,14 @@ button {
   padding: 0 15px;
   border: 0;
   outline: 0;
-  color: white;
+  color: var(--ink);
   background: transparent;
 }
 
 .password-toggle {
   width: 70px;
   border: 0;
-  color: #dce5ef;
+  color: var(--navy-800);
   background: transparent;
   font-size: 0.78rem;
   font-weight: 700;
@@ -257,7 +267,7 @@ button {
 .form-error {
   min-height: 20px;
   margin: 7px 0 4px;
-  color: #ff9aad;
+  color: var(--scarlet-dark);
   font-size: 0.78rem;
 }
 
@@ -286,9 +296,37 @@ button {
 
 .gate-footnote {
   margin: 24px 0 0;
-  color: #7f90a3;
+  color: var(--muted-light);
   font-size: 0.72rem;
   text-align: center;
+}
+
+.gate-theme-toggle {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: inline-flex;
+  min-height: 42px;
+  padding: 0 13px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--navy-800);
+  background: rgba(247, 249, 252, 0.9);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.gate-theme-toggle:hover {
+  border-color: rgba(186, 12, 47, 0.32);
+  color: var(--scarlet);
+}
+
+.gate-theme-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 /* Shell and sidebar */
@@ -848,6 +886,100 @@ main {
   color: var(--muted);
   font-size: 0.7rem;
   line-height: 1.45;
+}
+
+.quick-actions {
+  display: flex;
+  min-width: 0;
+  margin-top: 10px;
+  padding: 12px 14px;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: 0 4px 20px rgba(10, 30, 55, 0.04);
+}
+
+.quick-actions-heading {
+  min-width: 140px;
+}
+
+.quick-actions-heading .eyebrow {
+  margin-bottom: 3px;
+  font-size: 0.58rem;
+}
+
+.quick-actions-heading strong {
+  color: var(--navy-900);
+  font-size: 0.76rem;
+}
+
+.quick-action-grid {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quick-action {
+  display: flex;
+  min-width: 0;
+  min-height: 50px;
+  padding: 8px 10px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  text-decoration: none;
+  transition: border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.quick-action:hover {
+  border-color: rgba(186, 12, 47, 0.35);
+  color: var(--scarlet);
+  transform: translateY(-1px);
+}
+
+.quick-action.is-disabled {
+  opacity: 0.58;
+}
+
+.quick-action-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--scarlet);
+  background: rgba(186, 12, 47, 0.08);
+  font-weight: 800;
+}
+
+.quick-action > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.quick-action strong,
+.quick-action small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-action strong {
+  font-size: 0.68rem;
+}
+
+.quick-action small {
+  color: var(--muted-light);
+  font-size: 0.58rem;
 }
 
 .kpi-grid {
@@ -1633,6 +1765,7 @@ main {
 
 .resource-action {
   display: inline-flex;
+  min-height: 44px;
   margin-top: auto;
   padding-top: 15px;
   align-items: center;
@@ -1944,6 +2077,69 @@ body[data-theme="dark"] {
   --shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
 }
 
+body[data-theme="dark"] .access-gate {
+  color: white;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(186, 12, 47, 0.28), transparent 28rem),
+    radial-gradient(circle at 85% 82%, rgba(34, 91, 143, 0.3), transparent 30rem),
+    var(--navy-950);
+}
+
+body[data-theme="dark"] .gate-backdrop::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+}
+
+body[data-theme="dark"] .gate-orbit {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme="dark"] .gate-card {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(11, 32, 56, 0.83);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+}
+
+body[data-theme="dark"] .gate-card .eyebrow {
+  color: #f17a91;
+}
+
+body[data-theme="dark"] .gate-intro {
+  color: #bdc8d5;
+}
+
+body[data-theme="dark"] .access-form label {
+  color: #d8e0ea;
+}
+
+body[data-theme="dark"] .password-field {
+  border-color: #40536b;
+  background: rgba(1, 11, 24, 0.45);
+}
+
+body[data-theme="dark"] .password-field input {
+  color: white;
+}
+
+body[data-theme="dark"] .password-toggle {
+  color: #dce5ef;
+}
+
+body[data-theme="dark"] .gate-footnote {
+  color: #7f90a3;
+}
+
+body[data-theme="dark"] .form-error {
+  color: #ff9aad;
+}
+
+body[data-theme="dark"] .gate-theme-toggle {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #dce5ef;
+  background: rgba(1, 11, 24, 0.42);
+}
+
 body[data-theme="dark"] .topbar {
   background: rgba(7, 19, 33, 0.91);
 }
@@ -1951,6 +2147,7 @@ body[data-theme="dark"] .topbar {
 body[data-theme="dark"] .kpi-value,
 body[data-theme="dark"] .period-summary strong,
 body[data-theme="dark"] .health-insight-label,
+body[data-theme="dark"] .quick-actions-heading strong,
 body[data-theme="dark"] .panel-heading h2,
 body[data-theme="dark"] .type-values,
 body[data-theme="dark"] .funnel-label strong,
@@ -2021,9 +2218,16 @@ body[data-theme="dark"] .settings-dialog {
 @media (max-width: 1080px) {
   .sidebar {
     width: 224px;
+    padding-top: max(26px, calc(18px + env(safe-area-inset-top)));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    overflow-y: auto;
     transform: translateX(-105%);
     transition: transform 200ms ease;
     box-shadow: 20px 0 50px rgba(0, 0, 0, 0.28);
+  }
+
+  body.nav-open {
+    overflow: hidden;
   }
 
   body.nav-open .sidebar {
@@ -2076,6 +2280,16 @@ body[data-theme="dark"] .settings-dialog {
   .operation-item {
     min-height: 0;
   }
+
+  .quick-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .quick-actions-heading {
+    min-width: 0;
+  }
 }
 
 @media (min-width: 900px) and (max-width: 1080px) {
@@ -2086,8 +2300,10 @@ body[data-theme="dark"] .settings-dialog {
 
 @media (max-width: 720px) {
   .topbar {
-    min-height: 66px;
-    padding: 0 16px;
+    min-height: calc(66px + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
   }
 
   .topbar-title .eyebrow,
@@ -2103,8 +2319,14 @@ body[data-theme="dark"] .settings-dialog {
     width: 112px;
   }
 
+  .year-select,
+  .period-select,
+  .settings-form input {
+    font-size: 16px;
+  }
+
   main {
-    padding: 20px 15px 0;
+    padding: 20px max(15px, env(safe-area-inset-right)) 0 max(15px, env(safe-area-inset-left));
   }
 
   .hero-panel {
@@ -2155,6 +2377,18 @@ body[data-theme="dark"] .settings-dialog {
     gap: 5px;
   }
 
+  .quick-actions {
+    padding: 14px;
+  }
+
+  .quick-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-action {
+    min-height: 58px;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
@@ -2199,8 +2433,85 @@ body[data-theme="dark"] .settings-dialog {
     grid-template-columns: 1fr;
   }
 
+  .performance-table-wrap {
+    overflow: visible;
+  }
+
+  .performance-table,
+  .performance-table tbody,
+  .performance-table tr,
+  .performance-table td {
+    display: block;
+    width: 100%;
+  }
+
   .performance-table {
-    min-width: 610px;
+    min-width: 0;
+  }
+
+  .performance-table thead {
+    display: none;
+  }
+
+  .performance-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .performance-table tr {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+  }
+
+  .performance-table td,
+  .performance-table td:first-child {
+    display: grid;
+    padding: 9px 0;
+    grid-template-columns: 86px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+    text-align: left;
+  }
+
+  .performance-table td:first-child {
+    border-top: 0;
+  }
+
+  .performance-table td::before {
+    color: var(--muted-light);
+    content: attr(data-label);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .performance-table td strong {
+    max-width: none;
+    font-size: 0.76rem;
+  }
+
+  .performance-number {
+    text-align: left;
+  }
+
+  .performance-status {
+    justify-self: start;
+  }
+
+  .performance-empty,
+  .performance-empty:first-child {
+    display: block !important;
+    padding: 22px 0 !important;
+    border: 0;
+    text-align: center;
+  }
+
+  .performance-empty::before {
+    content: none;
   }
 
   .health-grid {
@@ -2225,6 +2536,13 @@ body[data-theme="dark"] .settings-dialog {
     min-height: 156px;
   }
 
+  .resource-action,
+  .operation-item a,
+  .text-link {
+    min-height: 44px;
+    align-items: center;
+  }
+
   .dashboard-footer {
     flex-direction: column;
     gap: 6px;
@@ -2233,12 +2551,14 @@ body[data-theme="dark"] .settings-dialog {
   .settings-dialog {
     width: calc(100vw - 20px);
     max-height: calc(100vh - 20px);
+    max-height: calc(100dvh - 20px);
     border-radius: 18px;
   }
 
   .settings-form {
     max-height: calc(100vh - 20px);
-    padding: 22px 18px;
+    max-height: calc(100dvh - 20px);
+    padding: 22px 18px max(22px, env(safe-area-inset-bottom));
   }
 
   .settings-grid,
@@ -2264,17 +2584,89 @@ body[data-theme="dark"] .settings-dialog {
 
 @media (max-width: 440px) {
   .access-gate {
-    padding: 14px;
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+    place-items: start center;
   }
 
   .gate-card {
-    padding: 28px 22px;
+    min-height: min-content;
+    padding: 22px 20px 24px;
     border-radius: 22px;
   }
 
+  .gate-logo-wrap {
+    width: 142px;
+    height: 70px;
+    margin-bottom: 18px;
+    padding: 6px 10px;
+    border-radius: 13px;
+  }
+
+  .gate-card h1 {
+    font-size: clamp(2.45rem, 14vw, 3.35rem);
+  }
+
+  .gate-intro {
+    margin: 14px 0 22px;
+    font-size: 0.92rem;
+    line-height: 1.52;
+  }
+
+  .password-field {
+    height: 52px;
+  }
+
+  .password-field input {
+    font-size: 16px;
+  }
+
+  .gate-theme-toggle {
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .gate-theme-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .gate-footnote {
+    margin-top: 18px;
+    line-height: 1.45;
+  }
+
   .year-select {
-    width: 120px;
+    width: 144px;
+    padding-right: 26px;
     padding-left: 8px;
+  }
+
+  .topbar-title strong {
+    font-size: 1.02rem;
+  }
+
+  .mobile-menu-button {
+    margin-right: 10px;
+  }
+
+  .hero-panel {
+    padding: 25px 20px;
+  }
+
+  .hero-panel h1 {
+    font-size: clamp(2rem, 11vw, 2.7rem);
   }
 
   .icon-button {
@@ -2288,6 +2680,16 @@ body[data-theme="dark"] .settings-dialog {
   .upcoming-item .status-pill {
     grid-column: 2;
     justify-self: start;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar-title {
+    display: none;
+  }
+
+  .mobile-menu-button {
+    margin-right: 0;
   }
 }
 
@@ -2315,6 +2717,7 @@ body[data-theme="dark"] .settings-dialog {
   .topbar,
   .loading-layer,
   .period-control,
+  .quick-actions,
   .snapshot-button,
   .upcoming-panel,
   .health-panel,

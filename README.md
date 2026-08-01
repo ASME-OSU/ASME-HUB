@@ -23,6 +23,7 @@ designed to remain easy to maintain through annual officer transitions.
 - A print-ready meeting snapshot that can be printed or saved as a PDF
 - Upcoming events from the chapter iCal feed and an operations queue
 - A compact system-health view for settings, attendance, event metrics, and calendar connections
+- A compact quick-action strip for check-in, event planning, officer tasks, and the Points Master
 - A central resource launcher
 - Light and dark color themes
 - A documented path from Google Forms/Sheets to a safe aggregate JSON feed
@@ -39,6 +40,15 @@ the browser. Tablet and mobile widths always use the full slide-out drawer so
 navigation labels remain visible. Section links update the URL hash, preserve
 one active highlight throughout smooth scrolling, and support browser
 back/forward navigation.
+
+Phone layouts use safe-area spacing, 16-pixel form controls to prevent iOS
+Safari from zooming the page when a selector or settings field receives focus,
+larger touch targets, and stacked event-performance cards instead of a wide
+desktop table. The mobile drawer locks background scrolling, closes with
+Escape, and includes theme control when the compact top bar hides that button.
+The unlock screen is also safe-area aware and vertically scrollable when a
+phone keyboard reduces the viewport. Its theme control is available before
+sign-in, and the saved theme follows the officer into the dashboard.
 
 ## Security boundary
 

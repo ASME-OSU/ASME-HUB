@@ -39,6 +39,8 @@
     themeToggle: document.getElementById("theme-toggle"),
     mobileMenuButton: document.getElementById("mobile-menu-button"),
     sidebarCollapse: document.getElementById("sidebar-collapse"),
+    sidebarThemeToggle: document.getElementById("sidebar-theme-toggle"),
+    gateThemeToggle: document.getElementById("gate-theme-toggle"),
     settingsButton: document.getElementById("settings-button"),
     sidebarSettings: document.getElementById("sidebar-settings"),
     settingsDialog: document.getElementById("year-settings-dialog"),
@@ -202,8 +204,7 @@
       getYearSource(selectedYear) || {},
       !getYearSource(selectedYear),
     );
-    document.body.classList.remove("nav-open");
-    elements.mobileMenuButton.setAttribute("aria-expanded", "false");
+    setMobileNavigation(false);
 
     if (typeof elements.settingsDialog.showModal === "function") {
       elements.settingsDialog.showModal();
@@ -376,7 +377,7 @@
     sessionStorage.removeItem(unlockStorageKey);
     elements.appShell.hidden = true;
     elements.gate.hidden = false;
-    document.body.classList.remove("nav-open");
+    setMobileNavigation(false);
     window.setTimeout(() => elements.password.focus(), 50);
   }
 
@@ -1142,7 +1143,9 @@
       return;
     }
 
-    renderResources(resolveYearResources(source));
+    const resources = resolveYearResources(source);
+    renderResources(resources);
+    renderQuickActions(resources);
     const calendarLink = document.querySelector(".upcoming-panel .text-link");
     if (calendarLink && source.calendarUrl) {
       calendarLink.href = source.calendarUrl;
@@ -1779,12 +1782,15 @@
       ...sorted.slice(0, 8).map((event, index) => {
         const row = document.createElement("tr");
         const name = document.createElement("td");
+        name.dataset.label = "Event";
         const nameStrong = document.createElement("strong");
         nameStrong.textContent = event.name;
         name.append(nameStrong);
         const type = document.createElement("td");
+        type.dataset.label = "Type";
         type.textContent = event.type || "Other";
         const date = document.createElement("td");
+        date.dataset.label = "Date";
         date.textContent = event.date
           ? new Intl.DateTimeFormat("en-US", {
               month: "short",
@@ -1792,9 +1798,11 @@
             }).format(event.date)
           : "TBD";
         const attendance = document.createElement("td");
+        attendance.dataset.label = "Check-ins";
         attendance.className = "performance-number";
         attendance.textContent = formatNumber(event.attendance);
         const statusCell = document.createElement("td");
+        statusCell.dataset.label = "Performance";
         const chip = document.createElement("span");
         const count = Number(event.attendance) || 0;
         if (count === 0) {
@@ -2095,12 +2103,86 @@
     );
   }
 
+  function renderQuickActions(resources) {
+    const container = document.getElementById("quick-action-grid");
+    if (!container) return;
+    const actions = resources
+      .filter((resource) => resource.quickAction)
+      .slice(0, 4);
+
+    container.replaceChildren(
+      ...actions.map((resource) => {
+        const action = resource.url
+          ? document.createElement("a")
+          : document.createElement("span");
+        action.className =
+          `quick-action${resource.url ? "" : " is-disabled"}`;
+        if (resource.url) {
+          action.href = resource.url;
+          action.target = resource.url.startsWith("#") ? "_self" : "_blank";
+          if (action.target === "_blank") action.rel = "noopener";
+        }
+
+        const icon = document.createElement("span");
+        icon.className = "quick-action-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = resource.quickAction.icon || "↗";
+
+        const copy = document.createElement("span");
+        const title = document.createElement("strong");
+        title.textContent = resource.quickAction.label;
+        const detail = document.createElement("small");
+        detail.textContent = resource.url
+          ? resource.quickAction.detail
+          : "Setup needed";
+        copy.append(title, detail);
+        action.append(icon, copy);
+        return action;
+      }),
+    );
+  }
+
   function applyTheme(theme) {
     const resolved = theme === "dark" ? "dark" : "light";
     document.body.dataset.theme = resolved;
-    elements.themeToggle.setAttribute(
+    document.documentElement.style.colorScheme = resolved;
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) {
+      themeColor.content = resolved === "dark" ? "#061426" : "#f2f5f9";
+    }
+    [
+      elements.themeToggle,
+      elements.sidebarThemeToggle,
+      elements.gateThemeToggle,
+    ].forEach((button) => {
+      if (!button) return;
+      const label =
+        resolved === "dark" ? "Switch to light theme" : "Switch to dark theme";
+      button.setAttribute("aria-label", label);
+      button.title = label;
+    });
+
+    if (elements.gateThemeToggle) {
+      const gateLabel = elements.gateThemeToggle.querySelector(
+        ".gate-theme-label",
+      );
+      const gateIcon = elements.gateThemeToggle.querySelector(
+        ".gate-theme-icon",
+      );
+      if (gateLabel) {
+        gateLabel.textContent = resolved === "dark" ? "Light mode" : "Dark mode";
+      }
+      if (gateIcon) gateIcon.textContent = resolved === "dark" ? "☼" : "◐";
+    }
+  }
+
+  function setMobileNavigation(open) {
+    const resolved = Boolean(open);
+    document.body.classList.toggle("nav-open", resolved);
+    elements.mobileMenuButton.setAttribute("aria-expanded", String(resolved));
+    elements.mobileMenuButton.setAttribute(
       "aria-label",
-      resolved === "dark" ? "Switch to light theme" : "Switch to dark theme",
+      resolved ? "Close navigation" : "Open navigation",
     );
   }
 
@@ -2181,8 +2263,7 @@
       });
       window.clearTimeout(navigationTimer);
       navigationTimer = window.setTimeout(releaseNavigationLock, 850);
-      document.body.classList.remove("nav-open");
-      elements.mobileMenuButton.setAttribute("aria-expanded", "false");
+      setMobileNavigation(false);
     };
 
     navLinks.forEach((link) => {
@@ -2391,10 +2472,18 @@
     window.print();
   });
 
-  elements.themeToggle.addEventListener("click", () => {
-    const nextTheme = document.body.dataset.theme === "dark" ? "light" : "dark";
-    localStorage.setItem(themeStorageKey, nextTheme);
-    applyTheme(nextTheme);
+  [
+    elements.themeToggle,
+    elements.sidebarThemeToggle,
+    elements.gateThemeToggle,
+  ].forEach((button) => {
+    if (!button) return;
+    button.addEventListener("click", () => {
+      const nextTheme =
+        document.body.dataset.theme === "dark" ? "light" : "dark";
+      localStorage.setItem(themeStorageKey, nextTheme);
+      applyTheme(nextTheme);
+    });
   });
 
   elements.sidebarCollapse.addEventListener("click", () => {
@@ -2411,8 +2500,7 @@
 
   elements.mobileMenuButton.addEventListener("click", () => {
     const opening = !document.body.classList.contains("nav-open");
-    document.body.classList.toggle("nav-open", opening);
-    elements.mobileMenuButton.setAttribute("aria-expanded", String(opening));
+    setMobileNavigation(opening);
   });
 
   document.addEventListener("click", (event) => {
@@ -2421,12 +2509,28 @@
       !elements.mobileMenuButton.contains(event.target) &&
       !document.getElementById("sidebar").contains(event.target)
     ) {
-      document.body.classList.remove("nav-open");
-      elements.mobileMenuButton.setAttribute("aria-expanded", "false");
+      setMobileNavigation(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (
+      event.key === "Escape" &&
+      document.body.classList.contains("nav-open")
+    ) {
+      setMobileNavigation(false);
+      elements.mobileMenuButton.focus();
     }
   });
 
   async function initialize() {
+    const savedTheme = localStorage.getItem(themeStorageKey);
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+      .matches
+      ? "dark"
+      : "light";
+    applyTheme(savedTheme || preferredTheme);
+
     sharedSettingsReady = loadSharedYearSources();
     await sharedSettingsReady;
 
@@ -2443,7 +2547,6 @@
 
     populateYears();
     setupNavigation();
-    applyTheme(localStorage.getItem(themeStorageKey) || "light");
     applySidebarState(localStorage.getItem(sidebarStorageKey) === "true");
 
     if (isUnlocked()) {
