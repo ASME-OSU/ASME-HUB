@@ -109,13 +109,14 @@ button {
 
 .gate-logo-wrap {
   display: grid;
-  width: 188px;
-  height: 94px;
+  width: 126px;
+  height: 126px;
   margin-bottom: 22px;
-  padding: 8px 12px;
+  padding: 0;
+  overflow: hidden;
   place-items: center;
-  border-radius: 16px;
-  background: white;
+  border-radius: 28px;
+  background: var(--navy-950);
   box-shadow: 0 10px 30px rgba(1, 10, 22, 0.22);
 }
 
@@ -401,12 +402,12 @@ button {
 
 .sidebar-logo {
   display: block;
-  width: 54px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   flex: 0 0 auto;
-  padding: 3px 5px;
-  border-radius: 8px;
-  background: white;
+  padding: 0;
+  border-radius: 12px;
+  background: var(--navy-950);
   object-fit: contain;
 }
 
@@ -587,9 +588,9 @@ body.sidebar-collapsed .sidebar-brand {
 }
 
 body.sidebar-collapsed .sidebar-logo {
-  width: 46px;
-  height: 34px;
-  padding: 3px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
 }
 
 body.sidebar-collapsed .sidebar-brand-copy,
@@ -2652,11 +2653,11 @@ body[data-theme="dark"] .settings-dialog {
   }
 
   .gate-logo-wrap {
-    width: 142px;
-    height: 70px;
+    width: 108px;
+    height: 108px;
     margin-bottom: 18px;
-    padding: 6px 10px;
-    border-radius: 13px;
+    padding: 0;
+    border-radius: 24px;
   }
 
   .gate-card h1 {

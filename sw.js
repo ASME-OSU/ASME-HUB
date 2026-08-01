@@ -1,16 +1,15 @@
-const SHELL_CACHE = "asme-hub-shell-v2";
+const SHELL_CACHE = "asme-hub-shell-v4";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./assets/css/styles.css?v=20260801d",
-  "./assets/js/config.js?v=20260801d",
-  "./assets/js/app.js?v=20260801d",
-  "./assets/js/pwa.js?v=20260801d",
-  "./assets/asme-osu-logo.png",
-  "./assets/app-icon.svg",
+  "./assets/css/styles.css?v=20260801e",
+  "./assets/js/config.js?v=20260801e",
+  "./assets/js/app.js?v=20260801e",
+  "./assets/js/pwa.js?v=20260801e",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
+  "./assets/icons/icon-maskable-512.png",
   "./assets/icons/apple-touch-icon.png"
 ];
 

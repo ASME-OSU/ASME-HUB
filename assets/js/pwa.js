@@ -25,7 +25,7 @@
         })
         .catch((error) => {
           document.documentElement.dataset.pwaReady = "false";
-          console.warn("The ASME Hub service worker could not be registered.", error);
+          console.warn("The ASME Officer Hub service worker could not be registered.", error);
         });
     });
   }
