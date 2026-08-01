@@ -1,5 +1,5 @@
 window.ASME_HUB_CONFIG = {
-  appName: "ASME OSU Hub",
+  appName: "ASME Officer Hub",
   currentAcademicYear: "2026-2027",
   access: {
     // SHA-256 digest of the current access phrase. See README.md to rotate it.

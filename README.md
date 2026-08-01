@@ -1,4 +1,4 @@
-# ASME OSU Officer Hub
+# ASME Officer Hub
 
 A lightweight operations dashboard for the ASME student chapter at The Ohio
 State University. It gives officers one place to see aggregate participation
