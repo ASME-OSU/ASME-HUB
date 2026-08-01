@@ -130,6 +130,42 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      title: "Huntington Online Banking",
+      description: "Open Huntington’s official sign-in page for the chapter bank account.",
+      label: "Sign in to Huntington",
+      url: "https://www.huntington.com/mobile-login",
+      category: "Finance",
+      quickAction: {
+        label: "Open Huntington",
+        detail: "Banking portal",
+        icon: "$",
+      },
+    },
+    {
+      title: "Zeffy",
+      description: "Sign in to manage chapter fundraising campaigns, payments, and donor activity.",
+      label: "Sign in to Zeffy",
+      url: "https://www.zeffy.com/login",
+      category: "Finance",
+      quickAction: {
+        label: "Open Zeffy",
+        detail: "Fundraising portal",
+        icon: "Z",
+      },
+    },
+    {
+      title: "Officer Password Document",
+      description: "Restricted SharePoint workbook for approved officers. Access is controlled by Microsoft 365 permissions.",
+      label: "Open password document",
+      url: "https://buckeyemailosu.sharepoint.com/:x:/r/sites/ASMEExecutiveBoard/Shared%20Documents/General/ASME%20Master%20Password%20Document.xlsx?d=wb03e7eaf0d0c4c4ba4f1b9b189c69060&csf=1&web=1&e=gE95In",
+      category: "Officer Access",
+      quickAction: {
+        label: "Officer passwords",
+        detail: "Secure SharePoint file",
+        icon: "⌁",
+      },
+    },
+    {
       title: "Member Points Dashboard",
       description: "Privacy-safe public leaderboard, point values, and searchable member status.",
       label: "Open member dashboard",
