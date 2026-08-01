@@ -5,6 +5,7 @@
   const unlockStorageKey = "asmeHubUnlockedUntil";
   const themeStorageKey = "asmeHubTheme";
   const sidebarStorageKey = "asmeHubSidebarCollapsed";
+  const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
   const numberFormatter = new Intl.NumberFormat("en-US");
@@ -31,6 +32,7 @@
     passwordToggle: document.getElementById("password-toggle"),
     accessError: document.getElementById("access-error"),
     appShell: document.getElementById("app-shell"),
+    heroQuote: document.getElementById("hero-quote"),
     loadingLayer: document.getElementById("loading-layer"),
     lockDashboard: document.getElementById("lock-dashboard"),
     academicYear: document.getElementById("academic-year"),
@@ -77,6 +79,22 @@
 
   function isUnlocked() {
     return getUnlockedUntil() > Date.now();
+  }
+
+  function showRandomMeetingQuote() {
+    const quotes = Array.isArray(config.meetingQuotes)
+      ? config.meetingQuotes.filter((quote) => String(quote).trim())
+      : [];
+    if (!elements.heroQuote || !quotes.length) return;
+
+    const previousIndex = Number(localStorage.getItem(meetingQuoteStorageKey));
+    let nextIndex = Math.floor(Math.random() * quotes.length);
+    if (quotes.length > 1 && nextIndex === previousIndex) {
+      nextIndex = (nextIndex + 1 + Math.floor(Math.random() * (quotes.length - 1))) % quotes.length;
+    }
+
+    elements.heroQuote.textContent = quotes[nextIndex];
+    localStorage.setItem(meetingQuoteStorageKey, String(nextIndex));
   }
 
   async function sha256(value) {
@@ -2524,6 +2542,8 @@
   });
 
   async function initialize() {
+    showRandomMeetingQuote();
+
     const savedTheme = localStorage.getItem(themeStorageKey);
     const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
       .matches
