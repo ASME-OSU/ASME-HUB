@@ -138,14 +138,6 @@ window.ASME_HUB_CONFIG = {
       settingKey: "calendarUrl",
     },
     {
-      title: "Calendar Subscription",
-      description: "Subscribe to the chapter calendar from Google Calendar, Apple Calendar, Outlook, or another iCal-compatible app.",
-      label: "Open iCal feed",
-      url: "",
-      category: "Events",
-      settingKey: "calendarIcalUrl",
-    },
-    {
       title: "ASME OSU GitHub",
       description: "Website, dashboard, and chapter-tool source repositories.",
       label: "Open GitHub",
