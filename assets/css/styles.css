@@ -294,8 +294,45 @@ button {
   width: 100%;
 }
 
+.gate-install {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.install-app-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--navy-800);
+  background: rgba(247, 249, 252, 0.82);
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.install-app-button:hover {
+  border-color: rgba(186, 12, 47, 0.32);
+  color: var(--scarlet);
+  background: white;
+}
+
+.install-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .gate-footnote {
-  margin: 24px 0 0;
+  margin: 18px 0 0;
   color: var(--muted-light);
   font-size: 0.72rem;
   text-align: center;
@@ -2140,6 +2177,22 @@ body[data-theme="dark"] .gate-theme-toggle {
   background: rgba(1, 11, 24, 0.42);
 }
 
+body[data-theme="dark"] .install-app-button {
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #dce5ef;
+  background: rgba(1, 11, 24, 0.42);
+}
+
+body[data-theme="dark"] .install-app-button:hover {
+  border-color: rgba(241, 122, 145, 0.45);
+  color: #f17a91;
+  background: rgba(1, 11, 24, 0.68);
+}
+
+body[data-theme="dark"] .install-hint {
+  color: #9dacbd;
+}
+
 body[data-theme="dark"] .topbar {
   background: rgba(7, 19, 33, 0.91);
 }
@@ -2643,8 +2696,16 @@ body[data-theme="dark"] .settings-dialog {
   }
 
   .gate-footnote {
-    margin-top: 18px;
+    margin-top: 14px;
     line-height: 1.45;
+  }
+
+  .gate-install {
+    margin-top: 10px;
+  }
+
+  .install-app-button {
+    min-height: 44px;
   }
 
   .year-select {

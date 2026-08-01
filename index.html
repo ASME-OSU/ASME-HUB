@@ -5,12 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07182d">
   <meta name="description" content="The internal operations dashboard for ASME at The Ohio State University.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ASME Hub">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>ASME OSU Hub</title>
-  <link rel="icon" href="assets/asme-osu-logo.png" type="image/png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260801b">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260801d">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -43,6 +49,13 @@
           <span aria-hidden="true">→</span>
         </button>
       </form>
+      <div class="gate-install">
+        <button class="install-app-button" type="button" data-install-app hidden>
+          Install officer app
+          <span aria-hidden="true">↓</span>
+        </button>
+        <p class="install-hint" id="ios-install-hint" hidden>On iPhone or iPad, tap Share, then Add to Home Screen.</p>
+      </div>
       <p class="gate-footnote">Prototype access gate · Use aggregate or sample data only</p>
     </div>
   </section>
@@ -104,6 +117,10 @@
         <button id="sidebar-theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
           <span class="sidebar-footer-label">Color theme</span>
           <span aria-hidden="true">◐</span>
+        </button>
+        <button type="button" data-install-app aria-label="Install officer app" title="Install officer app" hidden>
+          <span class="sidebar-footer-label">Install officer app</span>
+          <span aria-hidden="true">↓</span>
         </button>
         <button id="lock-dashboard" type="button" aria-label="Lock dashboard" title="Lock dashboard">
           <span class="sidebar-footer-label">Lock dashboard</span>
@@ -520,7 +537,8 @@
     </form>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260801b"></script>
-  <script src="assets/js/app.js?v=20260801b"></script>
+  <script src="assets/js/config.js?v=20260801d"></script>
+  <script src="assets/js/app.js?v=20260801d"></script>
+  <script src="assets/js/pwa.js?v=20260801d"></script>
 </body>
 </html>

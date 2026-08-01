@@ -26,6 +26,7 @@ designed to remain easy to maintain through annual officer transitions.
 - A compact quick-action strip for check-in, event planning, officer tasks, and the Points Master
 - A central resource launcher
 - Light and dark color themes
+- Installable app support for desktop, Android, iPhone, and iPad
 - A documented path from Google Forms/Sheets to a safe aggregate JSON feed
 
 The 2026–27 officer, attendance, member, communications, website, and source
@@ -376,6 +377,27 @@ no-sign-in settings writer is enabled, copy the same digest into
 plain access phrase into the repository or commit message.
 
 Again, this deters casual access only; it does not make GitHub Pages private.
+
+## Install as an app
+
+The published Officer Hub is a progressive web app (PWA). It can open in its
+own app window and appear on an officer's home screen or app launcher.
+
+- **Chrome, Edge, and Android:** open the published hub and choose **Install
+  officer app** when the button appears. The browser's Install option also
+  works.
+- **iPhone and iPad:** open the hub in Safari, tap **Share**, and choose **Add
+  to Home Screen**.
+
+The service worker caches only the public app shell: HTML, CSS, JavaScript,
+logos, and install icons. Live attendance, settings, calendar, Google, and
+SharePoint requests are intentionally not cached, so current dashboard data
+still requires a network connection.
+
+When changing a cached app-shell file, update both the version query in
+`index.html` and `SHELL_ASSETS` in `sw.js`, then increment `SHELL_CACHE`. This
+ensures installed copies receive the new release instead of retaining an old
+asset.
 
 ## Publish with GitHub Pages
 

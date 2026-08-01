@@ -1,0 +1,49 @@
+{
+  "id": "./",
+  "name": "ASME OSU Officer Hub",
+  "short_name": "ASME Hub",
+  "description": "A chapter-health and operations dashboard for ASME at The Ohio State University.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f5f9",
+  "theme_color": "#07182d",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chapter overview",
+      "short_name": "Overview",
+      "url": "./#overview"
+    },
+    {
+      "name": "Events",
+      "short_name": "Events",
+      "url": "./#events"
+    },
+    {
+      "name": "Officer resources",
+      "short_name": "Resources",
+      "url": "./#resources"
+    }
+  ]
+}
