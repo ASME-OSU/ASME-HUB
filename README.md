@@ -46,6 +46,9 @@ Safari from zooming the page when a selector or settings field receives focus,
 larger touch targets, and stacked event-performance cards instead of a wide
 desktop table. The mobile drawer locks background scrolling, closes with
 Escape, and includes theme control when the compact top bar hides that button.
+The unlock screen is also safe-area aware and vertically scrollable when a
+phone keyboard reduces the viewport. Its theme control is available before
+sign-in, and the saved theme follows the officer into the dashboard.
 
 ## Security boundary
 

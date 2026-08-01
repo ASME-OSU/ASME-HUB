@@ -40,6 +40,7 @@
     mobileMenuButton: document.getElementById("mobile-menu-button"),
     sidebarCollapse: document.getElementById("sidebar-collapse"),
     sidebarThemeToggle: document.getElementById("sidebar-theme-toggle"),
+    gateThemeToggle: document.getElementById("gate-theme-toggle"),
     settingsButton: document.getElementById("settings-button"),
     sidebarSettings: document.getElementById("sidebar-settings"),
     settingsDialog: document.getElementById("year-settings-dialog"),
@@ -2144,13 +2145,35 @@
   function applyTheme(theme) {
     const resolved = theme === "dark" ? "dark" : "light";
     document.body.dataset.theme = resolved;
-    [elements.themeToggle, elements.sidebarThemeToggle].forEach((button) => {
+    document.documentElement.style.colorScheme = resolved;
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) {
+      themeColor.content = resolved === "dark" ? "#061426" : "#f2f5f9";
+    }
+    [
+      elements.themeToggle,
+      elements.sidebarThemeToggle,
+      elements.gateThemeToggle,
+    ].forEach((button) => {
       if (!button) return;
       const label =
         resolved === "dark" ? "Switch to light theme" : "Switch to dark theme";
       button.setAttribute("aria-label", label);
       button.title = label;
     });
+
+    if (elements.gateThemeToggle) {
+      const gateLabel = elements.gateThemeToggle.querySelector(
+        ".gate-theme-label",
+      );
+      const gateIcon = elements.gateThemeToggle.querySelector(
+        ".gate-theme-icon",
+      );
+      if (gateLabel) {
+        gateLabel.textContent = resolved === "dark" ? "Light mode" : "Dark mode";
+      }
+      if (gateIcon) gateIcon.textContent = resolved === "dark" ? "☼" : "◐";
+    }
   }
 
   function setMobileNavigation(open) {
@@ -2449,7 +2472,12 @@
     window.print();
   });
 
-  [elements.themeToggle, elements.sidebarThemeToggle].forEach((button) => {
+  [
+    elements.themeToggle,
+    elements.sidebarThemeToggle,
+    elements.gateThemeToggle,
+  ].forEach((button) => {
+    if (!button) return;
     button.addEventListener("click", () => {
       const nextTheme =
         document.body.dataset.theme === "dark" ? "light" : "dark";
@@ -2496,6 +2524,13 @@
   });
 
   async function initialize() {
+    const savedTheme = localStorage.getItem(themeStorageKey);
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+      .matches
+      ? "dark"
+      : "light";
+    applyTheme(savedTheme || preferredTheme);
+
     sharedSettingsReady = loadSharedYearSources();
     await sharedSettingsReady;
 
@@ -2512,7 +2547,6 @@
 
     populateYears();
     setupNavigation();
-    applyTheme(localStorage.getItem(themeStorageKey) || "light");
     applySidebarState(localStorage.getItem(sidebarStorageKey) === "true");
 
     if (isUnlocked()) {

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#07182d">
   <meta name="description" content="The internal operations dashboard for ASME at The Ohio State University.">
   <title>ASME OSU Hub</title>
@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260801a">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260801b">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -21,6 +21,10 @@
       <span class="gate-orbit gate-orbit-two"></span>
     </div>
     <div class="gate-card">
+      <button class="gate-theme-toggle" id="gate-theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch to dark theme">
+        <span class="gate-theme-icon" aria-hidden="true">◐</span>
+        <span class="gate-theme-label">Dark mode</span>
+      </button>
       <div class="gate-logo-wrap">
         <img class="gate-logo" src="assets/asme-osu-logo.png" alt="ASME at The Ohio State University">
       </div>
@@ -516,7 +520,7 @@
     </form>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260801a"></script>
-  <script src="assets/js/app.js?v=20260801a"></script>
+  <script src="assets/js/config.js?v=20260801b"></script>
+  <script src="assets/js/app.js?v=20260801b"></script>
 </body>
 </html>
