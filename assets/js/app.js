@@ -2126,7 +2126,7 @@
     if (!container) return;
     const actions = resources
       .filter((resource) => resource.quickAction)
-      .slice(0, 4);
+      .slice(0, 7);
 
     container.replaceChildren(
       ...actions.map((resource) => {
