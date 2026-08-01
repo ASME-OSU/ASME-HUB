@@ -50,6 +50,11 @@ window.ASME_HUB_CONFIG = {
       label: "Open event tracker",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Lists/Event%20Operations/AllItems.aspx",
       category: "Operations",
+      quickAction: {
+        label: "Plan an event",
+        detail: "Event Operations",
+        icon: "◫",
+      },
     },
     {
       title: "Officer Task Tracker",
@@ -57,6 +62,11 @@ window.ASME_HUB_CONFIG = {
       label: "Open task tracker",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Lists/Task%20Tracker/AllItems.aspx",
       category: "Operations",
+      quickAction: {
+        label: "Review tasks",
+        detail: "Officer tracker",
+        icon: "✓",
+      },
     },
     {
       title: "Shared Documents",
@@ -72,6 +82,11 @@ window.ASME_HUB_CONFIG = {
       url: "https://docs.google.com/forms/d/1cPIevIbm1AUu-oFy9-Y6zRSq9doHiPes3drFazNhs4E/viewform",
       category: "Attendance",
       settingKey: "attendanceFormUrl",
+      quickAction: {
+        label: "Open check-in",
+        detail: "Attendance form",
+        icon: "+",
+      },
     },
     {
       title: "Points Master",
@@ -80,6 +95,11 @@ window.ASME_HUB_CONFIG = {
       url: "https://docs.google.com/spreadsheets/d/1cDoumWy2ZN5BJ5I4UfvdkuWM6NXCivlMggDswdgJsrM/edit",
       category: "Attendance",
       settingKey: "pointsMasterUrl",
+      quickAction: {
+        label: "Review points",
+        detail: "Points Master",
+        icon: "◎",
+      },
     },
     {
       title: "Member Points Dashboard",

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260730c">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260801a">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -97,6 +97,10 @@
           <span class="sidebar-footer-label">Year settings</span>
           <span aria-hidden="true">⚙</span>
         </button>
+        <button id="sidebar-theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+          <span class="sidebar-footer-label">Color theme</span>
+          <span aria-hidden="true">◐</span>
+        </button>
         <button id="lock-dashboard" type="button" aria-label="Lock dashboard" title="Lock dashboard">
           <span class="sidebar-footer-label">Lock dashboard</span>
           <span aria-hidden="true">⌁</span>
@@ -161,6 +165,14 @@
         <section class="health-insight is-neutral" id="health-insight" aria-live="polite">
           <span class="health-insight-label" id="health-insight-status">Chapter pulse</span>
           <p id="health-insight-copy">Loading a concise health summary…</p>
+        </section>
+
+        <section class="quick-actions" aria-labelledby="quick-actions-title">
+          <div class="quick-actions-heading">
+            <p class="eyebrow">Officer shortcuts</p>
+            <strong id="quick-actions-title">Start a common task</strong>
+          </div>
+          <div class="quick-action-grid" id="quick-action-grid"></div>
         </section>
 
         <section class="kpi-grid" aria-label="Chapter key performance indicators">
@@ -504,7 +516,7 @@
     </form>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260728c"></script>
-  <script src="assets/js/app.js?v=20260730c"></script>
+  <script src="assets/js/config.js?v=20260801a"></script>
+  <script src="assets/js/app.js?v=20260801a"></script>
 </body>
 </html>
