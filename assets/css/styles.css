@@ -483,17 +483,26 @@ button {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.nav-link.is-active {
-  box-shadow: inset 3px 0 var(--scarlet);
-}
-
 .nav-icon {
   display: grid;
-  width: 23px;
-  height: 23px;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
   place-items: center;
+  border-radius: 8px;
   color: #d1dbe8;
   font-size: 1.05rem;
+  transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.nav-link:hover .nav-icon {
+  color: white;
+}
+
+.nav-link.is-active .nav-icon {
+  color: white;
+  background: var(--scarlet);
+  box-shadow: 0 5px 14px rgba(186, 12, 47, 0.28);
 }
 
 .nav-count {
