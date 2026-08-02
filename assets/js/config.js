@@ -61,6 +61,11 @@ window.ASME_HUB_CONFIG = {
       calendarUrl: "https://org.osu.edu/asme/calendar/",
       calendarIcalUrl:
         "https://calendar.google.com/calendar/ical/c93730cdacb567b0f010d1367080e3028ec5c7657d9713b675ac9e5c437b9fba%40group.calendar.google.com/public/basic.ics",
+      budgetTrackerUrl:
+        "https://docs.google.com/spreadsheets/d/14TiHKfV1T4M4QnrBmoALBwYhlrsY6ydcqmueF-U3pqo/edit",
+      budgetExportSheetUrl:
+        "https://docs.google.com/spreadsheets/d/1ke0wGEBOt_G2mMPA-qK66iXml-b7Vi9lzFxEM1PvhbE/edit",
+      budgetExportSheetTab: "Budget_Public",
       engagementGoal: 250,
     },
   },
@@ -127,6 +132,19 @@ window.ASME_HUB_CONFIG = {
         label: "Review points",
         detail: "Points Master",
         icon: "◎",
+      },
+    },
+    {
+      title: "2026–2027 Budget Tracker",
+      description: "Open the shared workbook for chapter budget planning and financial tracking.",
+      label: "Open budget tracker",
+      url: "https://docs.google.com/spreadsheets/d/14TiHKfV1T4M4QnrBmoALBwYhlrsY6ydcqmueF-U3pqo/edit",
+      category: "Finance",
+      settingKey: "budgetTrackerUrl",
+      quickAction: {
+        label: "Budget tracker",
+        detail: "2026–2027 workbook",
+        icon: "▤",
       },
     },
     {

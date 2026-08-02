@@ -274,6 +274,40 @@ Because a URL included in static JavaScript is public, a token stored in this
 repository would not secure the endpoint. Only publish non-sensitive aggregate
 output.
 
+### Budget health feed
+
+The finance cards use a separate, aggregate-only Google Sheet. The budget
+tracker stays private; the Hub never reads its transaction tabs directly.
+
+```text
+private annual budget tracker → Budget_Public export → Officer Hub cards
+```
+
+For 2026–2027, the year configuration contains three finance settings:
+
+- `budgetTrackerUrl`: the private native Google Sheet officers open to manage the budget
+- `budgetExportSheetUrl`: the separate read-only spreadsheet exposed to the Hub
+- `budgetExportSheetTab`: the aggregate tab name, normally `Budget_Public`
+
+`Budget_Public` contains only the academic year, approved income, approved
+expenses, pending approval total, planned budget, remaining budget, budget-used
+rate, and refresh time. Do not add transaction rows, payees, account numbers,
+receipt links, reimbursement notes, or other identifying financial details.
+
+At annual handoff:
+
+1. Make the new annual budget tracker a native Google Sheet and keep it private.
+2. Copy the prior `ASME Officer Hub Budget Export` spreadsheet.
+3. Update its `IMPORTRANGE` source ID and source-cell references.
+4. Click **Allow access** once from the export spreadsheet.
+5. Verify the export contains aggregate values only, then give the export file
+   **Anyone with the link · Viewer** access.
+6. Update the three finance settings in that year’s `dataSources` entry.
+7. Test the Hub in light and dark mode at desktop and mobile widths.
+
+The public export is intentionally separate from the attendance Website Export
+so its access can be audited or revoked without affecting the points system.
+
 ## Data contract
 
 Every configured data URL must return this shape:

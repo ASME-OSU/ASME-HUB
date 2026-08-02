@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260801g">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260801i">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -73,6 +73,7 @@
       </div>
 
       <nav class="sidebar-nav" aria-label="Dashboard navigation">
+        <p class="nav-section-label">Chapter health</p>
         <a class="nav-link is-active" href="#overview" aria-label="Overview" title="Overview">
           <span class="nav-icon" aria-hidden="true">⌂</span>
           <span class="nav-label">Overview</span>
@@ -85,6 +86,12 @@
           <span class="nav-icon" aria-hidden="true">◎</span>
           <span class="nav-label">Members</span>
         </a>
+        <a class="nav-link" href="#finances" aria-label="Finances" title="Finances">
+          <span class="nav-icon" aria-hidden="true">$</span>
+          <span class="nav-label">Finances</span>
+        </a>
+        <div class="nav-separator" aria-hidden="true"></div>
+        <p class="nav-section-label">Officer tools</p>
         <a class="nav-link" href="#operations" aria-label="Operations" title="Operations">
           <span class="nav-icon" aria-hidden="true">✓</span>
           <span class="nav-label">Operations</span>
@@ -134,11 +141,17 @@
         <button class="sidebar-collapse" id="sidebar-collapse" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
           <span aria-hidden="true">‹</span>
         </button>
+        <a class="topbar-brandmark" href="#overview" aria-label="ASME Officer Hub home">
+          <img src="assets/hub-mark.svg?v=20260801b" alt="">
+        </a>
         <div class="topbar-title">
           <p class="eyebrow">Chapter operations</p>
           <strong>Dashboard</strong>
         </div>
         <div class="topbar-actions">
+          <button class="icon-button search-button" id="search-button" type="button" aria-label="Search the Officer Hub" title="Search (Command or Control + K)">
+            <span aria-hidden="true">⌕</span>
+          </button>
           <label class="year-select-label" for="academic-year">Academic year</label>
           <select id="academic-year" class="year-select"></select>
           <button class="icon-button" id="settings-button" type="button" aria-label="Open academic year settings" title="Academic year settings">
@@ -381,6 +394,49 @@
           <div class="health-grid" id="health-grid"></div>
         </section>
 
+        <section class="panel budget-panel dashboard-section" id="finances" aria-labelledby="budget-title">
+          <div class="panel-heading budget-heading">
+            <div>
+              <p class="eyebrow">Financial pulse</p>
+              <h2 id="budget-title">Budget health</h2>
+            </div>
+            <div class="budget-heading-actions">
+              <span class="panel-chip" id="budget-period">Loading…</span>
+              <a class="text-link" id="budget-tracker-link" href="#resources">Open tracker ↗</a>
+            </div>
+          </div>
+          <div class="budget-kpi-grid" aria-label="Aggregate budget indicators">
+            <article class="budget-kpi-card">
+              <span>Approved income</span>
+              <strong id="budget-approved-income">—</strong>
+              <small>Cleared income</small>
+            </article>
+            <article class="budget-kpi-card">
+              <span>Approved expenses</span>
+              <strong id="budget-approved-expenses">—</strong>
+              <small>Cleared expenses</small>
+            </article>
+            <article class="budget-kpi-card">
+              <span>Pending approval</span>
+              <strong id="budget-pending-approval">—</strong>
+              <small>Awaiting review</small>
+            </article>
+            <article class="budget-kpi-card">
+              <span>Remaining budget</span>
+              <strong id="budget-remaining">—</strong>
+              <small id="budget-planned-context">Of — planned</small>
+            </article>
+            <article class="budget-kpi-card budget-usage-card">
+              <span>Budget used</span>
+              <strong id="budget-used-rate">—</strong>
+              <div class="budget-progress" role="progressbar" aria-label="Budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <span id="budget-progress-fill"></span>
+              </div>
+            </article>
+          </div>
+          <p class="panel-footnote budget-footnote" id="budget-freshness">Loading the aggregate-only budget feed…</p>
+        </section>
+
         <section class="panel operations-panel dashboard-section" id="operations">
           <div class="panel-heading">
             <div>
@@ -537,8 +593,26 @@
     </form>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260801h"></script>
-  <script src="assets/js/app.js?v=20260801g"></script>
+  <dialog class="search-dialog" id="hub-search-dialog" aria-labelledby="hub-search-title">
+    <div class="search-dialog-shell">
+      <div class="search-dialog-heading">
+        <div>
+          <p class="eyebrow">Quick find</p>
+          <h2 id="hub-search-title">Search the Officer Hub</h2>
+        </div>
+        <button class="settings-close" id="hub-search-close" type="button" aria-label="Close search">×</button>
+      </div>
+      <label class="hub-search-field">
+        <span aria-hidden="true">⌕</span>
+        <input id="hub-search-input" type="search" autocomplete="off" aria-label="Search the Officer Hub" placeholder="Search sections, tools, or resources">
+        <kbd>Esc</kbd>
+      </label>
+      <div class="hub-search-results" id="hub-search-results" role="listbox" aria-label="Search results"></div>
+    </div>
+  </dialog>
+
+  <script src="assets/js/config.js?v=20260801j"></script>
+  <script src="assets/js/app.js?v=20260801j"></script>
   <script src="assets/js/pwa.js?v=20260801e"></script>
 </body>
 </html>
