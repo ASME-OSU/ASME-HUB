@@ -9,6 +9,11 @@
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
   const numberFormatter = new Intl.NumberFormat("en-US");
+  const currencyFormatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
   const eventTypeColumns = [
     { column: 7, name: "General Body", color: "#184a7d" },
     { column: 8, name: "Social", color: "#4f7cac" },
@@ -24,6 +29,7 @@
   let activeDashboardData = null;
   let selectedPeriod = "ytd";
   let refreshNavigation = () => {};
+  let activeHubSearchItems = [];
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -71,6 +77,11 @@
     settingsSharedLink: document.getElementById("settings-shared-link"),
     settingsSharedAction: document.getElementById("settings-shared-action"),
     settingsPublish: document.getElementById("settings-publish"),
+    searchButton: document.getElementById("search-button"),
+    searchDialog: document.getElementById("hub-search-dialog"),
+    searchClose: document.getElementById("hub-search-close"),
+    searchInput: document.getElementById("hub-search-input"),
+    searchResults: document.getElementById("hub-search-results"),
   };
 
   function getUnlockedUntil() {
@@ -259,6 +270,10 @@
       pointsMasterUrl: elements.settingsPointsMaster.value.trim(),
       calendarUrl: elements.settingsCalendar.value.trim(),
       calendarIcalUrl: elements.settingsCalendarIcal.value.trim(),
+      budgetTrackerUrl: existing?.budgetTrackerUrl || "",
+      budgetExportSheetUrl: existing?.budgetExportSheetUrl || "",
+      budgetExportSheetTab:
+        existing?.budgetExportSheetTab || "Budget_Public",
       eventMetricsSheetTab:
         existing?.eventMetricsSheetTab || "Event_Metrics_Public",
       isActive: elements.settingsIsActive.checked,
@@ -283,6 +298,8 @@
       ["Points Master", settings.pointsMasterUrl, false],
       ["events calendar page", settings.calendarUrl, false],
       ["Google Calendar iCal", settings.calendarIcalUrl, false],
+      ["budget tracker", settings.budgetTrackerUrl, true],
+      ["sanitized budget export", settings.budgetExportSheetUrl, true],
     ];
     const invalid = urls.find(
       ([, value, allowSheetId]) =>
@@ -511,6 +528,64 @@
     if (!cell) return "";
     if (formatted && cell.f !== null && cell.f !== undefined) return cell.f;
     return cell.v !== null && cell.v !== undefined ? cell.v : "";
+  }
+
+  async function loadBudgetSummary(source) {
+    const spreadsheetId = spreadsheetIdFrom(source.budgetExportSheetUrl);
+    if (!spreadsheetId) {
+      return {
+        available: false,
+        error: "No sanitized budget feed is configured for this academic year.",
+      };
+    }
+
+    try {
+      const table = await queryPublicSheet(
+        spreadsheetId,
+        source.budgetExportSheetTab || "Budget_Public",
+        "select A,B,C,D,E,F where A is not null",
+      );
+      const metrics = {};
+      (table.rows || []).forEach((row) => {
+        const key = String(sheetCell(row, 0) || "").trim();
+        if (!key) return;
+        metrics[key] = {
+          label: String(sheetCell(row, 1) || "").trim(),
+          value: sheetCell(row, 2),
+          formatted: String(sheetCell(row, 2, true) || "").trim(),
+          format: String(sheetCell(row, 3) || "").trim(),
+          description: String(sheetCell(row, 4) || "").trim(),
+          textValue: String(sheetCell(row, 5) || "").trim(),
+        };
+      });
+
+      const numberValue = (key) => {
+        const raw = metrics[key]?.value;
+        if (raw === "" || raw === null || raw === undefined) return null;
+        const value = Number(raw);
+        return Number.isFinite(value) ? value : null;
+      };
+      const updatedAt = sheetTimestamp(metrics.updated_at?.value);
+
+      return {
+        available: true,
+        academicYear:
+          metrics.academic_year?.textValue || source.label || "Current year",
+        approvedIncome: numberValue("approved_income"),
+        approvedExpenses: numberValue("approved_expenses"),
+        pendingApproval: numberValue("pending_approval"),
+        plannedBudget: numberValue("planned_budget"),
+        remainingBudget: numberValue("remaining_budget"),
+        budgetUsedRate: numberValue("budget_used_rate"),
+        updatedAt: updatedAt ? updatedAt.toISOString() : "",
+      };
+    } catch (error) {
+      console.warn("The sanitized budget feed could not be loaded.", error);
+      return {
+        available: false,
+        error: error.message || "The sanitized budget feed could not be loaded.",
+      };
+    }
   }
 
   function sheetTimestamp(value) {
@@ -1149,9 +1224,160 @@
           ? `${source?.label || "Current year"} Attendance Check-In`
           : resource.settingKey === "pointsMasterUrl"
             ? `${source?.label || "Current year"} Points Master`
+            : resource.settingKey === "budgetTrackerUrl"
+              ? `${source?.label || "Current year"} Budget Tracker`
             : resource.title;
       return { ...resource, title, url };
     });
+  }
+
+  function configureHubSearch(resources = []) {
+    const sections = [
+      {
+        type: "section",
+        sectionId: "overview",
+        title: "Overview",
+        description: "Chapter snapshot, attendance KPIs, and meeting pulse",
+        icon: "⌂",
+        keywords: "dashboard health attendance kpi summary",
+      },
+      {
+        type: "section",
+        sectionId: "events",
+        title: "Events",
+        description: "Turnout trends, engagement goal, and event review",
+        icon: "◫",
+        keywords: "calendar turnout performance event types",
+      },
+      {
+        type: "section",
+        sectionId: "members",
+        title: "Members",
+        description: "Participation mix, retention, and engagement depth",
+        icon: "◎",
+        keywords: "members attendance repeat participation",
+      },
+      {
+        type: "section",
+        sectionId: "finances",
+        title: "Finances",
+        description: "Budget totals, pending approval, and remaining funds",
+        icon: "$",
+        keywords: "budget income expenses finance money",
+      },
+      {
+        type: "section",
+        sectionId: "operations",
+        title: "Operations",
+        description: "Items that need officer attention",
+        icon: "✓",
+        keywords: "tasks actions review queue",
+      },
+      {
+        type: "section",
+        sectionId: "resources",
+        title: "Resources",
+        description: "Officer tools, workspaces, and chapter links",
+        icon: "↗",
+        keywords: "tools links sharepoint sheets forms",
+      },
+    ];
+    const resourceItems = resources.map((resource) => ({
+      type: "resource",
+      title: resource.title,
+      description: resource.description,
+      category: resource.category || "Resource",
+      url: resource.url || "",
+      icon: resource.quickAction?.icon || "↗",
+      keywords: `${resource.label || ""} ${resource.category || ""}`,
+    }));
+    activeHubSearchItems = [...sections, ...resourceItems];
+    renderHubSearchResults(elements.searchInput?.value || "");
+  }
+
+  function closeHubSearch() {
+    if (!elements.searchDialog) return;
+    if (typeof elements.searchDialog.close === "function") {
+      if (elements.searchDialog.open) elements.searchDialog.close();
+    } else {
+      elements.searchDialog.removeAttribute("open");
+    }
+  }
+
+  function openHubSearch() {
+    if (!elements.searchDialog) return;
+    setMobileNavigation(false);
+    elements.searchInput.value = "";
+    renderHubSearchResults("");
+    if (typeof elements.searchDialog.showModal === "function") {
+      elements.searchDialog.showModal();
+    } else {
+      elements.searchDialog.setAttribute("open", "");
+    }
+    window.setTimeout(() => elements.searchInput.focus(), 30);
+  }
+
+  function renderHubSearchResults(value) {
+    if (!elements.searchResults) return;
+    const query = String(value || "").trim().toLowerCase();
+    const terms = query.split(/\s+/).filter(Boolean);
+    const matches = activeHubSearchItems
+      .filter((item) => {
+        if (!terms.length) return true;
+        const haystack = `${item.title} ${item.description} ${item.category || ""} ${item.keywords || ""}`.toLowerCase();
+        return terms.every((term) => haystack.includes(term));
+      })
+      .slice(0, terms.length ? 12 : 9);
+
+    if (!matches.length) {
+      const empty = document.createElement("p");
+      empty.className = "hub-search-empty";
+      empty.textContent = `No Hub results found for “${value.trim()}”.`;
+      elements.searchResults.replaceChildren(empty);
+      return;
+    }
+
+    elements.searchResults.replaceChildren(
+      ...matches.map((item) => {
+        const result = item.type === "resource" && item.url
+          ? document.createElement("a")
+          : document.createElement("button");
+        result.className = "hub-search-result";
+        result.setAttribute("role", "option");
+        if (result.tagName === "BUTTON") result.type = "button";
+        if (item.type === "resource" && item.url) {
+          result.href = item.url;
+          result.target = item.url.startsWith("#") ? "_self" : "_blank";
+          result.rel = item.url.startsWith("#") ? "" : "noopener";
+          result.addEventListener("click", closeHubSearch);
+        } else if (item.sectionId) {
+          result.addEventListener("click", () => {
+            closeHubSearch();
+            const navLink = document.querySelector(
+              `.nav-link[href="#${item.sectionId}"]`,
+            );
+            if (navLink) navLink.click();
+          });
+        }
+
+        const icon = document.createElement("span");
+        icon.className = "hub-search-result-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = item.icon || "↗";
+        const copy = document.createElement("span");
+        copy.className = "hub-search-result-copy";
+        const title = document.createElement("strong");
+        title.textContent = item.title;
+        const description = document.createElement("small");
+        description.textContent = item.description;
+        copy.append(title, description);
+        const kind = document.createElement("span");
+        kind.className = "hub-search-result-kind";
+        kind.textContent = item.type === "section" ? "Section" : item.category;
+        result.append(icon, copy, kind);
+        return result;
+      }),
+    );
   }
 
   async function loadDashboard(year) {
@@ -1164,6 +1390,7 @@
     const resources = resolveYearResources(source);
     renderResources(resources);
     renderQuickActions(resources);
+    configureHubSearch(resources);
     const calendarLink = document.querySelector(".upcoming-panel .text-link");
     if (calendarLink && source.calendarUrl) {
       calendarLink.href = source.calendarUrl;
@@ -1189,9 +1416,23 @@
       } else {
         throw new Error("No attendance data source is configured.");
       }
-      const calendar = await loadCalendarEvents(source);
+      const [calendar, budget] = await Promise.all([
+        loadCalendarEvents(source),
+        loadBudgetSummary(source),
+      ]);
       data.upcomingEvents = calendar.events;
-      data.health = [...(data.health || []), calendar.health];
+      data.budget = budget;
+      data.health = [
+        ...(data.health || []),
+        calendar.health,
+        {
+          label: "Budget feed",
+          status: budget.available ? "LIVE" : "ACTION",
+          detail: budget.available
+            ? "Aggregate-only financial totals connected"
+            : budget.error || "Sanitized budget feed unavailable",
+        },
+      ];
       data.operations = [
         ...(data.operations || []),
         ...calendar.operations.map((item) => ({
@@ -1202,6 +1443,16 @@
               : item.actionUrl,
         })),
       ];
+      if (!budget.available && source.budgetExportSheetUrl) {
+        data.operations.push({
+          severity: "warning",
+          title: "Budget summary needs attention",
+          detail:
+            "The Hub could not read the aggregate-only budget export. The private transaction workbook remains unaffected.",
+          actionLabel: "Open budget tracker",
+          actionUrl: source.budgetTrackerUrl || "#resources",
+        });
+      }
       renderDashboard(data, source);
       updateYearLabel();
     } catch (error) {
@@ -1231,7 +1482,7 @@
     ]);
   }
 
-  function renderDashboard(data) {
+  function renderDashboard(data, source = {}) {
     data.monthlyMetrics = (data.monthlyMetrics || []).map((item) => ({
       ...item,
       periodKey: item.periodKey || item.monthKey,
@@ -1247,6 +1498,7 @@
       data.monthlyMetrics || [],
     );
     renderSelectedPeriod();
+    renderBudget(data.budget || {}, source);
     renderUpcomingEvents(data.upcomingEvents || []);
     renderHealth(data.health || []);
     renderOperations(data.operations || []);
@@ -1545,6 +1797,78 @@
       setText("kpi-average-turnout-context", "Check-ins per event");
       setText("kpi-repeat-rate-context", "Attended two or more events");
     }
+  }
+
+  function renderBudget(budget, source = {}) {
+    const trackerLink = document.getElementById("budget-tracker-link");
+    if (trackerLink) {
+      const url = source.budgetTrackerUrl || "#resources";
+      trackerLink.href = url;
+      trackerLink.target = url.startsWith("#") ? "_self" : "_blank";
+      trackerLink.rel = url.startsWith("#") ? "" : "noopener";
+    }
+
+    if (!budget.available) {
+      [
+        "budget-approved-income",
+        "budget-approved-expenses",
+        "budget-pending-approval",
+        "budget-remaining",
+        "budget-used-rate",
+      ].forEach((id) => setText(id, "—"));
+      setText("budget-period", source.label || "Not connected");
+      setText("budget-planned-context", "Aggregate feed unavailable");
+      setText(
+        "budget-freshness",
+        budget.error || "No sanitized budget feed is configured for this year.",
+      );
+      const emptyFill = document.getElementById("budget-progress-fill");
+      if (emptyFill) emptyFill.style.width = "0%";
+      const emptyProgress = emptyFill?.parentElement;
+      if (emptyProgress) emptyProgress.setAttribute("aria-valuenow", "0");
+      return;
+    }
+
+    const money = (value) =>
+      hasMetric(value) ? currencyFormatter.format(Number(value)) : "—";
+    const rawRate = Number(budget.budgetUsedRate);
+    const percent = Number.isFinite(rawRate)
+      ? rawRate <= 1
+        ? rawRate * 100
+        : rawRate
+      : 0;
+    const boundedPercent = Math.max(0, Math.min(100, percent));
+
+    setText("budget-period", budget.academicYear || source.label || "Current year");
+    setText("budget-approved-income", money(budget.approvedIncome));
+    setText("budget-approved-expenses", money(budget.approvedExpenses));
+    setText("budget-pending-approval", money(budget.pendingApproval));
+    setText("budget-remaining", money(budget.remainingBudget));
+    setText("budget-used-rate", `${Math.round(percent)}%`);
+    setText(
+      "budget-planned-context",
+      `Of ${money(budget.plannedBudget)} planned`,
+    );
+
+    const fill = document.getElementById("budget-progress-fill");
+    if (fill) fill.style.width = `${boundedPercent}%`;
+    const progress = fill?.parentElement;
+    if (progress) {
+      progress.setAttribute("aria-valuenow", String(Math.round(boundedPercent)));
+    }
+
+    const updated = budget.updatedAt ? new Date(budget.updatedAt) : null;
+    setText(
+      "budget-freshness",
+      updated && !Number.isNaN(updated.getTime())
+        ? `Aggregate-only totals · Refreshed ${new Intl.DateTimeFormat("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }).format(updated)}`
+        : "Aggregate-only totals from the budget export",
+    );
   }
 
   function renderAttendanceChart(items, periodLabel = "") {
@@ -2126,7 +2450,7 @@
     if (!container) return;
     const actions = resources
       .filter((resource) => resource.quickAction)
-      .slice(0, 7);
+      .slice(0, 8);
 
     container.replaceChildren(
       ...actions.map((resource) => {
@@ -2521,6 +2845,18 @@
     setMobileNavigation(opening);
   });
 
+  if (elements.searchButton) {
+    elements.searchButton.addEventListener("click", openHubSearch);
+  }
+  if (elements.searchClose) {
+    elements.searchClose.addEventListener("click", closeHubSearch);
+  }
+  if (elements.searchInput) {
+    elements.searchInput.addEventListener("input", () => {
+      renderHubSearchResults(elements.searchInput.value);
+    });
+  }
+
   document.addEventListener("click", (event) => {
     if (
       document.body.classList.contains("nav-open") &&
@@ -2532,6 +2868,11 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      openHubSearch();
+      return;
+    }
     if (
       event.key === "Escape" &&
       document.body.classList.contains("nav-open")
