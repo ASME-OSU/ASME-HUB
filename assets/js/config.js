@@ -44,7 +44,7 @@ window.ASME_HUB_CONFIG = {
     // Deploy integrations/apps-script/SettingsWriter.gs.example and paste its
     // /exec URL here to enable organization-wide saves from the settings dialog.
     writeUrl:
-      "https://script.google.com/macros/s/AKfycbzRlYj9CE3TsoY4IGuvAUD0c3CQJsfK44XUezydV6qGvesOtxcHlkzzHiNry5CeET3KmQ/exec",
+      "https://script.google.com/macros/s/AKfycbyG2URXdnNUTHn8WVNpZPuLjiZKrggcU624yTKqCqKv0HjMz6GuMS7Cv1LRGWF2OhUjog/exec",
   },
   dataSources: {
     "2026-2027": {
