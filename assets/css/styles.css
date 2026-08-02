@@ -777,6 +777,115 @@ main {
   scroll-margin-top: 94px;
 }
 
+.dashboard-band {
+  position: relative;
+  margin: 30px 0;
+  padding: clamp(20px, 2.6vw, 30px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.dashboard-band::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--scarlet), rgba(186, 12, 47, 0.08) 46%, transparent 82%);
+  content: "";
+}
+
+.dashboard-band-overview {
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.dashboard-band-analytics {
+  background: linear-gradient(145deg, rgba(17, 65, 105, 0.055), rgba(255, 255, 255, 0.56) 62%);
+}
+
+.dashboard-band-finance {
+  background: linear-gradient(145deg, rgba(215, 165, 49, 0.09), rgba(255, 255, 255, 0.58) 58%);
+}
+
+.dashboard-band-finance::before {
+  background: linear-gradient(90deg, var(--gold), rgba(215, 165, 49, 0.08) 46%, transparent 82%);
+}
+
+.dashboard-band-operations {
+  background: linear-gradient(145deg, rgba(186, 12, 47, 0.045), rgba(255, 255, 255, 0.58) 58%);
+}
+
+.dashboard-band-heading {
+  display: grid;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  grid-template-columns: auto minmax(180px, 1fr) minmax(260px, 0.8fr);
+  align-items: end;
+  gap: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-band-index {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 1px;
+  place-items: center;
+  border: 1px solid rgba(186, 12, 47, 0.2);
+  border-radius: 50%;
+  color: var(--scarlet);
+  background: rgba(186, 12, 47, 0.065);
+  font-size: 0.65rem;
+  font-weight: 850;
+}
+
+.dashboard-band-finance .dashboard-band-index {
+  border-color: rgba(180, 132, 21, 0.28);
+  color: #8b650f;
+  background: rgba(215, 165, 49, 0.12);
+}
+
+.dashboard-band-heading .eyebrow {
+  margin-bottom: 4px;
+  font-size: 0.6rem;
+}
+
+.dashboard-band-heading h2 {
+  margin: 0;
+  color: var(--navy-900);
+  font: 1.55rem/1.05 var(--serif);
+}
+
+.dashboard-band-heading > p {
+  max-width: 520px;
+  margin: 0;
+  justify-self: end;
+  color: var(--muted);
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+
+.dashboard-band-overview .period-toolbar {
+  margin-top: 0;
+}
+
+.dashboard-band-overview .kpi-grid,
+.dashboard-band-analytics .dashboard-grid:last-child,
+.dashboard-band-finance .budget-panel,
+.dashboard-band-operations .operations-panel {
+  margin-bottom: 0;
+}
+
+.dashboard-band-operations .health-panel {
+  margin-bottom: 14px;
+}
+
+.resources-section {
+  margin-top: 34px;
+}
+
 .hero-panel {
   display: flex;
   min-height: 210px;
@@ -2390,6 +2499,30 @@ body[data-theme="dark"] {
   --shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
 }
 
+body[data-theme="dark"] .dashboard-band {
+  background: rgba(13, 29, 48, 0.54);
+}
+
+body[data-theme="dark"] .dashboard-band-analytics {
+  background: linear-gradient(145deg, rgba(29, 67, 105, 0.28), rgba(13, 29, 48, 0.58) 62%);
+}
+
+body[data-theme="dark"] .dashboard-band-finance {
+  background: linear-gradient(145deg, rgba(108, 82, 26, 0.24), rgba(13, 29, 48, 0.58) 62%);
+}
+
+body[data-theme="dark"] .dashboard-band-operations {
+  background: linear-gradient(145deg, rgba(104, 27, 47, 0.2), rgba(13, 29, 48, 0.58) 62%);
+}
+
+body[data-theme="dark"] .dashboard-band-heading h2 {
+  color: #edf2f8;
+}
+
+body[data-theme="dark"] .dashboard-band-finance .dashboard-band-index {
+  color: #f0c867;
+}
+
 body[data-theme="dark"] .access-gate {
   color: white;
   background:
@@ -2681,6 +2814,35 @@ body[data-theme="dark"] .hub-search-result-copy strong {
 
   main {
     padding: 20px max(15px, env(safe-area-inset-right)) 0 max(15px, env(safe-area-inset-left));
+  }
+
+  .dashboard-band {
+    margin: 22px 0;
+    padding: 18px 14px;
+    border-radius: 20px;
+  }
+
+  .dashboard-band-heading {
+    margin-bottom: 16px;
+    padding: 0 2px 14px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dashboard-band-heading > p {
+    grid-column: 1 / -1;
+    justify-self: start;
+    font-size: 0.66rem;
+  }
+
+  .dashboard-band-heading h2 {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-band-index {
+    width: 31px;
+    height: 31px;
   }
 
   .hero-panel {
@@ -3141,6 +3303,19 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   main {
     max-width: none;
     padding: 0;
+  }
+
+  .dashboard-band {
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent !important;
+  }
+
+  .dashboard-band::before,
+  .dashboard-band-heading {
+    display: none;
   }
 
   .hero-panel {
