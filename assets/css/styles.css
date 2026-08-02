@@ -681,7 +681,7 @@ body.sidebar-collapsed .sidebar-footer button {
 }
 
 .topbar-brandmark {
-  display: grid;
+  display: none;
   width: 40px;
   height: 40px;
   margin-right: 12px;
@@ -1315,6 +1315,189 @@ main {
 
 .budget-footnote {
   margin: 15px 0 0;
+}
+
+.budget-insights-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.budget-insight-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
+}
+
+.budget-insight-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.budget-insight-heading .eyebrow {
+  margin-bottom: 4px;
+  font-size: 0.56rem;
+}
+
+.budget-insight-heading h3 {
+  margin: 0;
+  color: var(--navy-900);
+  font: 1.25rem/1.15 var(--serif);
+}
+
+.budget-category-layout {
+  display: grid;
+  grid-template-columns: 144px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.budget-category-donut {
+  display: grid;
+  width: 144px;
+  height: 144px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--border) 0 100%);
+  box-shadow: inset 0 0 0 1px rgba(19, 45, 74, 0.06);
+}
+
+.budget-category-donut::before {
+  grid-area: 1 / 1;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border);
+  content: "";
+}
+
+.budget-category-donut > span {
+  z-index: 1;
+  grid-area: 1 / 1;
+  text-align: center;
+}
+
+.budget-category-donut strong,
+.budget-category-donut small {
+  display: block;
+}
+
+.budget-category-donut strong {
+  color: var(--navy-900);
+  font: 1.1rem/1 var(--serif);
+}
+
+.budget-category-donut small {
+  margin-top: 5px;
+  color: var(--muted-light);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.budget-category-legend {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.budget-legend-row {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.budget-legend-row i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.budget-legend-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-legend-row strong {
+  color: var(--navy-900);
+  font-size: 0.64rem;
+}
+
+.budget-category-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.budget-category-row {
+  min-width: 0;
+}
+
+.budget-category-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.budget-category-row-head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--navy-900);
+  font-size: 0.67rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budget-category-row-head span {
+  flex: 0 0 auto;
+  color: var(--muted-light);
+  font-size: 0.6rem;
+}
+
+.budget-category-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.budget-category-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--scarlet);
+}
+
+.budget-category-row.is-over .budget-category-row-head span {
+  color: var(--scarlet);
+  font-weight: 750;
+}
+
+.budget-category-row.is-over .budget-category-track span {
+  background: linear-gradient(90deg, var(--scarlet), #f06a45);
+}
+
+.budget-empty-state {
+  margin: 0;
+  color: var(--muted-light);
+  font-size: 0.67rem;
+  line-height: 1.55;
 }
 
 .dashboard-grid {
@@ -2736,6 +2919,14 @@ body[data-theme="dark"] .hub-search-result-copy strong {
     display: none;
   }
 
+  .topbar-brandmark {
+    display: grid;
+  }
+
+  .budget-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-grid-primary,
   .dashboard-grid-secondary,
   .decision-grid {
@@ -2948,6 +3139,25 @@ body[data-theme="dark"] .hub-search-result-copy strong {
 
   .budget-usage-card {
     grid-column: 1 / -1;
+  }
+
+  .budget-insight-card {
+    padding: 16px;
+  }
+
+  .budget-category-layout {
+    grid-template-columns: 118px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .budget-category-donut {
+    width: 118px;
+    height: 118px;
+  }
+
+  .budget-category-donut::before {
+    width: 70px;
+    height: 70px;
   }
 
   .kpi-topline {

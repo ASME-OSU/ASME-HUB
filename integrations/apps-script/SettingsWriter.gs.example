@@ -29,6 +29,11 @@ const SETTINGS_HEADERS = [
   "last_updated",
   "status_note",
   "event_metrics_tab",
+  "budget_tracker_url",
+  "budget_export_sheet_url",
+  "budget_export_sheet_tab",
+  "banking_url",
+  "fundraising_url",
 ];
 
 function doGet(event) {
@@ -92,6 +97,10 @@ function saveSettings_(payload) {
     ["Points Master", payload.pointsMasterUrl],
     ["calendar page", payload.calendarUrl],
     ["iCal feed", payload.calendarIcalUrl],
+    ["budget tracker", payload.budgetTrackerUrl],
+    ["sanitized budget export", payload.budgetExportSheetUrl],
+    ["banking portal", payload.bankingUrl],
+    ["fundraising portal", payload.fundraisingUrl],
   ].forEach(([label, value]) => validateUrl_(label, value));
 
   const spreadsheet = getSpreadsheet_();
@@ -132,6 +141,11 @@ function saveSettings_(payload) {
     new Date(),
     plainText_(payload.settingsStatus || "Published from the Officer Hub"),
     plainText_(payload.eventMetricsSheetTab || "Event_Metrics_Public"),
+    plainText_(payload.budgetTrackerUrl),
+    plainText_(payload.budgetExportSheetUrl),
+    plainText_(payload.budgetExportSheetTab || "Budget_Public"),
+    plainText_(payload.bankingUrl),
+    plainText_(payload.fundraisingUrl),
   ];
   sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
   audit.appendRow([

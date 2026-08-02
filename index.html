@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260801j">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260801k">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -458,6 +458,40 @@
               </div>
             </article>
           </div>
+          <div class="budget-insights-grid">
+            <section class="budget-insight-card" aria-labelledby="budget-spending-mix-title">
+              <div class="budget-insight-heading">
+                <div>
+                  <p class="eyebrow">Approved expenses</p>
+                  <h3 id="budget-spending-mix-title">Spending mix</h3>
+                </div>
+                <span class="panel-chip">By category</span>
+              </div>
+              <div class="budget-category-layout">
+                <div class="budget-category-donut" id="budget-category-donut" role="img" aria-label="No approved spending by category yet">
+                  <span>
+                    <strong id="budget-category-total">$0</strong>
+                    <small>spent</small>
+                  </span>
+                </div>
+                <div class="budget-category-legend" id="budget-category-legend">
+                  <p class="budget-empty-state">No approved spending yet.</p>
+                </div>
+              </div>
+            </section>
+            <section class="budget-insight-card" aria-labelledby="budget-category-pacing-title">
+              <div class="budget-insight-heading">
+                <div>
+                  <p class="eyebrow">Planned vs. spent</p>
+                  <h3 id="budget-category-pacing-title">Category pacing</h3>
+                </div>
+                <span class="panel-chip">Top categories</span>
+              </div>
+              <div class="budget-category-bars" id="budget-category-bars">
+                <p class="budget-empty-state">Add category budgets to see pacing.</p>
+              </div>
+            </section>
+          </div>
           <p class="panel-footnote budget-footnote" id="budget-freshness">Loading the aggregate-only budget feed…</p>
         </div>
         </section>
@@ -622,6 +656,40 @@
         </div>
       </div>
 
+      <div class="settings-section">
+        <div class="settings-section-heading">
+          <h3>Finance connections</h3>
+          <span>Set for each academic year</span>
+        </div>
+        <div class="settings-grid">
+          <label>
+            <span>Private budget tracker</span>
+            <input id="settings-budget-tracker" name="budgetTrackerUrl" type="text" inputmode="url" placeholder="Paste the annual officer budget Sheet">
+            <small>Officer-only workbook used to enter budgets and transactions. The Hub opens this link but never reads its private tabs.</small>
+          </label>
+          <label>
+            <span>Sanitized budget export</span>
+            <input id="settings-budget-export" name="budgetExportSheetUrl" type="text" inputmode="url" placeholder="Paste the public aggregate Sheet">
+            <small>Read-only Sheet containing totals and category summaries only—never transactions, payees, receipts, or account data.</small>
+          </label>
+          <label>
+            <span>Budget export tab</span>
+            <input id="settings-budget-tab" name="budgetExportSheetTab" type="text" placeholder="Budget_Public">
+            <small>Exact aggregate tab name in the sanitized export.</small>
+          </label>
+          <label>
+            <span>Banking portal</span>
+            <input id="settings-banking" name="bankingUrl" type="text" inputmode="url" placeholder="Paste the bank sign-in URL">
+            <small>Updates the Finance quick link for this year; do not paste credentials.</small>
+          </label>
+          <label>
+            <span>Fundraising portal</span>
+            <input id="settings-fundraising" name="fundraisingUrl" type="text" inputmode="url" placeholder="Paste the fundraising sign-in URL">
+            <small>Updates the fundraising quick link for this year; do not paste credentials.</small>
+          </label>
+        </div>
+      </div>
+
       <p class="settings-status" id="settings-status" role="status" aria-live="polite"></p>
 
       <div class="settings-actions">
@@ -657,8 +725,8 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260801j"></script>
-  <script src="assets/js/app.js?v=20260801j"></script>
+  <script src="assets/js/config.js?v=20260801k"></script>
+  <script src="assets/js/app.js?v=20260801k"></script>
   <script src="assets/js/pwa.js?v=20260801e"></script>
 </body>
 </html>

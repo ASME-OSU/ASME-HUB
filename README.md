@@ -137,6 +137,10 @@ The shared settings row also contains these rollover controls:
 - `last_updated`: shared-settings freshness timestamp
 - `status_note`: short officer-facing status message
 - `event_metrics_tab`: privacy-safe event aggregate tab, normally `Event_Metrics_Public`
+- `budget_tracker_url`, `budget_export_sheet_url`, and
+  `budget_export_sheet_tab`: the annual private tracker link and its separate,
+  aggregate-only dashboard feed
+- `banking_url` and `fundraising_url`: yearly Finance resource destinations
 
 Before the settings writer is connected, changes made directly in the hub are
 temporary previews stored in `sessionStorage`; they disappear when that browser
@@ -166,7 +170,9 @@ token and submit a settings change.
    workbook, then verify preview and organization-wide publishing separately.
 
 The writer updates the matching academic-year row, appends new academic years,
-allows one row to be marked current, and keeps a timestamped audit record.
+allows one row to be marked current, and keeps a timestamped audit record. The
+Hub calls the web app with JSONP so organization-wide saves are not blocked by
+cross-origin browser rules.
 
 The **Events calendar page** is the human-facing web page. The **Google Calendar
 iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,
@@ -283,16 +289,21 @@ tracker stays private; the Hub never reads its transaction tabs directly.
 private annual budget tracker → Budget_Public export → Officer Hub cards
 ```
 
-For 2026–2027, the year configuration contains three finance settings:
+Each academic-year configuration contains five finance settings:
 
 - `budgetTrackerUrl`: the private native Google Sheet officers open to manage the budget
 - `budgetExportSheetUrl`: the separate read-only spreadsheet exposed to the Hub
 - `budgetExportSheetTab`: the aggregate tab name, normally `Budget_Public`
+- `bankingUrl`: the official bank sign-in page opened from Finance resources
+- `fundraisingUrl`: the fundraising platform sign-in page opened from Finance resources
 
 `Budget_Public` contains only the academic year, approved income, approved
 expenses, pending approval total, planned budget, remaining budget, budget-used
-rate, and refresh time. Do not add transaction rows, payees, account numbers,
-receipt links, reimbursement notes, or other identifying financial details.
+rate, refresh time, and planned/actual totals by approved expense category. The
+category rows use `category_actual_<slug>` and `category_planned_<slug>` keys so
+the Hub can build its spending-mix chart and category-pacing bars. Do not add
+transaction rows, payees, account numbers, receipt links, reimbursement notes,
+or other identifying financial details.
 
 At annual handoff:
 
@@ -302,7 +313,9 @@ At annual handoff:
 4. Click **Allow access** once from the export spreadsheet.
 5. Verify the export contains aggregate values only, then give the export file
    **Anyone with the link · Viewer** access.
-6. Update the three finance settings in that year’s `dataSources` entry.
+6. Open **Year settings → Finance connections** in the Hub, paste the new
+   tracker and export links, confirm the export tab, and publish for everyone.
+   Bank and fundraising portal links can also be replaced there if they change.
 7. Test the Hub in light and dark mode at desktop and mobile widths.
 
 The public export is intentionally separate from the attendance Website Export
