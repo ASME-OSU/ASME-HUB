@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260801i">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260801j">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -179,6 +179,16 @@
           </div>
         </section>
 
+        <section class="dashboard-band dashboard-band-overview" aria-labelledby="overview-band-title">
+          <header class="dashboard-band-heading">
+            <span class="dashboard-band-index" aria-hidden="true">01</span>
+            <div>
+              <p class="eyebrow">Meeting snapshot</p>
+              <h2 id="overview-band-title">Chapter pulse</h2>
+            </div>
+            <p>Start here for the current review period, priority signals, and headline metrics.</p>
+          </header>
+
         <section class="period-toolbar" aria-labelledby="period-filter-label">
           <div class="period-control">
             <label id="period-filter-label" for="period-filter">Review period</label>
@@ -251,6 +261,18 @@
             <p id="kpi-repeat-rate-context">Attended two or more events</p>
           </article>
         </section>
+
+        </section>
+
+        <section class="dashboard-band dashboard-band-analytics" aria-labelledby="analytics-band-title">
+          <header class="dashboard-band-heading">
+            <span class="dashboard-band-index" aria-hidden="true">02</span>
+            <div>
+              <p class="eyebrow">Participation review</p>
+              <h2 id="analytics-band-title">Events and members</h2>
+            </div>
+            <p>Explore turnout, event mix, retention, and the activities driving engagement.</p>
+          </header>
 
         <div class="dashboard-grid dashboard-grid-primary" id="events">
           <section class="panel trend-panel">
@@ -384,17 +406,19 @@
           </section>
         </div>
 
-        <section class="panel health-panel" aria-labelledby="health-title">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Connections and freshness</p>
-              <h2 id="health-title">System health</h2>
-            </div>
-          </div>
-          <div class="health-grid" id="health-grid"></div>
         </section>
 
-        <section class="panel budget-panel dashboard-section" id="finances" aria-labelledby="budget-title">
+        <section class="dashboard-band dashboard-band-finance dashboard-section" id="finances" aria-labelledby="finance-band-title">
+          <header class="dashboard-band-heading">
+            <span class="dashboard-band-index" aria-hidden="true">03</span>
+            <div>
+              <p class="eyebrow">Financial oversight</p>
+              <h2 id="finance-band-title">Finances</h2>
+            </div>
+            <p>Review approved activity, pending items, and remaining budget at a glance.</p>
+          </header>
+
+        <div class="panel budget-panel" aria-labelledby="budget-title">
           <div class="panel-heading budget-heading">
             <div>
               <p class="eyebrow">Financial pulse</p>
@@ -435,9 +459,30 @@
             </article>
           </div>
           <p class="panel-footnote budget-footnote" id="budget-freshness">Loading the aggregate-only budget feed…</p>
+        </div>
         </section>
 
-        <section class="panel operations-panel dashboard-section" id="operations">
+        <section class="dashboard-band dashboard-band-operations dashboard-section" id="operations" aria-labelledby="operations-band-title">
+          <header class="dashboard-band-heading">
+            <span class="dashboard-band-index" aria-hidden="true">04</span>
+            <div>
+              <p class="eyebrow">Officer systems</p>
+              <h2 id="operations-band-title">Operations</h2>
+            </div>
+            <p>Confirm connected tools are healthy, then resolve the items that need attention.</p>
+          </header>
+
+        <section class="panel health-panel" aria-labelledby="health-title">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Connections and freshness</p>
+              <h2 id="health-title">System health</h2>
+            </div>
+          </div>
+          <div class="health-grid" id="health-grid"></div>
+        </section>
+
+        <section class="panel operations-panel">
           <div class="panel-heading">
             <div>
               <p class="eyebrow">Needs attention</p>
@@ -446,6 +491,7 @@
             <span class="panel-chip panel-chip-alert" id="operations-count">0 items</span>
           </div>
           <div class="operations-list" id="operations-list"></div>
+        </section>
         </section>
 
         <section class="resources-section dashboard-section" id="resources">
