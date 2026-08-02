@@ -124,6 +124,18 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      title: "Activity Report",
+      description: "Open the chapter activity report workspace for recording and reviewing organizational activity.",
+      label: "Open activity report",
+      url: "https://airtable.com/appQ0BwEPfI38mQWE/shrmyDrqJbL3Azs3h",
+      category: "Operations",
+      quickAction: {
+        label: "Activity report",
+        detail: "Airtable workspace",
+        icon: "↗",
+      },
+    },
+    {
       title: "Points Master",
       description: "Officer workbook for events, attendance, member points, review items, and website exports.",
       label: "Open Points Master",
