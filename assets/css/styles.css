@@ -1516,7 +1516,12 @@ main {
 
 .dashboard-grid-secondary {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  align-items: start;
+  align-items: stretch;
+}
+
+.event-types-panel {
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
@@ -1742,6 +1747,7 @@ main {
 .event-type-layout {
   display: grid;
   grid-template-columns: 190px 1fr;
+  flex: 1;
   gap: 28px;
   margin-top: 30px;
   align-items: center;
@@ -2809,6 +2815,13 @@ body[data-theme="dark"] .health-item strong {
 }
 
 body[data-theme="dark"] .budget-kpi-card strong {
+  color: #edf2f8;
+}
+
+body[data-theme="dark"] .budget-insight-heading h3,
+body[data-theme="dark"] .budget-category-donut strong,
+body[data-theme="dark"] .budget-category-row-head strong,
+body[data-theme="dark"] .budget-legend-row strong {
   color: #edf2f8;
 }
 
