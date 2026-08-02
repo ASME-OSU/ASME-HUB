@@ -363,6 +363,7 @@
         cleanup();
         resolve(result);
       };
+      script.crossOrigin = "anonymous";
       script.src = url;
       script.async = true;
       script.onerror = () =>
