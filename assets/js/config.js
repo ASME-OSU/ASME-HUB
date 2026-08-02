@@ -66,6 +66,8 @@ window.ASME_HUB_CONFIG = {
       budgetExportSheetUrl:
         "https://docs.google.com/spreadsheets/d/1ke0wGEBOt_G2mMPA-qK66iXml-b7Vi9lzFxEM1PvhbE/edit",
       budgetExportSheetTab: "Budget_Public",
+      bankingUrl: "https://www.huntington.com/mobile-login",
+      fundraisingUrl: "https://www.zeffy.com/login",
       engagementGoal: 250,
     },
   },
@@ -153,6 +155,7 @@ window.ASME_HUB_CONFIG = {
       label: "Sign in to Huntington",
       url: "https://www.huntington.com/mobile-login",
       category: "Finance",
+      settingKey: "bankingUrl",
       quickAction: {
         label: "Open Huntington",
         detail: "Banking portal",
@@ -165,6 +168,7 @@ window.ASME_HUB_CONFIG = {
       label: "Sign in to Zeffy",
       url: "https://www.zeffy.com/login",
       category: "Finance",
+      settingKey: "fundraisingUrl",
       quickAction: {
         label: "Open Zeffy",
         detail: "Fundraising portal",

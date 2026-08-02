@@ -74,6 +74,11 @@
     settingsPointsMaster: document.getElementById("settings-points-master"),
     settingsCalendar: document.getElementById("settings-calendar"),
     settingsCalendarIcal: document.getElementById("settings-calendar-ical"),
+    settingsBudgetTracker: document.getElementById("settings-budget-tracker"),
+    settingsBudgetExport: document.getElementById("settings-budget-export"),
+    settingsBudgetTab: document.getElementById("settings-budget-tab"),
+    settingsBanking: document.getElementById("settings-banking"),
+    settingsFundraising: document.getElementById("settings-fundraising"),
     settingsSharedLink: document.getElementById("settings-shared-link"),
     settingsSharedAction: document.getElementById("settings-shared-action"),
     settingsPublish: document.getElementById("settings-publish"),
@@ -219,6 +224,12 @@
     elements.settingsPointsMaster.value = source.pointsMasterUrl || "";
     elements.settingsCalendar.value = source.calendarUrl || "";
     elements.settingsCalendarIcal.value = source.calendarIcalUrl || "";
+    elements.settingsBudgetTracker.value = source.budgetTrackerUrl || "";
+    elements.settingsBudgetExport.value = source.budgetExportSheetUrl || "";
+    elements.settingsBudgetTab.value =
+      source.budgetExportSheetTab || "Budget_Public";
+    elements.settingsBanking.value = source.bankingUrl || "";
+    elements.settingsFundraising.value = source.fundraisingUrl || "";
     elements.settingsIsActive.checked = source.isActive !== false;
     elements.settingsIsCurrent.checked = source.isCurrent === true;
     elements.settingsStatus.textContent = "";
@@ -255,9 +266,6 @@
   }
 
   function readSettingsForm() {
-    const existing = getYearSource(
-      normalizeYearKey(elements.settingsYearKey.value),
-    );
     return {
       yearKey: normalizeYearKey(elements.settingsYearKey.value),
       label: elements.settingsYearLabel.value.trim(),
@@ -270,12 +278,15 @@
       pointsMasterUrl: elements.settingsPointsMaster.value.trim(),
       calendarUrl: elements.settingsCalendar.value.trim(),
       calendarIcalUrl: elements.settingsCalendarIcal.value.trim(),
-      budgetTrackerUrl: existing?.budgetTrackerUrl || "",
-      budgetExportSheetUrl: existing?.budgetExportSheetUrl || "",
+      budgetTrackerUrl: elements.settingsBudgetTracker.value.trim(),
+      budgetExportSheetUrl: elements.settingsBudgetExport.value.trim(),
       budgetExportSheetTab:
-        existing?.budgetExportSheetTab || "Budget_Public",
+        elements.settingsBudgetTab.value.trim() || "Budget_Public",
+      bankingUrl: elements.settingsBanking.value.trim(),
+      fundraisingUrl: elements.settingsFundraising.value.trim(),
       eventMetricsSheetTab:
-        existing?.eventMetricsSheetTab || "Event_Metrics_Public",
+        getYearSource(normalizeYearKey(elements.settingsYearKey.value))
+          ?.eventMetricsSheetTab || "Event_Metrics_Public",
       isActive: elements.settingsIsActive.checked,
       isCurrent: elements.settingsIsCurrent.checked,
       settingsStatus: "Published from the Officer Hub",
@@ -300,6 +311,8 @@
       ["Google Calendar iCal", settings.calendarIcalUrl, false],
       ["budget tracker", settings.budgetTrackerUrl, true],
       ["sanitized budget export", settings.budgetExportSheetUrl, true],
+      ["banking portal", settings.bankingUrl, false],
+      ["fundraising portal", settings.fundraisingUrl, false],
     ];
     const invalid = urls.find(
       ([, value, allowSheetId]) =>
@@ -325,44 +338,38 @@
       _: String(Date.now()),
     });
     const url = `${writeUrl}${writeUrl.includes("?") ? "&" : "?"}${params}`;
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 15000);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        script.remove();
+        delete window[callback];
+      };
+      const fail = (message) => {
+        cleanup();
+        reject(new Error(message));
+      };
+      const timer = window.setTimeout(
+        () => fail("The shared settings request timed out. Please try again."),
+        15000,
+      );
 
-    try {
-      const response = await fetch(url, {
-        cache: "no-store",
-        redirect: "follow",
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        throw new Error(`The shared settings service returned ${response.status}.`);
-      }
-
-      const text = (await response.text()).trim();
-      const prefix = `${callback}(`;
-      const suffix = ");";
-      if (!text.startsWith(prefix) || !text.endsWith(suffix)) {
-        throw new Error("The shared settings service returned an unexpected response.");
-      }
-
-      const result = JSON.parse(text.slice(prefix.length, -suffix.length));
-      if (!result?.ok) {
-        throw new Error(result?.error || "The shared settings save failed.");
-      }
-      return result;
-    } catch (error) {
-      if (error?.name === "AbortError") {
-        throw new Error("The shared settings request timed out. Please try again.");
-      }
-      if (error instanceof TypeError) {
-        throw new Error(
-          "Chrome could not connect to the shared settings service. Check your connection and try again.",
+      window[callback] = (result) => {
+        if (!result?.ok) {
+          fail(result?.error || "The shared settings save failed.");
+          return;
+        }
+        cleanup();
+        resolve(result);
+      };
+      script.src = url;
+      script.async = true;
+      script.onerror = () =>
+        fail(
+          "The shared settings service could not be reached. Check the deployment URL and try again.",
         );
-      }
-      throw error;
-    } finally {
-      window.clearTimeout(timer);
-    }
+      document.head.append(script);
+    });
   }
 
   async function publishSettings() {
@@ -566,6 +573,26 @@
         return Number.isFinite(value) ? value : null;
       };
       const updatedAt = sheetTimestamp(metrics.updated_at?.value);
+      const categories = new Map();
+      Object.entries(metrics).forEach(([key, metric]) => {
+        const match = key.match(/^category_(actual|planned)_(.+)$/);
+        if (!match) return;
+        const [, measure, slug] = match;
+        const category = categories.get(slug) || {
+          slug,
+          label: metric.label || slug.replace(/_/g, " "),
+          actual: 0,
+          planned: 0,
+        };
+        const value = Number(metric.value);
+        category[measure] = Number.isFinite(value) ? value : 0;
+        if (metric.label) {
+          category.label = String(metric.label)
+            .replace(/\s*[—–-]\s*(actual|planned)$/i, "")
+            .trim();
+        }
+        categories.set(slug, category);
+      });
 
       return {
         available: true,
@@ -578,6 +605,7 @@
         remainingBudget: numberValue("remaining_budget"),
         budgetUsedRate: numberValue("budget_used_rate"),
         updatedAt: updatedAt ? updatedAt.toISOString() : "",
+        categories: Array.from(categories.values()),
       };
     } catch (error) {
       console.warn("The sanitized budget feed could not be loaded.", error);
@@ -641,7 +669,7 @@
       const table = await queryPublicSheet(
         spreadsheetId,
         settings.sheetTab,
-        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null",
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T where A is not null",
       );
       const remoteSources = {};
       let currentYear = "";
@@ -674,6 +702,12 @@
           eventMetricsSheetTab:
             String(sheetCell(row, 14) || "").trim() ||
             "Event_Metrics_Public",
+          budgetTrackerUrl: String(sheetCell(row, 15) || "").trim(),
+          budgetExportSheetUrl: String(sheetCell(row, 16) || "").trim(),
+          budgetExportSheetTab:
+            String(sheetCell(row, 17) || "").trim() || "Budget_Public",
+          bankingUrl: String(sheetCell(row, 18) || "").trim(),
+          fundraisingUrl: String(sheetCell(row, 19) || "").trim(),
         };
       });
 
@@ -1826,6 +1860,7 @@
       if (emptyFill) emptyFill.style.width = "0%";
       const emptyProgress = emptyFill?.parentElement;
       if (emptyProgress) emptyProgress.setAttribute("aria-valuenow", "0");
+      renderBudgetCategories([]);
       return;
     }
 
@@ -1856,6 +1891,7 @@
     if (progress) {
       progress.setAttribute("aria-valuenow", String(Math.round(boundedPercent)));
     }
+    renderBudgetCategories(budget.categories || []);
 
     const updated = budget.updatedAt ? new Date(budget.updatedAt) : null;
     setText(
@@ -1868,6 +1904,136 @@
             minute: "2-digit",
           }).format(updated)}`
         : "Aggregate-only totals from the budget export",
+    );
+  }
+
+  function renderBudgetCategories(categories) {
+    const donut = document.getElementById("budget-category-donut");
+    const total = document.getElementById("budget-category-total");
+    const legend = document.getElementById("budget-category-legend");
+    const bars = document.getElementById("budget-category-bars");
+    if (!donut || !total || !legend || !bars) return;
+
+    const colors = [
+      "#ba0c2f",
+      "#184a7d",
+      "#d69e2e",
+      "#4f7cac",
+      "#6b7f52",
+      "#7b5ea7",
+      "#d46a3a",
+    ];
+    const clean = (Array.isArray(categories) ? categories : [])
+      .map((category) => ({
+        label: String(category.label || category.slug || "Other"),
+        actual: Math.max(0, Number(category.actual) || 0),
+        planned: Math.max(0, Number(category.planned) || 0),
+      }))
+      .filter((category) => category.actual > 0 || category.planned > 0);
+
+    const actualCategories = clean
+      .filter((category) => category.actual > 0)
+      .sort((a, b) => b.actual - a.actual);
+    const visibleActual = actualCategories.slice(0, 6);
+    if (actualCategories.length > 6) {
+      visibleActual.push({
+        label: "Other",
+        actual: actualCategories
+          .slice(6)
+          .reduce((sum, category) => sum + category.actual, 0),
+        planned: 0,
+      });
+    }
+    const actualTotal = visibleActual.reduce(
+      (sum, category) => sum + category.actual,
+      0,
+    );
+    total.textContent = currencyFormatter.format(actualTotal);
+    legend.replaceChildren();
+
+    if (!actualTotal) {
+      donut.style.background = "conic-gradient(var(--border) 0 100%)";
+      donut.setAttribute("aria-label", "No approved spending by category yet");
+      const empty = document.createElement("p");
+      empty.className = "budget-empty-state";
+      empty.textContent = "No approved spending yet.";
+      legend.append(empty);
+    } else {
+      let cursor = 0;
+      const stops = visibleActual.map((category, index) => {
+        const start = cursor;
+        cursor += (category.actual / actualTotal) * 100;
+        return `${colors[index % colors.length]} ${start}% ${cursor}%`;
+      });
+      donut.style.background = `conic-gradient(${stops.join(", ")})`;
+      donut.setAttribute(
+        "aria-label",
+        `Approved spending by category, ${currencyFormatter.format(actualTotal)} total`,
+      );
+      legend.append(
+        ...visibleActual.map((category, index) => {
+          const row = document.createElement("div");
+          row.className = "budget-legend-row";
+          const marker = document.createElement("i");
+          marker.style.background = colors[index % colors.length];
+          marker.setAttribute("aria-hidden", "true");
+          const label = document.createElement("span");
+          label.textContent = category.label;
+          const value = document.createElement("strong");
+          value.textContent = currencyFormatter.format(category.actual);
+          row.append(marker, label, value);
+          return row;
+        }),
+      );
+    }
+
+    bars.replaceChildren();
+    const paced = clean
+      .sort((a, b) => b.actual - a.actual || b.planned - a.planned)
+      .slice(0, 8);
+    if (!paced.length) {
+      const empty = document.createElement("p");
+      empty.className = "budget-empty-state";
+      empty.textContent = "Add category budgets to see pacing.";
+      bars.append(empty);
+      return;
+    }
+
+    bars.append(
+      ...paced.map((category) => {
+        const row = document.createElement("div");
+        row.className = "budget-category-row";
+        const rate = category.planned > 0
+          ? (category.actual / category.planned) * 100
+          : category.actual > 0
+            ? 100
+            : 0;
+        if (category.actual > category.planned && category.actual > 0) {
+          row.classList.add("is-over");
+        }
+        const heading = document.createElement("div");
+        heading.className = "budget-category-row-head";
+        const label = document.createElement("strong");
+        label.textContent = category.label;
+        const value = document.createElement("span");
+        value.textContent = `${currencyFormatter.format(category.actual)} of ${currencyFormatter.format(category.planned)}`;
+        heading.append(label, value);
+        const track = document.createElement("div");
+        track.className = "budget-category-track";
+        track.setAttribute("role", "progressbar");
+        track.setAttribute("aria-label", `${category.label} budget used`);
+        track.setAttribute("aria-valuemin", "0");
+        track.setAttribute("aria-valuemax", "100");
+        track.setAttribute(
+          "aria-valuenow",
+          String(Math.round(Math.min(100, Math.max(0, rate)))),
+        );
+        const fill = document.createElement("span");
+        fill.style.width = `${Math.min(100, Math.max(0, rate))}%`;
+        track.append(fill);
+        row.append(heading, track);
+        return row;
+      }),
     );
   }
 
@@ -2709,6 +2875,11 @@
         engagementGoal: current.engagementGoal,
         calendarUrl: current.calendarUrl,
         calendarIcalUrl: current.calendarIcalUrl,
+        budgetTrackerUrl: "",
+        budgetExportSheetUrl: "",
+        budgetExportSheetTab: "Budget_Public",
+        bankingUrl: current.bankingUrl,
+        fundraisingUrl: current.fundraisingUrl,
         isActive: true,
         isCurrent: false,
       },
