@@ -8,6 +8,7 @@
   const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
+  const defaultDocumentTitle = document.title;
   const numberFormatter = new Intl.NumberFormat("en-US");
   const currencyFormatter = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -2979,6 +2980,22 @@
   elements.periodFilter.addEventListener("change", () => {
     selectedPeriod = elements.periodFilter.value;
     renderSelectedPeriod();
+  });
+
+  const setPrintDocumentTitle = () => {
+    const yearLabel =
+      elements.academicYear.selectedOptions[0]?.textContent?.trim() ||
+      elements.academicYear.value ||
+      "Current year";
+    const periodLabel =
+      elements.periodFilter.selectedOptions[0]?.textContent?.trim() ||
+      "Year to date";
+    document.title = `ASME Officer Hub - ${yearLabel} - ${periodLabel}`;
+  };
+
+  window.addEventListener("beforeprint", setPrintDocumentTitle);
+  window.addEventListener("afterprint", () => {
+    document.title = defaultDocumentTitle;
   });
 
   document.getElementById("print-snapshot").addEventListener("click", () => {

@@ -1103,6 +1103,14 @@ main {
   box-shadow: 0 4px 20px rgba(10, 30, 55, 0.04);
 }
 
+.global-quick-actions {
+  margin: 16px 0 24px;
+}
+
+.global-quick-actions + .dashboard-band {
+  margin-top: 0;
+}
+
 .quick-actions-heading {
   min-width: 140px;
 }
@@ -3500,9 +3508,30 @@ body[data-theme="dark"] .hub-search-result-copy strong {
     --muted-light: #6f7d8f;
     background: #ffffff !important;
     color: #15253a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body[data-theme="dark"] .kpi-value,
+  body[data-theme="dark"] .period-summary strong,
+  body[data-theme="dark"] .panel-heading h2,
+  body[data-theme="dark"] .type-values,
+  body[data-theme="dark"] .funnel-label strong,
+  body[data-theme="dark"] .performance-table td strong,
+  body[data-theme="dark"] .performance-number,
+  body[data-theme="dark"] .goal-ring strong,
+  body[data-theme="dark"] .goal-copy strong,
+  body[data-theme="dark"] .donut-center strong,
+  body[data-theme="dark"] .budget-kpi-card strong,
+  body[data-theme="dark"] .budget-insight-heading h3,
+  body[data-theme="dark"] .budget-category-donut strong,
+  body[data-theme="dark"] .budget-category-row-head strong,
+  body[data-theme="dark"] .budget-legend-row strong {
+    color: #15253a !important;
   }
 
   .access-gate,
+  .skip-link,
   .sidebar,
   .topbar,
   .loading-layer,
@@ -3534,6 +3563,17 @@ body[data-theme="dark"] .hub-search-result-copy strong {
     overflow: visible;
     border: 0;
     background: transparent !important;
+  }
+
+  .dashboard-band-overview,
+  .dashboard-band-analytics {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .dashboard-band-finance {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .dashboard-band::before,
@@ -3674,6 +3714,62 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   .performance-table td {
     padding-top: 7px;
     padding-bottom: 7px;
+  }
+
+  .budget-panel {
+    padding: 12px;
+  }
+
+  .budget-kpi-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .budget-kpi-card,
+  .budget-usage-card {
+    min-height: 82px;
+    padding: 11px;
+    grid-column: auto;
+  }
+
+  .budget-kpi-card strong {
+    margin: 9px 0 5px;
+    font-size: 1.45rem;
+  }
+
+  .budget-insights-grid {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .budget-insight-card {
+    min-height: 0;
+    padding: 11px;
+  }
+
+  .budget-insight-heading {
+    margin-bottom: 8px;
+  }
+
+  .budget-category-layout {
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .budget-category-donut {
+    width: 94px;
+    height: 94px;
+  }
+
+  .budget-category-donut::before {
+    width: 56px;
+    height: 56px;
+  }
+
+  .budget-footnote {
+    margin-top: 8px;
   }
 }
 
