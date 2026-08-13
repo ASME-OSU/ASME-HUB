@@ -1,0 +1,72 @@
+import { existsSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
+
+const root = resolve(import.meta.dirname, "..");
+const errors = [];
+const read = (path) => readFileSync(resolve(root, path), "utf8");
+
+for (const path of [
+  "assets/js/config.js",
+  "assets/js/app.js",
+  "assets/js/pwa.js",
+  "sw.js",
+]) {
+  const result = spawnSync(process.execPath, ["--check", resolve(root, path)], {
+    encoding: "utf8",
+  });
+  if (result.status !== 0) errors.push(`${path}: ${result.stderr.trim()}`);
+}
+
+for (const path of [
+  "integrations/apps-script/Code.gs.example",
+  "integrations/apps-script/SettingsWriter.gs.example",
+]) {
+  const result = spawnSync(process.execPath, ["--check", "-"], {
+    input: read(path),
+    encoding: "utf8",
+  });
+  if (result.status !== 0) errors.push(`${path}: ${result.stderr.trim()}`);
+}
+
+const html = read("index.html");
+const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+const duplicateIds = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+if (duplicateIds.length) errors.push(`Duplicate HTML ids: ${duplicateIds.join(", ")}`);
+
+const anchors = [...html.matchAll(/\bhref="#([^"]+)"/g)].map((match) => match[1]);
+const missingAnchors = [...new Set(anchors.filter((id) => !ids.includes(id)))];
+if (missingAnchors.length) errors.push(`Missing hash targets: ${missingAnchors.join(", ")}`);
+
+const localReferences = [...html.matchAll(/\b(?:src|href)="([^"]+)"/g)]
+  .map((match) => match[1].split("?")[0])
+  .filter((value) => value && !/^(?:https?:|#|mailto:|tel:)/.test(value));
+for (const path of new Set(localReferences)) {
+  if (!existsSync(resolve(root, path))) errors.push(`Missing local asset: ${path}`);
+}
+
+const config = read("assets/js/config.js");
+const app = read("assets/js/app.js");
+if (
+  !/\bwriteUrl\b/.test(config) ||
+  !app.includes("requestSettingsWrite") ||
+  !app.includes("publishSettings")
+) {
+  errors.push("The organization-wide settings publishing flow is incomplete.");
+}
+if (!html.includes('id="settings-publish"')) {
+  errors.push("The Publish for everyone control is missing.");
+}
+if (!existsSync(resolve(root, "integrations/apps-script/SettingsWriter.gs.example"))) {
+  errors.push("The shared-settings Apps Script is missing.");
+}
+if (!app.includes('"select E,G,H,I,J,K,L,M,N where B is not null"')) {
+  errors.push("Leaderboard query must exclude the member-name column from its response.");
+}
+
+if (errors.length) {
+  console.error(errors.map((error) => `- ${error}`).join("\n"));
+  process.exit(1);
+}
+
+console.log("ASME Hub checks passed.");
