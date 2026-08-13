@@ -16,14 +16,15 @@
     maximumFractionDigits: 0,
   });
   const eventTypeColumns = [
-    { column: 7, name: "General Body", color: "#184a7d" },
-    { column: 8, name: "Social", color: "#4f7cac" },
-    { column: 9, name: "Company Info Sessions", color: "#ba0c2f" },
-    { column: 10, name: "Technical Workshops", color: "#d69e2e" },
-    { column: 11, name: "Build Nights / Projects", color: "#427aa1" },
-    { column: 12, name: "Volunteering / Outreach", color: "#6b7f52" },
-    { column: 13, name: "Committee Work", color: "#7b8797" },
+    { column: 2, name: "General Body", color: "#184a7d" },
+    { column: 3, name: "Social", color: "#4f7cac" },
+    { column: 4, name: "Company Info Sessions", color: "#ba0c2f" },
+    { column: 5, name: "Technical Workshops", color: "#d69e2e" },
+    { column: 6, name: "Build Nights / Projects", color: "#427aa1" },
+    { column: 7, name: "Volunteering / Outreach", color: "#6b7f52" },
+    { column: 8, name: "Committee Work", color: "#7b8797" },
   ];
+  const minimumReliableSample = 5;
   let sharedYearSources = cloneConfiguredSources();
   let yearSources = loadYearSources();
   let sharedSettingsReady = Promise.resolve();
@@ -31,6 +32,7 @@
   let selectedPeriod = "ytd";
   let refreshNavigation = () => {};
   let activeHubSearchItems = [];
+  let activeResources = [];
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -88,6 +90,8 @@
     searchClose: document.getElementById("hub-search-close"),
     searchInput: document.getElementById("hub-search-input"),
     searchResults: document.getElementById("hub-search-results"),
+    resourceFilter: document.getElementById("resource-filter"),
+    resourceCount: document.getElementById("resource-count"),
   };
 
   function getUnlockedUntil() {
@@ -745,7 +749,7 @@
       queryPublicSheet(
         spreadsheetId,
         leaderboardTab,
-        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where B is not null",
+        "select E,G,H,I,J,K,L,M,N where B is not null",
       ),
       queryPublicSheet(
         spreadsheetId,
@@ -777,17 +781,15 @@
 
     const members = (leaderboard.rows || [])
       .map((row) => ({
-        name: String(sheetCell(row, 1) || "").trim(),
-        events: Number(sheetCell(row, 4)) || 0,
+        events: Number(sheetCell(row, 0)) || 0,
         updated: sheetTimestamp(
-          sheetCell(row, 6, true) || sheetCell(row, 6),
+          sheetCell(row, 1, true) || sheetCell(row, 1),
         ),
         eventTypes: eventTypeColumns.map((type) => ({
           ...type,
           count: Number(sheetCell(row, type.column)) || 0,
         })),
-      }))
-      .filter((member) => member.name);
+      }));
 
     const totalCheckIns = members.reduce(
       (sum, member) => sum + member.events,
@@ -1742,10 +1744,15 @@
 
   function renderFreshness(meta) {
     const target = document.getElementById("last-updated");
+    const label = document.getElementById("freshness-label");
+    const dot = document.getElementById("freshness-dot");
     const updated = meta.lastUpdated ? new Date(meta.lastUpdated) : null;
+    dot?.classList.remove("is-stale", "is-unavailable");
 
     if (!updated || Number.isNaN(updated.getTime())) {
       target.textContent = meta.isDemo ? "Demo data" : "Not provided";
+      if (label) label.textContent = "Data status";
+      dot?.classList.add("is-unavailable");
       return;
     }
 
@@ -1756,13 +1763,24 @@
       minute: "2-digit",
     }).format(updated);
 
+    const ageHours = Math.max(0, (Date.now() - updated.getTime()) / 3600000);
+    const isStale = ageHours > 24;
+    if (label) {
+      label.textContent = isStale ? "Data may be stale" : "Data refreshed";
+    }
+    dot?.classList.toggle("is-stale", isStale);
     target.textContent = `${formatted}${meta.isDemo ? " · Demo" : ""}`;
   }
 
   function renderKpis(kpis, meta, period = null) {
+    const participantCount = Number(kpis.uniqueAttendees) || 0;
+    const reliableRepeatRate = participantCount >= minimumReliableSample;
     setText("kpi-unique-attendees", formatNumber(kpis.uniqueAttendees));
     setText("kpi-total-checkins", formatNumber(kpis.totalCheckIns));
     setText("kpi-events-held", formatNumber(kpis.eventsHeld));
+    setText("hero-kpi-unique", formatNumber(kpis.uniqueAttendees));
+    setText("hero-kpi-checkins", formatNumber(kpis.totalCheckIns));
+    setText("hero-kpi-events", formatNumber(kpis.eventsHeld));
     setText(
       "kpi-average-turnout",
       hasMetric(kpis.averageTurnout)
@@ -1771,7 +1789,7 @@
     );
     setText(
       "kpi-repeat-rate",
-      hasMetric(kpis.repeatAttendanceRate)
+      reliableRepeatRate && hasMetric(kpis.repeatAttendanceRate)
         ? `${Math.round(Number(kpis.repeatAttendanceRate))}%`
         : "—",
     );
@@ -1810,9 +1828,11 @@
       );
       setText(
         "kpi-repeat-rate-context",
-        `${formatNumber(selected.repeatAttendees)} repeat participant${
-          selected.repeatAttendees === 1 ? "" : "s"
-        }`,
+        reliableRepeatRate
+          ? `${formatNumber(selected.repeatAttendees)} repeat participant${
+              selected.repeatAttendees === 1 ? "" : "s"
+            }`
+          : `Needs ${minimumReliableSample} participants for a stable rate`,
       );
     } else if (meta.isPartial) {
       setText(
@@ -1825,13 +1845,23 @@
       );
       setText("kpi-events-held-context", "Add a full aggregate JSON feed");
       setText("kpi-average-turnout-context", "Add a full aggregate JSON feed");
-      setText("kpi-repeat-rate-context", "Attended two or more events");
+      setText(
+        "kpi-repeat-rate-context",
+        reliableRepeatRate
+          ? "Attended two or more events"
+          : `Needs ${minimumReliableSample} participants for a stable rate`,
+      );
     } else {
       setText("kpi-unique-attendees-context", "Across all recorded events");
       setText("kpi-total-checkins-context", "All attendance submissions");
       setText("kpi-events-held-context", "Events with recorded attendance");
       setText("kpi-average-turnout-context", "Check-ins per event");
-      setText("kpi-repeat-rate-context", "Attended two or more events");
+      setText(
+        "kpi-repeat-rate-context",
+        reliableRepeatRate
+          ? "Attended two or more events"
+          : `Needs ${minimumReliableSample} participants for a stable rate`,
+      );
     }
   }
 
@@ -2189,6 +2219,7 @@
     }
 
     const checkIns = Number(period.totalCheckIns) || 0;
+    const participants = Number(period.uniqueAttendees) || 0;
     const previousCheckIns = Number(previous?.totalCheckIns) || 0;
     const repeatRate = Math.round(Number(period.repeatAttendanceRate) || 0);
     const previousRepeat = Math.round(
@@ -2235,7 +2266,11 @@
           period.topEventAttendance,
         )} check-in${period.topEventAttendance === 1 ? "" : "s"}.`
       : "No top event is available yet.";
-    copy.textContent = `${turnoutText}; repeat participation is ${repeatRate}%. ${topEventText}`;
+    const repeatText =
+      participants >= minimumReliableSample
+        ? `repeat participation is ${repeatRate}%`
+        : `repeat participation will be shown after ${minimumReliableSample} participants`;
+    copy.textContent = `${turnoutText}; ${repeatText}. ${topEventText}`;
   }
 
   function renderParticipationFunnel(kpis, periodLabel) {
@@ -2512,15 +2547,30 @@
 
   function renderOperations(items) {
     const container = document.getElementById("operations-list");
-    const actionable = items.filter((item) => item.severity !== "success").length;
+    const actionableItems = items.filter((item) => item.severity !== "success");
+    const actionable = actionableItems.length;
     setText(
       "operations-count",
       `${actionable} open item${actionable === 1 ? "" : "s"}`,
     );
     setText("nav-alert-count", String(actionable));
+    setText(
+      "overview-attention-count",
+      actionable
+        ? `${actionable} open item${actionable === 1 ? "" : "s"}`
+        : "All clear",
+    );
 
     container.replaceChildren(
-      ...items.map((item) => {
+      ...(actionableItems.length
+        ? actionableItems
+        : [
+            {
+              severity: "success",
+              title: "No open operational items",
+              detail: "Connected systems are not reporting any action items.",
+            },
+          ]).map((item) => {
         const article = document.createElement("article");
         article.className = `operation-item is-${item.severity || "info"}`;
 
@@ -2575,8 +2625,32 @@
 
   function renderResources(resources) {
     const container = document.getElementById("resource-grid");
+    activeResources = resources;
+    const categories = [...new Set(resources.map((resource) => resource.category))]
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    const currentFilter = elements.resourceFilter?.value || "all";
+    if (elements.resourceFilter) {
+      elements.resourceFilter.replaceChildren(
+        new Option("All categories", "all"),
+        ...categories.map((category) => new Option(category, category)),
+      );
+      elements.resourceFilter.value = categories.includes(currentFilter)
+        ? currentFilter
+        : "all";
+    }
+    const selectedCategory = elements.resourceFilter?.value || "all";
+    const visibleResources =
+      selectedCategory === "all"
+        ? resources
+        : resources.filter((resource) => resource.category === selectedCategory);
+    if (elements.resourceCount) {
+      elements.resourceCount.textContent = `${visibleResources.length} resource${
+        visibleResources.length === 1 ? "" : "s"
+      }`;
+    }
     container.replaceChildren(
-      ...resources.map((resource) => {
+      ...visibleResources.map((resource) => {
         const article = document.createElement("article");
         article.className = "resource-card";
 
@@ -2744,7 +2818,8 @@
       const readingLine =
         window.scrollY + Math.min(window.innerHeight * 0.3, 260);
       const activeSection = sections.reduce((current, section) => {
-        return section.offsetTop <= readingLine ? section : current;
+        const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+        return sectionTop <= readingLine ? section : current;
       }, sections[0]);
       setActiveNavigation(activeSection.id);
     };
@@ -3043,6 +3118,11 @@
   if (elements.searchInput) {
     elements.searchInput.addEventListener("input", () => {
       renderHubSearchResults(elements.searchInput.value);
+    });
+  }
+  if (elements.resourceFilter) {
+    elements.resourceFilter.addEventListener("change", () => {
+      renderResources(activeResources);
     });
   }
 

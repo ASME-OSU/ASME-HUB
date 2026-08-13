@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260802n">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260812d">
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -169,22 +169,28 @@
             <p class="eyebrow">Chapter snapshot</p>
             <h1 id="hero-quote">Good decisions start with a clear view.</h1>
             <p class="hero-copy">Track participation, spot operational issues, and jump into the tools your team uses every week.</p>
+            <div class="hero-kpi-strip" aria-label="Headline chapter metrics">
+              <span><small>Attendees</small><strong id="hero-kpi-unique">—</strong></span>
+              <span><small>Check-ins</small><strong id="hero-kpi-checkins">—</strong></span>
+              <span><small>Events held</small><strong id="hero-kpi-events">—</strong></span>
+            </div>
           </div>
-          <div class="freshness-card">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span>
-              <small>Data refreshed</small>
-              <strong id="last-updated">Loading…</strong>
-            </span>
+          <div class="hero-status-grid">
+            <div class="freshness-card">
+              <span class="status-dot" id="freshness-dot" aria-hidden="true"></span>
+              <span>
+                <small id="freshness-label">Data refreshed</small>
+                <strong id="last-updated">Loading…</strong>
+              </span>
+            </div>
+            <a class="attention-card" href="#operations">
+              <span aria-hidden="true">!</span>
+              <span>
+                <small>Needs attention</small>
+                <strong id="overview-attention-count">Checking…</strong>
+              </span>
+            </a>
           </div>
-        </section>
-
-        <section class="quick-actions global-quick-actions" aria-labelledby="quick-actions-title">
-          <div class="quick-actions-heading">
-            <p class="eyebrow">Officer shortcuts</p>
-            <strong id="quick-actions-title">Start a common task</strong>
-          </div>
-          <div class="quick-action-grid" id="quick-action-grid"></div>
         </section>
 
         <section class="dashboard-band dashboard-band-overview" aria-labelledby="overview-band-title">
@@ -262,6 +268,14 @@
           </article>
         </section>
 
+        </section>
+
+        <section class="quick-actions global-quick-actions" aria-labelledby="quick-actions-title">
+          <div class="quick-actions-heading">
+            <p class="eyebrow">Officer shortcuts</p>
+            <strong id="quick-actions-title">Start a common task</strong>
+          </div>
+          <div class="quick-action-grid" id="quick-action-grid"></div>
         </section>
 
         <section class="dashboard-band dashboard-band-analytics" aria-labelledby="analytics-band-title">
@@ -536,6 +550,13 @@
             </div>
             <p id="resource-year-description">Current officer workspaces, member tools, and public chapter resources for the selected academic year.</p>
           </div>
+          <div class="resource-toolbar">
+            <label for="resource-filter">Filter resources</label>
+            <select id="resource-filter">
+              <option value="all">All categories</option>
+            </select>
+            <span id="resource-count" aria-live="polite"></span>
+          </div>
           <div class="resource-grid" id="resource-grid"></div>
         </section>
 
@@ -725,8 +746,8 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260802n"></script>
-  <script src="assets/js/app.js?v=20260802m"></script>
+  <script src="assets/js/config.js?v=20260812d"></script>
+  <script src="assets/js/app.js?v=20260812d"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

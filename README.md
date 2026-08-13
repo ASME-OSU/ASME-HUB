@@ -55,7 +55,9 @@ sign-in, and the saved theme follows the officer into the dashboard.
 
 The access screen is a convenience gate, not authentication. GitHub Pages is a
 public static host: visitors who know how to inspect the site can download its
-HTML, JavaScript, and JSON files.
+HTML, JavaScript, and JSON files. A static site cannot keep an access phrase or
+verification secret in browser code. Keep the phrase unique to this Hub and
+never reuse it for Microsoft, Google, banking, or any other account.
 
 Do not commit names, emails, attendance rows, passwords with access to other
 systems, or any other personally identifiable information. A production data
@@ -73,14 +75,10 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080`.
 
-The initial dashboard password is:
-
-```text
-ASMEOSU
-```
-
-It is case-sensitive. Successful access lasts for the current browser tab for
-12 hours.
+The officer access phrase is distributed outside this repository. It is
+case-sensitive, and successful access lasts for the current browser tab for 12
+hours. Changing the SHA-256 digest in `assets/js/config.js` changes the phrase,
+but does not turn the static access screen into secure authentication.
 
 ## Repository map
 
@@ -92,7 +90,7 @@ It is case-sensitive. Successful access lasts for the current browser tab for
 | `assets/js/app.js` | Password check, settings storage, Google Sheets loading, charts, and interface behavior |
 | `data/demo-dashboard.json` | Safe sample aggregate dataset |
 | `integrations/apps-script/Code.gs.example` | Optional Google Sheets aggregate-feed starter |
-| `integrations/apps-script/SettingsWriter.gs.example` | Optional no-sign-in shared-settings writer |
+| `integrations/apps-script/SettingsWriter.gs.example` | Organization-wide shared-settings writer |
 
 ## Current tool connections
 
@@ -107,7 +105,9 @@ the launcher. It currently includes:
 - The public website, event calendar, and ASME OSU GitHub organization
 
 SharePoint and the private Google workbook enforce their own account access
-after an officer follows a link from the hub.
+after an officer follows a link from the Hub. The Officer Password Document,
+in particular, still requires an authorized Microsoft account; the Hub never
+reads or stores its contents.
 
 ## Year Settings
 
@@ -142,37 +142,33 @@ The shared settings row also contains these rollover controls:
   aggregate-only dashboard feed
 - `banking_url` and `fundraising_url`: yearly Finance resource destinations
 
-Before the settings writer is connected, changes made directly in the hub are
+Before the settings writer is connected, changes made directly in the Hub are
 temporary previews stored in `sessionStorage`; they disappear when that browser
 tab is closed. Once connected, **Publish for everyone** creates a new year row
 or updates the matching existing year and records the change in
 `Settings_Audit`.
 
-### Enable no-sign-in shared saves
+### Enable organization-wide publishing
 
-This option deliberately uses the same convenience barrier as the dashboard.
-It is suitable only for non-sensitive links, labels, and aggregate-data
-configuration. Anyone who inspects the deployed source can recover the write
-token and submit a settings change.
+This writer uses the same convenience barrier as the dashboard. Because the
+Hub is a public static site, its deployment URL and verification value are
+visible to anyone who inspects the client. Use it only for non-sensitive links,
+labels, and aggregate-data configuration.
 
-1. Create a dedicated `ASME Hub Control Center` Google spreadsheet.
-2. Copy `Hub_Settings_Public` into it.
+1. Create or use the dedicated `ASME Hub Control Center` Google spreadsheet.
+2. Copy `Hub_Settings_Public` into it if the tab is not already present.
 3. Create a standalone Apps Script project in the ASME admin account.
-4. Copy in `integrations/apps-script/SettingsWriter.gs.example` and set its
-   `SPREADSHEET_ID` to the dedicated workbook.
-5. Run `setupSettingsWriter()` once and approve the requested spreadsheet
-   access.
+4. Copy in `integrations/apps-script/SettingsWriter.gs.example` and confirm its
+   `SPREADSHEET_ID` points to the control-center workbook.
+5. Run `setupSettingsWriter()` once and approve spreadsheet access.
 6. Deploy it as a web app that executes as the owner and allows anyone with the
    link to run it.
-7. Paste the deployment `/exec` URL into
-   `sharedSettings.writeUrl` in `assets/js/config.js`.
-8. Update `sharedSettings.spreadsheetUrl` and `editUrl` to the dedicated
-   workbook, then verify preview and organization-wide publishing separately.
+7. Paste the deployment `/exec` URL into `sharedSettings.writeUrl` in
+   `assets/js/config.js`.
+8. Verify preview and organization-wide publishing separately.
 
 The writer updates the matching academic-year row, appends new academic years,
-allows one row to be marked current, and keeps a timestamped audit record. The
-Hub calls the web app with JSONP so organization-wide saves are not blocked by
-cross-origin browser rules.
+allows one row to be marked current, and keeps a timestamped audit record.
 
 The **Events calendar page** is the human-facing web page. The **Google Calendar
 iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,
@@ -220,7 +216,7 @@ private Points Master → sanitized Website Export → Officer Hub aggregates
 
 The Website Export contains:
 
-- `Leaderboard_Public`: privacy-safe member totals used by the member-points page
+- `Leaderboard_Public`: privacy-safe member totals used by the member-points page; the Hub query excludes the name column
 - `System_Status`: point-system status
 - `Hub_Settings_Public`: one organization-wide row per academic year
 - `Event_Metrics_Public`: event names, dates, types, attendance totals, form state, and aggregate health counts
