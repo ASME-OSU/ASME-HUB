@@ -48,6 +48,7 @@ for (const path of new Set(localReferences)) {
 
 const config = read("assets/js/config.js");
 const app = read("assets/js/app.js");
+const styles = read("assets/css/styles.css");
 if (
   !/\bwriteUrl\b/.test(config) ||
   !app.includes("requestSettingsWrite") ||
@@ -94,6 +95,9 @@ for (const id of [
   "resource-search",
   "frequent-resource-grid",
   "budget-used-context",
+  "print-section-button",
+  "print-section-title",
+  "print-section-meta",
 ]) {
   const selector = id === "mobile-section-tabs" ? 'class="mobile-section-tabs"' : `id="${id}"`;
   if (!html.includes(selector)) errors.push(`The visual dashboard control ${id} is missing.`);
@@ -103,6 +107,18 @@ if (!html.includes('<use href="#icon-settings"></use>') || html.includes("⚙"))
 }
 if (!app.includes("renderFrequentResources") || !app.includes("renderAttendanceEmptyState")) {
   errors.push("The resource launcher or attendance empty-state flow is incomplete.");
+}
+if (
+  !app.includes("prepareSectionPrint") ||
+  !app.includes("data-print-section") && !styles.includes("data-print-section")
+) {
+  errors.push("The current-section print flow is incomplete.");
+}
+if (
+  styles.includes(".attendance-data-empty .trend-panel") ||
+  styles.includes(".attendance-data-empty .performance-panel")
+) {
+  errors.push("Attendance metric panels must remain visible when a period has no check-ins.");
 }
 
 if (errors.length) {

@@ -1,12 +1,12 @@
-const SHELL_CACHE = "asme-hub-shell-v35";
+const SHELL_CACHE = "asme-hub-shell-v36";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./assets/hub-mark.svg?v=20260801b",
-  "./assets/css/styles.css?v=20260828e",
-  "./assets/js/config.js?v=20260828e",
-  "./assets/js/app.js?v=20260828e",
+  "./assets/css/styles.css?v=20260828f",
+  "./assets/js/config.js?v=20260828f",
+  "./assets/js/app.js?v=20260828f",
   "./assets/js/pwa.js?v=20260802f",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
