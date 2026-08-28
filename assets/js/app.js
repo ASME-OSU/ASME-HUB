@@ -8,6 +8,9 @@
   const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
+  const calendarSnapshotUrl = "./data/calendar.json";
+  const calendarLiveMaxAgeMs = 2 * 60 * 60 * 1000;
+  const calendarFallbackMaxAgeMs = 24 * 60 * 60 * 1000;
   const defaultDocumentTitle = document.title;
   const numberFormatter = new Intl.NumberFormat("en-US");
   const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -1160,7 +1163,7 @@
     }
   }
 
-  async function loadCalendarEvents(source) {
+  async function loadCalendarEvents(source, year) {
     const feed = String(source.calendarIcalUrl || "").trim();
     if (!feed) {
       return {
@@ -1183,34 +1186,60 @@
       };
     }
 
-    const cacheKey = `${calendarCacheKeyPrefix}${source.label || feed}`;
-    const candidates = [
-      feed,
-      `https://api.allorigins.win/raw?url=${encodeURIComponent(feed)}`,
-      `https://corsproxy.io/?${encodeURIComponent(feed)}`,
-      `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feed)}`,
-    ];
-    for (const candidate of candidates) {
-      try {
-        const text = await fetchTextWithTimeout(candidate);
-        const events = parseIcalEvents(text);
-        localStorage.setItem(
-          cacheKey,
-          JSON.stringify({ savedAt: Date.now(), events }),
-        );
-        return calendarResult(events, "LIVE", "Public iCal feed connected");
-      } catch (error) {
-        console.warn("Calendar source failed.", error);
+    const cacheKey = `${calendarCacheKeyPrefix}${feed}`;
+    try {
+      const text = await fetchTextWithTimeout(calendarSnapshotUrl);
+      const snapshot = JSON.parse(text);
+      if (snapshot?.schemaVersion !== 1) {
+        throw new Error("The hourly calendar snapshot version is not supported.");
       }
+      const entry = snapshot?.calendars?.[normalizeYearKey(year)];
+      if (!entry || typeof entry.ical !== "string") {
+        throw new Error("The hourly calendar snapshot does not include this year.");
+      }
+      if (String(entry.feedUrl || "").trim() !== feed) {
+        throw new Error("The calendar feed is waiting for the next hourly sync.");
+      }
+
+      const generatedAt = new Date(entry.generatedAt || snapshot.generatedAt);
+      const ageMs = Date.now() - generatedAt.getTime();
+      if (Number.isNaN(ageMs) || ageMs < 0) {
+        throw new Error("The hourly calendar snapshot has an invalid timestamp.");
+      }
+      if (ageMs > calendarFallbackMaxAgeMs) {
+        throw new Error("The hourly calendar snapshot is more than 24 hours old.");
+      }
+
+      const events = parseIcalEvents(entry.ical);
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({ savedAt: generatedAt.getTime(), events }),
+      );
+      return calendarResult(
+        events,
+        ageMs <= calendarLiveMaxAgeMs ? "LIVE" : "NOTICE",
+        ageMs <= calendarLiveMaxAgeMs
+          ? "Hourly calendar sync connected"
+          : `Last hourly sync ${formatCompactDate(generatedAt)}`,
+      );
+    } catch (error) {
+      console.warn("Generated calendar snapshot could not be loaded.", error);
     }
 
     try {
       const cached = JSON.parse(localStorage.getItem(cacheKey) || "{}");
-      if (Array.isArray(cached.events)) {
+      const savedAt = new Date(cached.savedAt);
+      const ageMs = Date.now() - savedAt.getTime();
+      if (
+        Array.isArray(cached.events) &&
+        !Number.isNaN(ageMs) &&
+        ageMs >= 0 &&
+        ageMs <= calendarFallbackMaxAgeMs
+      ) {
         return calendarResult(
           cached.events.filter((event) => new Date(event.date) >= new Date()),
           "NOTICE",
-          `Using cache from ${formatCompactDate(new Date(cached.savedAt))}`,
+          `Using browser fallback from ${formatCompactDate(savedAt)}`,
         );
       }
     } catch (error) {
@@ -1455,7 +1484,7 @@
         throw new Error("No attendance data source is configured.");
       }
       const [calendar, budget] = await Promise.all([
-        loadCalendarEvents(source),
+        loadCalendarEvents(source, year),
         loadBudgetSummary(source),
       ]);
       data.upcomingEvents = calendar.events;
@@ -2672,7 +2701,9 @@
           if (action.target === "_blank") {
             action.rel = "noopener";
           }
-          action.innerHTML = `<span>${resource.label}</span><span aria-hidden="true">↗</span>`;
+          const label = document.createElement("span");
+          label.textContent = resource.label;
+          action.append(label, createLinkChainIcon());
         } else {
           action = document.createElement("span");
           action.classList.add("is-disabled");
@@ -2920,6 +2951,24 @@
       element.setAttribute(key, String(value)),
     );
     return element;
+  }
+
+  function createLinkChainIcon() {
+    const icon = svgElement("svg", {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      "aria-hidden": "true",
+    });
+    icon.classList.add("link-chain-icon");
+    icon.append(
+      svgElement("path", {
+        d: "M10.6 13.4a4.5 4.5 0 0 0 6.36.04l2.12-2.12a4.5 4.5 0 0 0-6.36-6.36l-1.22 1.22",
+      }),
+      svgElement("path", {
+        d: "M13.4 10.6a4.5 4.5 0 0 0-6.36-.04l-2.12 2.12a4.5 4.5 0 0 0 6.36 6.36l1.22-1.22",
+      }),
+    );
+    return icon;
   }
 
   [elements.settingsButton, elements.sidebarSettings].forEach((button) => {
