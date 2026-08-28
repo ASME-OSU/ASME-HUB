@@ -99,6 +99,11 @@
     resourceCount: document.getElementById("resource-count"),
     frequentResources: document.getElementById("frequent-resources"),
     frequentResourceGrid: document.getElementById("frequent-resource-grid"),
+    printSectionButton: document.getElementById("print-section-button"),
+    printSnapshot: document.getElementById("print-snapshot"),
+    printSectionTitle: document.getElementById("print-section-title"),
+    printSectionMeta: document.getElementById("print-section-meta"),
+    healthySystems: document.getElementById("healthy-systems"),
   };
 
   function getUnlockedUntil() {
@@ -3334,7 +3339,29 @@
     renderSelectedPeriod();
   });
 
-  const setPrintDocumentTitle = () => {
+  const printSectionLabels = {
+    overview: "Chapter pulse",
+    events: "Events and turnout",
+    members: "Members and participation",
+    finances: "Financial oversight",
+    operations: "Officer systems",
+    resources: "Tools and resources",
+  };
+
+  const currentPrintSection = () => {
+    const hashSection = window.location.hash.slice(1);
+    if (printSectionLabels[hashSection]) return hashSection;
+    const activeSection = document
+      .querySelector(".nav-link.is-active")
+      ?.getAttribute("href")
+      ?.slice(1);
+    return printSectionLabels[activeSection] ? activeSection : "overview";
+  };
+
+  const prepareSectionPrint = (requestedSection = "") => {
+    const section = printSectionLabels[requestedSection]
+      ? requestedSection
+      : currentPrintSection();
     const yearLabel =
       elements.academicYear.selectedOptions[0]?.textContent?.trim() ||
       elements.academicYear.value ||
@@ -3342,16 +3369,55 @@
     const periodLabel =
       elements.periodFilter.selectedOptions[0]?.textContent?.trim() ||
       "Year to date";
-    document.title = `ASME Officer Hub - ${yearLabel} - ${periodLabel}`;
+    const sectionLabel = printSectionLabels[section];
+    document.body.dataset.printSection = section;
+    document.title = `ASME Officer Hub - ${sectionLabel} - ${yearLabel}`;
+    if (elements.printSectionTitle) {
+      elements.printSectionTitle.textContent = sectionLabel;
+    }
+    if (elements.printSectionMeta) {
+      const periodContext = ["overview", "events", "members"].includes(section)
+        ? ` · ${periodLabel}`
+        : "";
+      elements.printSectionMeta.textContent = `${yearLabel}${periodContext} · ${new Intl.DateTimeFormat(
+        "en-US",
+        { month: "short", day: "numeric", year: "numeric" },
+      ).format(new Date())}`;
+    }
+    if (section === "operations" && elements.healthySystems) {
+      if (!elements.healthySystems.dataset.printWasOpen) {
+        elements.healthySystems.dataset.printWasOpen = String(
+          elements.healthySystems.open,
+        );
+      }
+      elements.healthySystems.open = true;
+    }
+    return section;
   };
 
-  window.addEventListener("beforeprint", setPrintDocumentTitle);
-  window.addEventListener("afterprint", () => {
+  const cleanupSectionPrint = () => {
+    if (elements.healthySystems?.dataset.printWasOpen) {
+      elements.healthySystems.open =
+        elements.healthySystems.dataset.printWasOpen === "true";
+      delete elements.healthySystems.dataset.printWasOpen;
+    }
+    delete document.body.dataset.printSection;
     document.title = defaultDocumentTitle;
+  };
+
+  window.addEventListener("beforeprint", () =>
+    prepareSectionPrint(document.body.dataset.printSection || ""),
+  );
+  window.addEventListener("afterprint", () => {
+    cleanupSectionPrint();
   });
 
-  document.getElementById("print-snapshot").addEventListener("click", () => {
-    window.print();
+  [elements.printSectionButton, elements.printSnapshot].forEach((button) => {
+    if (!button) return;
+    button.addEventListener("click", () => {
+      prepareSectionPrint(button.dataset.printTarget || "");
+      window.print();
+    });
   });
 
   [
