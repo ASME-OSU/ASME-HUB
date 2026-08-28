@@ -34,6 +34,7 @@
   let activeDashboardData = null;
   let selectedPeriod = "ytd";
   let refreshNavigation = () => {};
+  let setActiveMobileSection = () => {};
   let activeHubSearchItems = [];
   let activeResources = [];
 
@@ -94,7 +95,10 @@
     searchInput: document.getElementById("hub-search-input"),
     searchResults: document.getElementById("hub-search-results"),
     resourceFilter: document.getElementById("resource-filter"),
+    resourceSearch: document.getElementById("resource-search"),
     resourceCount: document.getElementById("resource-count"),
+    frequentResources: document.getElementById("frequent-resources"),
+    frequentResourceGrid: document.getElementById("frequent-resource-grid"),
   };
 
   function getUnlockedUntil() {
@@ -445,6 +449,7 @@
       ? document.querySelector(window.location.hash)
       : null;
     if (hashTarget) {
+      setActiveMobileSection(hashTarget.id);
       hashTarget.scrollIntoView({ behavior: "auto", block: "start" });
     }
     refreshNavigation();
@@ -1305,7 +1310,7 @@
         sectionId: "overview",
         title: "Overview",
         description: "Chapter snapshot, attendance KPIs, and meeting pulse",
-        icon: "⌂",
+        icon: "home",
         keywords: "dashboard health attendance kpi summary",
       },
       {
@@ -1313,7 +1318,7 @@
         sectionId: "events",
         title: "Events",
         description: "Turnout trends, engagement goal, and event review",
-        icon: "◫",
+        icon: "calendar",
         keywords: "calendar turnout performance event types",
       },
       {
@@ -1321,7 +1326,7 @@
         sectionId: "members",
         title: "Members",
         description: "Participation mix, retention, and engagement depth",
-        icon: "◎",
+        icon: "users",
         keywords: "members attendance repeat participation",
       },
       {
@@ -1329,7 +1334,7 @@
         sectionId: "finances",
         title: "Finances",
         description: "Budget totals, pending approval, and remaining funds",
-        icon: "$",
+        icon: "wallet",
         keywords: "budget income expenses finance money",
       },
       {
@@ -1337,7 +1342,7 @@
         sectionId: "operations",
         title: "Operations",
         description: "Items that need officer attention",
-        icon: "✓",
+        icon: "check-square",
         keywords: "tasks actions review queue",
       },
       {
@@ -1345,7 +1350,7 @@
         sectionId: "resources",
         title: "Resources",
         description: "Officer tools, workspaces, and chapter links",
-        icon: "↗",
+        icon: "link",
         keywords: "tools links sharepoint sheets forms",
       },
     ];
@@ -1355,7 +1360,7 @@
       description: resource.description,
       category: resource.category || "Resource",
       url: resource.url || "",
-      icon: resource.quickAction?.icon || "↗",
+      icon: resource.icon || resource.quickAction?.icon || "link",
       keywords: `${resource.label || ""} ${resource.category || ""}`,
     }));
     activeHubSearchItems = [...sections, ...resourceItems];
@@ -1430,7 +1435,7 @@
         const icon = document.createElement("span");
         icon.className = "hub-search-result-icon";
         icon.setAttribute("aria-hidden", "true");
-        icon.textContent = item.icon || "↗";
+        icon.append(createHubIcon(item.icon || "link"));
         const copy = document.createElement("span");
         copy.className = "hub-search-result-copy";
         const title = document.createElement("strong");
@@ -1458,6 +1463,23 @@
     renderResources(resources);
     renderQuickActions(resources);
     configureHubSearch(resources);
+    const eventOperations = resources.find(
+      (resource) => resource.title === "Event Operations",
+    );
+    const attendanceCheckIn = resources.find((resource) =>
+      resource.settingKey === "attendanceFormUrl",
+    );
+    const emptyPlanLink = document.getElementById("empty-plan-event");
+    const emptyCheckInLink = document.getElementById("empty-open-checkin");
+    [
+      [emptyPlanLink, eventOperations?.url],
+      [emptyCheckInLink, attendanceCheckIn?.url],
+    ].forEach(([link, url]) => {
+      if (!link || !url) return;
+      link.href = url;
+      link.target = url.startsWith("#") ? "_self" : "_blank";
+      link.rel = url.startsWith("#") ? "" : "noopener";
+    });
     const calendarLink = document.querySelector(".upcoming-panel .text-link");
     if (calendarLink && source.calendarUrl) {
       calendarLink.href = source.calendarUrl;
@@ -1704,6 +1726,7 @@
     const { period, previous, kind, unit, label, events } = view;
 
     if (!period) {
+      renderAttendanceEmptyState(data.kpis || {});
       renderFreshness(data.meta || {});
       renderKpis(data.kpis || {}, data.meta || {});
       renderAttendanceChart(data.attendanceTrend || []);
@@ -1737,6 +1760,7 @@
       highlyEngagedAttendees: period.highlyEngagedAttendees,
       engagementGoal: data.kpis?.engagementGoal,
     };
+    renderAttendanceEmptyState(periodKpis);
     const periodMeta = {
       ...(data.meta || {}),
       lastUpdated: period.updated
@@ -1769,6 +1793,16 @@
           } · Leading type: ${period.topEventType}`
         : `No recorded attendance for this ${kind} yet.`,
     );
+  }
+
+  function renderAttendanceEmptyState(kpis = {}) {
+    const hasAttendance =
+      Number(kpis.totalCheckIns || 0) > 0 ||
+      Number(kpis.uniqueAttendees || 0) > 0 ||
+      Number(kpis.eventsHeld || 0) > 0;
+    const guide = document.getElementById("attendance-empty-guide");
+    if (guide) guide.hidden = hasAttendance;
+    document.body.classList.toggle("attendance-data-empty", !hasAttendance);
   }
 
   function renderFreshness(meta) {
@@ -1921,6 +1955,12 @@
       if (emptyFill) emptyFill.style.width = "0%";
       const emptyProgress = emptyFill?.parentElement;
       if (emptyProgress) emptyProgress.setAttribute("aria-valuenow", "0");
+      document.getElementById("budget-usage-card")?.classList.remove("is-warning");
+      document.getElementById("budget-remaining-card")?.classList.remove("is-warning");
+      setText("budget-used-label", "Budget used");
+      const unavailableContext = document.getElementById("budget-used-context");
+      if (unavailableContext) unavailableContext.hidden = true;
+      if (emptyProgress) emptyProgress.hidden = false;
       renderBudgetCategories([]);
       return;
     }
@@ -1934,13 +1974,27 @@
         : rawRate
       : 0;
     const boundedPercent = Math.max(0, Math.min(100, percent));
+    const plannedBudget = Number(budget.plannedBudget) || 0;
+    const categorizedExpenses = (Array.isArray(budget.categories)
+      ? budget.categories
+      : []
+    ).reduce((sum, category) => sum + (Number(category.actual) || 0), 0);
+    const approvedExpenses = Math.max(
+      Number(budget.approvedExpenses) || 0,
+      categorizedExpenses,
+    );
+    const remainingBudget = Number(budget.remainingBudget) || 0;
+    const needsBudgetPlan = plannedBudget <= 0;
 
     setText("budget-period", budget.academicYear || source.label || "Current year");
     setText("budget-approved-income", money(budget.approvedIncome));
     setText("budget-approved-expenses", money(budget.approvedExpenses));
     setText("budget-pending-approval", money(budget.pendingApproval));
     setText("budget-remaining", money(budget.remainingBudget));
-    setText("budget-used-rate", `${Math.round(percent)}%`);
+    setText(
+      "budget-used-rate",
+      needsBudgetPlan ? "Not set" : `${Math.round(percent)}%`,
+    );
     setText(
       "budget-planned-context",
       `Of ${money(budget.plannedBudget)} planned`,
@@ -1951,6 +2005,19 @@
     const progress = fill?.parentElement;
     if (progress) {
       progress.setAttribute("aria-valuenow", String(Math.round(boundedPercent)));
+      progress.hidden = needsBudgetPlan;
+    }
+    const usageCard = document.getElementById("budget-usage-card");
+    const remainingCard = document.getElementById("budget-remaining-card");
+    const usageContext = document.getElementById("budget-used-context");
+    usageCard?.classList.toggle("is-warning", needsBudgetPlan);
+    remainingCard?.classList.toggle("is-warning", remainingBudget < 0);
+    setText("budget-used-label", needsBudgetPlan ? "Budget plan needed" : "Budget used");
+    if (usageContext) {
+      usageContext.hidden = !needsBudgetPlan;
+      usageContext.textContent = approvedExpenses
+        ? `${money(approvedExpenses)} categorized spending without a planned budget`
+        : "Add a planned budget to calculate usage";
     }
     renderBudgetCategories(budget.categories || []);
 
@@ -2069,7 +2136,9 @@
           : category.actual > 0
             ? 100
             : 0;
-        if (category.actual > category.planned && category.actual > 0) {
+        if (category.planned <= 0 && category.actual > 0) {
+          row.classList.add("is-unplanned");
+        } else if (category.actual > category.planned && category.actual > 0) {
           row.classList.add("is-over");
         }
         const heading = document.createElement("div");
@@ -2077,7 +2146,9 @@
         const label = document.createElement("strong");
         label.textContent = category.label;
         const value = document.createElement("span");
-        value.textContent = `${currencyFormatter.format(category.actual)} of ${currencyFormatter.format(category.planned)}`;
+        value.textContent = category.planned > 0
+          ? `${currencyFormatter.format(category.actual)} of ${currencyFormatter.format(category.planned)}`
+          : `${currencyFormatter.format(category.actual)} · plan needed`;
         heading.append(label, value);
         const track = document.createElement("div");
         track.className = "budget-category-track";
@@ -2612,7 +2683,12 @@
         if (item.actionLabel && item.actionUrl) {
           const action = document.createElement("a");
           action.href = item.actionUrl;
-          action.textContent = `${item.actionLabel} →`;
+          action.append(
+            document.createTextNode(item.actionLabel),
+            createHubIcon(
+              item.actionUrl.startsWith("#") ? "arrow-right" : "external",
+            ),
+          );
           if (item.actionUrl === "#year-settings") {
             action.addEventListener("click", (event) => {
               event.preventDefault();
@@ -2631,23 +2707,95 @@
   }
 
   function renderHealth(items) {
-    const container = document.getElementById("health-grid");
-    if (!container) return;
-    container.replaceChildren(
-      ...items.map((item) => {
-        const article = document.createElement("article");
-        const status = String(item.status || "NOTICE").toLowerCase();
-        article.className = `health-item is-${status}`;
-        const header = document.createElement("div");
+    const healthyContainer = document.getElementById("health-grid");
+    const attentionContainer = document.getElementById("health-attention-grid");
+    const healthySystems = document.getElementById("healthy-systems");
+    if (!healthyContainer || !attentionContainer || !healthySystems) return;
+    const createHealthItem = (item) => {
+      const article = document.createElement("article");
+      const status = String(item.status || "NOTICE").toLowerCase();
+      article.className = `health-item is-${status}`;
+      const header = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = item.label;
+      const pill = document.createElement("span");
+      pill.textContent = item.status || "NOTICE";
+      header.append(title, pill);
+      const detail = document.createElement("p");
+      detail.textContent = item.detail || "No detail provided";
+      article.append(header, detail);
+      return article;
+    };
+    const healthy = items.filter(
+      (item) => String(item.status || "").toUpperCase() === "LIVE",
+    );
+    const attention = items.filter(
+      (item) => String(item.status || "").toUpperCase() !== "LIVE",
+    );
+    healthyContainer.replaceChildren(...healthy.map(createHealthItem));
+    attentionContainer.replaceChildren(...attention.map(createHealthItem));
+    attentionContainer.hidden = attention.length === 0;
+    healthySystems.hidden = healthy.length === 0;
+    healthySystems.open = false;
+    setText(
+      "healthy-systems-count",
+      `${healthy.length} system${healthy.length === 1 ? "" : "s"} healthy`,
+    );
+  }
+
+  function resourceCategoryKey(category = "") {
+    return String(category)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "resource";
+  }
+
+  function resourceIconName(resource = {}) {
+    const categoryIcons = {
+      Attendance: "check-square",
+      Communications: "mail",
+      Events: "calendar",
+      Finance: "wallet",
+      Members: "users",
+      "Officer Access": "lock",
+      Operations: "settings",
+      Public: "globe",
+      Technology: "code",
+    };
+    return resource.icon || categoryIcons[resource.category] || "link";
+  }
+
+  function renderFrequentResources(resources) {
+    if (!elements.frequentResourceGrid) return;
+    const featured = resources
+      .filter((resource) => resource.featured)
+      .slice(0, 4);
+    elements.frequentResourceGrid.replaceChildren(
+      ...featured.map((resource) => {
+        const action = resource.url
+          ? document.createElement("a")
+          : document.createElement("span");
+        action.className = `frequent-resource is-${resourceCategoryKey(resource.category)}${
+          resource.url ? "" : " is-disabled"
+        }`;
+        if (resource.url) {
+          action.href = resource.url;
+          action.target = resource.url.startsWith("#") ? "_self" : "_blank";
+          action.rel = resource.url.startsWith("#") ? "" : "noopener";
+        }
+        const icon = document.createElement("span");
+        icon.className = "frequent-resource-icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.append(createHubIcon(resourceIconName(resource)));
+        const copy = document.createElement("span");
         const title = document.createElement("strong");
-        title.textContent = item.label;
-        const pill = document.createElement("span");
-        pill.textContent = item.status || "NOTICE";
-        header.append(title, pill);
-        const detail = document.createElement("p");
-        detail.textContent = item.detail || "No detail provided";
-        article.append(header, detail);
-        return article;
+        title.textContent = resource.title;
+        const detail = document.createElement("small");
+        detail.textContent = resource.category;
+        copy.append(title, detail);
+        action.append(icon, copy, createLinkChainIcon());
+        return action;
       }),
     );
   }
@@ -2655,6 +2803,7 @@
   function renderResources(resources) {
     const container = document.getElementById("resource-grid");
     activeResources = resources;
+    renderFrequentResources(resources);
     const categories = [...new Set(resources.map((resource) => resource.category))]
       .filter(Boolean)
       .sort((a, b) => a.localeCompare(b));
@@ -2669,23 +2818,48 @@
         : "all";
     }
     const selectedCategory = elements.resourceFilter?.value || "all";
-    const visibleResources =
-      selectedCategory === "all"
-        ? resources
-        : resources.filter((resource) => resource.category === selectedCategory);
+    const query = String(elements.resourceSearch?.value || "")
+      .trim()
+      .toLowerCase();
+    const terms = query.split(/\s+/).filter(Boolean);
+    const visibleResources = resources.filter((resource) => {
+      const inCategory =
+        selectedCategory === "all" || resource.category === selectedCategory;
+      const haystack = `${resource.title} ${resource.description} ${resource.label} ${resource.category}`.toLowerCase();
+      return inCategory && terms.every((term) => haystack.includes(term));
+    });
+    if (elements.frequentResources) {
+      elements.frequentResources.hidden =
+        selectedCategory !== "all" || terms.length > 0;
+    }
     if (elements.resourceCount) {
       elements.resourceCount.textContent = `${visibleResources.length} resource${
         visibleResources.length === 1 ? "" : "s"
       }`;
     }
+    if (!visibleResources.length) {
+      const empty = document.createElement("section");
+      empty.className = "resource-empty-state";
+      empty.append(createHubIcon("search"));
+      const title = document.createElement("h3");
+      title.textContent = "No matching resources";
+      const detail = document.createElement("p");
+      detail.textContent = "Try a different search or choose All categories.";
+      empty.append(title, detail);
+      container.replaceChildren(empty);
+      return;
+    }
     container.replaceChildren(
       ...visibleResources.map((resource) => {
         const article = document.createElement("article");
-        article.className = "resource-card";
+        const categoryKey = resourceCategoryKey(resource.category);
+        article.className = `resource-card is-${categoryKey}`;
+        article.dataset.category = categoryKey;
 
         const category = document.createElement("span");
         category.className = "resource-category";
-        category.textContent = resource.category;
+        category.append(createHubIcon(resourceIconName(resource)));
+        category.append(document.createTextNode(resource.category));
 
         const title = document.createElement("h3");
         title.textContent = resource.title;
@@ -2741,7 +2915,7 @@
         const icon = document.createElement("span");
         icon.className = "quick-action-icon";
         icon.setAttribute("aria-hidden", "true");
-        icon.textContent = resource.quickAction.icon || "↗";
+        icon.append(createHubIcon(resource.quickAction.icon || "external"));
 
         const copy = document.createElement("span");
         const title = document.createElement("strong");
@@ -2781,14 +2955,20 @@
       const gateLabel = elements.gateThemeToggle.querySelector(
         ".gate-theme-label",
       );
-      const gateIcon = elements.gateThemeToggle.querySelector(
-        ".gate-theme-icon",
-      );
       if (gateLabel) {
         gateLabel.textContent = resolved === "dark" ? "Light mode" : "Dark mode";
       }
-      if (gateIcon) gateIcon.textContent = resolved === "dark" ? "☼" : "◐";
     }
+    document
+      .querySelectorAll(
+        ".theme-icon use, .gate-theme-icon use, #sidebar-theme-toggle use",
+      )
+      .forEach((use) =>
+        use.setAttribute(
+          "href",
+          resolved === "dark" ? "#icon-sun" : "#icon-theme",
+        ),
+      );
   }
 
   function setMobileNavigation(open) {
@@ -2816,10 +2996,19 @@
   }
 
   function setupNavigation() {
-    const navLinks = [...document.querySelectorAll(".nav-link")];
+    const navLinks = [
+      ...document.querySelectorAll(".nav-link, .mobile-section-link"),
+    ];
     const sections = navLinks
       .map((link) => document.querySelector(link.getAttribute("href")))
-      .filter(Boolean);
+      .filter(
+        (section, index, all) =>
+          section && all.findIndex((candidate) => candidate?.id === section.id) === index,
+      );
+    const mobileGroups = [
+      ...document.querySelectorAll("[data-mobile-sections]"),
+    ];
+    const mobileViewport = window.matchMedia("(max-width: 720px)");
     let navigationTargetId = "";
     let navigationTimer = 0;
 
@@ -2835,9 +3024,26 @@
       });
     };
 
+    const applyMobileSection = (sectionId = "overview") => {
+      const isMobile = mobileViewport.matches;
+      document.body.classList.toggle("mobile-section-view", isMobile);
+      mobileGroups.forEach((group) => {
+        const sectionIds = String(group.dataset.mobileSections || "").split(/\s+/);
+        group.classList.toggle(
+          "is-mobile-active",
+          !isMobile || sectionIds.includes(sectionId),
+        );
+      });
+    };
+    setActiveMobileSection = applyMobileSection;
+
     let scrollFrame = 0;
     const updateNavigationFromScroll = () => {
       if (elements.appShell.hidden || navigationTargetId) return;
+      if (mobileViewport.matches) {
+        setActiveNavigation(window.location.hash.slice(1) || "overview");
+        return;
+      }
       const pageBottom = window.scrollY + window.innerHeight;
       const documentBottom = document.documentElement.scrollHeight;
 
@@ -2867,6 +3073,7 @@
       const target = document.getElementById(sectionId);
       if (!target) return;
       navigationTargetId = sectionId;
+      applyMobileSection(sectionId);
       setActiveNavigation(sectionId);
       if (updateHistory && window.location.hash !== `#${sectionId}`) {
         window.history.pushState(null, "", `#${sectionId}`);
@@ -2888,6 +3095,15 @@
         navigateToSection(link.getAttribute("href").slice(1));
       });
     });
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+      if (navLinks.includes(link)) return;
+      const sectionId = link.getAttribute("href").slice(1);
+      if (!sections.some((section) => section.id === sectionId)) return;
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        navigateToSection(sectionId);
+      });
+    });
 
     window.addEventListener(
       "scroll",
@@ -2907,8 +3123,20 @@
       const sectionId = window.location.hash.slice(1) || "overview";
       navigateToSection(sectionId, false);
     });
+    mobileViewport.addEventListener("change", () => {
+      const sectionId = window.location.hash.slice(1) || "overview";
+      applyMobileSection(sectionId);
+      window.requestAnimationFrame(() => {
+        document.getElementById(sectionId)?.scrollIntoView({
+          behavior: "auto",
+          block: "start",
+        });
+        setActiveNavigation(sectionId);
+      });
+    });
 
     refreshNavigation = updateNavigationFromScroll;
+    applyMobileSection(window.location.hash.slice(1) || "overview");
     if (!elements.appShell.hidden) updateNavigationFromScroll();
   }
 
@@ -2953,22 +3181,21 @@
     return element;
   }
 
-  function createLinkChainIcon() {
+  function createHubIcon(name = "link", className = "") {
     const icon = svgElement("svg", {
       viewBox: "0 0 24 24",
       fill: "none",
       "aria-hidden": "true",
     });
-    icon.classList.add("link-chain-icon");
-    icon.append(
-      svgElement("path", {
-        d: "M10.6 13.4a4.5 4.5 0 0 0 6.36.04l2.12-2.12a4.5 4.5 0 0 0-6.36-6.36l-1.22 1.22",
-      }),
-      svgElement("path", {
-        d: "M13.4 10.6a4.5 4.5 0 0 0-6.36-.04l-2.12 2.12a4.5 4.5 0 0 0 6.36 6.36l1.22-1.22",
-      }),
-    );
+    icon.classList.add("ui-icon");
+    if (className) icon.classList.add(className);
+    const use = svgElement("use", { href: `#icon-${name}` });
+    icon.append(use);
     return icon;
+  }
+
+  function createLinkChainIcon() {
+    return createHubIcon("link", "link-chain-icon");
   }
 
   [elements.settingsButton, elements.sidebarSettings].forEach((button) => {
@@ -3174,6 +3401,11 @@
       renderResources(activeResources);
     });
   }
+  if (elements.resourceSearch) {
+    elements.resourceSearch.addEventListener("input", () => {
+      renderResources(activeResources);
+    });
+  }
 
   document.addEventListener("click", (event) => {
     if (
@@ -3237,6 +3469,7 @@
         ? document.querySelector(window.location.hash)
         : null;
       if (hashTarget) {
+        setActiveMobileSection(hashTarget.id);
         hashTarget.scrollIntoView({ behavior: "auto", block: "start" });
       }
       refreshNavigation();
