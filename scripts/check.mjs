@@ -10,6 +10,7 @@ for (const path of [
   "assets/js/config.js",
   "assets/js/app.js",
   "assets/js/pwa.js",
+  "scripts/sync-calendar.mjs",
   "sw.js",
 ]) {
   const result = spawnSync(process.execPath, ["--check", resolve(root, path)], {
@@ -62,6 +63,28 @@ if (!existsSync(resolve(root, "integrations/apps-script/SettingsWriter.gs.exampl
 }
 if (!app.includes('"select E,G,H,I,J,K,L,M,N where B is not null"')) {
   errors.push("Leaderboard query must exclude the member-name column from its response.");
+}
+if (!existsSync(resolve(root, ".github/workflows/pages.yml"))) {
+  errors.push("The hourly Pages deployment workflow is missing.");
+}
+if (!existsSync(resolve(root, "data/calendar.json"))) {
+  errors.push("The generated calendar snapshot placeholder is missing.");
+} else {
+  try {
+    const calendar = JSON.parse(read("data/calendar.json"));
+    if (calendar.schemaVersion !== 1 || !calendar.calendars) {
+      errors.push("The generated calendar snapshot placeholder is invalid.");
+    }
+  } catch {
+    errors.push("The generated calendar snapshot placeholder is not valid JSON.");
+  }
+}
+if (
+  app.includes("api.allorigins.win") ||
+  app.includes("corsproxy.io") ||
+  app.includes("api.codetabs.com")
+) {
+  errors.push("Calendar loading must not depend on public CORS proxies.");
 }
 
 if (errors.length) {

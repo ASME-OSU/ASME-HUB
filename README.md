@@ -5,8 +5,10 @@ State University. It gives officers one place to see aggregate participation
 metrics, upcoming events, operational reminders, and links to the chapter's
 working tools.
 
-The project is plain HTML, CSS, and JavaScript. It has no build step and is
-designed to remain easy to maintain through annual officer transitions.
+The project is plain HTML, CSS, and JavaScript and is designed to remain easy
+to maintain through annual officer transitions. The only deployment-time build
+step creates the hourly calendar snapshot; front-end development requires no
+bundler or framework.
 
 ## What is included
 
@@ -21,7 +23,7 @@ designed to remain easy to maintain through annual officer transitions.
 - A participation funnel and selected-period event performance table
 - Green/yellow/red engagement-goal pace indicators
 - A print-ready meeting snapshot that can be printed or saved as a PDF
-- Upcoming events from the chapter iCal feed and an operations queue
+- Upcoming events from the hourly synchronized chapter calendar and an operations queue
 - A compact system-health view for settings, attendance, event metrics, and calendar connections
 - A compact quick-action strip for check-in, event planning, officer tasks, and the Points Master
 - A central resource launcher
@@ -177,10 +179,10 @@ Apple Calendar, Outlook, and other compatible apps.
 The full dashboard JSON still takes priority when both sources are present.
 Without it, the hub combines `Leaderboard_Public`, `System_Status`,
 `Event_Metrics_Public`, `Monthly_Metrics_Public`,
-`Semester_Metrics_Public`, and the public iCal feed. This built-in path fills
-all five KPIs, monthly and semester comparisons, event-level turnout,
-participation depth, event-type attendance, upcoming events, aggregate review
-reminders, and connection health.
+`Semester_Metrics_Public`, and the hourly generated calendar snapshot. This
+built-in path fills all five KPIs, monthly and semester comparisons,
+event-level turnout, participation depth, event-type attendance, upcoming
+events, aggregate review reminders, and connection health.
 
 ## Officer meeting view
 
@@ -400,7 +402,9 @@ The annual rollover does not require changing the dashboard code.
    year and ends in June of the next calendar year.
 8. Reload the hub and verify the year and review-period selectors can load the
    new year, Fall/Spring presets, and every expected month.
-9. Confirm the year selector can still load
+9. Run **Sync calendar and deploy Pages**, or wait for the next hourly run, and
+   confirm the new calendar reports **LIVE**.
+10. Confirm the year selector can still load
    any prior years that should remain available.
 
 The academic years shown in the selector come from the shared settings rows.
@@ -433,9 +437,16 @@ own app window and appear on an officer's home screen or app launcher.
   to Home Screen**.
 
 The service worker caches only the public app shell: HTML, CSS, JavaScript,
-logos, and install icons. Live attendance, settings, calendar, Google, and
-SharePoint requests are intentionally not cached, so current dashboard data
-still requires a network connection.
+logos, and install icons. Live attendance, settings, the generated calendar
+snapshot, Google, and SharePoint requests are intentionally not cached, so
+current dashboard data still requires a network connection.
+
+The calendar is synchronized server-side by
+`.github/workflows/pages.yml`. Once per hour, GitHub Actions reads the current
+public year settings, downloads each active Google Calendar iCal feed, and
+generates `data/calendar.json` inside the Pages artifact. The browser reads
+that same-origin snapshot instead of relying on public CORS proxies. A failed
+sync does not replace the previous successful Pages deployment.
 
 When changing a cached app-shell file, update both the version query in
 `index.html` and `SHELL_ASSETS` in `sw.js`, then increment `SHELL_CACHE`. This
@@ -447,9 +458,11 @@ asset.
 After the dashboard branch is reviewed and merged:
 
 1. Open the repository's **Settings → Pages**.
-2. Select **Deploy from a branch**.
-3. Choose `main` and `/ (root)`.
-4. Save and wait for the Pages deployment to finish.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. Merge changes into `main`, or manually run **Sync calendar and deploy
+   Pages** from the Actions tab.
+4. Wait for the Pages deployment to finish. The scheduled workflow refreshes
+   the calendar at minute 17 of every hour.
 5. Test the published URL in a private browser window and on a phone.
 
 ## Officer handoff checklist
