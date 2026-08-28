@@ -78,6 +78,8 @@ window.ASME_HUB_CONFIG = {
       label: "Open SharePoint",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard",
       category: "Operations",
+      featured: true,
+      icon: "settings",
     },
     {
       title: "Event Operations",
@@ -85,10 +87,12 @@ window.ASME_HUB_CONFIG = {
       label: "Open event tracker",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Lists/Event%20Operations/AllItems.aspx",
       category: "Operations",
+      featured: true,
+      icon: "calendar",
       quickAction: {
         label: "Plan an event",
         detail: "Event Operations",
-        icon: "◫",
+        icon: "calendar",
       },
     },
     {
@@ -97,10 +101,11 @@ window.ASME_HUB_CONFIG = {
       label: "Open task tracker",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Lists/Task%20Tracker/AllItems.aspx",
       category: "Operations",
+      icon: "check-square",
       quickAction: {
         label: "Review tasks",
         detail: "Officer tracker",
-        icon: "✓",
+        icon: "check-square",
       },
     },
     {
@@ -109,6 +114,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open documents",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Shared%20Documents/Forms/AllItems.aspx",
       category: "Operations",
+      icon: "settings",
     },
     {
       title: "Attendance Check-In",
@@ -117,10 +123,12 @@ window.ASME_HUB_CONFIG = {
       url: "https://docs.google.com/forms/d/1cPIevIbm1AUu-oFy9-Y6zRSq9doHiPes3drFazNhs4E/viewform",
       category: "Attendance",
       settingKey: "attendanceFormUrl",
+      featured: true,
+      icon: "plus",
       quickAction: {
         label: "Open check-in",
         detail: "Attendance form",
-        icon: "+",
+        icon: "plus",
       },
     },
     {
@@ -129,10 +137,11 @@ window.ASME_HUB_CONFIG = {
       label: "Open activity report",
       url: "https://airtable.com/appQ0BwEPfI38mQWE/shrmyDrqJbL3Azs3h",
       category: "Operations",
+      icon: "chart",
       quickAction: {
         label: "Activity report",
         detail: "Airtable workspace",
-        icon: "↗",
+        icon: "chart",
       },
     },
     {
@@ -142,10 +151,12 @@ window.ASME_HUB_CONFIG = {
       url: "https://docs.google.com/spreadsheets/d/1cDoumWy2ZN5BJ5I4UfvdkuWM6NXCivlMggDswdgJsrM/edit",
       category: "Attendance",
       settingKey: "pointsMasterUrl",
+      featured: true,
+      icon: "users",
       quickAction: {
         label: "Review points",
         detail: "Points Master",
-        icon: "◎",
+        icon: "users",
       },
     },
     {
@@ -155,10 +166,11 @@ window.ASME_HUB_CONFIG = {
       url: "https://docs.google.com/spreadsheets/d/14TiHKfV1T4M4QnrBmoALBwYhlrsY6ydcqmueF-U3pqo/edit",
       category: "Finance",
       settingKey: "budgetTrackerUrl",
+      icon: "wallet",
       quickAction: {
         label: "Budget tracker",
         detail: "2026–2027 workbook",
-        icon: "▤",
+        icon: "wallet",
       },
     },
     {
@@ -168,10 +180,11 @@ window.ASME_HUB_CONFIG = {
       url: "https://www.huntington.com/mobile-login",
       category: "Finance",
       settingKey: "bankingUrl",
+      icon: "bank",
       quickAction: {
         label: "Open Huntington",
         detail: "Banking portal",
-        icon: "$",
+        icon: "bank",
       },
     },
     {
@@ -181,10 +194,11 @@ window.ASME_HUB_CONFIG = {
       url: "https://www.zeffy.com/login",
       category: "Finance",
       settingKey: "fundraisingUrl",
+      icon: "wallet",
       quickAction: {
         label: "Open Zeffy",
         detail: "Fundraising portal",
-        icon: "Z",
+        icon: "wallet",
       },
     },
     {
@@ -193,10 +207,11 @@ window.ASME_HUB_CONFIG = {
       label: "Open password document",
       url: "https://buckeyemailosu.sharepoint.com/:x:/r/sites/ASMEExecutiveBoard/Shared%20Documents/General/ASME%20Master%20Password%20Document.xlsx?d=wb03e7eaf0d0c4c4ba4f1b9b189c69060&csf=1&web=1&e=gE95In",
       category: "Officer Access",
+      icon: "lock",
       quickAction: {
         label: "Officer passwords",
         detail: "Secure SharePoint file",
-        icon: "⌁",
+        icon: "lock",
       },
     },
     {
@@ -205,6 +220,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open member dashboard",
       url: "https://org.osu.edu/asme/member-points-page/",
       category: "Members",
+      icon: "users",
     },
     {
       title: "Newsletter Builder",
@@ -212,6 +228,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open builder",
       url: "https://asme-osu.github.io/ASME-Newsletter-Builder/",
       category: "Communications",
+      icon: "mail",
     },
     {
       title: "Career Packet",
@@ -219,6 +236,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open career packet",
       url: "https://asme-osu.github.io/ASME-Career-Packet/",
       category: "Members",
+      icon: "users",
     },
     {
       title: "ASME OSU Website",
@@ -226,6 +244,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open website",
       url: "https://org.osu.edu/asme/",
       category: "Public",
+      icon: "globe",
     },
     {
       title: "Events Calendar",
@@ -234,6 +253,7 @@ window.ASME_HUB_CONFIG = {
       url: "https://org.osu.edu/asme/calendar/",
       category: "Events",
       settingKey: "calendarUrl",
+      icon: "calendar",
     },
     {
       title: "ASME OSU GitHub",
@@ -241,6 +261,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open GitHub",
       url: "https://github.com/ASME-OSU",
       category: "Technology",
+      icon: "code",
     },
   ],
 };

@@ -87,6 +87,24 @@ if (
   errors.push("Calendar loading must not depend on public CORS proxies.");
 }
 
+for (const id of [
+  "mobile-section-tabs",
+  "attendance-empty-guide",
+  "healthy-systems",
+  "resource-search",
+  "frequent-resource-grid",
+  "budget-used-context",
+]) {
+  const selector = id === "mobile-section-tabs" ? 'class="mobile-section-tabs"' : `id="${id}"`;
+  if (!html.includes(selector)) errors.push(`The visual dashboard control ${id} is missing.`);
+}
+if (!html.includes('<use href="#icon-settings"></use>') || html.includes("⚙")) {
+  errors.push("Settings controls must use the shared SVG gear icon.");
+}
+if (!app.includes("renderFrequentResources") || !app.includes("renderAttendanceEmptyState")) {
+  errors.push("The resource launcher or attendance empty-state flow is incomplete.");
+}
+
 if (errors.length) {
   console.error(errors.map((error) => `- ${error}`).join("\n"));
   process.exit(1);
