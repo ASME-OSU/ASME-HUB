@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260828f">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260828g">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -183,7 +183,7 @@
           </button>
           <label class="year-select-label" for="academic-year">Academic year</label>
           <select id="academic-year" class="year-select"></select>
-          <button class="icon-button print-section-button" id="print-section-button" type="button" aria-label="Print current section" title="Print current section">
+          <button class="icon-button print-hub-button" id="print-hub-button" type="button" aria-label="Print or save the complete Officer Hub as a PDF" title="Print or save the complete Officer Hub as a PDF">
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-printer"></use></svg>
           </button>
           <button class="icon-button" id="settings-button" type="button" aria-label="Open academic year settings" title="Academic year settings">
@@ -208,8 +208,8 @@
           <img src="assets/hub-mark.svg?v=20260801b" alt="">
           <div>
             <p>ASME Officer Hub</p>
-            <h1 id="print-section-title">Dashboard</h1>
-            <span id="print-section-meta">Current academic year</span>
+            <h1 id="print-report-title">Complete chapter report</h1>
+            <span id="print-report-meta">Current academic year</span>
           </div>
         </section>
         <section class="hero-panel dashboard-section" id="overview" data-mobile-sections="overview">
@@ -262,10 +262,6 @@
             <strong id="period-summary">All available activity</strong>
             <span id="period-detail">Compare monthly attendance, turnout, and retention.</span>
           </div>
-          <button class="snapshot-button" id="print-snapshot" type="button" data-print-target="overview" title="Print or save this section as a PDF">
-            Print section / save PDF
-            <svg class="ui-icon" aria-hidden="true"><use href="#icon-external"></use></svg>
-          </button>
         </section>
 
         <section class="health-insight is-neutral" id="health-insight" aria-live="polite">
@@ -422,7 +418,7 @@
         </div>
 
         <div class="dashboard-grid decision-grid">
-          <section class="panel funnel-panel" aria-labelledby="funnel-title" data-print-sections="members">
+          <section class="panel funnel-panel" aria-labelledby="funnel-title">
             <div class="panel-heading">
               <div>
                 <p class="eyebrow">Depth of engagement</p>
@@ -456,7 +452,7 @@
             <p class="panel-footnote">Returned = 2+ events · Highly engaged = 4+ events in the selected period.</p>
           </section>
 
-          <section class="panel performance-panel" aria-labelledby="performance-title" data-print-sections="events">
+          <section class="panel performance-panel" aria-labelledby="performance-title">
             <div class="panel-heading">
               <div>
                 <p class="eyebrow">Event review</p>
@@ -830,8 +826,8 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260828f"></script>
-  <script src="assets/js/app.js?v=20260828f"></script>
+  <script src="assets/js/config.js?v=20260828g"></script>
+  <script src="assets/js/app.js?v=20260828g"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

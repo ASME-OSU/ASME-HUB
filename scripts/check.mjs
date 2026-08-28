@@ -95,9 +95,9 @@ for (const id of [
   "resource-search",
   "frequent-resource-grid",
   "budget-used-context",
-  "print-section-button",
-  "print-section-title",
-  "print-section-meta",
+  "print-hub-button",
+  "print-report-title",
+  "print-report-meta",
 ]) {
   const selector = id === "mobile-section-tabs" ? 'class="mobile-section-tabs"' : `id="${id}"`;
   if (!html.includes(selector)) errors.push(`The visual dashboard control ${id} is missing.`);
@@ -109,10 +109,10 @@ if (!app.includes("renderFrequentResources") || !app.includes("renderAttendanceE
   errors.push("The resource launcher or attendance empty-state flow is incomplete.");
 }
 if (
-  !app.includes("prepareSectionPrint") ||
-  !app.includes("data-print-section") && !styles.includes("data-print-section")
+  !app.includes("prepareHubPrint") ||
+  !styles.includes('data-print-mode="full"')
 ) {
-  errors.push("The current-section print flow is incomplete.");
+  errors.push("The complete-hub print flow is incomplete.");
 }
 if (
   styles.includes(".attendance-data-empty .trend-panel") ||
