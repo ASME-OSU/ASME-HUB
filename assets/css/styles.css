@@ -1324,7 +1324,7 @@ main {
 }
 
 .hero-panel + .dashboard-band {
-  margin-top: 0;
+  margin-top: 24px;
 }
 
 .quick-actions-heading {
@@ -2307,8 +2307,8 @@ main {
 
 .health-attention-grid {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  margin-top: 4px;
-  margin-bottom: 14px;
+  margin-top: 18px;
+  margin-bottom: 18px;
 }
 
 .health-item {
@@ -3493,6 +3493,22 @@ body[data-theme="dark"] .budget-kpi-card strong {
   color: #edf2f8;
 }
 
+body[data-theme="dark"] .healthy-systems summary strong {
+  color: #ffffff;
+}
+
+body[data-theme="dark"] .healthy-systems summary small {
+  color: #b8c6d5;
+}
+
+body[data-theme="dark"] .healthy-systems-action {
+  color: #72d7ae;
+}
+
+body[data-theme="dark"] .metric-empty-guide h3 {
+  color: #edf2f8;
+}
+
 body[data-theme="dark"] .budget-insight-heading h3,
 body[data-theme="dark"] .budget-category-donut strong,
 body[data-theme="dark"] .budget-category-row-head strong,
@@ -4077,7 +4093,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .health-attention-grid {
-    margin-top: 0;
+    margin-top: 14px;
   }
 
   .healthy-systems > .health-grid {
@@ -4473,6 +4489,10 @@ body[data-theme="dark"] .hub-search-result-copy strong {
     overflow: visible;
     border: 0;
     background: transparent !important;
+  }
+
+  .hero-panel + .dashboard-band {
+    margin-top: 0;
   }
 
   .dashboard-band::before,

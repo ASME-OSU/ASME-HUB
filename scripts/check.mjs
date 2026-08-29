@@ -133,6 +133,15 @@ if (
   errors.push("The print upcoming-events list must stay compact enough for a two-page report.");
 }
 if (
+  !styles.includes(".hero-panel + .dashboard-band") ||
+  !styles.includes("margin-top: 24px") ||
+  !styles.includes('body[data-theme="dark"] .healthy-systems summary strong') ||
+  !styles.includes("color: #ffffff") ||
+  !styles.includes('body[data-theme="dark"] .metric-empty-guide h3')
+) {
+  errors.push("Dashboard section spacing and dark-mode system-health contrast must remain legible.");
+}
+if (
   styles.includes(".attendance-data-empty .trend-panel") ||
   styles.includes(".attendance-data-empty .performance-panel")
 ) {
