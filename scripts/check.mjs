@@ -127,6 +127,12 @@ if (
   errors.push("The print engagement-goal card must contain long status and note text.");
 }
 if (
+  !styles.includes(".upcoming-item .date-tile") ||
+  !styles.includes("grid-template-columns: 32px minmax(0, 1fr) auto")
+) {
+  errors.push("The print upcoming-events list must stay compact enough for a two-page report.");
+}
+if (
   styles.includes(".attendance-data-empty .trend-panel") ||
   styles.includes(".attendance-data-empty .performance-panel")
 ) {

@@ -4357,6 +4357,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
       .budget-category-donut strong,
       .budget-category-row-head strong,
       .budget-legend-row strong,
+      .event-detail strong,
       .health-item strong,
       .operation-item strong,
       .healthy-systems summary strong,
@@ -4607,6 +4608,51 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   .goal-panel .goal-note {
     max-width: 100%;
     overflow-wrap: anywhere;
+  }
+
+  .upcoming-list {
+    gap: 3px;
+    margin-top: 6px;
+  }
+
+  .upcoming-item {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 6px;
+    min-height: 39px;
+    padding: 3px 0;
+  }
+
+  .upcoming-item .date-tile {
+    width: 32px;
+    height: 34px;
+    border-radius: 7px;
+  }
+
+  .upcoming-item .date-tile span {
+    font-size: 0.46rem;
+  }
+
+  .upcoming-item .date-tile strong {
+    font-size: 0.82rem;
+  }
+
+  .upcoming-item .event-detail strong {
+    font-size: 0.6rem;
+  }
+
+  .upcoming-item .event-detail span {
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: 0.5rem;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .upcoming-item .status-pill {
+    min-height: 18px;
+    padding: 0 5px;
+    font-size: 0.46rem;
   }
 
   .chart-wrap,
