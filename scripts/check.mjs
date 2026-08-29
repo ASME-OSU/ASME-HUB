@@ -121,6 +121,12 @@ if (
   errors.push("The print report must exclude resource links and action links.");
 }
 if (
+  !styles.includes(".goal-panel .panel-heading") ||
+  !styles.includes("overflow-wrap: anywhere")
+) {
+  errors.push("The print engagement-goal card must contain long status and note text.");
+}
+if (
   styles.includes(".attendance-data-empty .trend-panel") ||
   styles.includes(".attendance-data-empty .performance-panel")
 ) {
