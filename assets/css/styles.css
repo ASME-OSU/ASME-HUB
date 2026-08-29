@@ -4402,7 +4402,12 @@ body[data-theme="dark"] .hub-search-result-copy strong {
 
   main > .hero-panel,
   main > .global-quick-actions,
+  main > .resources-section,
   .dashboard-band-overview .period-toolbar {
+    display: none !important;
+  }
+
+  main a {
     display: none !important;
   }
 
@@ -4458,7 +4463,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   body[data-print-mode="full"] .dashboard-band-analytics {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
+    gap: 8px;
   }
 
   .dashboard-band {
@@ -4475,14 +4480,15 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .dashboard-band-finance {
+    margin-bottom: 10px;
     break-before: page;
     page-break-before: always;
   }
 
   body[data-print-mode="full"] .dashboard-band-operations {
     display: grid !important;
-    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
-    gap: 4px;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: 10px;
   }
 
   .hero-panel {
@@ -4522,37 +4528,37 @@ body[data-theme="dark"] .hub-search-result-copy strong {
 
   .health-insight {
     min-height: 0;
-    margin: 0 0 4px;
-    padding: 4px 8px;
+    margin: 0 0 7px;
+    padding: 6px 10px;
   }
 
   .kpi-grid {
     grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-    margin: 4px 0;
+    gap: 7px;
+    margin: 7px 0 9px;
   }
 
   .kpi-card,
   .panel {
     min-height: 0 !important;
-    padding: 6px;
+    padding: 9px;
     box-shadow: none;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .kpi-card {
-    min-height: 54px !important;
+    min-height: 64px !important;
   }
 
   .kpi-value {
-    margin: 3px 0 1px;
-    font-size: 1.15rem;
+    margin: 5px 0 2px;
+    font-size: 1.25rem;
   }
 
   .dashboard-grid {
-    gap: 4px;
-    margin-bottom: 4px;
+    gap: 8px;
+    margin-bottom: 8px;
   }
 
   .dashboard-grid-primary {
@@ -4565,7 +4571,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
 
   .decision-grid {
     grid-column: 1 / -1;
-    grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr);
+    grid-template-columns: minmax(0, 0.58fr) minmax(0, 1.42fr);
   }
 
   .dashboard-band-analytics > #events,
@@ -4574,58 +4580,58 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .panel-heading h2 {
-    font-size: 0.95rem;
+    font-size: 1.02rem;
   }
 
   .chart-wrap,
   .attendance-chart {
-    min-height: 92px;
-    height: 92px;
+    min-height: 108px;
+    height: 108px;
   }
 
   .goal-ring {
-    width: 70px;
-    height: 70px;
+    width: 82px;
+    height: 82px;
   }
 
   .goal-ring::before {
+    width: 58px;
+    height: 58px;
+  }
+
+  .goal-ring strong {
+    font-size: 1.16rem;
+  }
+
+  .event-type-layout {
+    grid-template-columns: 92px 1fr;
+    margin-top: 6px;
+  }
+
+  .donut-chart {
+    width: 82px;
+    height: 82px;
+  }
+
+  .donut-chart::after {
     width: 50px;
     height: 50px;
   }
 
-  .goal-ring strong {
-    font-size: 1.05rem;
-  }
-
-  .event-type-layout {
-    grid-template-columns: 78px 1fr;
-    margin-top: 4px;
-  }
-
-  .donut-chart {
-    width: 70px;
-    height: 70px;
-  }
-
-  .donut-chart::after {
-    width: 44px;
-    height: 44px;
-  }
-
   .funnel-list {
-    gap: 4px;
-    margin-top: 4px;
+    gap: 6px;
+    margin-top: 6px;
   }
 
   .performance-table-wrap {
-    margin-top: 3px;
+    margin-top: 5px;
   }
 
   .performance-table th,
   .performance-table td {
-    padding-top: 3px;
-    padding-bottom: 3px;
-    font-size: 0.6rem;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 0.64rem;
   }
 
   .global-quick-actions {
@@ -4647,59 +4653,59 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .budget-panel {
-    padding: 5px;
+    padding: 10px;
   }
 
   .budget-kpi-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
-    margin-top: 4px;
+    gap: 7px;
+    margin-top: 8px;
   }
 
   .budget-kpi-card,
   .budget-usage-card {
-    min-height: 48px;
-    padding: 5px;
+    min-height: 64px;
+    padding: 8px;
     grid-column: auto;
   }
 
   .budget-kpi-card strong {
-    margin: 3px 0 1px;
-    font-size: 1.05rem;
+    margin: 5px 0 3px;
+    font-size: 1.2rem;
   }
 
   .budget-insights-grid {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    gap: 4px;
-    margin-top: 4px;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   .budget-insight-card {
     min-height: 0;
-    padding: 5px;
+    padding: 9px;
   }
 
   .budget-insight-heading {
-    margin-bottom: 3px;
+    margin-bottom: 6px;
   }
 
   .budget-category-layout {
-    grid-template-columns: 58px minmax(0, 1fr);
-    gap: 4px;
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 8px;
   }
 
   .budget-category-donut {
-    width: 58px;
-    height: 58px;
+    width: 76px;
+    height: 76px;
   }
 
   .budget-category-donut::before {
-    width: 34px;
-    height: 34px;
+    width: 46px;
+    height: 46px;
   }
 
   .budget-footnote {
-    margin-top: 3px;
+    margin-top: 6px;
   }
 
   .dashboard-band-operations .operations-panel {
@@ -4710,8 +4716,8 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   .health-grid,
   .health-attention-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    margin-top: 4px;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   .operations-list,
@@ -4724,14 +4730,14 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .operation-item {
-    min-height: 58px;
-    padding: 5px;
+    min-height: 82px;
+    padding: 9px;
   }
 
   .operation-item p {
-    margin: 3px 0 4px;
-    font-size: 0.61rem;
-    line-height: 1.2;
+    margin: 5px 0 0;
+    font-size: 0.68rem;
+    line-height: 1.35;
   }
 
   .operation-item a {
@@ -4743,33 +4749,33 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .health-item {
-    padding: 5px;
+    padding: 8px;
   }
 
   .health-item p {
-    margin-top: 3px;
-    font-size: 0.6rem;
-    line-height: 1.2;
+    margin-top: 5px;
+    font-size: 0.66rem;
+    line-height: 1.3;
   }
 
   .healthy-systems {
-    margin-top: 4px;
+    margin-top: 8px;
     background: #f5f7fa !important;
     break-inside: avoid;
   }
 
   .healthy-systems summary {
-    min-height: 32px;
-    padding: 4px 6px;
+    min-height: 42px;
+    padding: 7px 9px;
   }
 
   .healthy-systems-icon {
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
   }
 
   .healthy-systems > .health-grid {
-    padding: 0 5px 5px;
+    padding: 0 8px 8px;
   }
 
   .resources-section,
