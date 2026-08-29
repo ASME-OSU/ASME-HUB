@@ -115,6 +115,12 @@ if (
   errors.push("The complete-hub print flow is incomplete.");
 }
 if (
+  !styles.includes("main > .resources-section") ||
+  !styles.includes("main a")
+) {
+  errors.push("The print report must exclude resource links and action links.");
+}
+if (
   styles.includes(".attendance-data-empty .trend-panel") ||
   styles.includes(".attendance-data-empty .performance-panel")
 ) {
