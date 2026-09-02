@@ -5,6 +5,7 @@
   const unlockStorageKey = "asmeHubUnlockedUntil";
   const themeStorageKey = "asmeHubTheme";
   const sidebarStorageKey = "asmeHubSidebarCollapsed";
+  const roleStorageKey = "asmeHubOfficerRoleV1";
   const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
@@ -37,6 +38,134 @@
     { column: 8, name: "Committee Work", color: chartPalette[6] },
   ];
   const minimumReliableSample = 5;
+  const officerRoles = {
+    all: {
+      label: "All officers",
+      viewLabel: "All-officer view",
+      focusSelector: ".dashboard-band-overview",
+      resourceTitles: [
+        "Event Operations",
+        "Officer Task Tracker",
+        "Attendance Check-In",
+        "Points Master",
+      ],
+      resourceCategories: ["Operations", "Attendance"],
+      priorityTerms: [],
+      commandOrder: ["upcoming", "priorities", "role"],
+    },
+    president: {
+      label: "President",
+      viewLabel: "President view",
+      focusSelector: ".dashboard-band-overview",
+      resourceTitles: [
+        "Officer Task Tracker",
+        "Executive Board SharePoint",
+        "Event Operations",
+        "Budget Tracker",
+      ],
+      resourceCategories: ["Operations", "Finance"],
+      priorityTerms: ["approval", "owner", "deadline", "chapter", "system"],
+      commandOrder: ["role", "priorities", "upcoming"],
+    },
+    vice_president: {
+      label: "Vice President",
+      viewLabel: "Vice president view",
+      focusSelector: ".dashboard-band-analytics",
+      resourceTitles: [
+        "Event Operations",
+        "Officer Task Tracker",
+        "Activity Report",
+        "Events Calendar",
+      ],
+      resourceCategories: ["Events", "Operations", "Attendance"],
+      priorityTerms: ["event", "calendar", "location", "owner", "approval"],
+      commandOrder: ["role", "upcoming", "priorities"],
+    },
+    treasurer: {
+      label: "Treasurer",
+      viewLabel: "Treasurer view",
+      focusSelector: ".dashboard-band-finance",
+      resourceTitles: [
+        "Budget Tracker",
+        "Huntington Online Banking",
+        "Zeffy",
+        "Officer Task Tracker",
+      ],
+      resourceCategories: ["Finance", "Operations"],
+      priorityTerms: ["budget", "finance", "spending", "approval", "expense"],
+      commandOrder: ["role", "priorities", "upcoming"],
+    },
+    secretary: {
+      label: "Secretary",
+      viewLabel: "Secretary view",
+      focusSelector: ".dashboard-band-operations",
+      resourceTitles: [
+        "Officer Task Tracker",
+        "Shared Documents",
+        "Attendance Check-In",
+        "Activity Report",
+      ],
+      resourceCategories: ["Operations", "Attendance", "Officer Access"],
+      priorityTerms: ["task", "record", "attendance", "calendar", "settings"],
+      commandOrder: ["role", "priorities", "upcoming"],
+    },
+    social_chair: {
+      label: "Social Chair",
+      viewLabel: "Social chair view",
+      focusSelector: ".dashboard-band-analytics",
+      resourceTitles: [
+        "Event Operations",
+        "Events Calendar",
+        "Attendance Check-In",
+        "Newsletter Builder",
+      ],
+      resourceCategories: ["Events", "Attendance", "Communications"],
+      priorityTerms: ["event", "calendar", "location", "social", "attendance"],
+      commandOrder: ["upcoming", "role", "priorities"],
+    },
+    webmaster: {
+      label: "Webmaster",
+      viewLabel: "Webmaster view",
+      focusSelector: ".resources-section",
+      resourceTitles: [
+        "ASME OSU Website",
+        "ASME OSU GitHub",
+        "Newsletter Builder",
+        "Events Calendar",
+      ],
+      resourceCategories: ["Technology", "Public", "Communications"],
+      priorityTerms: ["website", "system", "source", "feed", "calendar"],
+      commandOrder: ["role", "priorities", "upcoming"],
+    },
+    ecouncil: {
+      label: "E-Council Representative",
+      viewLabel: "E-Council view",
+      focusSelector: ".dashboard-band-operations",
+      resourceTitles: [
+        "Activity Report",
+        "Officer Task Tracker",
+        "Budget Tracker",
+        "Shared Documents",
+      ],
+      resourceCategories: ["Operations", "Finance"],
+      priorityTerms: ["council", "funding", "approval", "activity", "deadline"],
+      commandOrder: ["role", "priorities", "upcoming"],
+    },
+    advisor: {
+      label: "Advisor",
+      viewLabel: "Advisor view",
+      focusSelector: ".dashboard-band-overview",
+      resourceTitles: [
+        "Executive Board SharePoint",
+        "Officer Task Tracker",
+        "Activity Report",
+        "Budget Tracker",
+      ],
+      resourceCategories: ["Operations", "Finance", "Attendance"],
+      priorityTerms: ["approval", "chapter", "attendance", "budget", "system"],
+      commandOrder: ["role", "priorities", "upcoming"],
+    },
+  };
   let sharedYearSources = cloneConfiguredSources();
   let yearSources = loadYearSources();
   let sharedSettingsReady = Promise.resolve();
@@ -46,6 +175,11 @@
   let setActiveMobileSection = () => {};
   let activeHubSearchItems = [];
   let activeResources = [];
+  let activeUpcomingEvents = [];
+  let activeOperations = [];
+  let activeBudget = {};
+  let activeHealth = [];
+  let selectedOfficerRole = "all";
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -55,6 +189,19 @@
     accessError: document.getElementById("access-error"),
     appShell: document.getElementById("app-shell"),
     heroQuote: document.getElementById("hero-quote"),
+    heroRoleLabel: document.getElementById("hero-role-label"),
+    heroBriefingTitle: document.getElementById("hero-briefing-title"),
+    heroBriefingCopy: document.getElementById("hero-briefing-copy"),
+    officerRole: document.getElementById("officer-role"),
+    sidebarOfficerRole: document.getElementById("sidebar-officer-role"),
+    commandCenterRole: document.getElementById("command-center-role"),
+    briefingRoleCard: document.getElementById("briefing-role-card"),
+    briefingRoleTitle: document.getElementById("briefing-role-title"),
+    briefingRoleCopy: document.getElementById("briefing-role-copy"),
+    briefingRoleMetrics: document.getElementById("briefing-role-metrics"),
+    briefingUpcomingEvents: document.getElementById("briefing-upcoming-events"),
+    briefingPriorities: document.getElementById("briefing-priorities"),
+    briefingPriorityCount: document.getElementById("briefing-priority-count"),
     loadingLayer: document.getElementById("loading-layer"),
     lockDashboard: document.getElementById("lock-dashboard"),
     academicYear: document.getElementById("academic-year"),
@@ -108,6 +255,8 @@
     resourceCount: document.getElementById("resource-count"),
     frequentResources: document.getElementById("frequent-resources"),
     frequentResourceGrid: document.getElementById("frequent-resource-grid"),
+    frequentResourcesTitle: document.getElementById("frequent-resources-title"),
+    frequentResourcesDescription: document.getElementById("frequent-resources-description"),
     printHubButton: document.getElementById("print-hub-button"),
     printReportMeta: document.getElementById("print-report-meta"),
     healthySystems: document.getElementById("healthy-systems"),
@@ -135,6 +284,387 @@
 
     elements.heroQuote.textContent = quotes[nextIndex];
     localStorage.setItem(meetingQuoteStorageKey, String(nextIndex));
+  }
+
+  function populateOfficerRoles() {
+    const options = Object.entries(officerRoles).map(([value, role]) =>
+      new Option(role.label, value),
+    );
+    [elements.officerRole, elements.sidebarOfficerRole].forEach((select) => {
+      if (!select) return;
+      select.replaceChildren(...options.map((option) => option.cloneNode(true)));
+    });
+  }
+
+  function officerRole() {
+    return officerRoles[selectedOfficerRole] || officerRoles.all;
+  }
+
+  function roleResourceScore(resource, role = officerRole()) {
+    const title = String(resource.title || "").toLowerCase();
+    const preferredIndex = role.resourceTitles.findIndex((preferred) =>
+      title.includes(preferred.toLowerCase()),
+    );
+    const categoryIndex = role.resourceCategories.indexOf(resource.category);
+    let score = 0;
+    if (preferredIndex >= 0) score += 1000 - preferredIndex * 100;
+    if (categoryIndex >= 0) score += 30 - categoryIndex;
+    if (resource.featured) score += 8;
+    if (resource.quickAction) score += 4;
+    return score;
+  }
+
+  function resourcesForRole(resources) {
+    const role = officerRole();
+    return resources
+      .map((resource, index) => ({
+        resource,
+        index,
+        score: roleResourceScore(resource, role),
+      }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map(({ resource }) => resource);
+  }
+
+  function priorityScore(item, role = officerRole()) {
+    const haystack = `${item.title || ""} ${item.detail || ""}`.toLowerCase();
+    const termScore = role.priorityTerms.reduce(
+      (score, term) => score + (haystack.includes(term) ? 10 : 0),
+      0,
+    );
+    const severityScore = item.severity === "warning" ? 3 : 1;
+    return termScore + severityScore;
+  }
+
+  function prioritizedOperations() {
+    const role = officerRole();
+    return activeOperations
+      .filter((item) => item.severity !== "success")
+      .map((item, index) => ({
+        item,
+        index,
+        score: priorityScore(item, role),
+      }))
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map(({ item }) => item);
+  }
+
+  function formatBriefingDate(value) {
+    const date = parseDate(value);
+    if (Number.isNaN(date.getTime())) return "Date TBD";
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(date);
+  }
+
+  function renderRoleSnapshot() {
+    if (!elements.briefingRoleMetrics) return;
+    const kpis = activeDashboardData?.kpis || {};
+    const priorities = prioritizedOperations();
+    const unique = Number(kpis.uniqueAttendees) || 0;
+    const checkIns = Number(kpis.totalCheckIns) || 0;
+    const events = Number(kpis.eventsHeld) || 0;
+    const average = Number(kpis.averageTurnout) || 0;
+    const repeatRate = Math.round(Number(kpis.repeatAttendanceRate) || 0);
+    const goal = Number(kpis.engagementGoal) || 0;
+    const upcoming = activeUpcomingEvents.length;
+    const healthySystems = activeHealth.filter(
+      (item) => String(item.status || "").toUpperCase() === "LIVE",
+    ).length;
+    const configuredTools = activeResources.filter((resource) => resource.url).length;
+    let title = "Chapter pulse";
+    let copy = "The broadest view of participation, activity, and follow-through.";
+    let metrics = [
+      { label: "Participants", value: formatNumber(unique) },
+      { label: "Events held", value: formatNumber(events) },
+    ];
+
+    if (selectedOfficerRole === "president") {
+      title = "Leadership overview";
+      copy = "Decision-ready signals across chapter health and officer ownership.";
+      metrics = [
+        { label: "Open priorities", value: formatNumber(priorities.length) },
+        {
+          label: "Engagement goal",
+          value: goal ? `${Math.round((unique / goal) * 100)}%` : "Not set",
+        },
+      ];
+    } else if (selectedOfficerRole === "vice_president") {
+      title = "Program delivery";
+      copy = "Event readiness and delivery signals for chapter and corporate programming.";
+      metrics = [
+        { label: "Events held", value: formatNumber(events) },
+        { label: "Upcoming", value: formatNumber(upcoming) },
+      ];
+    } else if (selectedOfficerRole === "treasurer") {
+      title = "Financial health";
+      copy = activeBudget.available
+        ? "A quick read on remaining funds and items waiting for approval."
+        : "The finance tools are ready, but the aggregate budget feed needs attention.";
+      metrics = activeBudget.available
+        ? [
+            {
+              label: "Remaining",
+              value: currencyFormatter.format(Number(activeBudget.remainingBudget) || 0),
+            },
+            {
+              label: "Pending",
+              value: currencyFormatter.format(Number(activeBudget.pendingApproval) || 0),
+            },
+          ]
+        : [
+            { label: "Budget feed", value: "Action" },
+            { label: "Finance tools", value: "Pinned" },
+          ];
+    } else if (selectedOfficerRole === "secretary") {
+      title = "Chapter records";
+      copy = "Operational follow-through, attendance records, and meeting-ready context.";
+      metrics = [
+        { label: "Open items", value: formatNumber(priorities.length) },
+        { label: "Check-ins", value: formatNumber(checkIns) },
+      ];
+    } else if (selectedOfficerRole === "social_chair") {
+      title = "Event momentum";
+      copy = "Upcoming programming and the turnout signal from completed events.";
+      metrics = [
+        { label: "Upcoming", value: formatNumber(upcoming) },
+        { label: "Avg. turnout", value: average ? average.toFixed(1) : "—" },
+      ];
+    } else if (selectedOfficerRole === "webmaster") {
+      title = "Digital readiness";
+      copy = "Connected systems and the published tools that keep chapter information moving.";
+      metrics = [
+        { label: "Systems healthy", value: formatNumber(healthySystems) },
+        { label: "Linked tools", value: formatNumber(configuredTools) },
+      ];
+    } else if (selectedOfficerRole === "ecouncil") {
+      title = "Council coordination";
+      copy = "Funding, activity reporting, and deadlines that may need cross-organization follow-through.";
+      metrics = [
+        { label: "Open items", value: formatNumber(priorities.length) },
+        { label: "Budget feed", value: activeBudget.available ? "Live" : "Action" },
+      ];
+    } else if (selectedOfficerRole === "advisor") {
+      title = "Advisory pulse";
+      copy = "High-level participation and continuity signals without individual member data.";
+      metrics = [
+        { label: "Participants", value: formatNumber(unique) },
+        {
+          label: "Repeat rate",
+          value: unique >= minimumReliableSample ? `${repeatRate}%` : "Building",
+        },
+      ];
+    }
+
+    if (elements.briefingRoleTitle) elements.briefingRoleTitle.textContent = title;
+    if (elements.briefingRoleCopy) elements.briefingRoleCopy.textContent = copy;
+    elements.briefingRoleMetrics.replaceChildren(
+      ...metrics.map((metric) => {
+        const item = document.createElement("span");
+        const label = document.createElement("small");
+        label.textContent = metric.label;
+        const value = document.createElement("strong");
+        value.textContent = metric.value;
+        item.append(label, value);
+        return item;
+      }),
+    );
+  }
+
+  function applyCommandCardOrder() {
+    const grid = elements.briefingRoleCard?.parentElement;
+    if (!grid) return;
+    const cards = {
+      role: elements.briefingRoleCard,
+      upcoming: grid.querySelector(".command-card-upcoming"),
+      priorities: grid.querySelector(".command-card-priorities"),
+    };
+    officerRole().commandOrder.forEach((key, index) => {
+      if (cards[key]) cards[key].style.order = String(index);
+    });
+  }
+
+  function renderOfficerCommandCenter() {
+    if (!elements.briefingUpcomingEvents || !elements.briefingPriorities) return;
+    renderRoleSnapshot();
+    applyCommandCardOrder();
+    const events = activeUpcomingEvents.slice(0, 2);
+    if (!events.length) {
+      const empty = document.createElement("p");
+      empty.className = "briefing-empty";
+      empty.textContent = "No upcoming events are listed yet. Open Event Operations to start the next plan.";
+      elements.briefingUpcomingEvents.replaceChildren(empty);
+    } else {
+      elements.briefingUpcomingEvents.replaceChildren(
+        ...events.map((item) => {
+          const article = document.createElement("article");
+          article.className = "briefing-event";
+          const date = document.createElement("span");
+          date.textContent = formatBriefingDate(item.date);
+          const copy = document.createElement("div");
+          const title = document.createElement("strong");
+          title.textContent = item.title || "Upcoming event";
+          const detail = document.createElement("small");
+          detail.textContent = `${item.time || "Time TBD"} · ${item.location || "Location TBD"}`;
+          copy.append(title, detail);
+          const status = document.createElement("em");
+          status.textContent = item.status || "Planning";
+          article.append(date, copy, status);
+          return article;
+        }),
+      );
+    }
+
+    const priorities = prioritizedOperations();
+    const count = priorities.length;
+    if (elements.briefingPriorityCount) {
+      elements.briefingPriorityCount.textContent = count
+        ? `${count} open`
+        : "All clear";
+      elements.briefingPriorityCount.classList.toggle(
+        "panel-chip-alert",
+        count > 0,
+      );
+    }
+    if (!count) {
+      const empty = document.createElement("p");
+      empty.className = "briefing-empty is-clear";
+      empty.textContent = "No connected systems are reporting an open item for this review.";
+      elements.briefingPriorities.replaceChildren(empty);
+      return;
+    }
+    elements.briefingPriorities.replaceChildren(
+      ...priorities.slice(0, 3).map((item) => {
+        const article = document.createElement("article");
+        article.className = `briefing-priority is-${item.severity || "info"}`;
+        const marker = document.createElement("span");
+        marker.setAttribute("aria-hidden", "true");
+        const copy = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = item.title;
+        const detail = document.createElement("small");
+        detail.textContent = item.detail || "Review this item with the officer team.";
+        copy.append(title, detail);
+        article.append(marker, copy);
+        if (item.actionLabel && item.actionUrl) {
+          const action = document.createElement("a");
+          action.href = item.actionUrl;
+          action.setAttribute("aria-label", item.actionLabel);
+          action.append(createHubIcon("arrow-right"));
+          if (!item.actionUrl.startsWith("#")) {
+            action.target = "_blank";
+            action.rel = "noopener";
+          }
+          article.append(action);
+        }
+        return article;
+      }),
+    );
+  }
+
+  function renderRoleBriefing() {
+    const role = officerRole();
+    const kpis = activeDashboardData?.kpis || {};
+    const priorities = prioritizedOperations();
+    const nextEvent = activeUpcomingEvents[0];
+    const participantCount = Number(kpis.uniqueAttendees) || 0;
+    const eventCount = Number(kpis.eventsHeld) || 0;
+    const checkIns = Number(kpis.totalCheckIns) || 0;
+    let title = "Your chapter briefing is ready.";
+    let copy = `${formatNumber(participantCount)} participants, ${formatNumber(checkIns)} check-ins, and ${formatNumber(eventCount)} events are in the current aggregate view.`;
+
+    if (selectedOfficerRole === "vice_president") {
+      title = nextEvent
+        ? `Next up: ${nextEvent.title}.`
+        : "Move the next chapter program forward.";
+      copy = nextEvent
+        ? `${formatBriefingDate(nextEvent.date)} · ${nextEvent.time || "Time TBD"} · ${nextEvent.location || "Location TBD"}. Program, task, and reporting tools are pinned below.`
+        : "No upcoming events are listed, so program planning and corporate-liaison tools are ready below.";
+    } else if (selectedOfficerRole === "treasurer") {
+      title = activeBudget.available
+        ? `${currencyFormatter.format(Number(activeBudget.remainingBudget) || 0)} remains in the chapter plan.`
+        : "The finance workspace needs a feed check.";
+      copy = activeBudget.available
+        ? `${currencyFormatter.format(Number(activeBudget.pendingApproval) || 0)} is pending approval. Budget, banking, and fundraising links are pinned below.`
+        : "The sanitized budget summary is unavailable; the private tracker, banking, and fundraising tools remain one click away.";
+    } else if (selectedOfficerRole === "secretary") {
+      title = priorities.length
+        ? `${priorities.length} record or operations item${priorities.length === 1 ? " needs" : "s need"} follow-through.`
+        : "Chapter records and operations are clear.";
+      copy = `${formatNumber(checkIns)} check-ins across ${formatNumber(eventCount)} events. Tasks, shared documents, attendance, and reporting tools are pinned below.`;
+    } else if (selectedOfficerRole === "social_chair") {
+      title = nextEvent
+        ? `Your next event is ${nextEvent.title}.`
+        : "Build the next event plan.";
+      copy = nextEvent
+        ? `${formatBriefingDate(nextEvent.date)} · ${nextEvent.time || "Time TBD"} · ${nextEvent.location || "Location TBD"}. Planning, attendance, calendar, and promotion tools are pinned below.`
+        : "No upcoming events are listed, so the planning, calendar, and promotion tools are ready below.";
+    } else if (selectedOfficerRole === "webmaster") {
+      title = priorities.length
+        ? `${priorities.length} connected-system item${priorities.length === 1 ? " needs" : "s need"} review.`
+        : "The chapter’s digital toolkit is ready.";
+      copy = "Website, source code, newsletter, and calendar tools are pinned below, with feed health prioritized for review.";
+    } else if (selectedOfficerRole === "ecouncil") {
+      title = priorities.length
+        ? `${priorities.length} council-facing item${priorities.length === 1 ? " needs" : "s need"} follow-through.`
+        : "Council coordination is clear.";
+      copy = "Activity reporting, funding context, officer tasks, and shared documentation are prioritized for this view.";
+    } else if (selectedOfficerRole === "advisor") {
+      title = `${formatNumber(participantCount)} people have participated this year.`;
+      copy = `${formatNumber(checkIns)} check-ins across ${formatNumber(eventCount)} events, with chapter health and continuity signals kept at the top.`;
+    } else if (selectedOfficerRole === "president") {
+      title = priorities.length
+        ? `${priorities.length} chapter priorit${priorities.length === 1 ? "y needs" : "ies need"} follow-through.`
+        : "The chapter is ready for its next decision.";
+      copy = nextEvent
+        ? `${nextEvent.title} is next on ${formatBriefingDate(nextEvent.date)}. Review chapter pulse, ownership, and finance from one view.`
+        : "Review chapter pulse, ownership, and finance from one leadership view.";
+    } else if (priorities.length) {
+      title = `${priorities.length} item${priorities.length === 1 ? " needs" : "s need"} follow-through.`;
+      copy = nextEvent
+        ? `${nextEvent.title} is next on ${formatBriefingDate(nextEvent.date)}. The team’s most-used tools are pinned below.`
+        : "Start with the open items, then use the team’s most-used tools pinned below.";
+    }
+
+    if (elements.heroRoleLabel) elements.heroRoleLabel.textContent = role.label;
+    if (elements.heroBriefingTitle) elements.heroBriefingTitle.textContent = title;
+    if (elements.heroBriefingCopy) elements.heroBriefingCopy.textContent = copy;
+    if (elements.commandCenterRole) {
+      elements.commandCenterRole.textContent = role.viewLabel;
+    }
+    if (elements.frequentResourcesTitle) {
+      elements.frequentResourcesTitle.textContent = `${role.label} toolkit`;
+    }
+    if (elements.frequentResourcesDescription) {
+      elements.frequentResourcesDescription.textContent =
+        "Pinned for this role. Switch roles anytime from My role.";
+    }
+  }
+
+  function renderRoleExperience() {
+    document.querySelectorAll(".is-role-priority").forEach((section) =>
+      section.classList.remove("is-role-priority"),
+    );
+    document.querySelector(officerRole().focusSelector)?.classList.add(
+      "is-role-priority",
+    );
+    renderRoleBriefing();
+    renderOfficerCommandCenter();
+  }
+
+  function applyOfficerRole(roleKey, { persist = true } = {}) {
+    selectedOfficerRole = officerRoles[roleKey] ? roleKey : "all";
+    document.body.dataset.officerRole = selectedOfficerRole;
+    [elements.officerRole, elements.sidebarOfficerRole].forEach((select) => {
+      if (select) select.value = selectedOfficerRole;
+    });
+    if (persist) localStorage.setItem(roleStorageKey, selectedOfficerRole);
+    if (activeResources.length) {
+      renderFrequentResources(activeResources);
+      renderQuickActions(activeResources);
+    }
+    renderRoleExperience();
   }
 
   async function sha256(value) {
@@ -1593,6 +2123,10 @@
       periodKey: item.periodKey || item.semesterKey,
     }));
     activeDashboardData = data;
+    activeUpcomingEvents = data.upcomingEvents || [];
+    activeOperations = data.operations || [];
+    activeBudget = data.budget || {};
+    activeHealth = data.health || [];
     selectedPeriod = "ytd";
     populatePeriodFilter(
       data.semesterMetrics || [],
@@ -1603,6 +2137,7 @@
     renderUpcomingEvents(data.upcomingEvents || []);
     renderHealth(data.health || []);
     renderOperations(data.operations || []);
+    renderRoleExperience();
   }
 
   function populatePeriodFilter(semesters, months) {
@@ -2810,9 +3345,7 @@
 
   function renderFrequentResources(resources) {
     if (!elements.frequentResourceGrid) return;
-    const featured = resources
-      .filter((resource) => resource.featured)
-      .slice(0, 4);
+    const featured = resourcesForRole(resources).slice(0, 4);
     elements.frequentResourceGrid.replaceChildren(
       ...featured.map((resource) => {
         const action = resource.url
@@ -2937,9 +3470,7 @@
   function renderQuickActions(resources) {
     const container = document.getElementById("quick-action-grid");
     if (!container) return;
-    const actions = resources
-      .filter((resource) => resource.quickAction)
-      .slice(0, 8);
+    const actions = resourcesForRole(resources).slice(0, 4);
 
     container.replaceChildren(
       ...actions.map((resource) => {
@@ -2957,14 +3488,18 @@
         const icon = document.createElement("span");
         icon.className = "quick-action-icon";
         icon.setAttribute("aria-hidden", "true");
-        icon.append(createHubIcon(resource.quickAction.icon || "external"));
+        icon.append(
+          createHubIcon(
+            resource.quickAction?.icon || resourceIconName(resource),
+          ),
+        );
 
         const copy = document.createElement("span");
         const title = document.createElement("strong");
-        title.textContent = resource.quickAction.label;
+        title.textContent = resource.quickAction?.label || resource.label;
         const detail = document.createElement("small");
         detail.textContent = resource.url
-          ? resource.quickAction.detail
+          ? resource.quickAction?.detail || resource.category
           : "Setup needed";
         copy.append(title, detail);
         action.append(icon, copy);
@@ -3466,6 +4001,13 @@
       renderHubSearchResults(elements.searchInput.value);
     });
   }
+  [elements.officerRole, elements.sidebarOfficerRole].forEach((select) => {
+    if (!select) return;
+    select.addEventListener("change", () => {
+      applyOfficerRole(select.value);
+      if (select === elements.sidebarOfficerRole) setMobileNavigation(false);
+    });
+  });
   if (elements.resourceFilter) {
     elements.resourceFilter.addEventListener("change", () => {
       renderResources(activeResources);
@@ -3504,6 +4046,10 @@
 
   async function initialize() {
     showRandomMeetingQuote();
+    populateOfficerRoles();
+    applyOfficerRole(localStorage.getItem(roleStorageKey) || "all", {
+      persist: false,
+    });
 
     const savedTheme = localStorage.getItem(themeStorageKey);
     const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
