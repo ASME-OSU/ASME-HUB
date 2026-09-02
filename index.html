@@ -14,10 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260828k">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260901a">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -99,7 +96,8 @@
         </a>
       </div>
 
-      <nav class="sidebar-nav" aria-label="Dashboard navigation">
+      <div class="sidebar-stack">
+        <nav class="sidebar-nav" aria-label="Dashboard navigation">
         <p class="nav-section-label">Chapter health</p>
         <a class="nav-link is-active" href="#overview" aria-label="Overview" title="Overview">
           <span class="nav-icon" aria-hidden="true"><svg><use href="#icon-home"></use></svg></span>
@@ -130,35 +128,36 @@
           </span>
           <span class="nav-label">Resources</span>
         </a>
-      </nav>
+        </nav>
 
-      <div class="sidebar-year">
-        <span>Academic year</span>
-        <strong id="sidebar-year-label">2026–2027</strong>
-        <small>Change it from the top bar</small>
-      </div>
+        <div class="sidebar-year">
+          <span>Academic year</span>
+          <strong id="sidebar-year-label">2026–2027</strong>
+          <small>Change it from the top bar</small>
+        </div>
 
-      <div class="sidebar-footer">
-        <a href="https://org.osu.edu/asme/" target="_blank" rel="noopener" aria-label="View public website" title="View public website">
-          <span class="sidebar-footer-label">View public website</span>
-          <svg class="ui-icon" aria-hidden="true"><use href="#icon-external"></use></svg>
-        </a>
-        <button id="sidebar-settings" type="button" aria-label="Year settings" title="Year settings">
-          <span class="sidebar-footer-label">Year settings</span>
-          <svg class="ui-icon" aria-hidden="true"><use href="#icon-settings"></use></svg>
-        </button>
-        <button id="sidebar-theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
-          <span class="sidebar-footer-label">Color theme</span>
-          <svg class="ui-icon" aria-hidden="true"><use href="#icon-theme"></use></svg>
-        </button>
-        <button type="button" data-install-app aria-label="Install officer app" title="Install officer app" hidden>
-          <span class="sidebar-footer-label">Install officer app</span>
-          <svg class="ui-icon" aria-hidden="true"><use href="#icon-download"></use></svg>
-        </button>
-        <button id="lock-dashboard" type="button" aria-label="Lock dashboard" title="Lock dashboard">
-          <span class="sidebar-footer-label">Lock dashboard</span>
-          <svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg>
-        </button>
+        <div class="sidebar-footer">
+          <a href="https://org.osu.edu/asme/" target="_blank" rel="noopener" aria-label="View public website" title="View public website">
+            <span class="sidebar-footer-label">View public website</span>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-external"></use></svg>
+          </a>
+          <button id="sidebar-settings" type="button" aria-label="Year settings" title="Year settings">
+            <span class="sidebar-footer-label">Year settings</span>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-settings"></use></svg>
+          </button>
+          <button id="sidebar-theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">
+            <span class="sidebar-footer-label">Color theme</span>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-theme"></use></svg>
+          </button>
+          <button type="button" data-install-app aria-label="Install officer app" title="Install officer app" hidden>
+            <span class="sidebar-footer-label">Install officer app</span>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-download"></use></svg>
+          </button>
+          <button id="lock-dashboard" type="button" aria-label="Lock dashboard" title="Lock dashboard">
+            <span class="sidebar-footer-label">Lock dashboard</span>
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg>
+          </button>
+        </div>
       </div>
     </aside>
 
@@ -827,7 +826,7 @@
   </dialog>
 
   <script src="assets/js/config.js?v=20260828k"></script>
-  <script src="assets/js/app.js?v=20260828k"></script>
+  <script src="assets/js/app.js?v=20260901a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

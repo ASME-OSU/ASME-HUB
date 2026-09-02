@@ -6,6 +6,23 @@ const root = resolve(import.meta.dirname, "..");
 const errors = [];
 const read = (path) => readFileSync(resolve(root, path), "utf8");
 
+const stylelint = spawnSync(
+  process.execPath,
+  [
+    resolve(root, "node_modules/stylelint/bin/stylelint.mjs"),
+    "assets/css/**/*.css",
+  ],
+  {
+    cwd: root,
+    encoding: "utf8",
+  },
+);
+if (stylelint.status !== 0) {
+  errors.push(
+    `CSS lint failed:\n${(stylelint.stdout || stylelint.stderr).trim()}`,
+  );
+}
+
 for (const path of [
   "assets/js/config.js",
   "assets/js/app.js",
@@ -79,6 +96,17 @@ if (!existsSync(resolve(root, "data/calendar.json"))) {
   } catch {
     errors.push("The generated calendar snapshot placeholder is not valid JSON.");
   }
+}
+for (const path of [
+  "assets/fonts/dm-serif-display-latin.woff2",
+  "assets/fonts/inter-latin.woff2",
+]) {
+  if (!existsSync(resolve(root, path))) {
+    errors.push(`Missing self-hosted font asset: ${path}`);
+  }
+}
+if (html.includes("fonts.googleapis.com") || html.includes("fonts.gstatic.com")) {
+  errors.push("The Hub must use its self-hosted fonts without Google Fonts requests.");
 }
 if (
   app.includes("api.allorigins.win") ||
