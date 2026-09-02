@@ -1,0 +1,18 @@
+{
+  "name": "asme-officer-hub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "lint:css": "stylelint \"assets/css/**/*.css\""
+  },
+  "devDependencies": {
+    "stylelint": "17.14.1"
+  },
+  "stylelint": {
+    "rules": {
+      "declaration-block-no-duplicate-properties": true,
+      "no-duplicate-selectors": true
+    }
+  }
+}

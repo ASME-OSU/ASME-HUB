@@ -5,7 +5,7 @@ maintain it without a build system.
 
 Before opening a pull request:
 
-1. Run `node scripts/check.mjs`.
+1. Run `npm ci`, then `npm run check` (this includes the CSS lint rules).
 2. Preview with `python3 -m http.server 8080`.
 3. Test the access screen and dashboard at desktop width and at 390 × 844.
 4. Verify light and dark themes, keyboard focus, the mobile drawer, search,

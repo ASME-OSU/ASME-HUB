@@ -437,9 +437,9 @@ own app window and appear on an officer's home screen or app launcher.
   to Home Screen**.
 
 The service worker caches only the public app shell: HTML, CSS, JavaScript,
-logos, and install icons. Live attendance, settings, the generated calendar
-snapshot, Google, and SharePoint requests are intentionally not cached, so
-current dashboard data still requires a network connection.
+self-hosted fonts, logos, and install icons. Live attendance, settings, the
+generated calendar snapshot, Google, and SharePoint requests are intentionally
+not cached, so current dashboard data still requires a network connection.
 
 The calendar is synchronized server-side by
 `.github/workflows/pages.yml`. Once per hour, GitHub Actions reads the current

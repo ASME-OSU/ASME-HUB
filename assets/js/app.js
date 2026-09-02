@@ -18,14 +18,23 @@
     currency: "USD",
     maximumFractionDigits: 0,
   });
+  const chartPalette = [
+    "var(--chart-series-1)",
+    "var(--chart-series-2)",
+    "var(--chart-series-3)",
+    "var(--chart-series-4)",
+    "var(--chart-series-5)",
+    "var(--chart-series-6)",
+    "var(--chart-series-7)",
+  ];
   const eventTypeColumns = [
-    { column: 2, name: "General Body", color: "#184a7d" },
-    { column: 3, name: "Social", color: "#4f7cac" },
-    { column: 4, name: "Company Info Sessions", color: "#ba0c2f" },
-    { column: 5, name: "Technical Workshops", color: "#d69e2e" },
-    { column: 6, name: "Build Nights / Projects", color: "#427aa1" },
-    { column: 7, name: "Volunteering / Outreach", color: "#6b7f52" },
-    { column: 8, name: "Committee Work", color: "#7b8797" },
+    { column: 2, name: "General Body", color: chartPalette[1] },
+    { column: 3, name: "Social", color: chartPalette[3] },
+    { column: 4, name: "Company Info Sessions", color: chartPalette[0] },
+    { column: 5, name: "Technical Workshops", color: chartPalette[2] },
+    { column: 6, name: "Build Nights / Projects", color: chartPalette[4] },
+    { column: 7, name: "Volunteering / Outreach", color: chartPalette[5] },
+    { column: 8, name: "Committee Work", color: chartPalette[6] },
   ];
   const minimumReliableSample = 5;
   let sharedYearSources = cloneConfiguredSources();
@@ -2046,13 +2055,13 @@
     if (!donut || !total || !legend || !bars) return;
 
     const colors = [
-      "#ba0c2f",
-      "#184a7d",
-      "#d69e2e",
-      "#4f7cac",
-      "#6b7f52",
-      "#7b5ea7",
-      "#d46a3a",
+      chartPalette[2],
+      chartPalette[1],
+      chartPalette[0],
+      chartPalette[3],
+      chartPalette[4],
+      chartPalette[5],
+      chartPalette[6],
     ];
     const clean = (Array.isArray(categories) ? categories : [])
       .map((category) => ({
@@ -2174,18 +2183,48 @@
 
   function renderAttendanceChart(items, periodLabel = "") {
     const svg = document.getElementById("attendance-chart");
+    const chartWrap = svg.closest(".chart-wrap");
+    const chartPanel = svg.closest(".trend-panel");
     const legend = document.getElementById("attendance-chart-legend");
     const summary = document.getElementById("trend-summary");
     svg.replaceChildren();
     legend.replaceChildren();
 
     if (!items.length) {
-      svg.setAttribute("viewBox", "0 0 700 285");
-      svg.innerHTML =
-        '<text x="350" y="142" text-anchor="middle" class="chart-axis-label">No attendance data available</text>';
+      chartWrap?.classList.add("is-empty");
+      chartPanel?.classList.add("is-chart-empty");
+      svg.setAttribute("viewBox", "0 0 700 160");
+      svg.setAttribute("preserveAspectRatio", "none");
+      const baseline = svgElement("line", {
+        x1: "56",
+        y1: "116",
+        x2: "664",
+        y2: "116",
+        class: "chart-grid-line chart-empty-grid",
+      });
+      const ticks = [56, 208, 360, 512, 664].map((x) =>
+        svgElement("line", {
+          x1: String(x),
+          y1: "108",
+          x2: String(x),
+          y2: "124",
+          class: "chart-grid-line chart-empty-grid",
+        }),
+      );
+      const message = svgElement("text", {
+        x: "350",
+        y: "80",
+        "text-anchor": "middle",
+        class: "chart-axis-label",
+      });
+      message.textContent = "No attendance data available";
+      svg.append(baseline, ...ticks, message);
       summary.textContent = "No events";
       return;
     }
+
+    chartWrap?.classList.remove("is-empty");
+    chartPanel?.classList.remove("is-chart-empty");
 
     const width = 760;
     const height = 285;
@@ -2216,12 +2255,12 @@
     gradient.append(
       svgElement("stop", {
         offset: "0%",
-        "stop-color": "#ba0c2f",
+        "stop-color": chartPalette[0],
         "stop-opacity": "0.19",
       }),
       svgElement("stop", {
         offset: "100%",
-        "stop-color": "#ba0c2f",
+        "stop-color": chartPalette[0],
         "stop-opacity": "0",
       }),
     );
@@ -2293,7 +2332,7 @@
     });
 
     const eventTypes = [...new Set(items.map((item) => item.type).filter(Boolean))];
-    const colors = ["#ba0c2f", "#184a7d", "#d69e2e", "#4f7cac", "#7b8797"];
+    const colors = chartPalette.slice(0, 5);
     eventTypes.forEach((type, index) => {
       const item = document.createElement("span");
       const dot = document.createElement("i");
@@ -2553,12 +2592,12 @@
       const portion = total ? ((Number(item.count) || 0) / total) * 100 : 0;
       const start = cursor;
       cursor += portion;
-      return `${item.color || "#7b8797"} ${start}% ${cursor}%`;
+      return `${item.color || chartPalette[4]} ${start}% ${cursor}%`;
     });
 
     donut.style.background = segments.length
       ? `conic-gradient(${segments.join(",")})`
-      : "#e9edf3";
+      : "var(--border)";
     donut.setAttribute(
       "aria-label",
       items.length
@@ -2574,7 +2613,7 @@
 
         const dot = document.createElement("span");
         dot.className = "type-dot";
-        dot.style.backgroundColor = item.color || "#7b8797";
+        dot.style.backgroundColor = item.color || chartPalette[4];
 
         const name = document.createElement("span");
         name.className = "type-name";
