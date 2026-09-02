@@ -24,8 +24,11 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+          cache: npm
+      - name: Install quality dependencies
+        run: npm ci
       - name: Validate the static site
-        run: node scripts/check.mjs
+        run: npm run check
       - name: Synchronize the public calendar
         run: node scripts/sync-calendar.mjs
       - name: Build the Pages artifact
