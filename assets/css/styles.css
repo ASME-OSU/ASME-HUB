@@ -346,7 +346,7 @@ button {
   font-weight: 700;
 }
 
-.form-error {
+.personal-form-error {
   min-height: 20px;
   margin: 7px 0 4px;
   color: var(--scarlet-dark);
@@ -4895,6 +4895,496 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 }
 
+/* Browser-only personalization and meeting view */
+
+.command-center-actions,
+.resource-heading-actions,
+.personal-form-actions,
+.handoff-actions,
+.handoff-actions > div,
+.meeting-mode-toolbar,
+.meeting-mode-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.command-center-actions > span {
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  color: var(--scarlet);
+  background: rgba(186, 12, 47, 0.08);
+  font-size: var(--text-xs);
+  font-weight: 850;
+}
+
+.command-center-actions .text-button,
+.command-card-button {
+  display: inline-flex;
+  min-height: 36px;
+  padding: 0 9px;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+}
+
+.command-center-actions .ui-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.personal-priority-list,
+.readiness-list {
+  margin: 0;
+  padding: 0;
+}
+
+.personal-priority-summary {
+  display: grid;
+  min-width: 0;
+  padding: 9px 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.personal-priority-summary > button,
+.personal-priority-summary > a {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-round);
+  color: var(--scarlet);
+  background: rgba(186, 12, 47, 0.08);
+  cursor: pointer;
+}
+
+.personal-priority-summary .ui-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.personal-priority-summary strong,
+.personal-priority-summary small {
+  display: block;
+}
+
+.personal-priority-summary strong {
+  color: var(--ink);
+  font-size: var(--text-md);
+}
+
+.personal-priority-summary small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+
+.readiness-list {
+  display: grid;
+  padding-top: 8px;
+  list-style: none;
+  gap: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.readiness-list li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+
+.readiness-list li::before {
+  position: absolute;
+  top: 0.52em;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius-round);
+  content: "";
+}
+
+.resource-heading-actions {
+  max-width: 540px;
+  align-items: flex-end;
+  flex-direction: column;
+}
+
+.resource-manager-button {
+  min-height: 42px;
+  color: white;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.resource-manager-button:hover {
+  color: white;
+  border-color: rgba(238, 106, 132, 0.55);
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.resource-manager-button .ui-icon,
+.resource-access .ui-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.resource-access {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 12px;
+  align-items: center;
+  gap: 5px;
+  color: #b8c4d2;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.resource-access[hidden] {
+  display: none;
+}
+
+.resource-access + h3 {
+  margin-top: 7px;
+}
+
+.personal-dialog {
+  width: min(780px, calc(100vw - 28px));
+  max-height: min(880px, calc(100dvh - 28px));
+  overflow: hidden;
+}
+
+.personal-dialog-shell {
+  display: grid;
+  max-height: min(880px, calc(100dvh - 28px));
+  padding: 26px;
+  overflow: auto;
+  gap: 18px;
+}
+
+.personal-dialog h2 {
+  margin: 0;
+  color: var(--ink);
+  font: 1.65rem/1.1 var(--serif);
+}
+
+.privacy-notice {
+  display: grid;
+  margin: 0;
+  padding: 12px 14px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--border));
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  background: color-mix(in srgb, var(--gold) 8%, var(--surface));
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.privacy-notice .ui-icon {
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  color: var(--gold-strong);
+}
+
+.personal-form {
+  display: grid;
+  padding: 18px;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.personal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.personal-form label:not(.compact-check) {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.personal-form label small {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.personal-form :is(input[type="text"], input[type="url"], input[type="date"], select) {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+}
+
+.role-checkboxes {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.role-checkboxes legend {
+  padding: 0 6px;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 800;
+}
+
+.role-checkboxes > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.role-checkboxes label,
+.compact-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: var(--text-sm);
+}
+
+.compact-check > span,
+.compact-check strong,
+.compact-check small {
+  display: block;
+}
+
+.compact-check small {
+  margin-top: 2px;
+}
+
+.personal-form-actions {
+  justify-content: flex-end;
+}
+
+.form-error {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--scarlet);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.personal-items {
+  display: grid;
+  gap: 8px;
+}
+
+.personal-items-empty {
+  margin: 0;
+  padding: 24px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  text-align: center;
+}
+
+.personal-item {
+  display: flex;
+  min-width: 0;
+  padding: 12px 14px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.personal-item > div:first-child {
+  min-width: 0;
+}
+
+.personal-item strong,
+.personal-item small {
+  display: block;
+}
+
+.personal-item small {
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-item > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.personal-item.is-complete strong {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.danger-button {
+  color: var(--scarlet);
+}
+
+.handoff-actions {
+  padding-top: 16px;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+}
+
+.handoff-actions strong,
+.handoff-actions small {
+  display: block;
+}
+
+.handoff-actions small {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.file-button {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.meeting-mode-toolbar {
+  position: fixed;
+  z-index: 90;
+  top: 0;
+  right: 0;
+  left: 0;
+  min-height: 66px;
+  padding: 10px max(20px, env(safe-area-inset-right)) 10px max(20px, env(safe-area-inset-left));
+  justify-content: space-between;
+  color: white;
+  background: var(--navy-950);
+  box-shadow: var(--shadow-md);
+}
+
+.meeting-mode-toolbar[hidden] {
+  display: none;
+}
+
+.meeting-mode-toolbar > div:first-child {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meeting-mode-toolbar span {
+  color: #b9c4d1;
+  font-size: var(--text-xs);
+}
+
+.meeting-mode-toolbar .secondary-button {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+body.meeting-mode .sidebar,
+body.meeting-mode .topbar,
+body.meeting-mode .global-quick-actions,
+body.meeting-mode .resources-section,
+body.meeting-mode .dashboard-footer,
+body.meeting-mode .dashboard-grid-secondary,
+body.meeting-mode .performance-panel,
+body.meeting-mode .budget-insights-grid,
+body.meeting-mode .healthy-systems {
+  display: none !important;
+}
+
+body.meeting-mode .content-shell {
+  margin-left: 0;
+}
+
+body.meeting-mode main {
+  max-width: 1280px;
+  padding-top: 90px;
+}
+
+body.meeting-mode [data-mobile-sections] {
+  display: block !important;
+}
+
+body.meeting-mode .global-quick-actions,
+body.meeting-mode .resources-section {
+  display: none !important;
+}
+
+body[data-theme="dark"] .command-center-actions > span {
+  color: #ffadc0;
+  background: rgba(238, 106, 132, 0.14);
+}
+
+@media (max-width: 720px) {
+  .command-center-heading,
+  .command-center-actions,
+  .section-heading,
+  .resource-heading-actions,
+  .handoff-actions,
+  .personal-item,
+  .meeting-mode-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .command-center-actions {
+    align-items: flex-start;
+  }
+
+  .personal-form-grid,
+  .role-checkboxes > div {
+    grid-template-columns: 1fr;
+  }
+
+  .personal-dialog-shell {
+    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+  }
+
+  .personal-item > div:last-child,
+  .handoff-actions > div:last-child,
+  .meeting-mode-toolbar > div:last-child {
+    flex-wrap: wrap;
+  }
+
+  .meeting-mode-toolbar {
+    position: sticky;
+  }
+
+  body.meeting-mode main {
+    padding-top: 20px;
+  }
+}
+
 @media print {
   @page {
     margin: 0.34in;
@@ -4953,6 +5443,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   .sidebar,
   .topbar,
   .loading-layer,
+  .meeting-mode-toolbar,
   .settings-dialog,
   dialog,
   .period-control,
@@ -5530,6 +6021,17 @@ body[data-theme="dark"] .hub-search-result-copy strong {
     font-size: 0.56rem;
     text-align: right;
     content: "ASME Officer Hub · Internal officer use";
+  }
+
+  body.meeting-mode main > .hero-panel,
+  body.meeting-mode .officer-command-center {
+    display: block !important;
+  }
+
+  body.meeting-mode .dashboard-band-analytics,
+  body.meeting-mode .dashboard-band-finance,
+  body.meeting-mode .dashboard-band-operations {
+    display: none !important;
   }
 }
 
