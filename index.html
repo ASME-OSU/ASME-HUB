@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260901a">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260902a">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -130,6 +130,12 @@
         </a>
         </nav>
 
+        <label class="sidebar-role-picker" for="sidebar-officer-role">
+          <span>My role</span>
+          <select id="sidebar-officer-role" aria-label="Choose officer role"></select>
+          <small>Saved in this browser</small>
+        </label>
+
         <div class="sidebar-year">
           <span>Academic year</span>
           <strong id="sidebar-year-label">2026–2027</strong>
@@ -176,6 +182,10 @@
           <p class="eyebrow">Chapter operations</p>
           <strong>Dashboard</strong>
         </div>
+        <label class="role-picker" for="officer-role">
+          <span>My role</span>
+          <select id="officer-role" aria-label="Choose officer role"></select>
+        </label>
         <div class="topbar-actions">
           <button class="icon-button search-button" id="search-button" type="button" aria-label="Search the Officer Hub" title="Search (Command or Control + K)">
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
@@ -213,9 +223,13 @@
         </section>
         <section class="hero-panel dashboard-section" id="overview" data-mobile-sections="overview">
           <div>
-            <p class="eyebrow">Chapter snapshot</p>
-            <h1 id="hero-quote">Good decisions start with a clear view.</h1>
-            <p class="hero-copy">Track participation, spot operational issues, and jump into the tools your team uses every week.</p>
+            <div class="hero-role-line">
+              <p class="eyebrow"><span id="hero-role-label">All officers</span> briefing</p>
+              <span class="role-persistence-note">Saved in this browser</span>
+            </div>
+            <h1 id="hero-briefing-title">Your chapter briefing is loading.</h1>
+            <p class="hero-copy" id="hero-briefing-copy">Track participation, spot operational issues, and jump into the tools your team uses every week.</p>
+            <p class="hero-motto" id="hero-quote">Good decisions start with a clear view.</p>
             <div class="hero-kpi-strip" aria-label="Headline chapter metrics">
               <span><small>Attendees</small><strong id="hero-kpi-unique">—</strong></span>
               <span><small>Check-ins</small><strong id="hero-kpi-checkins">—</strong></span>
@@ -322,6 +336,48 @@
             <strong class="kpi-value" id="kpi-repeat-rate">—</strong>
             <p id="kpi-repeat-rate-context">Attended two or more events</p>
           </article>
+        </section>
+
+        <section class="officer-command-center" aria-labelledby="command-center-title">
+          <div class="command-center-heading">
+            <div>
+              <p class="eyebrow">Officer command center</p>
+              <h3 id="command-center-title">What to act on next</h3>
+            </div>
+            <span id="command-center-role">All-officer view</span>
+          </div>
+          <div class="command-center-grid">
+            <section class="command-card command-card-role" id="briefing-role-card" aria-labelledby="briefing-role-title">
+              <div class="command-card-heading">
+                <div>
+                  <p class="eyebrow">Role snapshot</p>
+                  <h4 id="briefing-role-title">Chapter pulse</h4>
+                </div>
+              </div>
+              <p class="role-snapshot-copy" id="briefing-role-copy">A concise view of what matters most for this role.</p>
+              <div class="role-snapshot-metrics" id="briefing-role-metrics"></div>
+            </section>
+            <section class="command-card command-card-upcoming" aria-labelledby="briefing-upcoming-title">
+              <div class="command-card-heading">
+                <div>
+                  <p class="eyebrow">Up next</p>
+                  <h4 id="briefing-upcoming-title">Upcoming events</h4>
+                </div>
+                <a href="#events">View events <svg class="ui-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg></a>
+              </div>
+              <div class="briefing-event-list" id="briefing-upcoming-events"></div>
+            </section>
+            <section class="command-card command-card-priorities" aria-labelledby="briefing-priorities-title">
+              <div class="command-card-heading">
+                <div>
+                  <p class="eyebrow">Role priorities</p>
+                  <h4 id="briefing-priorities-title">Needs follow-through</h4>
+                </div>
+                <span class="panel-chip panel-chip-alert" id="briefing-priority-count">0 open</span>
+              </div>
+              <div class="briefing-priority-list" id="briefing-priorities"></div>
+            </section>
+          </div>
         </section>
 
         </section>
@@ -629,10 +685,10 @@
           <section class="frequent-resources" id="frequent-resources" aria-labelledby="frequent-resources-title">
             <div class="frequent-resources-heading">
               <div>
-                <p class="eyebrow">Frequently used</p>
+                <p class="eyebrow">For your role</p>
                 <h3 id="frequent-resources-title">Officer essentials</h3>
               </div>
-              <span>Fast access to weekly tools</span>
+              <span id="frequent-resources-description">Fast access to weekly tools</span>
             </div>
             <div class="frequent-resource-grid" id="frequent-resource-grid"></div>
           </section>
@@ -826,7 +882,7 @@
   </dialog>
 
   <script src="assets/js/config.js?v=20260828k"></script>
-  <script src="assets/js/app.js?v=20260901a"></script>
+  <script src="assets/js/app.js?v=20260902a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>
