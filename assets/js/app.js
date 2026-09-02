@@ -6,6 +6,8 @@
   const themeStorageKey = "asmeHubTheme";
   const sidebarStorageKey = "asmeHubSidebarCollapsed";
   const roleStorageKey = "asmeHubOfficerRoleV1";
+  const customLinksStorageKey = "asmeHubCustomLinksV1";
+  const personalPrioritiesStorageKey = "asmeHubPersonalPrioritiesV1";
   const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
@@ -51,7 +53,7 @@
       ],
       resourceCategories: ["Operations", "Attendance"],
       priorityTerms: [],
-      commandOrder: ["upcoming", "priorities", "role"],
+      commandOrder: ["personal", "upcoming", "priorities", "role"],
     },
     president: {
       label: "President",
@@ -65,7 +67,7 @@
       ],
       resourceCategories: ["Operations", "Finance"],
       priorityTerms: ["approval", "owner", "deadline", "chapter", "system"],
-      commandOrder: ["role", "priorities", "upcoming"],
+      commandOrder: ["role", "personal", "priorities", "upcoming"],
     },
     vice_president: {
       label: "Vice President",
@@ -79,7 +81,8 @@
       ],
       resourceCategories: ["Events", "Operations", "Attendance"],
       priorityTerms: ["event", "calendar", "location", "owner", "approval"],
-      commandOrder: ["role", "upcoming", "priorities"],
+      commandOrder: ["readiness", "upcoming", "personal", "role", "priorities"],
+      showEventReadiness: true,
     },
     treasurer: {
       label: "Treasurer",
@@ -93,7 +96,7 @@
       ],
       resourceCategories: ["Finance", "Operations"],
       priorityTerms: ["budget", "finance", "spending", "approval", "expense"],
-      commandOrder: ["role", "priorities", "upcoming"],
+      commandOrder: ["role", "personal", "priorities", "upcoming"],
     },
     secretary: {
       label: "Secretary",
@@ -107,7 +110,7 @@
       ],
       resourceCategories: ["Operations", "Attendance", "Officer Access"],
       priorityTerms: ["task", "record", "attendance", "calendar", "settings"],
-      commandOrder: ["role", "priorities", "upcoming"],
+      commandOrder: ["personal", "role", "priorities", "upcoming"],
     },
     social_chair: {
       label: "Social Chair",
@@ -121,7 +124,8 @@
       ],
       resourceCategories: ["Events", "Attendance", "Communications"],
       priorityTerms: ["event", "calendar", "location", "social", "attendance"],
-      commandOrder: ["upcoming", "role", "priorities"],
+      commandOrder: ["readiness", "upcoming", "personal", "role", "priorities"],
+      showEventReadiness: true,
     },
     webmaster: {
       label: "Webmaster",
@@ -135,7 +139,7 @@
       ],
       resourceCategories: ["Technology", "Public", "Communications"],
       priorityTerms: ["website", "system", "source", "feed", "calendar"],
-      commandOrder: ["role", "priorities", "upcoming"],
+      commandOrder: ["role", "personal", "priorities", "upcoming"],
     },
     ecouncil: {
       label: "E-Council Representative",
@@ -149,7 +153,7 @@
       ],
       resourceCategories: ["Operations", "Finance"],
       priorityTerms: ["council", "funding", "approval", "activity", "deadline"],
-      commandOrder: ["role", "priorities", "upcoming"],
+      commandOrder: ["role", "personal", "priorities", "upcoming"],
     },
     advisor: {
       label: "Advisor",
@@ -163,7 +167,7 @@
       ],
       resourceCategories: ["Operations", "Finance", "Attendance"],
       priorityTerms: ["approval", "chapter", "attendance", "budget", "system"],
-      commandOrder: ["role", "priorities", "upcoming"],
+      commandOrder: ["role", "personal", "priorities", "upcoming"],
     },
   };
   let sharedYearSources = cloneConfiguredSources();
@@ -202,6 +206,24 @@
     briefingUpcomingEvents: document.getElementById("briefing-upcoming-events"),
     briefingPriorities: document.getElementById("briefing-priorities"),
     briefingPriorityCount: document.getElementById("briefing-priority-count"),
+    personalPriorityList: document.getElementById("personal-priority-list"),
+    managePriorities: document.getElementById("manage-priorities"),
+    prioritiesDialog: document.getElementById("priorities-dialog"),
+    prioritiesClose: document.getElementById("priorities-close"),
+    priorityForm: document.getElementById("priority-form"),
+    priorityId: document.getElementById("priority-id"),
+    priorityTitle: document.getElementById("priority-title"),
+    priorityDue: document.getElementById("priority-due"),
+    priorityRole: document.getElementById("priority-role"),
+    priorityResource: document.getElementById("priority-resource"),
+    priorityCancel: document.getElementById("priority-cancel"),
+    priorityItems: document.getElementById("priority-items"),
+    eventReadinessCard: document.querySelector(".command-card-readiness"),
+    eventReadinessLink: document.getElementById("event-readiness-link"),
+    meetingModeButton: document.getElementById("meeting-mode-button"),
+    meetingModeToolbar: document.getElementById("meeting-mode-toolbar"),
+    meetingExit: document.getElementById("meeting-exit"),
+    meetingPrint: document.getElementById("meeting-print"),
     loadingLayer: document.getElementById("loading-layer"),
     lockDashboard: document.getElementById("lock-dashboard"),
     academicYear: document.getElementById("academic-year"),
@@ -257,10 +279,396 @@
     frequentResourceGrid: document.getElementById("frequent-resource-grid"),
     frequentResourcesTitle: document.getElementById("frequent-resources-title"),
     frequentResourcesDescription: document.getElementById("frequent-resources-description"),
+    manageCustomLinks: document.getElementById("manage-custom-links"),
+    customLinksDialog: document.getElementById("custom-links-dialog"),
+    customLinksClose: document.getElementById("custom-links-close"),
+    customLinkForm: document.getElementById("custom-link-form"),
+    customLinkId: document.getElementById("custom-link-id"),
+    customLinkTitle: document.getElementById("custom-link-title"),
+    customLinkUrl: document.getElementById("custom-link-url"),
+    customLinkCategory: document.getElementById("custom-link-category"),
+    customLinkDescription: document.getElementById("custom-link-description"),
+    customLinkRoles: document.getElementById("custom-link-roles"),
+    customLinkPin: document.getElementById("custom-link-pin"),
+    customLinkError: document.getElementById("custom-link-error"),
+    customLinkCancel: document.getElementById("custom-link-cancel"),
+    customLinkItems: document.getElementById("custom-link-items"),
+    customLinksExport: document.getElementById("custom-links-export"),
+    customLinksImport: document.getElementById("custom-links-import"),
+    customLinksReset: document.getElementById("custom-links-reset"),
     printHubButton: document.getElementById("print-hub-button"),
     printReportMeta: document.getElementById("print-report-meta"),
     healthySystems: document.getElementById("healthy-systems"),
   };
+
+  function readBrowserList(key) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || "[]");
+      return Array.isArray(value) ? value : [];
+    } catch (error) {
+      console.warn(`Browser data for ${key} could not be read.`, error);
+      return [];
+    }
+  }
+
+  function newBrowserId(prefix) {
+    return `${prefix}-${window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+  }
+
+  function normalizeCustomLink(item, index = 0) {
+    if (!item || typeof item !== "object") return null;
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(String(item.url || ""));
+      if (!["http:", "https:"].includes(parsedUrl.protocol)) return null;
+    } catch (_error) {
+      return null;
+    }
+    const title = String(item.title || "").trim().slice(0, 80);
+    if (!title) return null;
+    const validRoles = Array.isArray(item.roles)
+      ? item.roles.filter((role) => officerRoles[role])
+      : [];
+    return {
+      id: String(item.id || newBrowserId("link")),
+      title,
+      url: parsedUrl.href,
+      description: String(item.description || "Personal officer shortcut").trim().slice(0, 140),
+      label: `Open ${title}`,
+      category: String(item.category || "Operations").trim().slice(0, 40),
+      icon: String(item.icon || "link"),
+      roles: validRoles.length ? validRoles : ["all"],
+      featured: Boolean(item.pinned),
+      pinned: Boolean(item.pinned),
+      browserOnly: true,
+      custom: true,
+      order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
+    };
+  }
+
+  function loadCustomLinks() {
+    return readBrowserList(customLinksStorageKey)
+      .map(normalizeCustomLink)
+      .filter(Boolean)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  function saveCustomLinks(links) {
+    localStorage.setItem(
+      customLinksStorageKey,
+      JSON.stringify(links.map((link, index) => ({ ...link, order: index }))),
+    );
+  }
+
+  function loadPersonalPriorities() {
+    return readBrowserList(personalPrioritiesStorageKey)
+      .filter((item) => item && typeof item === "object" && String(item.title || "").trim())
+      .map((item) => ({
+        id: String(item.id || newBrowserId("priority")),
+        title: String(item.title).trim().slice(0, 100),
+        dueDate: /^\d{4}-\d{2}-\d{2}$/.test(String(item.dueDate || "")) ? item.dueDate : "",
+        role: officerRoles[item.role] ? item.role : "all",
+        resourceUrl: String(item.resourceUrl || ""),
+        resourceTitle: String(item.resourceTitle || ""),
+        completed: Boolean(item.completed),
+        createdAt: String(item.createdAt || new Date().toISOString()),
+      }));
+  }
+
+  function savePersonalPriorities(items) {
+    localStorage.setItem(personalPrioritiesStorageKey, JSON.stringify(items));
+  }
+
+  function refreshPersonalizedResources() {
+    const source = getYearSource(elements.academicYear?.value);
+    if (!source) return;
+    const resources = [...resolveYearResources(source), ...loadCustomLinks()];
+    renderResources(resources);
+    renderQuickActions(resources);
+    configureHubSearch(resources);
+    populatePriorityResources();
+    renderEventReadiness();
+  }
+
+  function openDialog(dialog, focusTarget) {
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    window.setTimeout(() => focusTarget?.focus(), 30);
+  }
+
+  function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === "function" && dialog.open) dialog.close();
+    else dialog.removeAttribute("open");
+  }
+
+  function populatePersonalRoleControls() {
+    if (elements.priorityRole) {
+      elements.priorityRole.replaceChildren(
+        ...Object.entries(officerRoles).map(([value, role]) => new Option(role.label, value)),
+      );
+    }
+    if (elements.customLinkRoles) {
+      elements.customLinkRoles.replaceChildren(
+        ...Object.entries(officerRoles).map(([value, role]) => {
+          const label = document.createElement("label");
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.value = value;
+          input.name = "customLinkRole";
+          const span = document.createElement("span");
+          span.textContent = role.label;
+          label.append(input, span);
+          return label;
+        }),
+      );
+    }
+  }
+
+  function populatePriorityResources() {
+    if (!elements.priorityResource) return;
+    const current = elements.priorityResource.value;
+    elements.priorityResource.replaceChildren(
+      new Option("No linked tool", ""),
+      ...activeResources
+        .filter((resource) => resource.url)
+        .map((resource) => new Option(resource.title, resource.url)),
+    );
+    if ([...elements.priorityResource.options].some((option) => option.value === current)) {
+      elements.priorityResource.value = current;
+    }
+  }
+
+  function formatLocalDueDate(value) {
+    if (!value) return "No due date";
+    const parsed = new Date(`${value}T12:00:00`);
+    return Number.isNaN(parsed.getTime())
+      ? "No due date"
+      : new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(parsed);
+  }
+
+  function renderPersonalPrioritySummary() {
+    if (!elements.personalPriorityList) return;
+    const items = loadPersonalPriorities()
+      .filter((item) => !item.completed && (selectedOfficerRole === "all" || item.role === "all" || item.role === selectedOfficerRole))
+      .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
+    if (!items.length) {
+      const empty = document.createElement("p");
+      empty.className = "briefing-empty is-clear";
+      empty.textContent = "No personal reminders for this role. Add one without copying private tracker data.";
+      elements.personalPriorityList.replaceChildren(empty);
+      return;
+    }
+    elements.personalPriorityList.replaceChildren(
+      ...items.slice(0, 3).map((item) => {
+        const row = document.createElement("article");
+        row.className = "personal-priority-summary";
+        const check = document.createElement("button");
+        check.type = "button";
+        check.setAttribute("aria-label", `Complete ${item.title}`);
+        check.append(createHubIcon("check-square"));
+        check.addEventListener("click", () => {
+          const all = loadPersonalPriorities();
+          const target = all.find((priority) => priority.id === item.id);
+          if (target) target.completed = true;
+          savePersonalPriorities(all);
+          renderPersonalPrioritySummary();
+          renderPriorityManager();
+        });
+        const copy = document.createElement("span");
+        const title = document.createElement("strong");
+        title.textContent = item.title;
+        const detail = document.createElement("small");
+        detail.textContent = `${formatLocalDueDate(item.dueDate)} · ${officerRoles[item.role].label}`;
+        copy.append(title, detail);
+        row.append(check, copy);
+        if (item.resourceUrl) {
+          const link = document.createElement("a");
+          link.href = item.resourceUrl;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.setAttribute("aria-label", `Open ${item.resourceTitle || "related tool"}`);
+          link.append(createHubIcon("arrow-right"));
+          row.append(link);
+        }
+        return row;
+      }),
+    );
+  }
+
+  function resetPriorityForm() {
+    elements.priorityForm?.reset();
+    if (elements.priorityId) elements.priorityId.value = "";
+    if (elements.priorityRole) elements.priorityRole.value = selectedOfficerRole;
+    if (elements.priorityCancel) elements.priorityCancel.hidden = true;
+  }
+
+  function renderPriorityManager() {
+    if (!elements.priorityItems) return;
+    const items = loadPersonalPriorities();
+    if (!items.length) {
+      elements.priorityItems.innerHTML = '<p class="personal-items-empty">No personal priorities saved yet.</p>';
+      return;
+    }
+    elements.priorityItems.replaceChildren(
+      ...items.map((item) => {
+        const row = document.createElement("article");
+        row.className = `personal-item${item.completed ? " is-complete" : ""}`;
+        const copy = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = item.title;
+        const detail = document.createElement("small");
+        detail.textContent = `${formatLocalDueDate(item.dueDate)} · ${officerRoles[item.role].label}${item.resourceTitle ? ` · ${item.resourceTitle}` : ""}`;
+        copy.append(title, detail);
+        const actions = document.createElement("div");
+        const complete = document.createElement("button");
+        complete.type = "button";
+        complete.className = "text-button";
+        complete.textContent = item.completed ? "Reopen" : "Complete";
+        complete.addEventListener("click", () => {
+          item.completed = !item.completed;
+          savePersonalPriorities(items);
+          renderPriorityManager();
+          renderPersonalPrioritySummary();
+        });
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "text-button";
+        edit.textContent = "Edit";
+        edit.addEventListener("click", () => {
+          elements.priorityId.value = item.id;
+          elements.priorityTitle.value = item.title;
+          elements.priorityDue.value = item.dueDate;
+          elements.priorityRole.value = item.role;
+          elements.priorityResource.value = item.resourceUrl;
+          elements.priorityCancel.hidden = false;
+          elements.priorityTitle.focus();
+        });
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "text-button danger-button";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", () => {
+          savePersonalPriorities(items.filter((priority) => priority.id !== item.id));
+          renderPriorityManager();
+          renderPersonalPrioritySummary();
+        });
+        actions.append(complete, edit, remove);
+        row.append(copy, actions);
+        return row;
+      }),
+    );
+  }
+
+  function resetCustomLinkForm() {
+    elements.customLinkForm?.reset();
+    if (elements.customLinkId) elements.customLinkId.value = "";
+    if (elements.customLinkPin) elements.customLinkPin.checked = true;
+    if (elements.customLinkError) elements.customLinkError.textContent = "";
+    if (elements.customLinkCancel) elements.customLinkCancel.hidden = true;
+    const roleCheckbox = elements.customLinkRoles?.querySelector(`input[value="${selectedOfficerRole}"]`);
+    if (roleCheckbox) roleCheckbox.checked = true;
+  }
+
+  function renderCustomLinkManager() {
+    if (!elements.customLinkItems) return;
+    const links = loadCustomLinks();
+    elements.customLinksExport.disabled = !links.length;
+    elements.customLinksReset.disabled = !links.length;
+    if (!links.length) {
+      elements.customLinkItems.innerHTML = '<p class="personal-items-empty">No browser-only officer links saved yet.</p>';
+      return;
+    }
+    elements.customLinkItems.replaceChildren(
+      ...links.map((link, index) => {
+        const row = document.createElement("article");
+        row.className = "personal-item custom-link-item";
+        const copy = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = link.title;
+        const detail = document.createElement("small");
+        detail.textContent = `${link.category} · ${link.roles.map((role) => officerRoles[role].label).join(", ")}${link.pinned ? " · Pinned" : ""}`;
+        copy.append(title, detail);
+        const actions = document.createElement("div");
+        const moveUp = document.createElement("button");
+        moveUp.type = "button";
+        moveUp.className = "text-button";
+        moveUp.textContent = "↑";
+        moveUp.title = "Move up";
+        moveUp.disabled = index === 0;
+        moveUp.addEventListener("click", () => {
+          [links[index - 1], links[index]] = [links[index], links[index - 1]];
+          saveCustomLinks(links);
+          renderCustomLinkManager();
+          refreshPersonalizedResources();
+        });
+        const moveDown = document.createElement("button");
+        moveDown.type = "button";
+        moveDown.className = "text-button";
+        moveDown.textContent = "↓";
+        moveDown.title = "Move down";
+        moveDown.disabled = index === links.length - 1;
+        moveDown.addEventListener("click", () => {
+          [links[index + 1], links[index]] = [links[index], links[index + 1]];
+          saveCustomLinks(links);
+          renderCustomLinkManager();
+          refreshPersonalizedResources();
+        });
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "text-button";
+        edit.textContent = "Edit";
+        edit.addEventListener("click", () => {
+          elements.customLinkId.value = link.id;
+          elements.customLinkTitle.value = link.title;
+          elements.customLinkUrl.value = link.url;
+          elements.customLinkCategory.value = link.category;
+          elements.customLinkDescription.value = link.description;
+          elements.customLinkPin.checked = link.pinned;
+          elements.customLinkRoles.querySelectorAll("input").forEach((input) => {
+            input.checked = link.roles.includes(input.value);
+          });
+          elements.customLinkCancel.hidden = false;
+          elements.customLinkTitle.focus();
+        });
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "text-button danger-button";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", () => {
+          saveCustomLinks(links.filter((item) => item.id !== link.id));
+          renderCustomLinkManager();
+          refreshPersonalizedResources();
+        });
+        actions.append(moveUp, moveDown, edit, remove);
+        row.append(copy, actions);
+        return row;
+      }),
+    );
+  }
+
+  function renderEventReadiness() {
+    if (!elements.eventReadinessCard) return;
+    const show = Boolean(officerRole().showEventReadiness);
+    elements.eventReadinessCard.hidden = !show;
+    const tracker = activeResources.find((resource) => resource.title === "Event Operations");
+    if (tracker?.url) {
+      elements.eventReadinessLink.href = tracker.url;
+      elements.eventReadinessLink.target = "_blank";
+      elements.eventReadinessLink.rel = "noopener";
+    }
+  }
+
+  function setMeetingMode(enabled) {
+    document.body.classList.toggle("meeting-mode", enabled);
+    elements.meetingModeToolbar.hidden = !enabled;
+    elements.meetingModeButton?.setAttribute("aria-pressed", String(enabled));
+    if (enabled) {
+      setMobileNavigation(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   function getUnlockedUntil() {
     return Number(sessionStorage.getItem(unlockStorageKey) || 0);
@@ -307,6 +715,13 @@
     );
     const categoryIndex = role.resourceCategories.indexOf(resource.category);
     let score = 0;
+    const assignedRoles = Array.isArray(resource.roles) ? resource.roles : [];
+    const roleMatch =
+      selectedOfficerRole === "all" ||
+      assignedRoles.includes("all") ||
+      assignedRoles.includes(selectedOfficerRole);
+    if (resource.custom && roleMatch) score += resource.pinned ? 2200 : 1400;
+    if (resource.custom && !roleMatch) score -= 2000;
     if (preferredIndex >= 0) score += 1000 - preferredIndex * 100;
     if (categoryIndex >= 0) score += 30 - categoryIndex;
     if (resource.featured) score += 8;
@@ -317,6 +732,13 @@
   function resourcesForRole(resources) {
     const role = officerRole();
     return resources
+      .filter(
+        (resource) =>
+          !resource.custom ||
+          selectedOfficerRole === "all" ||
+          resource.roles?.includes("all") ||
+          resource.roles?.includes(selectedOfficerRole),
+      )
       .map((resource, index) => ({
         resource,
         index,
@@ -479,6 +901,8 @@
       role: elements.briefingRoleCard,
       upcoming: grid.querySelector(".command-card-upcoming"),
       priorities: grid.querySelector(".command-card-priorities"),
+      personal: grid.querySelector(".command-card-personal"),
+      readiness: grid.querySelector(".command-card-readiness"),
     };
     officerRole().commandOrder.forEach((key, index) => {
       if (cards[key]) cards[key].style.order = String(index);
@@ -489,6 +913,8 @@
     if (!elements.briefingUpcomingEvents || !elements.briefingPriorities) return;
     renderRoleSnapshot();
     applyCommandCardOrder();
+    renderPersonalPrioritySummary();
+    renderEventReadiness();
     const events = activeUpcomingEvents.slice(0, 2);
     if (!events.length) {
       const empty = document.createElement("p");
@@ -2001,10 +2427,12 @@
       return;
     }
 
-    const resources = resolveYearResources(source);
+    const resources = [...resolveYearResources(source), ...loadCustomLinks()];
     renderResources(resources);
     renderQuickActions(resources);
     configureHubSearch(resources);
+    populatePriorityResources();
+    renderEventReadiness();
     const eventOperations = resources.find(
       (resource) => resource.title === "Event Operations",
     );
@@ -3367,7 +3795,13 @@
         const title = document.createElement("strong");
         title.textContent = resource.title;
         const detail = document.createElement("small");
-        detail.textContent = resource.category;
+        detail.textContent = resource.browserOnly
+          ? "Browser only"
+          : resource.access === "m365"
+            ? "Private · Microsoft 365"
+            : resource.access === "restricted"
+              ? "Private sign-in"
+              : resource.category;
         copy.append(title, detail);
         action.append(icon, copy, createLinkChainIcon());
         return action;
@@ -3439,6 +3873,18 @@
         const title = document.createElement("h3");
         title.textContent = resource.title;
 
+        const access = document.createElement("span");
+        access.className = "resource-access";
+        if (resource.browserOnly) {
+          access.append(createHubIcon("lock"), document.createTextNode("Browser only"));
+        } else if (resource.access === "m365") {
+          access.append(createHubIcon("lock"), document.createTextNode("Private · Microsoft 365"));
+        } else if (resource.access === "restricted") {
+          access.append(createHubIcon("lock"), document.createTextNode("Private sign-in"));
+        } else {
+          access.hidden = true;
+        }
+
         const description = document.createElement("p");
         description.textContent = resource.description;
 
@@ -3461,7 +3907,7 @@
         }
         action.classList.add("resource-action");
 
-        article.append(category, title, description, action);
+        article.append(category, access, title, description, action);
         return article;
       }),
     );
@@ -3499,7 +3945,11 @@
         title.textContent = resource.quickAction?.label || resource.label;
         const detail = document.createElement("small");
         detail.textContent = resource.url
-          ? resource.quickAction?.detail || resource.category
+          ? resource.browserOnly
+            ? "Browser-only shortcut"
+            : resource.access === "m365"
+              ? "Private · Microsoft 365"
+              : resource.quickAction?.detail || resource.category
           : "Setup needed";
         copy.append(title, detail);
         action.append(icon, copy);
@@ -4018,6 +4468,125 @@
       renderResources(activeResources);
     });
   }
+  elements.managePriorities?.addEventListener("click", () => {
+    populatePriorityResources();
+    renderPriorityManager();
+    resetPriorityForm();
+    openDialog(elements.prioritiesDialog, elements.priorityTitle);
+  });
+  elements.prioritiesClose?.addEventListener("click", () => closeDialog(elements.prioritiesDialog));
+  elements.priorityCancel?.addEventListener("click", resetPriorityForm);
+  elements.priorityForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!elements.priorityForm.reportValidity()) return;
+    const items = loadPersonalPriorities();
+    const id = elements.priorityId.value || newBrowserId("priority");
+    const resourceOption = elements.priorityResource.selectedOptions[0];
+    const next = {
+      id,
+      title: elements.priorityTitle.value.trim(),
+      dueDate: elements.priorityDue.value,
+      role: elements.priorityRole.value,
+      resourceUrl: elements.priorityResource.value,
+      resourceTitle: elements.priorityResource.value ? resourceOption?.textContent || "" : "",
+      completed: items.find((item) => item.id === id)?.completed || false,
+      createdAt: items.find((item) => item.id === id)?.createdAt || new Date().toISOString(),
+    };
+    const existingIndex = items.findIndex((item) => item.id === id);
+    if (existingIndex >= 0) items[existingIndex] = next;
+    else items.push(next);
+    savePersonalPriorities(items);
+    resetPriorityForm();
+    renderPriorityManager();
+    renderPersonalPrioritySummary();
+  });
+
+  elements.manageCustomLinks?.addEventListener("click", () => {
+    renderCustomLinkManager();
+    resetCustomLinkForm();
+    openDialog(elements.customLinksDialog, elements.customLinkTitle);
+  });
+  elements.customLinksClose?.addEventListener("click", () => closeDialog(elements.customLinksDialog));
+  elements.customLinkCancel?.addEventListener("click", resetCustomLinkForm);
+  elements.customLinkForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!elements.customLinkForm.reportValidity()) return;
+    const links = loadCustomLinks();
+    const id = elements.customLinkId.value || newBrowserId("link");
+    const roles = [...elements.customLinkRoles.querySelectorAll("input:checked")].map((input) => input.value);
+    if (!roles.length) {
+      elements.customLinkError.textContent = "Choose at least one role.";
+      return;
+    }
+    const normalized = normalizeCustomLink({
+      id,
+      title: elements.customLinkTitle.value,
+      url: elements.customLinkUrl.value,
+      description: elements.customLinkDescription.value,
+      category: elements.customLinkCategory.value,
+      roles,
+      pinned: elements.customLinkPin.checked,
+      order: links.findIndex((item) => item.id === id),
+    });
+    if (!normalized) {
+      elements.customLinkError.textContent = "Enter a valid http or https web address.";
+      return;
+    }
+    const duplicate = links.find((item) => item.url === normalized.url && item.id !== id);
+    if (duplicate) {
+      elements.customLinkError.textContent = `That address is already saved as “${duplicate.title}.”`;
+      return;
+    }
+    const existingIndex = links.findIndex((item) => item.id === id);
+    if (existingIndex >= 0) links[existingIndex] = normalized;
+    else links.push(normalized);
+    saveCustomLinks(links);
+    resetCustomLinkForm();
+    renderCustomLinkManager();
+    refreshPersonalizedResources();
+  });
+  elements.customLinksExport?.addEventListener("click", () => {
+    const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), links: loadCustomLinks() }, null, 2);
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const download = document.createElement("a");
+    download.href = url;
+    download.download = "asme-officer-links.json";
+    download.click();
+    URL.revokeObjectURL(url);
+  });
+  elements.customLinksImport?.addEventListener("change", async () => {
+    const file = elements.customLinksImport.files?.[0];
+    if (!file) return;
+    try {
+      const payload = JSON.parse(await file.text());
+      const rawLinks = Array.isArray(payload) ? payload : payload.links;
+      if (!Array.isArray(rawLinks)) throw new Error("No links list found.");
+      const imported = rawLinks.map(normalizeCustomLink).filter(Boolean);
+      if (!imported.length && rawLinks.length) throw new Error("No valid http or https links found.");
+      saveCustomLinks(imported);
+      resetCustomLinkForm();
+      renderCustomLinkManager();
+      refreshPersonalizedResources();
+    } catch (error) {
+      elements.customLinkError.textContent = `Could not import this file: ${error.message}`;
+    } finally {
+      elements.customLinksImport.value = "";
+    }
+  });
+  elements.customLinksReset?.addEventListener("click", () => {
+    if (!window.confirm("Remove every browser-only officer link from this device?")) return;
+    localStorage.removeItem(customLinksStorageKey);
+    resetCustomLinkForm();
+    renderCustomLinkManager();
+    refreshPersonalizedResources();
+  });
+
+  elements.meetingModeButton?.addEventListener("click", () => setMeetingMode(true));
+  elements.meetingExit?.addEventListener("click", () => setMeetingMode(false));
+  elements.meetingPrint?.addEventListener("click", () => {
+    prepareHubPrint();
+    window.print();
+  });
 
   document.addEventListener("click", (event) => {
     if (
@@ -4047,6 +4616,7 @@
   async function initialize() {
     showRandomMeetingQuote();
     populateOfficerRoles();
+    populatePersonalRoleControls();
     applyOfficerRole(localStorage.getItem(roleStorageKey) || "all", {
       persist: false,
     });

@@ -27,6 +27,8 @@ bundler or framework.
 - A compact system-health view for settings, attendance, event metrics, and calendar connections
 - A compact quick-action strip for check-in, event planning, officer tasks, and the Points Master
 - A central resource launcher
+- Role-aware browser-only links and personal priorities
+- A focused on-screen meeting view for officer reviews
 - Light and dark color themes
 - Installable app support for desktop, Android, iPhone, and iPad
 - A documented path from Google Forms/Sheets to a safe aggregate JSON feed
@@ -111,6 +113,25 @@ after an officer follows a link from the Hub. The Officer Password Document,
 in particular, still requires an authorized Microsoft account; the Hub never
 reads or stores its contents.
 
+### Browser-only personalization
+
+Officers can choose **Manage my links** in the resource launcher to add a new
+tool, assign it to one or more officer roles, pin it in that role's shortcuts,
+reorder it, or export/import a JSON handoff file. These links use `localStorage`
+and never enter the public configuration or shared settings sheet. Clearing the
+site's browser data removes them unless they were exported first.
+
+The **My priorities** command-center card follows the same browser-only model.
+It is intended for short reminders and optional links back to an officer tool,
+not as a copy of the private SharePoint task tracker. Do not enter names,
+credentials, financial details, member records, or confidential tracker text.
+
+Private SharePoint resources are launcher links only. The static Hub does not
+request, cache, index, or display SharePoint list records. Showing task or event
+tracker data inside the dashboard in the future would require Microsoft 365
+authentication and authorization enforced by a protected backend; it should
+not be implemented with a client-side token or a public GitHub Pages script.
+
 ## Year Settings
 
 Use the gear button beside the academic-year selector, or choose **Year
@@ -185,6 +206,11 @@ event-level turnout, participation depth, event-type attendance, upcoming
 events, aggregate review reminders, and connection health.
 
 ## Officer meeting view
+
+Choose **Meeting view** in the officer command center for a focused on-screen
+layout that removes navigation, launchers, and detailed drill-down panels. Its
+print action produces a short briefing with the role summary, headline metrics,
+and command center.
 
 Choose **Year to date**, **Fall**, **Spring**, or a month from **Review
 period**. The selection updates the KPI cards, attendance chart, event-type

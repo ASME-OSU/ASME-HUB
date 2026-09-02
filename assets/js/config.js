@@ -78,6 +78,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open SharePoint",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard",
       category: "Operations",
+      access: "m365",
       featured: true,
       icon: "settings",
     },
@@ -87,6 +88,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open event tracker",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Lists/Event%20Operations/AllItems.aspx",
       category: "Operations",
+      access: "m365",
       featured: true,
       icon: "calendar",
       quickAction: {
@@ -101,6 +103,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open task tracker",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Lists/Task%20Tracker/AllItems.aspx",
       category: "Operations",
+      access: "m365",
       icon: "check-square",
       quickAction: {
         label: "Review tasks",
@@ -114,6 +117,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open documents",
       url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Shared%20Documents/Forms/AllItems.aspx",
       category: "Operations",
+      access: "m365",
       icon: "settings",
     },
     {
@@ -137,6 +141,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open activity report",
       url: "https://airtable.com/appQ0BwEPfI38mQWE/shrmyDrqJbL3Azs3h",
       category: "Operations",
+      access: "restricted",
       icon: "chart",
       quickAction: {
         label: "Activity report",
@@ -207,6 +212,7 @@ window.ASME_HUB_CONFIG = {
       label: "Open password document",
       url: "https://buckeyemailosu.sharepoint.com/:x:/r/sites/ASMEExecutiveBoard/Shared%20Documents/General/ASME%20Master%20Password%20Document.xlsx?d=wb03e7eaf0d0c4c4ba4f1b9b189c69060&csf=1&web=1&e=gE95In",
       category: "Officer Access",
+      access: "m365",
       icon: "lock",
       quickAction: {
         label: "Officer passwords",
