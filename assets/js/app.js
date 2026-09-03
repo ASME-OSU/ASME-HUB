@@ -2059,6 +2059,15 @@
         );
   }
 
+  function icalDateKey(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-");
+  }
+
   function parseIcalEvents(text) {
     const unfolded = String(text || "").replace(/\r?\n[ \t]/g, "");
     const blocks = unfolded.match(/BEGIN:VEVENT[\s\S]*?END:VEVENT/g) || [];
@@ -2066,45 +2075,104 @@
     const horizon = new Date(now.getTime() + 180 * 86400000);
     const results = [];
 
-    blocks.forEach((block) => {
-      const property = (name) => {
-        const line = block
-          .split(/\r?\n/)
-          .find((entry) => entry.toUpperCase().startsWith(`${name}`));
-        return line ? line.slice(line.indexOf(":") + 1) : "";
-      };
-      const rawStart = property("DTSTART");
-      const start = parseIcalDate(rawStart);
-      if (!start) return;
-      const isAllDay = /^\d{8}$/.test(rawStart);
-      const base = {
-        title: unescapeIcalText(property("SUMMARY")) || "ASME event",
-        location: unescapeIcalText(property("LOCATION")),
-        type: "Chapter event",
-      };
-      const recurrence = property("RRULE");
-      const countMatch = recurrence.match(/(?:^|;)COUNT=(\d+)/);
-      const untilMatch = recurrence.match(/(?:^|;)UNTIL=([^;]+)/);
+    const records = blocks
+      .map((block, index) => {
+        const lines = block.split(/\r?\n/);
+        const properties = (name) =>
+          lines
+            .filter((entry) => {
+              const field = entry.slice(0, entry.indexOf(":")).split(";")[0];
+              return field.toUpperCase() === name;
+            })
+            .map((entry) => entry.slice(entry.indexOf(":") + 1));
+        const property = (name) => properties(name)[0] || "";
+        const rawRecurrenceId = property("RECURRENCE-ID");
+        const rawStart = property("DTSTART") || rawRecurrenceId;
+        const start = parseIcalDate(rawStart);
+        if (!start) return null;
+        return {
+          uid: property("UID") || `event-${index}`,
+          start,
+          isAllDay: /^\d{8}$/.test(rawStart),
+          recurrence: property("RRULE"),
+          recurrenceId: parseIcalDate(rawRecurrenceId),
+          exdates: properties("EXDATE")
+            .flatMap((value) => value.split(","))
+            .map(parseIcalDate)
+            .filter(Boolean),
+          status: property("STATUS").trim().toUpperCase(),
+          base: {
+            title: unescapeIcalText(property("SUMMARY")) || "ASME event",
+            location: unescapeIcalText(property("LOCATION")),
+            type: "Chapter event",
+          },
+        };
+      })
+      .filter(Boolean);
+
+    const excludedOccurrences = new Map();
+    const exclude = (uid, date) => {
+      if (!date) return;
+      if (!excludedOccurrences.has(uid)) excludedOccurrences.set(uid, new Set());
+      const keys = excludedOccurrences.get(uid);
+      keys.add(`time:${date.getTime()}`);
+      keys.add(`day:${icalDateKey(date)}`);
+    };
+
+    records.forEach((record) => {
+      record.exdates.forEach((date) => exclude(record.uid, date));
+      if (record.recurrenceId) {
+        exclude(record.uid, record.recurrenceId);
+        // Google occasionally publishes an invalid RECURRENCE-ID when an
+        // all-day placeholder is converted to a timed event. The override's
+        // DTSTART is still authoritative for the day that must be replaced.
+        exclude(record.uid, record.start);
+      }
+    });
+
+    const isExcluded = (uid, date) => {
+      const keys = excludedOccurrences.get(uid);
+      return Boolean(
+        keys?.has(`time:${date.getTime()}`) ||
+          keys?.has(`day:${icalDateKey(date)}`),
+      );
+    };
+    const pushEvent = (record, date) => {
+      if (record.status === "CANCELLED") return;
+      if (date > horizon) return;
+      if (date.getTime() < now.getTime() - 2 * 60 * 60 * 1000) return;
+      results.push({
+        ...record.base,
+        uid: record.uid,
+        date: date.toISOString(),
+        time: record.isAllDay
+          ? "All day"
+          : new Intl.DateTimeFormat("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+            }).format(date),
+        status: record.base.location ? "Confirmed" : "Needs location",
+      });
+    };
+
+    records.forEach((record) => {
+      if (record.recurrenceId) {
+        pushEvent(record, record.start);
+        return;
+      }
+      const countMatch = record.recurrence.match(/(?:^|;)COUNT=(\d+)/);
+      const untilMatch = record.recurrence.match(/(?:^|;)UNTIL=([^;]+)/);
       const until = untilMatch ? parseIcalDate(untilMatch[1]) : horizon;
       const maxOccurrences = Math.min(Number(countMatch?.[1]) || 30, 60);
-      const occurrences =
-        recurrence.includes("FREQ=WEEKLY") ? maxOccurrences : 1;
+      const occurrences = record.recurrence.includes("FREQ=WEEKLY")
+        ? maxOccurrences
+        : 1;
 
       for (let index = 0; index < occurrences; index += 1) {
-        const date = new Date(start.getTime() + index * 7 * 86400000);
+        const date = new Date(record.start.getTime() + index * 7 * 86400000);
         if (date > horizon || (until && date > until)) break;
-        if (date.getTime() < now.getTime() - 2 * 60 * 60 * 1000) continue;
-        results.push({
-          ...base,
-          date: date.toISOString(),
-          time: isAllDay
-            ? "All day"
-            : new Intl.DateTimeFormat("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-              }).format(date),
-          status: base.location ? "Confirmed" : "Needs location",
-        });
+        if (isExcluded(record.uid, date)) continue;
+        pushEvent(record, date);
       }
     });
 
@@ -2118,6 +2186,7 @@
               candidate.title === event.title && candidate.date === event.date,
           ),
       )
+      .map(({ uid: _uid, ...event }) => event)
       .slice(0, 4);
   }
 
@@ -2227,13 +2296,27 @@
     );
     const operations = [];
     if (missingLocation.length) {
+      const issueLabels = missingLocation.map((event) => {
+        const date = new Date(event.date);
+        const dateLabel = Number.isNaN(date.getTime())
+          ? "Date TBD"
+          : new Intl.DateTimeFormat("en-US", {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            }).format(date);
+        return `${dateLabel} — ${event.title || "Untitled event"}`;
+      });
+      const firstEvent = missingLocation[0];
       operations.push({
         severity: "warning",
-        title: `${missingLocation.length} upcoming event${
-          missingLocation.length === 1 ? "" : "s"
-        } need${missingLocation.length === 1 ? "s" : ""} a location`,
-        detail:
-          "Add locations in Google Calendar so members and officers see complete event details.",
+        title:
+          missingLocation.length === 1
+            ? `${firstEvent.title || "Upcoming event"} needs a location`
+            : `${missingLocation.length} upcoming events need locations`,
+        detail: `${issueLabels.join("; ")}. Add ${
+          missingLocation.length === 1 ? "its location" : "their locations"
+        } in Google Calendar.`,
         actionLabel: "Open calendar",
         actionUrl: "#calendar",
       });
