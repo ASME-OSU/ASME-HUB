@@ -11,8 +11,11 @@
   const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
   const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
-  const calendarSnapshotUrl = "./data/calendar.json";
-  const calendarLiveMaxAgeMs = 2 * 60 * 60 * 1000;
+  const calendarSnapshotUrl =
+    window.location.protocol === "file:" && config.calendarSnapshotUrl
+      ? config.calendarSnapshotUrl
+      : "./data/calendar.json";
+  const calendarLiveMaxAgeMs = 6 * 60 * 60 * 1000;
   const calendarFallbackMaxAgeMs = 24 * 60 * 60 * 1000;
   const defaultDocumentTitle = document.title;
   const numberFormatter = new Intl.NumberFormat("en-US");
@@ -2205,6 +2208,14 @@
     }
   }
 
+  function calendarSnapshotRequestUrl() {
+    const url = new URL(calendarSnapshotUrl, window.location.href);
+    // The snapshot changes without a new commit during scheduled Pages runs.
+    // A unique query prevents browser and CDN edges from retaining an older run.
+    url.searchParams.set("refresh", String(Date.now()));
+    return url.href;
+  }
+
   async function loadCalendarEvents(source, year) {
     const feed = String(source.calendarIcalUrl || "").trim();
     if (!feed) {
@@ -2230,7 +2241,7 @@
 
     const cacheKey = `${calendarCacheKeyPrefix}${feed}`;
     try {
-      const text = await fetchTextWithTimeout(calendarSnapshotUrl);
+      const text = await fetchTextWithTimeout(calendarSnapshotRequestUrl());
       const snapshot = JSON.parse(text);
       if (snapshot?.schemaVersion !== 1) {
         throw new Error("The hourly calendar snapshot version is not supported.");

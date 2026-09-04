@@ -1,6 +1,9 @@
 window.ASME_HUB_CONFIG = {
   appName: "ASME Officer Hub",
   currentAcademicYear: "2026-2027",
+  // Used by file:// previews, which cannot read the generated local placeholder.
+  calendarSnapshotUrl:
+    "https://asme-osu.github.io/ASME-HUB/data/calendar.json",
   access: {
     // SHA-256 digest of the current access phrase. See README.md to rotate it.
     passwordSha256:
