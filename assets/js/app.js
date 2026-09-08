@@ -671,6 +671,7 @@
     document.body.classList.toggle("meeting-mode", enabled);
     elements.meetingModeToolbar.hidden = !enabled;
     elements.meetingModeButton?.setAttribute("aria-pressed", String(enabled));
+    document.getElementById("topbar-meeting-button")?.setAttribute("aria-pressed", String(enabled));
     if (enabled) {
       setMobileNavigation(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -709,6 +710,8 @@
       if (!select) return;
       select.replaceChildren(...options.map((option) => option.cloneNode(true)));
     });
+    const councilOption = elements.officerRole?.querySelector('option[value="ecouncil"]');
+    if (councilOption) councilOption.textContent = "E-Council rep.";
   }
 
   function officerRole() {
@@ -1090,7 +1093,10 @@
     selectedOfficerRole = officerRoles[roleKey] ? roleKey : "all";
     document.body.dataset.officerRole = selectedOfficerRole;
     [elements.officerRole, elements.sidebarOfficerRole].forEach((select) => {
-      if (select) select.value = selectedOfficerRole;
+      if (select) {
+        select.value = selectedOfficerRole;
+        select.title = officerRole().label;
+      }
     });
     if (persist) localStorage.setItem(roleStorageKey, selectedOfficerRole);
     if (activeResources.length) {
@@ -4856,6 +4862,7 @@
   });
 
   elements.meetingModeButton?.addEventListener("click", () => setMeetingMode(true));
+  document.getElementById("topbar-meeting-button")?.addEventListener("click", () => setMeetingMode(true));
   elements.meetingExit?.addEventListener("click", () => setMeetingMode(false));
   elements.meetingPrint?.addEventListener("click", () => {
     prepareHubPrint();
