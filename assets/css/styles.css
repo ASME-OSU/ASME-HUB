@@ -2745,6 +2745,10 @@ main {
   margin-bottom: 18px;
 }
 
+.health-panel > .panel-heading {
+  margin-bottom: 18px;
+}
+
 .health-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2754,8 +2758,11 @@ main {
 
 .health-attention-grid {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  margin-top: 18px;
-  margin-bottom: 18px;
+  margin: 0;
+}
+
+.health-attention-grid:empty {
+  display: none;
 }
 
 .health-item {
@@ -2807,6 +2814,7 @@ main {
 }
 
 .healthy-systems {
+  margin-top: 18px;
   overflow: hidden;
   border: 1px solid rgba(42, 156, 112, 0.22);
   border-radius: var(--radius-lg);
@@ -4692,7 +4700,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   }
 
   .health-attention-grid {
-    margin-top: 14px;
+    margin-top: 0;
   }
 
   .healthy-systems > .health-grid {
