@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "check": "node scripts/check.mjs",
+    "test": "node --test",
     "lint:css": "stylelint \"assets/css/**/*.css\""
   },
   "devDependencies": {
@@ -14,5 +15,8 @@
       "declaration-block-no-duplicate-properties": true,
       "no-duplicate-selectors": true
     }
+  },
+  "dependencies": {
+    "ical.js": "2.2.1"
   }
 }
