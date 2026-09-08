@@ -241,7 +241,6 @@
     sidebarCollapse: document.getElementById("sidebar-collapse"),
     sidebarThemeToggle: document.getElementById("sidebar-theme-toggle"),
     gateThemeToggle: document.getElementById("gate-theme-toggle"),
-    settingsButton: document.getElementById("settings-button"),
     sidebarSettings: document.getElementById("sidebar-settings"),
     settingsDialog: document.getElementById("year-settings-dialog"),
     settingsForm: document.getElementById("year-settings-form"),
@@ -2282,7 +2281,7 @@
           ),
       )
       .map(({ uid: _uid, ...event }) => event)
-      .slice(0, 4);
+      .slice(0, 5);
   }
 
   async function fetchTextWithTimeout(url, timeoutMs = 6000, signal) {
@@ -2729,7 +2728,7 @@
         showDataError(message);
         activeUpcomingEvents = calendar.events;
         activeBudget = budget;
-        renderUpcomingEvents(calendar.events.slice(0, 4));
+        renderUpcomingEvents(calendar.events.slice(0, 5));
         renderBudget(budget, source);
         renderHealth([{ label: "Dashboard data", status: "ACTION", detail: message }, calendar.health, {
           label: "Budget feed", status: budget.available ? "LIVE" : "ACTION",
@@ -2840,7 +2839,7 @@
     );
     renderSelectedPeriod();
     renderBudget(data.budget || {}, source);
-    renderUpcomingEvents((data.upcomingEvents || []).slice(0, 4));
+    renderUpcomingEvents((data.upcomingEvents || []).slice(0, 5));
     renderHealth(data.health || []);
     renderOperations(data.operations || []);
     renderRoleExperience();
@@ -4504,7 +4503,7 @@
     return createHubIcon("link", "link-chain-icon");
   }
 
-  [elements.settingsButton, elements.sidebarSettings].forEach((button) => {
+  [elements.sidebarSettings].filter(Boolean).forEach((button) => {
     button.addEventListener("click", () => openSettings());
   });
 
