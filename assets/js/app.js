@@ -18,6 +18,7 @@
       : "./data/calendar.json";
   const calendarLiveMaxAgeMs = 6 * 60 * 60 * 1000;
   const calendarFallbackMaxAgeMs = 24 * 60 * 60 * 1000;
+  const calendarLocationReviewLimit = 6;
   const defaultDocumentTitle = document.title;
   const numberFormatter = new Intl.NumberFormat("en-US");
   const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -2413,7 +2414,7 @@
       }
 
       // Preserve the complete normalized window in browser storage; the UI
-      // intentionally presents only the next four cards.
+      // intentionally presents only the next five cards.
       const events = normalizedCalendarEvents(entry.occurrences);
       try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: generatedAt.getTime(), events })); } catch (error) { console.warn("Calendar cache could not be saved.", error); }
       return calendarResult(
@@ -2452,7 +2453,7 @@
   function calendarResult(events, status, detail) {
     const missingLocation = events.filter(
       (event) => !event.location || event.status === "Needs location",
-    );
+    ).slice(0, calendarLocationReviewLimit);
     const operations = [];
     if (missingLocation.length) {
       const issueLabels = missingLocation.map((event) => {
@@ -2472,7 +2473,7 @@
         title:
           missingLocation.length === 1
             ? `${firstEvent.title || "Upcoming event"} needs a location`
-            : `${missingLocation.length} upcoming events need locations`,
+            : `Next ${missingLocation.length} events need locations`,
         detail: `${issueLabels.join("; ")}. Add ${
           missingLocation.length === 1 ? "its location" : "their locations"
         } in Google Calendar.`,
