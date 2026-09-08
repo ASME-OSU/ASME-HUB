@@ -5324,6 +5324,7 @@ body[data-theme="dark"] .hub-search-result-copy strong {
   right: 0;
   left: 0;
   min-height: 66px;
+  box-sizing: border-box;
   padding: 10px max(20px, env(safe-area-inset-right)) 10px max(20px, env(safe-area-inset-left));
   justify-content: space-between;
   color: white;
@@ -5373,6 +5374,21 @@ body.meeting-mode main {
   padding-top: 90px;
 }
 
+body.meeting-mode .dashboard-band-heading {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+body.meeting-mode .dashboard-band-heading > p {
+  max-width: none;
+  grid-column: 2;
+  justify-self: start;
+}
+
+body.meeting-mode .panel-heading {
+  flex-wrap: wrap;
+}
+
 body.meeting-mode [data-mobile-sections] {
   display: block !important;
 }
@@ -5385,6 +5401,22 @@ body.meeting-mode .resources-section {
 body[data-theme="dark"] .command-center-actions > span {
   color: #ffadc0;
   background: rgba(238, 106, 132, 0.14);
+}
+
+@media (max-width: 900px) {
+  .meeting-mode-toolbar {
+    position: sticky;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .meeting-mode-toolbar > div:last-child {
+    flex-wrap: wrap;
+  }
+
+  body.meeting-mode main {
+    padding-top: 20px;
+  }
 }
 
 @media (max-width: 720px) {
@@ -5418,13 +5450,6 @@ body[data-theme="dark"] .command-center-actions > span {
     flex-wrap: wrap;
   }
 
-  .meeting-mode-toolbar {
-    position: sticky;
-  }
-
-  body.meeting-mode main {
-    padding-top: 20px;
-  }
 }
 
 @media print {

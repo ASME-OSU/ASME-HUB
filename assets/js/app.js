@@ -4031,7 +4031,9 @@
     healthySystems.open = false;
     setText(
       "healthy-systems-count",
-      `${healthy.length} system${healthy.length === 1 ? "" : "s"} healthy`,
+      attention.length === 0
+        ? "All systems healthy"
+        : `${healthy.length} system${healthy.length === 1 ? "" : "s"} healthy`,
     );
   }
 
