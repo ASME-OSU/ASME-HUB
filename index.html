@@ -197,13 +197,15 @@
           <span>My role</span>
           <select id="officer-role" aria-label="Choose officer role"></select>
         </label>
-        <button class="topbar-meeting-button" id="topbar-meeting-button" type="button" aria-pressed="false"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg> Meeting view</button>
         <div class="topbar-actions">
+          <label class="year-select-label" for="academic-year">Academic year</label>
+          <select id="academic-year" class="year-select"></select>
           <button class="icon-button search-button" id="search-button" type="button" aria-label="Search the Officer Hub" title="Search (Command or Control + K)">
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
           </button>
-          <label class="year-select-label" for="academic-year">Academic year</label>
-          <select id="academic-year" class="year-select"></select>
+          <button class="icon-button topbar-meeting-button" id="topbar-meeting-button" type="button" aria-label="Open meeting view" title="Open meeting view" aria-pressed="false">
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>
+          </button>
           <button class="icon-button print-hub-button" id="print-hub-button" type="button" aria-label="Print or save the complete Officer Hub as a PDF" title="Print or save the complete Officer Hub as a PDF">
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-printer"></use></svg>
           </button>
@@ -970,7 +972,7 @@
   </dialog>
 
   <script src="assets/js/config.js?v=20260904a"></script>
-  <script src="assets/js/app.js?v=20260908b"></script>
+  <script src="assets/js/app.js?v=20260908c"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

@@ -670,7 +670,15 @@
     document.body.classList.toggle("meeting-mode", enabled);
     elements.meetingModeToolbar.hidden = !enabled;
     elements.meetingModeButton?.setAttribute("aria-pressed", String(enabled));
-    document.getElementById("topbar-meeting-button")?.setAttribute("aria-pressed", String(enabled));
+    const topbarMeetingButton = document.getElementById("topbar-meeting-button");
+    if (topbarMeetingButton) {
+      topbarMeetingButton.setAttribute("aria-pressed", String(enabled));
+      topbarMeetingButton.setAttribute(
+        "aria-label",
+        enabled ? "Meeting view active" : "Open meeting view",
+      );
+      topbarMeetingButton.title = enabled ? "Meeting view active" : "Open meeting view";
+    }
     if (enabled) {
       setMobileNavigation(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
