@@ -10,7 +10,8 @@
   const personalPrioritiesStorageKey = "asmeHubPersonalPrioritiesV1";
   const meetingQuoteStorageKey = "asmeHubLastMeetingQuote";
   const yearSettingsStorageKey = "asmeHubYearSettingsPreviewV2";
-  const calendarCacheKeyPrefix = "asmeHubCalendarCacheV1:";
+  const calendarCacheKeyPrefix = "asmeHubCalendarCacheV2:";
+  const calendarDisplayTimeZone = "America/New_York";
   const calendarSnapshotUrl =
     window.location.protocol === "file:" && config.calendarSnapshotUrl
       ? config.calendarSnapshotUrl
@@ -187,6 +188,9 @@
   let activeBudget = {};
   let activeHealth = [];
   let selectedOfficerRole = "all";
+  let dashboardLoadGeneration = 0;
+  let dashboardLoadController = null;
+  let settingsProvenance = "deployed defaults";
 
   const elements = {
     gate: document.getElementById("access-gate"),
@@ -667,6 +671,7 @@
     document.body.classList.toggle("meeting-mode", enabled);
     elements.meetingModeToolbar.hidden = !enabled;
     elements.meetingModeButton?.setAttribute("aria-pressed", String(enabled));
+    document.getElementById("topbar-meeting-button")?.setAttribute("aria-pressed", String(enabled));
     if (enabled) {
       setMobileNavigation(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -705,6 +710,8 @@
       if (!select) return;
       select.replaceChildren(...options.map((option) => option.cloneNode(true)));
     });
+    const councilOption = elements.officerRole?.querySelector('option[value="ecouncil"]');
+    if (councilOption) councilOption.textContent = "E-Council rep.";
   }
 
   function officerRole() {
@@ -1086,7 +1093,10 @@
     selectedOfficerRole = officerRoles[roleKey] ? roleKey : "all";
     document.body.dataset.officerRole = selectedOfficerRole;
     [elements.officerRole, elements.sidebarOfficerRole].forEach((select) => {
-      if (select) select.value = selectedOfficerRole;
+      if (select) {
+        select.value = selectedOfficerRole;
+        select.title = officerRole().label;
+      }
     });
     if (persist) localStorage.setItem(roleStorageKey, selectedOfficerRole);
     if (activeResources.length) {
@@ -1137,7 +1147,11 @@
         if (!source || typeof source !== "object" || Array.isArray(source)) {
           return;
         }
-        defaults[year] = { ...(defaults[year] || {}), ...source };
+        if (source.isActive === false) {
+          delete defaults[year];
+          return;
+        }
+        defaults[year] = { ...(defaults[year] || {}), ...source, settingsProvenance: "tab preview" };
       });
     } catch (error) {
       console.warn("Academic-year settings could not be read.", error);
@@ -1400,11 +1414,65 @@
   }
 
   function showGate() {
+    dashboardLoadController?.abort();
+    dashboardLoadController = null;
+    dashboardLoadGeneration += 1;
     sessionStorage.removeItem(unlockStorageKey);
     elements.appShell.hidden = true;
     elements.gate.hidden = false;
     setMobileNavigation(false);
     window.setTimeout(() => elements.password.focus(), 50);
+  }
+
+  function clearDashboardState(label = "Loading dashboard…") {
+    activeDashboardData = null;
+    activeUpcomingEvents = [];
+    activeOperations = [];
+    activeBudget = {};
+    activeHealth = [];
+    ["kpi-unique-attendees", "kpi-total-checkins", "kpi-events-held", "kpi-average-turnout", "kpi-repeat-rate", "hero-kpi-unique", "hero-kpi-checkins", "hero-kpi-events"].forEach((id) => setText(id, "—"));
+    ["kpi-unique-attendees-context", "kpi-total-checkins-context", "kpi-events-held-context", "kpi-average-turnout-context", "kpi-repeat-rate-context"].forEach((id) => setText(id, label));
+    setText("last-updated", label);
+    setText("period-summary", "Data unavailable");
+    setText("period-detail", label);
+    setText("goal-percent", "—");
+    setText("goal-current", "—");
+    setText("goal-target", "—");
+    setText("goal-note", label);
+    setText("goal-status", "Unavailable");
+    setText("donut-total", "—");
+    setText("trend-summary", label);
+    setText("funnel-period", "—");
+    ["funnel-participated", "funnel-returned", "funnel-engaged"].forEach((id) => setText(id, "—"));
+    ["funnel-participated-bar", "funnel-returned-bar", "funnel-engaged-bar"].forEach((id) => {
+      const bar = document.getElementById(id); if (bar) bar.style.width = "0%";
+    });
+    setText("performance-summary", label);
+    setText("health-insight-status", "Data unavailable");
+    setText("health-insight-copy", label);
+    setText("overview-attention-count", "—");
+    document.getElementById("attendance-chart")?.replaceChildren();
+    document.getElementById("attendance-chart-legend")?.replaceChildren();
+    document.getElementById("event-type-list")?.replaceChildren();
+    document.getElementById("upcoming-events")?.replaceChildren();
+    document.getElementById("event-performance-body")?.replaceChildren();
+    document.getElementById("briefing-role-metrics")?.replaceChildren();
+    document.getElementById("briefing-upcoming-events")?.replaceChildren();
+    document.getElementById("briefing-priorities")?.replaceChildren();
+    const donut = document.getElementById("event-type-donut");
+    if (donut) donut.style.background = "var(--border)";
+    const goalRing = document.getElementById("goal-ring");
+    if (goalRing) goalRing.style.setProperty("--goal-progress", "0%");
+    renderBudget({ available: false, error: label });
+    elements.periodFilter.disabled = true;
+    setReportControlsDisabled(true);
+    document.getElementById("main-content")?.setAttribute("aria-busy", "true");
+  }
+
+  function setReportControlsDisabled(disabled) {
+    [elements.printHubButton, elements.meetingPrint].forEach((button) => {
+      if (button) button.disabled = disabled;
+    });
   }
 
   async function unlockDashboard() {
@@ -1429,7 +1497,7 @@
   function populateYears(preferredYear) {
     const previousYear =
       preferredYear || elements.academicYear.value || config.currentAcademicYear;
-    const years = Object.entries(yearSources).sort(([a], [b]) =>
+    const years = Object.entries(yearSources).filter(([, source]) => source?.isActive !== false).sort(([a], [b]) =>
       b.localeCompare(a),
     );
 
@@ -1447,6 +1515,13 @@
       elements.academicYear.value = yearSources[config.currentAcademicYear]
         ? config.currentAcademicYear
         : years[0][0];
+    }
+
+    if (!years.length) {
+      elements.academicYear.replaceChildren();
+      elements.sidebarYear.textContent = "No active year configured";
+      setText("resource-year-description", "Set up an active academic year to load chapter data.");
+      return;
     }
 
     updateYearLabel();
@@ -1473,7 +1548,7 @@
     return /^[\w-]{20,}$/.test(clean) ? clean : "";
   }
 
-  function queryPublicSheet(spreadsheetId, sheet, query) {
+  function queryPublicSheet(spreadsheetId, sheet, query, { signal } = {}) {
     return new Promise((resolve, reject) => {
       const callback = `__asmeHubSheet_${Date.now()}_${Math.random()
         .toString(36)
@@ -1485,9 +1560,19 @@
       }, 15000);
       const cleanup = () => {
         window.clearTimeout(timer);
+        signal?.removeEventListener("abort", abort);
         delete window[callback];
         script.remove();
       };
+      const abort = () => {
+        cleanup();
+        reject(new DOMException("The request was cancelled.", "AbortError"));
+      };
+      if (signal?.aborted) {
+        abort();
+        return;
+      }
+      signal?.addEventListener("abort", abort, { once: true });
 
       window[callback] = (data) => {
         cleanup();
@@ -1522,7 +1607,7 @@
     return cell.v !== null && cell.v !== undefined ? cell.v : "";
   }
 
-  async function loadBudgetSummary(source) {
+  async function loadBudgetSummary(source, { signal } = {}) {
     const spreadsheetId = spreadsheetIdFrom(source.budgetExportSheetUrl);
     if (!spreadsheetId) {
       return {
@@ -1535,7 +1620,7 @@
       const table = await queryPublicSheet(
         spreadsheetId,
         source.budgetExportSheetTab || "Budget_Public",
-        "select A,B,C,D,E,F where A is not null",
+        "select A,B,C,D,E,F where A is not null", { signal },
       );
       const metrics = {};
       (table.rows || []).forEach((row) => {
@@ -1657,13 +1742,14 @@
         "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T where A is not null",
       );
       const remoteSources = {};
+      const inactiveYears = new Set();
       let currentYear = "";
 
       (table.rows || []).forEach((row) => {
         const yearKey = normalizeYearKey(sheetCell(row, 0));
         if (!/^\d{4}-\d{4}$/.test(yearKey)) return;
         const isActive = sheetBoolean(sheetCell(row, 10), true);
-        if (!isActive) return;
+        if (!isActive) { inactiveYears.add(yearKey); return; }
         const isCurrent = sheetBoolean(sheetCell(row, 11), false);
         if (isCurrent) currentYear = yearKey;
         remoteSources[yearKey] = {
@@ -1693,11 +1779,15 @@
             String(sheetCell(row, 17) || "").trim() || "Budget_Public",
           bankingUrl: String(sheetCell(row, 18) || "").trim(),
           fundraisingUrl: String(sheetCell(row, 19) || "").trim(),
+          settingsProvenance: "shared settings",
         };
       });
 
-      if (Object.keys(remoteSources).length) {
-        sharedYearSources = { ...sharedYearSources, ...remoteSources };
+      if (Object.keys(remoteSources).length || inactiveYears.size) {
+        const nextSources = { ...sharedYearSources, ...remoteSources };
+        inactiveYears.forEach((year) => delete nextSources[year]);
+        sharedYearSources = nextSources;
+        settingsProvenance = "shared settings";
         if (currentYear) config.currentAcademicYear = currentYear;
         yearSources = loadYearSources();
       }
@@ -1709,7 +1799,7 @@
     }
   }
 
-  async function loadLeaderboardDashboard(source) {
+  async function loadLeaderboardDashboard(source, { signal } = {}) {
     const spreadsheetId = spreadsheetIdFrom(source.attendanceSheetUrl);
     if (!spreadsheetId) {
       throw new Error("The public leaderboard Google Sheet link is not valid.");
@@ -1728,31 +1818,31 @@
       queryPublicSheet(
         spreadsheetId,
         leaderboardTab,
-        "select E,G,H,I,J,K,L,M,N where B is not null",
+        "select E,G,H,I,J,K,L,M,N where B is not null", { signal },
       ),
       queryPublicSheet(
         spreadsheetId,
         "System_Status",
-        "select A,B where A is not null",
-      ).catch(() => ({ rows: [] })),
+        "select A,B where A is not null", { signal },
+      ).then((table) => ({ table, error: null })).catch((error) => ({ table: { rows: [] }, error })),
       queryPublicSheet(
         spreadsheetId,
         eventMetricsTab,
-        "select A,B,C,D,E,F,G,H,I,J,K,L",
+        "select A,B,C,D,E,F,G,H,I,J,K,L", { signal },
       )
         .then((table) => ({ table, error: null }))
         .catch((error) => ({ table: { rows: [] }, error })),
       queryPublicSheet(
         spreadsheetId,
         monthlyMetricsTab,
-        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null",
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null", { signal },
       )
         .then((table) => ({ table, error: null }))
         .catch((error) => ({ table: { rows: [] }, error })),
       queryPublicSheet(
         spreadsheetId,
         semesterMetricsTab,
-        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null",
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O where A is not null", { signal },
       )
         .then((table) => ({ table, error: null }))
         .catch((error) => ({ table: { rows: [] }, error })),
@@ -1785,12 +1875,12 @@
       .filter(Boolean)
       .sort((a, b) => b.getTime() - a.getTime())[0];
     const systemStatus =
-      (statusTable.rows || [])
+      (statusTable.table.rows || [])
         .map((row) => [
           String(sheetCell(row, 0) || "").toLowerCase(),
           String(sheetCell(row, 1) || "").toUpperCase(),
         ])
-        .find(([key]) => key === "system_status")?.[1] || "LIVE";
+        .find(([key]) => key === "system_status")?.[1] || "UNKNOWN";
     const metricRows = metricsResult.table.rows || [];
     const eventRows = metricRows
       .map((row) => ({
@@ -1923,7 +2013,9 @@
           ? "Public attendance totals are connected"
           : `Point system status: ${systemStatus.toLowerCase()}`,
       detail:
-        "Member totals and event aggregates are loading from the privacy-safe website export.",
+        statusTable.error
+          ? "Attendance totals loaded; system status unavailable."
+          : "Member totals and event aggregates are loading from the privacy-safe website export.",
       actionLabel: "Open public export",
       actionUrl: source.attendanceSheetUrl,
     });
@@ -1935,7 +2027,7 @@
           ? aggregateUpdated.toISOString()
           : latestUpdate
             ? latestUpdate.toISOString()
-          : new Date().toISOString(),
+          : "",
         isDemo: false,
         isPartial: !metricsAvailable,
         sourceLabel: metricsAvailable
@@ -1969,17 +2061,17 @@
       health: [
         {
           label: "Year settings",
-          status: source.isCurrent === false ? "NOTICE" : "LIVE",
+          status: (source.settingsProvenance || settingsProvenance) === "shared settings" ? "LIVE" : "NOTICE",
           detail:
             source.settingsStatus ||
             (source.settingsUpdated
               ? `Updated ${formatCompactDate(source.settingsUpdated)}`
-              : "Shared settings loaded"),
+              : source.settingsProvenance || settingsProvenance),
         },
         {
           label: "Attendance",
-          status: systemStatus === "LIVE" ? "LIVE" : "ACTION",
-          detail: `${formatNumber(members.length)} member totals available`,
+          status: systemStatus === "LIVE" ? "LIVE" : systemStatus === "UNKNOWN" ? "NOTICE" : "ACTION",
+          detail: systemStatus === "UNKNOWN" ? `Attendance totals loaded; system status unavailable.` : `${formatNumber(members.length)} member totals available`,
         },
         {
           label: "Event metrics",
@@ -2193,9 +2285,11 @@
       .slice(0, 4);
   }
 
-  async function fetchTextWithTimeout(url, timeoutMs = 6000) {
+  async function fetchTextWithTimeout(url, timeoutMs = 6000, signal) {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    const abort = () => controller.abort();
+    signal?.addEventListener("abort", abort, { once: true });
     try {
       const response = await fetch(url, {
         cache: "no-store",
@@ -2205,6 +2299,7 @@
       return await response.text();
     } finally {
       window.clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
     }
   }
 
@@ -2216,7 +2311,54 @@
     return url.href;
   }
 
-  async function loadCalendarEvents(source, year) {
+  async function fetchJsonWithTimeout(url, { signal, timeoutMs = 15000 } = {}) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    const abort = () => controller.abort();
+    signal?.addEventListener("abort", abort, { once: true });
+    try {
+      const response = await fetch(url, { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error(`Data request failed with status ${response.status}.`);
+      const data = await response.json();
+      if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Dashboard returned an invalid response.");
+      return data;
+    } finally {
+      window.clearTimeout(timer);
+      signal?.removeEventListener("abort", abort);
+    }
+  }
+
+  function normalizedCalendarEvents(occurrences) {
+    if (!Array.isArray(occurrences)) throw new Error("The calendar occurrence data is invalid.");
+    const now = new Date();
+    const today = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone: calendarDisplayTimeZone, year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(now).map((part) => [part.type, part.value]));
+    const todayKey = `${today.year}-${today.month}-${today.day}`;
+    return occurrences
+      .map((item) => {
+        if (!item || typeof item.id !== "string" || typeof item.title !== "string" || typeof item.allDay !== "boolean") {
+          throw new Error("The calendar occurrence data is malformed.");
+        }
+        if (item.allDay) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(item.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(item.endDate) || item.endDate <= item.startDate) {
+            throw new Error("The calendar all-day occurrence data is malformed.");
+          }
+          return { id: item.id, title: item.title, location: item.location || "", allDay: true, startDate: item.startDate, endDate: item.endDate, date: `${item.startDate}T12:00:00-04:00`, time: "All day", status: item.location ? "Confirmed" : "Needs location" };
+        }
+        const start = new Date(item.startAt);
+        const end = item.endAt ? new Date(item.endAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+          throw new Error("The calendar timed occurrence data is malformed.");
+        }
+        return { id: item.id, title: item.title, location: item.location || "", allDay: false, startAt: start.toISOString(), endAt: item.endAt || null, date: start.toISOString(), time: new Intl.DateTimeFormat("en-US", { timeZone: calendarDisplayTimeZone, hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(start), status: item.location ? "Confirmed" : "Needs location", _end: end };
+      })
+      .filter((item) => item.allDay ? item.endDate > todayKey : item._end > now)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map(({ _end, ...item }) => item);
+  }
+
+  async function loadCalendarEvents(source, year, { signal } = {}) {
     const feed = String(source.calendarIcalUrl || "").trim();
     if (!feed) {
       return {
@@ -2241,13 +2383,13 @@
 
     const cacheKey = `${calendarCacheKeyPrefix}${feed}`;
     try {
-      const text = await fetchTextWithTimeout(calendarSnapshotRequestUrl());
+      const text = await fetchTextWithTimeout(calendarSnapshotRequestUrl(), 6000, signal);
       const snapshot = JSON.parse(text);
       if (snapshot?.schemaVersion !== 1) {
         throw new Error("The hourly calendar snapshot version is not supported.");
       }
       const entry = snapshot?.calendars?.[normalizeYearKey(year)];
-      if (!entry || typeof entry.ical !== "string") {
+      if (!entry || entry.occurrenceSchemaVersion !== 1) {
         throw new Error("The hourly calendar snapshot does not include this year.");
       }
       if (String(entry.feedUrl || "").trim() !== feed) {
@@ -2263,11 +2405,10 @@
         throw new Error("The hourly calendar snapshot is more than 24 hours old.");
       }
 
-      const events = parseIcalEvents(entry.ical);
-      localStorage.setItem(
-        cacheKey,
-        JSON.stringify({ savedAt: generatedAt.getTime(), events }),
-      );
+      // Preserve the complete normalized window in browser storage; the UI
+      // intentionally presents only the next four cards.
+      const events = normalizedCalendarEvents(entry.occurrences);
+      try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: generatedAt.getTime(), events })); } catch (error) { console.warn("Calendar cache could not be saved.", error); }
       return calendarResult(
         events,
         ageMs <= calendarLiveMaxAgeMs ? "LIVE" : "NOTICE",
@@ -2290,7 +2431,7 @@
         ageMs <= calendarFallbackMaxAgeMs
       ) {
         return calendarResult(
-          cached.events.filter((event) => new Date(event.date) >= new Date()),
+          normalizedCalendarEvents(cached.events),
           "NOTICE",
           `Using browser fallback from ${formatCompactDate(savedAt)}`,
         );
@@ -2515,11 +2656,22 @@
   }
 
   async function loadDashboard(year) {
-    const source = getYearSource(year);
+    dashboardLoadController?.abort();
+    const controller = new AbortController();
+    dashboardLoadController = controller;
+    const generation = ++dashboardLoadGeneration;
+    const configuredSource = getYearSource(year);
+    const source = configuredSource ? { ...configuredSource } : null;
+    const isCurrent = () => generation === dashboardLoadGeneration && !controller.signal.aborted;
     if (!source) {
+      clearDashboardState("No active academic year is configured.");
       showDataError("No data source is configured for this academic year.");
+      document.getElementById("main-content")?.setAttribute("aria-busy", "false");
       return;
     }
+
+    const sourceLabel = source.label || year;
+    clearDashboardState(`Loading ${sourceLabel}…`);
 
     const resources = [...resolveYearResources(source), ...loadCustomLinks()];
     renderResources(resources);
@@ -2551,28 +2703,42 @@
     showLoading(true);
 
     try {
-      let data;
-      if (source.dashboardUrl) {
-        const response = await fetch(source.dashboardUrl, { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`Data request failed with status ${response.status}.`);
-        }
-        data = await response.json();
-      } else if (source.attendanceSheetUrl) {
-        data = await loadLeaderboardDashboard(source);
-      } else if (source.url) {
-        const response = await fetch(source.url, { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`Data request failed with status ${response.status}.`);
-        }
-        data = await response.json();
-      } else {
-        throw new Error("No attendance data source is configured.");
-      }
-      const [calendar, budget] = await Promise.all([
-        loadCalendarEvents(source, year),
-        loadBudgetSummary(source),
+      const attendanceTask = source.dashboardUrl
+        ? fetchJsonWithTimeout(source.dashboardUrl, { signal: controller.signal })
+        : source.attendanceSheetUrl
+          ? loadLeaderboardDashboard(source, { signal: controller.signal })
+          : source.url
+            ? fetchJsonWithTimeout(source.url, { signal: controller.signal })
+            : Promise.reject(new Error("No attendance data source is configured."));
+      // These sources deliberately begin together.  Attendance failures must
+      // not suppress the current year's calendar or aggregate budget display.
+      const [attendanceResult, calendarOutcome, budgetResult] = await Promise.allSettled([
+        attendanceTask,
+        loadCalendarEvents(source, year, { signal: controller.signal }),
+        loadBudgetSummary(source, { signal: controller.signal }),
       ]);
+      if (!isCurrent()) return;
+      const calendar = calendarOutcome.status === "fulfilled"
+        ? calendarOutcome.value
+        : calendarResult([], "ACTION", "Calendar request unavailable");
+      const budget = budgetResult.status === "fulfilled"
+        ? budgetResult.value
+        : { available: false, error: "The sanitized budget feed could not be loaded." };
+      if (attendanceResult.status !== "fulfilled") {
+        const message = `Attendance data unavailable for ${sourceLabel}.`;
+        showDataError(message);
+        activeUpcomingEvents = calendar.events;
+        activeBudget = budget;
+        renderUpcomingEvents(calendar.events.slice(0, 4));
+        renderBudget(budget, source);
+        renderHealth([{ label: "Dashboard data", status: "ACTION", detail: message }, calendar.health, {
+          label: "Budget feed", status: budget.available ? "LIVE" : "ACTION",
+          detail: budget.available ? "Aggregate-only financial totals connected" : budget.error,
+        }]);
+        renderOperations(calendar.operations);
+        return;
+      }
+      const data = attendanceResult.value;
       data.upcomingEvents = calendar.events;
       data.budget = budget;
       data.health = [
@@ -2609,21 +2775,35 @@
       renderDashboard(data, source);
       updateYearLabel();
     } catch (error) {
+      if (!isCurrent()) return;
       console.error(error);
-      showDataError(error.message || "The dashboard data could not be loaded.");
+      showDataError(`Attendance data unavailable for ${sourceLabel}.`);
     } finally {
-      showLoading(false);
+      if (isCurrent()) {
+        showLoading(false);
+        document.getElementById("main-content")?.setAttribute("aria-busy", "false");
+        if (dashboardLoadController === controller) dashboardLoadController = null;
+      }
     }
   }
 
   function showDataError(message) {
     document.getElementById("last-updated").textContent = "Data unavailable";
-    document.getElementById("operations-list").innerHTML = `
-      <article class="operation-item is-warning">
-        <strong>Dashboard source unavailable</strong>
-        <p>${message}</p>
-      </article>
-    `;
+    const operations = document.getElementById("operations-list");
+    const item = document.createElement("article");
+    item.className = "operation-item is-warning";
+    const title = document.createElement("strong");
+    title.textContent = "Dashboard source unavailable";
+    const detail = document.createElement("p");
+    detail.textContent = message;
+    item.append(title, detail);
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "text-button";
+    retry.textContent = "Retry";
+    retry.addEventListener("click", () => loadDashboard(elements.academicYear.value));
+    item.append(retry);
+    operations.replaceChildren(item);
     document.getElementById("operations-count").textContent = "1 item";
     document.getElementById("nav-alert-count").textContent = "1";
     renderHealth([
@@ -2633,6 +2813,8 @@
         detail: message,
       },
     ]);
+    elements.periodFilter.disabled = true;
+    setReportControlsDisabled(true);
   }
 
   function renderDashboard(data, source = {}) {
@@ -2649,6 +2831,8 @@
     activeOperations = data.operations || [];
     activeBudget = data.budget || {};
     activeHealth = data.health || [];
+    elements.periodFilter.disabled = false;
+    setReportControlsDisabled(false);
     selectedPeriod = "ytd";
     populatePeriodFilter(
       data.semesterMetrics || [],
@@ -2656,7 +2840,7 @@
     );
     renderSelectedPeriod();
     renderBudget(data.budget || {}, source);
-    renderUpcomingEvents(data.upcomingEvents || []);
+    renderUpcomingEvents((data.upcomingEvents || []).slice(0, 4));
     renderHealth(data.health || []);
     renderOperations(data.operations || []);
     renderRoleExperience();
@@ -2882,7 +3066,7 @@
     dot?.classList.remove("is-stale", "is-unavailable");
 
     if (!updated || Number.isNaN(updated.getTime())) {
-      target.textContent = meta.isDemo ? "Demo data" : "Not provided";
+      target.textContent = meta.isDemo ? "Demo data" : "Update time not provided.";
       if (label) label.textContent = "Data status";
       dot?.classList.add("is-unavailable");
       return;
@@ -2895,13 +3079,14 @@
       minute: "2-digit",
     }).format(updated);
 
-    const ageHours = Math.max(0, (Date.now() - updated.getTime()) / 3600000);
-    const isStale = ageHours > 24;
+    const ageHours = (Date.now() - updated.getTime()) / 3600000;
+    const isFuture = ageHours < 0;
+    const isStale = ageHours > 24 || isFuture;
     if (label) {
-      label.textContent = isStale ? "Data may be stale" : "Data refreshed";
+      label.textContent = isFuture ? "Source timestamp needs attention" : isStale ? "Data may be stale" : "Data refreshed";
     }
     dot?.classList.toggle("is-stale", isStale);
-    target.textContent = `${formatted}${meta.isDemo ? " · Demo" : ""}`;
+    target.textContent = isFuture ? "Source timestamp is in the future." : `${formatted}${meta.isDemo ? " · Demo" : ""}`;
   }
 
   function renderKpis(kpis, meta, period = null) {
@@ -4402,7 +4587,8 @@
       delete yearSources[originalYear];
     }
     const { yearKey, ...source } = settings;
-    yearSources[yearKey] = source;
+    if (source.isActive === false) delete yearSources[yearKey];
+    else yearSources[yearKey] = { ...source, settingsProvenance: "tab preview" };
     saveYearSources();
     populateYears(yearKey);
     closeSettings();
@@ -4676,6 +4862,7 @@
   });
 
   elements.meetingModeButton?.addEventListener("click", () => setMeetingMode(true));
+  document.getElementById("topbar-meeting-button")?.addEventListener("click", () => setMeetingMode(true));
   elements.meetingExit?.addEventListener("click", () => setMeetingMode(false));
   elements.meetingPrint?.addEventListener("click", () => {
     prepareHubPrint();

@@ -29,6 +29,8 @@ jobs:
         run: npm ci
       - name: Validate the static site
         run: npm run check
+      - name: Run behavior tests
+        run: npm test
       - name: Synchronize the public calendar
         run: node scripts/sync-calendar.mjs
       - name: Build the Pages artifact

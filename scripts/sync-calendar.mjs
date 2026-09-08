@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import vm from "node:vm";
+import { normalizeCalendar } from "./lib/calendar-normalize.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const outputFlag = process.argv.indexOf("--output");
@@ -142,6 +143,7 @@ async function fetchCalendar(year, source, generatedAt) {
     label: String(source.label || year),
     feedUrl,
     ical,
+    ...normalizeCalendar(ical, { now: new Date(generatedAt) }),
   };
 }
 
