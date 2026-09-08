@@ -21,3 +21,58 @@ test("preserves all-day dates with an exclusive end date", () => {
   const result = normalizeCalendar(calendar(`BEGIN:VEVENT\nUID:allday\nDTSTART;VALUE=DATE:20260910\nDTEND;VALUE=DATE:20260911\nSUMMARY:All day\nEND:VEVENT`), { now: new Date("2026-09-10T16:00:00Z") });
   assert.deepEqual(result.occurrences[0], { id: "allday:2026-09-10", title: "All day", location: "", allDay: true, startDate: "2026-09-10", endDate: "2026-09-11" });
 });
+
+test("skips a cancelled recurrence instance without stalling expansion", () => {
+  const result = normalizeCalendar(calendar(`BEGIN:VEVENT
+UID:cancelled-instance
+DTSTART;TZID=America/New_York:20260910T173000
+DTEND;TZID=America/New_York:20260910T183000
+RRULE:FREQ=WEEKLY;COUNT=3
+SUMMARY:Weekly
+END:VEVENT
+BEGIN:VEVENT
+UID:cancelled-instance
+RECURRENCE-ID;TZID=America/New_York:20260917T173000
+DTSTART;TZID=America/New_York:20260917T173000
+STATUS:CANCELLED
+END:VEVENT`), { now: new Date("2026-09-01T12:00:00Z") });
+  assert.deepEqual(result.occurrences.map((item) => item.startAt.slice(0, 10)), ["2026-09-10", "2026-09-24"]);
+});
+
+test("bounds open-ended all-day recurrences at the requested horizon", () => {
+  const result = normalizeCalendar(calendar(`BEGIN:VEVENT
+UID:weekly-allday
+DTSTART;VALUE=DATE:20260910
+DTEND;VALUE=DATE:20260911
+RRULE:FREQ=WEEKLY
+SUMMARY:All day weekly
+END:VEVENT`), { now: new Date("2026-09-01T12:00:00Z"), futureDays: 20 });
+  assert.deepEqual(result.occurrences.map((item) => item.startDate), ["2026-09-10", "2026-09-17"]);
+});
+
+test("uses an exclusive next-day end for an all-day event without DTEND", () => {
+  const result = normalizeCalendar(calendar(`BEGIN:VEVENT
+UID:single-allday
+DTSTART;VALUE=DATE:20260910
+SUMMARY:All day without end
+END:VEVENT`), { now: new Date("2026-09-10T12:00:00Z") });
+  assert.equal(result.occurrences[0].endDate, "2026-09-11");
+});
+
+test("treats floating time as New York and preserves a missing end", () => {
+  const result = normalizeCalendar(calendar(`BEGIN:VEVENT
+UID:floating
+DTSTART:20260910T173000
+SUMMARY:Floating
+END:VEVENT`), { now: new Date("2026-09-01T12:00:00Z") });
+  assert.equal(result.occurrences[0].startAt, "2026-09-10T21:30:00.000Z");
+  assert.equal(result.occurrences[0].endAt, null);
+});
+
+test("rejects an unresolved named timezone", () => {
+  assert.throws(() => normalizeCalendar(calendar(`BEGIN:VEVENT
+UID:bad-zone
+DTSTART;TZID=Bad/Unknown:20260910T173000
+SUMMARY:Bad zone
+END:VEVENT`), { now: new Date("2026-09-01T12:00:00Z") }), /unresolved timezone Bad\/Unknown/);
+});
