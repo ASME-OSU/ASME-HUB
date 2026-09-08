@@ -1644,13 +1644,65 @@
         };
       });
 
-      const numberValue = (key) => {
-        const raw = metrics[key]?.value;
-        if (raw === "" || raw === null || raw === undefined) return null;
-        const value = Number(raw);
-        return Number.isFinite(value) ? value : null;
+      const numberValue = (key) => metricNumber(metrics[key]?.value);
+      const textValue = (key) => {
+        const metric = metrics[key];
+        if (!metric) return "";
+        const value = metric.textValue || metric.formatted || metric.value;
+        return value === null || value === undefined ? "" : String(value).trim();
       };
-      const updatedAt = sheetTimestamp(metrics.updated_at?.value);
+      const requiredKeys = [
+        "academic_year",
+        "approved_income",
+        "approved_expenses",
+        "pending_approval",
+        "planned_budget",
+        "remaining_budget",
+        "budget_used_rate",
+      ];
+      const missingKeys = requiredKeys.filter((key) => !metrics[key]);
+      if (missingKeys.length) {
+        return {
+          available: false,
+          error: `The budget export is missing required metric${
+            missingKeys.length === 1 ? "" : "s"
+          }: ${missingKeys.join(", ")}.`,
+        };
+      }
+      const requiredNumericKeys = requiredKeys.filter(
+        (key) => key !== "academic_year",
+      );
+      const invalidNumericKeys = requiredNumericKeys.filter(
+        (key) => numberValue(key) === null,
+      );
+      const academicYear = textValue("academic_year");
+      if (!academicYear || invalidNumericKeys.length) {
+        const invalidFields = [
+          ...(!academicYear ? ["academic_year"] : []),
+          ...invalidNumericKeys,
+        ];
+        return {
+          available: false,
+          error: `The budget export has invalid required metric${
+            invalidFields.length === 1 ? "" : "s"
+          }: ${invalidFields.join(", ")}.`,
+        };
+      }
+
+      // `Budget_Public` stores rates as spreadsheet percentages (fractions).
+      // Do not use a <= 1 heuristic: 1.5 in a percent-formatted metric is 150%.
+      const rateFormat = String(metrics.budget_used_rate?.format || "")
+        .trim()
+        .toLowerCase();
+      const rawBudgetUsedRate = numberValue("budget_used_rate");
+      const budgetUsedPercent = Number.isFinite(rawBudgetUsedRate)
+        ? rateFormat === "percent"
+          ? rawBudgetUsedRate * 100
+          : rawBudgetUsedRate
+        : null;
+      const sourceUpdatedAt = sheetTimestamp(metrics.source_updated_at?.value);
+      const exportUpdatedAt = sheetTimestamp(metrics.updated_at?.value);
+      const updatedAt = sourceUpdatedAt || exportUpdatedAt;
       const categories = new Map();
       Object.entries(metrics).forEach(([key, metric]) => {
         const match = key.match(/^category_(actual|planned)_(.+)$/);
@@ -1659,11 +1711,10 @@
         const category = categories.get(slug) || {
           slug,
           label: metric.label || slug.replace(/_/g, " "),
-          actual: 0,
-          planned: 0,
+          actual: null,
+          planned: null,
         };
-        const value = Number(metric.value);
-        category[measure] = Number.isFinite(value) ? value : 0;
+        category[measure] = metricNumber(metric.value);
         if (metric.label) {
           category.label = String(metric.label)
             .replace(/\s*[—–-]\s*(actual|planned)$/i, "")
@@ -1672,17 +1723,81 @@
         categories.set(slug, category);
       });
 
+      const approvedExpenses = numberValue("approved_expenses");
+      const categoryActuals = Array.from(categories.values())
+        .map((category) => category.actual)
+        .filter(Number.isFinite);
+      const categorizedExpenses = categoryActuals.reduce(
+        (sum, value) => sum + value,
+        0,
+      );
+      const incompleteCategories = Array.from(categories.values()).filter(
+        (category) =>
+          metricNumber(category.actual) === null ||
+          metricNumber(category.planned) === null,
+      );
+      const reconciliationDifference =
+        Number.isFinite(approvedExpenses) && !incompleteCategories.length
+        ? approvedExpenses - categorizedExpenses
+        : null;
+      const fundingModelStatus = textValue("funding_model_status");
+      const qualityMessages = [];
+      if (!sourceUpdatedAt && exportUpdatedAt) {
+        qualityMessages.push(
+          "Export refresh time is available, but source transaction freshness is unverified",
+        );
+      } else if (!sourceUpdatedAt) {
+        qualityMessages.push(
+          "No source or export timestamp is available",
+        );
+      }
+      if (
+        Number.isFinite(reconciliationDifference) &&
+        reconciliationDifference < -0.005
+      ) {
+        qualityMessages.push(
+          "Category actuals exceed the approved-expense total; reconcile the export",
+        );
+      } else if (
+        Number.isFinite(reconciliationDifference) &&
+        reconciliationDifference > 0.005
+      ) {
+        qualityMessages.push(
+          "Some approved expenses are uncategorized in the export",
+        );
+      }
+      if (incompleteCategories.length) {
+        qualityMessages.push(
+          `Category data is incomplete for ${incompleteCategories.length} export row${
+            incompleteCategories.length === 1 ? "" : "s"
+          }`,
+        );
+      }
+      if (/needs confirmation|incomplete|action/i.test(fundingModelStatus)) {
+        qualityMessages.push(
+          fundingModelStatus || "Funding authority needs confirmation",
+        );
+      } else if (!fundingModelStatus) {
+        qualityMessages.push(
+          "Funding authority status is absent; the export may show a legacy plan only",
+        );
+      }
+
       return {
         available: true,
-        academicYear:
-          metrics.academic_year?.textValue || source.label || "Current year",
+        academicYear: academicYear || source.label || "Current year",
         approvedIncome: numberValue("approved_income"),
-        approvedExpenses: numberValue("approved_expenses"),
+        approvedExpenses,
         pendingApproval: numberValue("pending_approval"),
         plannedBudget: numberValue("planned_budget"),
         remainingBudget: numberValue("remaining_budget"),
-        budgetUsedRate: numberValue("budget_used_rate"),
+        budgetUsedPercent,
+        rateFormat,
         updatedAt: updatedAt ? updatedAt.toISOString() : "",
+        updatedAtKind: sourceUpdatedAt ? "source" : exportUpdatedAt ? "export" : "",
+        fundingModelStatus,
+        reconciliationDifference,
+        qualityMessages,
         categories: Array.from(categories.values()),
       };
     } catch (error) {
@@ -2732,6 +2847,13 @@
       const budget = budgetResult.status === "fulfilled"
         ? budgetResult.value
         : { available: false, error: "The sanitized budget feed could not be loaded." };
+      const budgetNeedsAttention = !budget.available ||
+        (Array.isArray(budget.qualityMessages) && budget.qualityMessages.length > 0);
+      const budgetHealthDetail = !budget.available
+        ? budget.error
+        : budgetNeedsAttention
+          ? budget.qualityMessages.join(" ")
+          : "Aggregate-only financial totals connected";
       if (attendanceResult.status !== "fulfilled") {
         const message = `Attendance data unavailable for ${sourceLabel}.`;
         showDataError(message);
@@ -2740,8 +2862,8 @@
         renderUpcomingEvents(calendar.events.slice(0, 5));
         renderBudget(budget, source);
         renderHealth([{ label: "Dashboard data", status: "ACTION", detail: message }, calendar.health, {
-          label: "Budget feed", status: budget.available ? "LIVE" : "ACTION",
-          detail: budget.available ? "Aggregate-only financial totals connected" : budget.error,
+          label: "Budget feed", status: budgetNeedsAttention ? "ACTION" : "LIVE",
+          detail: budgetHealthDetail,
         }]);
         renderOperations(calendar.operations);
         return;
@@ -2754,10 +2876,8 @@
         calendar.health,
         {
           label: "Budget feed",
-          status: budget.available ? "LIVE" : "ACTION",
-          detail: budget.available
-            ? "Aggregate-only financial totals connected"
-            : budget.error || "Sanitized budget feed unavailable",
+          status: budgetNeedsAttention ? "ACTION" : "LIVE",
+          detail: budgetHealthDetail || "Sanitized budget feed unavailable",
         },
       ];
       data.operations = [
@@ -2770,11 +2890,12 @@
               : item.actionUrl,
         })),
       ];
-      if (!budget.available && source.budgetExportSheetUrl) {
+      if (budgetNeedsAttention && source.budgetExportSheetUrl) {
         data.operations.push({
           severity: "warning",
           title: "Budget summary needs attention",
           detail:
+            budgetHealthDetail ||
             "The Hub could not read the aggregate-only budget export. The private transaction workbook remains unaffected.",
           actionLabel: "Open budget tracker",
           actionUrl: source.budgetTrackerUrl || "#resources",
@@ -3219,6 +3340,7 @@
       if (emptyProgress) emptyProgress.setAttribute("aria-valuenow", "0");
       document.getElementById("budget-usage-card")?.classList.remove("is-warning");
       document.getElementById("budget-remaining-card")?.classList.remove("is-warning");
+      setText("budget-remaining-label", "Remaining authority");
       setText("budget-used-label", "Budget used");
       const unavailableContext = document.getElementById("budget-used-context");
       if (unavailableContext) unavailableContext.hidden = true;
@@ -3229,37 +3351,45 @@
 
     const money = (value) =>
       hasMetric(value) ? currencyFormatter.format(Number(value)) : "—";
-    const rawRate = Number(budget.budgetUsedRate);
-    const percent = Number.isFinite(rawRate)
-      ? rawRate <= 1
-        ? rawRate * 100
-        : rawRate
+    const percent = metricNumber(budget.budgetUsedPercent);
+    const plannedBudget = metricNumber(budget.plannedBudget);
+    const approvedExpenses = metricNumber(budget.approvedExpenses);
+    const remainingBudget = metricNumber(budget.remainingBudget);
+    const usageMetricsAvailable =
+      percent !== null && plannedBudget !== null && plannedBudget > 0;
+    const boundedPercent = usageMetricsAvailable
+      ? Math.max(0, Math.min(100, percent))
       : 0;
-    const boundedPercent = Math.max(0, Math.min(100, percent));
-    const plannedBudget = Number(budget.plannedBudget) || 0;
-    const categorizedExpenses = (Array.isArray(budget.categories)
-      ? budget.categories
-      : []
-    ).reduce((sum, category) => sum + (Number(category.actual) || 0), 0);
-    const approvedExpenses = Math.max(
-      Number(budget.approvedExpenses) || 0,
-      categorizedExpenses,
+    const needsBudgetPlan = !usageMetricsAvailable;
+    const qualityMessages = Array.isArray(budget.qualityMessages)
+      ? budget.qualityMessages.filter(Boolean)
+      : [];
+    const planIsLegacy = !budget.fundingModelStatus || /legacy/i.test(
+      budget.fundingModelStatus,
     );
-    const remainingBudget = Number(budget.remainingBudget) || 0;
-    const needsBudgetPlan = plannedBudget <= 0;
 
     setText("budget-period", budget.academicYear || source.label || "Current year");
     setText("budget-approved-income", money(budget.approvedIncome));
-    setText("budget-approved-expenses", money(budget.approvedExpenses));
+    setText("budget-approved-expenses", money(approvedExpenses));
     setText("budget-pending-approval", money(budget.pendingApproval));
     setText("budget-remaining", money(budget.remainingBudget));
     setText(
       "budget-used-rate",
-      needsBudgetPlan ? "Not set" : `${Math.round(percent)}%`,
+      percent === null
+        ? "—"
+        : needsBudgetPlan
+          ? "Needs confirmation"
+          : `${Math.round(percent)}%`,
     );
     setText(
       "budget-planned-context",
-      `Of ${money(budget.plannedBudget)} planned`,
+      plannedBudget === null
+        ? "Budget data is incomplete"
+        : needsBudgetPlan
+        ? "Funding authority needs confirmation"
+        : `Of ${money(budget.plannedBudget)} ${
+            planIsLegacy ? "legacy planned" : "planned authority"
+          }`,
     );
 
     const fill = document.getElementById("budget-progress-fill");
@@ -3273,27 +3403,52 @@
     const remainingCard = document.getElementById("budget-remaining-card");
     const usageContext = document.getElementById("budget-used-context");
     usageCard?.classList.toggle("is-warning", needsBudgetPlan);
-    remainingCard?.classList.toggle("is-warning", remainingBudget < 0);
-    setText("budget-used-label", needsBudgetPlan ? "Budget plan needed" : "Budget used");
+    remainingCard?.classList.toggle(
+      "is-warning",
+      !Number.isFinite(remainingBudget) || remainingBudget < 0,
+    );
+    setText(
+      "budget-remaining-label",
+      planIsLegacy ? "Legacy plan remaining" : "Remaining authority",
+    );
+    setText(
+      "budget-used-label",
+      percent === null || plannedBudget === null
+        ? "Budget data"
+        : needsBudgetPlan
+          ? "Funding confirmation"
+        : planIsLegacy
+          ? "Legacy plan used"
+          : "Authority used",
+    );
     if (usageContext) {
       usageContext.hidden = !needsBudgetPlan;
-      usageContext.textContent = approvedExpenses
-        ? `${money(approvedExpenses)} categorized spending without a planned budget`
-        : "Add a planned budget to calculate usage";
+      usageContext.textContent = percent === null || plannedBudget === null
+        ? "Budget data is incomplete; repair the public export"
+        : approvedExpenses !== null
+        ? `${money(approvedExpenses)} approved spending while funding authority is unconfirmed`
+        : "Confirm funding authority before calculating budget usage";
     }
     renderBudgetCategories(budget.categories || []);
 
     const updated = budget.updatedAt ? new Date(budget.updatedAt) : null;
+    const freshness = updated && !Number.isNaN(updated.getTime())
+      ? `${
+          budget.updatedAtKind === "source" ? "Source updated" : "Export refreshed"
+        } ${new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(updated)}`
+      : "No verifiable source or export timestamp";
     setText(
       "budget-freshness",
-      updated && !Number.isNaN(updated.getTime())
-        ? `Aggregate-only totals · Refreshed ${new Intl.DateTimeFormat("en-US", {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          }).format(updated)}`
-        : "Aggregate-only totals from the budget export",
+      Array.from(new Set([
+        "Aggregate-only totals",
+        freshness,
+        ...qualityMessages,
+      ])).join(" · "),
     );
   }
 
@@ -3313,13 +3468,24 @@
       chartPalette[5],
       chartPalette[6],
     ];
-    const clean = (Array.isArray(categories) ? categories : [])
+    const sourceCategories = Array.isArray(categories) ? categories : [];
+    const hasIncompleteCategory = sourceCategories.some(
+      (category) =>
+        metricNumber(category.actual) === null ||
+        metricNumber(category.planned) === null,
+    );
+    const clean = sourceCategories
       .map((category) => ({
         label: String(category.label || category.slug || "Other"),
-        actual: Math.max(0, Number(category.actual) || 0),
-        planned: Math.max(0, Number(category.planned) || 0),
+        actual: metricNumber(category.actual),
+        planned: metricNumber(category.planned),
       }))
-      .filter((category) => category.actual > 0 || category.planned > 0);
+      .filter(
+        (category) =>
+          category.actual !== null &&
+          category.planned !== null &&
+          (category.actual > 0 || category.planned > 0),
+      );
 
     const actualCategories = clean
       .filter((category) => category.actual > 0)
@@ -3338,10 +3504,19 @@
       (sum, category) => sum + category.actual,
       0,
     );
-    total.textContent = currencyFormatter.format(actualTotal);
+    total.textContent = hasIncompleteCategory
+      ? "—"
+      : currencyFormatter.format(actualTotal);
     legend.replaceChildren();
 
-    if (!actualTotal) {
+    if (hasIncompleteCategory) {
+      donut.style.background = "conic-gradient(var(--border) 0 100%)";
+      donut.setAttribute("aria-label", "Category spending data is incomplete");
+      const empty = document.createElement("p");
+      empty.className = "budget-empty-state";
+      empty.textContent = "Category data is incomplete.";
+      legend.append(empty);
+    } else if (!actualTotal) {
       donut.style.background = "conic-gradient(var(--border) 0 100%)";
       donut.setAttribute("aria-label", "No approved spending by category yet");
       const empty = document.createElement("p");
@@ -3384,7 +3559,9 @@
     if (!paced.length) {
       const empty = document.createElement("p");
       empty.className = "budget-empty-state";
-      empty.textContent = "Add category budgets to see pacing.";
+      empty.textContent = sourceCategories.length
+        ? "Category data is incomplete."
+        : "Add category budgets to see pacing.";
       bars.append(empty);
       return;
     }
@@ -4462,8 +4639,15 @@
   }
 
   function hasMetric(value) {
-    return value !== null && value !== undefined && value !== "" &&
-      Number.isFinite(Number(value));
+    return metricNumber(value) !== null;
+  }
+
+  function metricNumber(value) {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "string" && !value.trim()) return null;
+    if (typeof value !== "number" && typeof value !== "string") return null;
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
   }
 
   function formatNumber(value) {

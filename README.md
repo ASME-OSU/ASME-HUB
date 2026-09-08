@@ -321,21 +321,33 @@ Each academic-year configuration contains five finance settings:
 - `bankingUrl`: the official bank sign-in page opened from Finance resources
 - `fundraisingUrl`: the fundraising platform sign-in page opened from Finance resources
 
-`Budget_Public` contains only the academic year, approved income, approved
-expenses, pending approval total, planned budget, remaining budget, budget-used
-rate, refresh time, and planned/actual totals by approved expense category. The
-category rows use `category_actual_<slug>` and `category_planned_<slug>` keys so
-the Hub can build its spending-mix chart and category-pacing bars. Do not add
-transaction rows, payees, account numbers, receipt links, reimbursement notes,
-or other identifying financial details.
+`Budget_Public` contains only approved aggregate budget information: academic
+year, approved income and expenses, pending approval total, confirmed planned
+authority, remaining authority, budget-used rate, source timestamp, export
+timestamp, unresolved-status aggregate, and planned/actual totals by approved
+expense category. The category rows use `category_actual_<slug>` and
+`category_planned_<slug>` keys so the Hub can build its spending-mix chart and
+category-pacing bars. Use a percentage value for `budget_used_rate` (for
+example, `1.25` means 125%) and label it with `display_format` `percent`.
+
+Never publish OSU cash balance, Huntington cash balance, combined cash balance,
+account numbers, transaction rows, payees, receipt links, reimbursement notes,
+or other identifying financial details. The public export must not substitute a
+cash balance for budget authority. `source_updated_at` means the time the
+underlying ledger was last refreshed; `updated_at` is only the export refresh
+time. If funding allocations are not confirmed, export a clear aggregate status
+such as `funding_model_status = Needs confirmation`, not a fabricated zero.
 
 At annual handoff:
 
 1. Make the new annual budget tracker a native Google Sheet and keep it private.
 2. Copy the prior `ASME Officer Hub Budget Export` spreadsheet.
-3. Update its `IMPORTRANGE` source ID and source-cell references.
+3. Update its `IMPORTRANGE` source ID and source-cell references. Map only
+   approved aggregate authority/actual fields; do not map account balances.
 4. Click **Allow access** once from the export spreadsheet.
-5. Verify the export contains aggregate values only, then give the export file
+5. Verify the export contains aggregate values only, that category actuals
+   reconcile to approved expenses (or explicitly disclose an uncategorized
+   aggregate), then give the export file
    **Anyone with the link · Viewer** access.
 6. Open **Year settings → Finance connections** in the Hub, paste the new
    tracker and export links, confirm the export tab, and publish for everyone.
