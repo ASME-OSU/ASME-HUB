@@ -332,3 +332,24 @@ test("production parser and renderer never turn unknown metrics into public zero
     /No verifiable source or export timestamp/,
   );
 });
+
+test("production renderer keeps a legacy plan unconfirmed until the public status is explicitly Confirmed", () => {
+  const runtime = createHubRuntime([]);
+  runtime.api.renderBudget({
+    available: true,
+    academicYear: "2026–2027",
+    approvedIncome: 1500,
+    approvedExpenses: 319.9,
+    pendingApproval: 0,
+    plannedBudget: 2786.35,
+    remainingBudget: 2466.45,
+    budgetUsedPercent: 11.48,
+    fundingModelStatus: "Needs confirmation",
+    categories: [],
+  });
+
+  assert.equal(runtime.byId.get("budget-used-rate").textContent, "Needs confirmation");
+  assert.equal(runtime.byId.get("budget-remaining-label").textContent, "Legacy plan remaining");
+  assert.equal(runtime.byId.get("budget-used-label").textContent, "Funding confirmation");
+  assert.equal(runtime.byId.get("budget-progress-fill").parentElement.hidden, true);
+});

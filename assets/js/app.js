@@ -1773,13 +1773,10 @@
           }`,
         );
       }
-      if (/needs confirmation|incomplete|action/i.test(fundingModelStatus)) {
+      if (!/^confirmed$/i.test(fundingModelStatus)) {
         qualityMessages.push(
-          fundingModelStatus || "Funding authority needs confirmation",
-        );
-      } else if (!fundingModelStatus) {
-        qualityMessages.push(
-          "Funding authority status is absent; the export may show a legacy plan only",
+          fundingModelStatus ||
+            "Funding authority status is absent; the export may show a legacy plan only",
         );
       }
 
@@ -3357,14 +3354,17 @@
     const remainingBudget = metricNumber(budget.remainingBudget);
     const usageMetricsAvailable =
       percent !== null && plannedBudget !== null && plannedBudget > 0;
+    const fundingIsConfirmed = /^confirmed$/i.test(
+      String(budget.fundingModelStatus || "").trim(),
+    );
     const boundedPercent = usageMetricsAvailable
       ? Math.max(0, Math.min(100, percent))
       : 0;
-    const needsBudgetPlan = !usageMetricsAvailable;
+    const needsBudgetPlan = !usageMetricsAvailable || !fundingIsConfirmed;
     const qualityMessages = Array.isArray(budget.qualityMessages)
       ? budget.qualityMessages.filter(Boolean)
       : [];
-    const planIsLegacy = !budget.fundingModelStatus || /legacy/i.test(
+    const planIsLegacy = !fundingIsConfirmed || /legacy/i.test(
       budget.fundingModelStatus,
     );
 
