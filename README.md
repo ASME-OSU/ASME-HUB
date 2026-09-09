@@ -361,23 +361,29 @@ account's balance to the Hub. Follow this sequence whenever the annual funding
 plan is set up or changed:
 
 1. In the private tracker, enter only approved manual inputs in the yellow
-   cells. `Setup & Lists!B17:B23` holds each account's annual allocation,
-   reserve, commitments, and any applicable restriction. `Budgets!L5:M18`
+   cells. `Funding Setup!B5:D6` holds each account's annual allocation,
+   reserve and unpaid commitments (OSU row 5; Huntington row 6).
+   `Funding Setup!B8` holds OSU restrictions or `None`. `Category Budgets!B5:C18`
    holds the category allocation for each account. Other cells calculate from
    those inputs and should not be overwritten.
 2. Reconcile the category allocations to the approved account authority and
    review the calculated totals in the private tracker. Do not use cash
    balances, transactions, or other private ledger details as a substitute for
    authority.
-3. Keep `Setup & Lists!B24` and the public `funding_model_status` as
-   `Needs confirmation` until an authorized reviewer has approved the
-   reconciled funding model. The current tracker formula is preserved as a
-   readiness check; its status mechanism must be updated to publish the exact
-   value `Confirmed` only after that approval.
+3. Replace every `Enter dollar amount` prompt with a confirmed amount (zero
+   for confirmed unused categories). `Category Budgets!B23:C23` must both
+   equal zero. After reviewing the plan, check `Funding Setup!B10`.
+   `Funding Setup!B12` returns `Confirmed` only when inputs, reconciliation,
+   and review pass. Uncheck B10 before revising a plan. Old `Setup & Lists`
+   funding cells and the hidden `Budgets` tab are compatibility outputs,
+   not manual inputs.
 4. In the separate `Budget_Public` export, publish the aggregate
    `funding_model_status` row alongside the existing totals. Its current source
    is the private tracker status cell through `IMPORTRANGE`; grant the import
-   once from the export sheet, not from the Hub.
+   once from the export sheet, not from the Hub. The export automatically
+   selects confirmed category totals when B12 is `Confirmed`; otherwise it
+   retains the explicitly labeled legacy plan. No formula edits are needed
+   for the treasurer to finish setup.
 5. Verify the export and then the live Hub. Only the exact text `Confirmed`
    permits the Hub to label a plan as account authority and display the
    authority-used percentage. Every other value—including an empty value,
