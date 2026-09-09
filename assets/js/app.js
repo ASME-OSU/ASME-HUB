@@ -1740,6 +1740,9 @@
         Number.isFinite(approvedExpenses) && !incompleteCategories.length
         ? approvedExpenses - categorizedExpenses
         : null;
+      // Treat every value except the explicit final approval as unconfirmed.
+      // A populated export can otherwise make a historic planning figure look
+      // like approved account authority.
       const fundingModelStatus = textValue("funding_model_status");
       const qualityMessages = [];
       if (!sourceUpdatedAt && exportUpdatedAt) {
@@ -3354,6 +3357,9 @@
     const remainingBudget = metricNumber(budget.remainingBudget);
     const usageMetricsAvailable =
       percent !== null && plannedBudget !== null && plannedBudget > 0;
+    // "Ready" and other intermediate tracker states are deliberately not
+    // sufficient here. The Hub may show authority metrics only after an
+    // accountable reviewer has published the exact `Confirmed` status.
     const fundingIsConfirmed = /^confirmed$/i.test(
       String(budget.fundingModelStatus || "").trim(),
     );

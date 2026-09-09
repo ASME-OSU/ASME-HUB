@@ -322,10 +322,10 @@ Each academic-year configuration contains five finance settings:
 - `fundraisingUrl`: the fundraising platform sign-in page opened from Finance resources
 
 `Budget_Public` contains only approved aggregate budget information: academic
-year, approved income and expenses, pending approval total, confirmed planned
-authority, remaining authority, budget-used rate, source timestamp, export
-timestamp, unresolved-status aggregate, and planned/actual totals by approved
-expense category. The category rows use `category_actual_<slug>` and
+year, approved income and expenses, pending approval total, planned authority
+when it is confirmed, remaining authority, budget-used rate, source timestamp,
+export timestamp, unresolved-status aggregate, and planned/actual totals by
+approved expense category. The category rows use `category_actual_<slug>` and
 `category_planned_<slug>` keys so the Hub can build its spending-mix chart and
 category-pacing bars. Use a percentage value for `budget_used_rate` (for
 example, `1.25` means 125%) and label it with `display_format` `percent`.
@@ -353,6 +353,40 @@ At annual handoff:
    tracker and export links, confirm the export tab, and publish for everyone.
    Bank and fundraising portal links can also be replaced there if they change.
 7. Test the Hub in light and dark mode at desktop and mobile widths.
+
+#### Funding authority confirmation workflow
+
+The budget workbook uses a two-account planning model without exposing either
+account's balance to the Hub. Follow this sequence whenever the annual funding
+plan is set up or changed:
+
+1. In the private tracker, enter only approved manual inputs in the yellow
+   cells. `Setup & Lists!B17:B23` holds each account's annual allocation,
+   reserve, commitments, and any applicable restriction. `Budgets!L5:M18`
+   holds the category allocation for each account. Other cells calculate from
+   those inputs and should not be overwritten.
+2. Reconcile the category allocations to the approved account authority and
+   review the calculated totals in the private tracker. Do not use cash
+   balances, transactions, or other private ledger details as a substitute for
+   authority.
+3. Keep `Setup & Lists!B24` and the public `funding_model_status` as
+   `Needs confirmation` until an authorized reviewer has approved the
+   reconciled funding model. The current tracker formula is preserved as a
+   readiness check; its status mechanism must be updated to publish the exact
+   value `Confirmed` only after that approval.
+4. In the separate `Budget_Public` export, publish the aggregate
+   `funding_model_status` row alongside the existing totals. Its current source
+   is the private tracker status cell through `IMPORTRANGE`; grant the import
+   once from the export sheet, not from the Hub.
+5. Verify the export and then the live Hub. Only the exact text `Confirmed`
+   permits the Hub to label a plan as account authority and display the
+   authority-used percentage. Every other value—including an empty value,
+   `Ready for allocation entry`, `Needs confirmation`, or a legacy label—keeps
+   the plan visibly marked as legacy and suppresses that percentage.
+
+This guard is intentional: approved transaction totals may still appear in the
+Hub while funding authority is awaiting confirmation, but officers must not
+mistake a historical planning amount for approved authority.
 
 The public export is intentionally separate from the attendance Website Export
 so its access can be audited or revoked without affecting the points system.
