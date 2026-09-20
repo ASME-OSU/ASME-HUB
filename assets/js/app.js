@@ -3634,7 +3634,13 @@
     );
   }
 
+  let attendanceChartItems = [];
+  let attendanceChartPeriodLabel = "";
+  let attendanceChartSize = { width: 0, height: 0 };
+
   function renderAttendanceChart(items, periodLabel = "") {
+    attendanceChartItems = items;
+    attendanceChartPeriodLabel = periodLabel;
     const svg = document.getElementById("attendance-chart");
     const chartWrap = svg.closest(".chart-wrap");
     const chartPanel = svg.closest(".trend-panel");
@@ -3646,27 +3652,34 @@
     if (!items.length) {
       chartWrap?.classList.add("is-empty");
       chartPanel?.classList.add("is-chart-empty");
-      svg.setAttribute("viewBox", "0 0 700 160");
-      svg.setAttribute("preserveAspectRatio", "none");
+      const width = Math.round(svg.getBoundingClientRect().width) || 700;
+      const height = Math.round(svg.getBoundingClientRect().height) || 160;
+      attendanceChartSize = { width, height };
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      const left = 38;
+      const right = width - 18;
+      const baselineY = height - 44;
       const baseline = svgElement("line", {
-        x1: "56",
-        y1: "116",
-        x2: "664",
-        y2: "116",
+        x1: String(left),
+        y1: String(baselineY),
+        x2: String(right),
+        y2: String(baselineY),
         class: "chart-grid-line chart-empty-grid",
       });
-      const ticks = [56, 208, 360, 512, 664].map((x) =>
-        svgElement("line", {
+      const ticks = Array.from({ length: 5 }, (_, index) => {
+        const x = left + ((right - left) * index) / 4;
+        return svgElement("line", {
           x1: String(x),
-          y1: "108",
+          y1: String(baselineY - 8),
           x2: String(x),
-          y2: "124",
+          y2: String(baselineY + 8),
           class: "chart-grid-line chart-empty-grid",
-        }),
-      );
+        });
+      });
       const message = svgElement("text", {
-        x: "350",
-        y: "80",
+        x: String(width / 2),
+        y: String(height / 2),
         "text-anchor": "middle",
         class: "chart-axis-label",
       });
@@ -3679,8 +3692,9 @@
     chartWrap?.classList.remove("is-empty");
     chartPanel?.classList.remove("is-chart-empty");
 
-    const width = 760;
-    const height = 285;
+    const width = Math.round(svg.getBoundingClientRect().width) || 760;
+    const height = Math.round(svg.getBoundingClientRect().height) || 285;
+    attendanceChartSize = { width, height };
     const margin = { top: 27, right: 18, bottom: 47, left: 38 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
@@ -3695,7 +3709,7 @@
     const points = values.map(pointFor);
 
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-    svg.setAttribute("preserveAspectRatio", "none");
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     const defs = svgElement("defs");
     const gradient = svgElement("linearGradient", {
@@ -3797,6 +3811,23 @@
     summary.textContent = periodLabel
       ? `${items.length} event${items.length === 1 ? "" : "s"} · ${periodLabel}`
       : `${items.length} recent event${items.length === 1 ? "" : "s"}`;
+  }
+
+  const attendanceChartElement = document.getElementById("attendance-chart");
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      const sizeChanged =
+        Math.abs(width - attendanceChartSize.width) >= 1 ||
+        Math.abs(height - attendanceChartSize.height) >= 1;
+      if (width && height && sizeChanged) {
+        renderAttendanceChart(attendanceChartItems, attendanceChartPeriodLabel);
+      }
+    }).observe(attendanceChartElement);
+  } else {
+    window.addEventListener("resize", () => {
+      renderAttendanceChart(attendanceChartItems, attendanceChartPeriodLabel);
+    });
   }
 
   function renderHealthInsight(period, previous, kind) {
