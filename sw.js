@@ -1,8 +1,8 @@
-const SHELL_CACHE = "asme-hub-shell-v58";
+const SHELL_CACHE = "asme-hub-shell-v59";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
-  "./manifest.webmanifest",
+  "./manifest.webmanifest?v=20260919b",
   "./assets/hub-mark.svg?v=20260801b",
   "./assets/css/styles.css?v=20260919a",
   "./assets/fonts/dm-serif-display-latin.woff2",
@@ -10,10 +10,10 @@ const SHELL_ASSETS = [
   "./assets/js/config.js?v=20260904a",
   "./assets/js/app.js?v=20260919a",
   "./assets/js/pwa.js?v=20260802f",
-  "./assets/icons/icon-192.png",
-  "./assets/icons/icon-512.png",
-  "./assets/icons/icon-maskable-512.png",
-  "./assets/icons/apple-touch-icon.png"
+  "./assets/icons/icon-192.png?v=20260919b",
+  "./assets/icons/icon-512.png?v=20260919b",
+  "./assets/icons/icon-maskable-512.png?v=20260919b",
+  "./assets/icons/apple-touch-icon.png?v=20260919b"
 ];
 
 self.addEventListener("install", (event) => {
