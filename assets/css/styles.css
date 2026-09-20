@@ -5374,6 +5374,16 @@ body.meeting-mode main {
   padding-top: 90px;
 }
 
+body.meeting-mode .hero-status-grid {
+  margin-top: 18px;
+}
+
+body.meeting-mode .role-persistence-note,
+body.meeting-mode #meeting-mode-button,
+body.meeting-mode .dashboard-band.is-role-priority::after {
+  display: none;
+}
+
 body.meeting-mode .dashboard-band-heading {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;

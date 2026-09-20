@@ -335,7 +335,12 @@ account numbers, transaction rows, payees, receipt links, reimbursement notes,
 or other identifying financial details. The public export must not substitute a
 cash balance for budget authority. `source_updated_at` means the time the
 underlying ledger was last refreshed; `updated_at` is only the export refresh
-time. If funding allocations are not confirmed, export a clear aggregate status
+time. The current public export has `updated_at` but no `source_updated_at`;
+the Hub shows the feed as connected and notes that the ledger update time is
+not published. To verify ledger freshness, the export owner must add a
+`source_updated_at` metric row sourced from a real private tracker refresh
+timestamp. Do not copy `updated_at` or `NOW()` into that row as a substitute.
+If funding allocations are not confirmed, export a clear aggregate status
 such as `funding_model_status = Needs confirmation`, not a fabricated zero.
 
 At annual handoff:

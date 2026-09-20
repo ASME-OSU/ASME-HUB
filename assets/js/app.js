@@ -189,6 +189,7 @@
   let activeBudget = {};
   let activeHealth = [];
   let selectedOfficerRole = "all";
+  let roleBeforeMeeting = null;
   let dashboardLoadGeneration = 0;
   let dashboardLoadController = null;
   let settingsProvenance = "deployed defaults";
@@ -668,6 +669,9 @@
   }
 
   function setMeetingMode(enabled) {
+    const alreadyEnabled = document.body.classList.contains("meeting-mode");
+    if (enabled === alreadyEnabled) return;
+    if (enabled) roleBeforeMeeting = selectedOfficerRole;
     document.body.classList.toggle("meeting-mode", enabled);
     elements.meetingModeToolbar.hidden = !enabled;
     elements.meetingModeButton?.setAttribute("aria-pressed", String(enabled));
@@ -681,8 +685,12 @@
       topbarMeetingButton.title = enabled ? "Meeting view active" : "Open meeting view";
     }
     if (enabled) {
+      applyOfficerRole("all", { persist: false });
       setMobileNavigation(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (roleBeforeMeeting !== null) {
+      applyOfficerRole(roleBeforeMeeting, { persist: false });
+      roleBeforeMeeting = null;
     }
   }
 
@@ -1071,11 +1079,17 @@
         : "Start with the open items, then use the team’s most-used tools pinned below.";
     }
 
-    if (elements.heroRoleLabel) elements.heroRoleLabel.textContent = role.label;
+    if (elements.heroRoleLabel) {
+      elements.heroRoleLabel.textContent = document.body.classList.contains("meeting-mode")
+        ? "All leaders"
+        : role.label;
+    }
     if (elements.heroBriefingTitle) elements.heroBriefingTitle.textContent = title;
     if (elements.heroBriefingCopy) elements.heroBriefingCopy.textContent = copy;
     if (elements.commandCenterRole) {
-      elements.commandCenterRole.textContent = role.viewLabel;
+      elements.commandCenterRole.textContent = document.body.classList.contains("meeting-mode")
+        ? "All leaders view"
+        : role.viewLabel;
     }
     if (elements.frequentResourcesTitle) {
       elements.frequentResourcesTitle.textContent = `${role.label} toolkit`;
@@ -1745,11 +1759,13 @@
       // like approved account authority.
       const fundingModelStatus = textValue("funding_model_status");
       const qualityMessages = [];
-      if (!sourceUpdatedAt && exportUpdatedAt) {
-        qualityMessages.push(
-          "Export refresh time is available, but source transaction freshness is unverified",
-        );
-      } else if (!sourceUpdatedAt) {
+      // A working export is not a broken feed merely because its private
+      // ledger does not publish a source timestamp. Keep that limitation
+      // visible without turning otherwise valid totals into an action item.
+      const freshnessNotice = !sourceUpdatedAt && exportUpdatedAt
+        ? "Source ledger update time is not published"
+        : "";
+      if (!sourceUpdatedAt && !exportUpdatedAt) {
         qualityMessages.push(
           "No source or export timestamp is available",
         );
@@ -1795,6 +1811,7 @@
         rateFormat,
         updatedAt: updatedAt ? updatedAt.toISOString() : "",
         updatedAtKind: sourceUpdatedAt ? "source" : exportUpdatedAt ? "export" : "",
+        freshnessNotice,
         fundingModelStatus,
         reconciliationDifference,
         qualityMessages,
@@ -2853,7 +2870,9 @@
         ? budget.error
         : budgetNeedsAttention
           ? budget.qualityMessages.join(" ")
-          : "Aggregate-only financial totals connected";
+          : `Aggregate-only financial totals connected${
+              budget.freshnessNotice ? `. ${budget.freshnessNotice}` : ""
+            }`;
       if (attendanceResult.status !== "fulfilled") {
         const message = `Attendance data unavailable for ${sourceLabel}.`;
         showDataError(message);
@@ -3453,8 +3472,9 @@
       Array.from(new Set([
         "Aggregate-only totals",
         freshness,
+        budget.freshnessNotice,
         ...qualityMessages,
-      ])).join(" · "),
+      ].filter(Boolean))).join(" · "),
     );
   }
 

@@ -254,7 +254,7 @@ test("Hub implementation retains the explicit public-feed safeguards exercised b
   const app = readFileSync(resolve(import.meta.dirname, "../assets/js/app.js"), "utf8");
   assert.match(app, /rawBudgetUsedRate \* 100/);
   assert.doesNotMatch(app, /rawBudgetUsedRate\s*<=\s*1/);
-  assert.match(app, /source transaction freshness is unverified/);
+  assert.match(app, /Source ledger update time is not published/);
   assert.match(app, /Category actuals exceed the approved-expense total/);
   assert.match(app, /Funding authority status is absent/);
 });
@@ -286,6 +286,27 @@ test("production budget parser rejects invalid required metrics and preserves re
   });
   assert.equal(invalid.available, false);
   assert.match(invalid.error, /invalid required metric: approved_expenses/);
+});
+
+test("an export timestamp without a ledger timestamp stays visible without flagging a healthy feed", async () => {
+  const runtime = createHubRuntime([
+    metricRow("academic_year", { value: "", format: "text", textValue: "Aug 1, 2026 – Jul 31, 2027" }),
+    metricRow("approved_income"),
+    metricRow("approved_expenses"),
+    metricRow("pending_approval"),
+    metricRow("planned_budget", { value: 100 }),
+    metricRow("remaining_budget", { value: 100 }),
+    metricRow("budget_used_rate", { value: 0, format: "percent" }),
+    metricRow("updated_at", { value: "Date(2026,8,19,21,24,0)", format: "datetime" }),
+    metricRow("funding_model_status", { value: "Confirmed", format: "text" }),
+  ]);
+  const parsed = await runtime.api.loadBudgetSummary({
+    budgetExportSheetUrl: "https://docs.google.com/spreadsheets/d/test-sheet-id-1234567890/edit",
+  });
+  assert.equal(parsed.available, true);
+  assert.equal(parsed.updatedAtKind, "export");
+  assert.equal(parsed.freshnessNotice, "Source ledger update time is not published");
+  assert.equal(parsed.qualityMessages.length, 0);
 });
 
 test("production parser and renderer never turn unknown metrics into public zeroes", async () => {
