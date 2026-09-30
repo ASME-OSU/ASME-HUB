@@ -1,0 +1,46 @@
+/* Install in the SAME private standalone project as copy/setup engines.
+ * Private properties only; no web deployment, triggers, public logs or secrets. */
+function previewAnnualSettingsDraft() { return runAnnualSettingsDraft_(false); }
+function appendOrReadbackAnnualSettingsDraft() { return runAnnualSettingsDraft_(true); }
+function runAnnualSettingsDraft_(confirmed) {
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  var props = PropertiesService.getScriptProperties();
+  function config(key) { var value = props.getProperty(key); if (!value) throw new Error('Missing private property: ' + key); return JSON.parse(value); }
+  var copy = config('ANNUAL_COPY_CONFIG'), setup = config('ANNUAL_SETUP_CONFIG');
+  var draft = config('ANNUAL_SETTINGS_DRAFT_CONFIG');
+  var io = annualSettingsDraftIO_(copy,setup,draft,props);
+  return AnnualSettingsDraftEngine.run(config('ANNUAL_LINK_HANDOFF'),draft,io,confirmed ? config('ANNUAL_SETTINGS_DRAFT_APPROVAL') : null);
+}
+function annualSettingsDraftIO_(copy,setup,c,props) {
+  var setupIO = annualSetupIO_(copy,setup);
+  setupIO.lock = function(fn) { return fn(); }; // Outer same-project lock owns execution.
+  if (!/^[A-Za-z0-9_-]{20,200}$/.test(c.ledgerId) || c.ledgerId === c.controlCenterId || c.ledgerId === copy.ledgerId) throw new Error('Separate private draft ledger required');
+  var journalConfig = Object.assign({}, copy, { ledgerId: c.ledgerId });
+  var journalIO = annualCopyIO_(journalConfig);
+  function verifyJournal() {
+    var file = journalIO.metadata(c.ledgerId);
+    var owner = String(copy.intendedOwner).trim().toLowerCase();
+    if (file.trashed || file.driveId || file.mimeType !== 'application/json' || !file.owners || file.owners.length !== 1 || String(file.owners[0].emailAddress).trim().toLowerCase() !== owner || !file.capabilities.canEdit || !file.permissions.length || file.permissions.some(function(p){return p.type !== 'user' || !p.emailAddress;})) throw new Error('Private editable chapter draft ledger required');
+  }
+  function sheet() {
+    var book = SpreadsheetApp.openById(c.controlCenterId), tab = book.getSheetByName(c.sheetName);
+    if (!tab || tab.getLastColumn() !== 20) throw new Error('Exact Control Center A:T required');
+    return tab;
+  }
+  function digest(value) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,value,Utilities.Charset.UTF_8).map(function(b){return ('0'+(b&255).toString(16)).slice(-2);}).join(''); }
+  return {
+    lock: function(fn) { var lock = LockService.getScriptLock(); if (!lock.tryLock(10000)) throw new Error('Another annual run is active'); try { return fn(); } finally { lock.releaseLock(); } },
+    now: function(){return new Date().toISOString();}, digest:digest,
+    verifiedHandoff: function(){return AnnualSetupEngine.handoff(copy,setup,setupIO);},
+    metadata: function(id){return Drive.Files.get(id,{fields:'id,mimeType,trashed'});},
+    form: function(id) { var f = FormApp.openById(id); return {id:f.getId(),destinationId:f.getDestinationId(),editUrl:f.getEditUrl(),respondentUrl:f.getPublishedUrl(),acceptingResponses:f.isAcceptingResponses()}; },
+    readSettings: function() {
+      var tab = sheet(), count = tab.getLastRow(); if (count < 2) throw new Error('Existing current year required');
+      var range = tab.getRange(1,1,count,20), values = range.getValues().map(function(row){return row.map(function(v){return v instanceof Date ? v.toISOString() : v;});});
+      return {headers:values[0],rows:values.slice(1),formulas:range.getFormulas()};
+    },
+    load: function(){verifyJournal(); return journalIO.load();},
+    save: function(value){verifyJournal(); journalIO.save(value);},
+    append: function(row){var tab = sheet(); tab.getRange(tab.getLastRow()+1,1,1,20).setValues([row]); SpreadsheetApp.flush();}
+  };
+}

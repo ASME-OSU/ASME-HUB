@@ -1,0 +1,91 @@
+/* Private append-only annual settings draft. Preview never writes. */
+var AnnualSettingsDraftEngine = (function () {
+  var headers = ['academic_year','display_label','engagement_goal','attendance_sheet_url','leaderboard_tab','dashboard_json_url','attendance_form_url','points_master_url','calendar_page_url','calendar_ical_url','is_active','is_current','last_updated','status_note','event_metrics_tab','budget_tracker_url','budget_export_sheet_url','budget_export_sheet_tab','banking_url','fundraising_url'];
+  var selected = ['display_label','engagement_goal','leaderboard_tab','dashboard_json_url','calendar_page_url','calendar_ical_url','status_note','event_metrics_tab','budget_export_sheet_tab','banking_url','fundraising_url'];
+  var linkFields = { attendance_sheet_url: 'pointsExport', attendance_form_url: 'attendanceFormRespondent', points_master_url: 'pointsMaster', budget_tracker_url: 'budgetTracker', budget_export_sheet_url: 'budgetExport' };
+  function fail(message) { throw new Error(message); }
+  function same(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function year(value) { var m = /^(\d{4})-(\d{4})$/.exec(value); return !!m && Number(m[1]) >= 2000 && Number(m[1]) <= 2199 && Number(m[2]) === Number(m[1]) + 1; }
+  function flag(value) { if (value === true || value === 'TRUE') return true; if (value === false || value === 'FALSE') return false; fail('Explicit TRUE/FALSE flags required'); }
+  function id(url, name) {
+    var re = name === 'annualFolder' ? /^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]{20,})(?:[?#].*)?$/ : name === 'attendanceFormEditor' ? /^https:\/\/docs\.google\.com\/forms\/d\/([A-Za-z0-9_-]{20,})\/edit(?:[?#].*)?$/ : /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})\/edit(?:[?#].*)?$/;
+    var match = re.exec(url); if (!match) fail('Observed full Google resource URL required: ' + name); return match[1];
+  }
+  function validate(handoff,c,io) {
+    if (!handoff || handoff.schema !== 1 || handoff.type !== 'asme-annual-link-handoff' || !year(handoff.year) || !c || c.schema !== 1 || c.year !== handoff.year || !/^[A-Za-z0-9_-]{20,}$/.test(c.controlCenterId) || c.sheetName !== 'Hub_Settings_Public') fail('Explicit valid selected year and Control Center required');
+    if (typeof c.draftTimestamp !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(c.draftTimestamp) || !Number.isFinite(Date.parse(c.draftTimestamp))) fail('Explicit fixed draft timestamp required');
+    if (!c.values || !same(Object.keys(c.values).sort(), selected.slice().sort())) fail('Select every additional public field explicitly, including intentional blanks');
+    selected.forEach(function (key) {
+      var value = c.values[key];
+      if (key === 'engagement_goal') { if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) fail('Positive numeric engagement goal required'); }
+      else if (typeof value !== 'string' || value !== value.trim() || /^[=+@\-]/.test(value)) fail('Reviewed literal value required: ' + key);
+      if (/_url$/.test(key) && value && !/^https:\/\/[^\s]+$/.test(value)) fail('Full HTTPS URL required: ' + key);
+    });
+    if (!c.values.display_label || !c.values.leaderboard_tab || !c.values.budget_export_sheet_tab || !c.values.event_metrics_tab) fail('Explicit labels and sheet tabs required');
+    var trusted = io.verifiedHandoff();
+    if (!trusted || trusted.year !== handoff.year || !same(trusted.links, handoff.links)) fail('New resource handoff differs from private Google configuration readback');
+    var ids = {}, seen = [];
+    ['pointsMaster','attendanceFormEditor','pointsExport','budgetTracker','budgetExport','annualFolder'].forEach(function (name) {
+      var resourceId = id(handoff.links[name],name), meta = io.metadata(resourceId);
+      var mime = name === 'annualFolder' ? 'application/vnd.google-apps.folder' : name === 'attendanceFormEditor' ? 'application/vnd.google-apps.form' : 'application/vnd.google-apps.spreadsheet';
+      if (resourceId === c.controlCenterId || seen.indexOf(resourceId) >= 0 || !meta || meta.id !== resourceId || meta.trashed || meta.mimeType !== mime) fail('New resource identity/MIME conflict');
+      ids[name] = resourceId; seen.push(resourceId);
+    });
+    var form = io.form(ids.attendanceFormEditor);
+    if (form.id !== ids.attendanceFormEditor || form.destinationId !== ids.pointsMaster || form.editUrl !== handoff.links.attendanceFormEditor || form.respondentUrl !== handoff.links.attendanceFormRespondent || form.acceptingResponses !== false || !/^https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[A-Za-z0-9_-]{20,}\/viewform(?:[?#].*)?$/.test(form.respondentUrl)) fail('Observed closed copied Form URL/destination mismatch');
+  }
+  function dataset(data,target) {
+    if (!data || !same(data.headers,headers) || !Array.isArray(data.rows) || !Array.isArray(data.formulas) || data.formulas.some(function(row){return row.some(function(v){return !!v;});})) fail('Exact A:T headers and literal rows required');
+    var keys = [], current = [], found = null;
+    data.rows.forEach(function (row,index) {
+      if (row.length !== 20 || !year(row[0]) || keys.indexOf(row[0]) >= 0) fail('Malformed/blank/duplicate annual row');
+      keys.push(row[0]); var active = flag(row[10]), isCurrent = flag(row[11]);
+      if (isCurrent) { if (!active) fail('Current year must be active'); current.push(row[0]); }
+      if (row[0] === target) { if (active || isCurrent) fail('Target year already active/current'); found = { row: row, index: index }; }
+    });
+    if (current.length !== 1 || current[0] === target) fail('Exactly one existing active current year required');
+    return found;
+  }
+  function run(handoff,c,io,approval) {
+    return io.lock(function () {
+      validate(handoff,c,io);
+      var data = io.readSettings(), existing = dataset(data,c.year), ledger = io.load();
+      if (!ledger || ledger.schema !== 1 || !ledger.runs) fail('Private draft ledger malformed');
+      var plan = JSON.stringify({ handoff: { year: handoff.year, links: handoff.links }, config: c });
+      var saved = ledger.runs[c.year];
+      if (saved && saved.plan !== plan) fail('Saved draft plan differs; inspect private journal');
+      var row = saved ? saved.row : headers.map(function(key) {
+        if (key === 'academic_year') return c.year;
+        if (key === 'is_active' || key === 'is_current') return false;
+        if (key === 'last_updated') return c.draftTimestamp;
+        if (linkFields[key]) return handoff.links[linkFields[key]];
+        return c.values[key];
+      });
+      if (existing && !same(existing.row,row)) fail('Existing target row differs; append-only writer cannot overwrite');
+      var baseline = saved ? saved.baseline : data.rows;
+      var digest = saved ? saved.digest : io.digest(JSON.stringify({plan:plan,headers:headers,row:row,baseline:baseline}));
+      var publicFields = headers.filter(function(key){ return !!linkFields[key] || /_url$/.test(key); });
+      var preview = { schema:1,year:c.year,digest:digest,status:'review-required',headers:headers.slice(),row:row.slice(),currentYear:data.rows.filter(function(r){return flag(r[11]);})[0][0],publicLinkFields:publicFields,warning:'The entire Control Center workbook is publicly readable. Every row value and these links require an explicit public audience review.' };
+      if (!approval) return preview;
+      if (approval.year !== c.year || approval.digest !== digest || approval.publicLinkReview !== true || typeof approval.reviewNote !== 'string' || !approval.reviewNote.trim()) fail('Exact private preview approval and public link review certificate required');
+      if (saved) {
+        if (!existing) fail('Unknown prior append outcome; inspect Google before any retry');
+        if (!same(data.rows.filter(function(r){return r[0] !== c.year;}),baseline)) fail('Existing rows changed after draft intent; reconcile Google');
+      } else {
+        if (existing) fail('Unjournaled existing target row; inspect Google');
+        if (!same(data.rows,baseline)) fail('Settings baseline changed');
+        saved = {plan:plan,row:row,digest:digest,baseline:baseline,state:'pending',approval:approval};
+        ledger.runs[c.year] = saved; io.save(ledger);
+        // Journal acknowledged before external append. A timeout never repeats it.
+        var latest = io.readSettings(); dataset(latest,c.year);
+        if (!same(latest,data)) fail('Settings changed before append; preserve pending intent');
+        io.append(row);
+      }
+      var readback = io.readSettings(), actual = dataset(readback,c.year);
+      if (!actual || !same(actual.row,row) || !same(readback.rows.filter(function(r){return r[0] !== c.year;}),baseline)) fail('Draft readback unavailable/different; preserve pending intent');
+      saved.state = 'verified'; saved.checkedAt = io.now(); io.save(ledger);
+      return {schema:1,year:c.year,status:'draft-readback-matched',digest:digest,row:actual.row.slice(),checkedAt:saved.checkedAt,activation:false,readiness:'Draft only; annual manual checks remain required'};
+    });
+  }
+  return {run:run,headers:headers.slice()};
+}());
