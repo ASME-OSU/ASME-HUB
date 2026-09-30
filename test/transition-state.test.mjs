@@ -53,3 +53,59 @@ test("checks in drafted steps also become stale when prerequisites are reopened"
   assert.equal(repaired.checks.V10, "needs_recheck");
   assert.equal(read(repaired).checks.V10, "needs_recheck");
 });
+
+test("transition start years are constrained, consecutive, and support distant future years", async () => {
+  const { transitionYear, transitionYearChoices, validTransitionYear } = await import("../assets/js/transition-state.js");
+  assert.equal(transitionYear(2000), "2000-2001");
+  assert.equal(transitionYear("2199"), "2199-2200");
+  assert.equal(transitionYear("2050"), "2050-2051");
+  for (const value of ["", 1999, 2200, "2027.5", "2027-2028", "2e3", "NaN"]) {
+    assert.throws(() => transitionYear(value), /whole starting year/);
+  }
+  for (const value of ["1999-2000", "2200-2201", "2027-2029", "2027–2028", null]) {
+    assert.equal(validTransitionYear(value), false);
+    assert.throws(() => storageKey(value), /Invalid transition year/);
+  }
+  assert.deepEqual(transitionYearChoices(["2026-2027", "2035-2036", "bad"], ["2050-2051", "2035-2036"], "2026-2027"),
+    ["2026-2027", "2027-2028", "2035-2036", "2050-2051"]);
+  assert.deepEqual(transitionYearChoices([], [], "2199-2200"), ["2199-2200"]);
+  const future = { ...emptyProgress("2050-2051"), steps: { T01: "complete" } };
+  assert.deepEqual(restore(exportProgress(future, TRANSITION_STEPS, TRANSITION_CHECKS), "2050-2051"), future);
+  assert.throws(() => read({ ...future, year: "2050-2051" }, "2027-2028"), /different transition year/);
+});
+
+test("known prior guide progress migrates visibly to recheck without losing blocked work", async () => {
+  const { migrateProgress, TRANSITION_GUIDE_VERSION } = await import("../assets/js/transition-state.js");
+  const old = {
+    ...emptyProgress(year), guideVersion: "officer-transition-guide-2", savedAt: "2026-09-30T12:00:00.000Z",
+    steps: { T01: "complete", T02: "complete", T03: "blocked", T04: "in_progress" }, checks: { V10: "passed", V01: "unable" },
+  };
+  const migrated = migrateProgress(old, year, TRANSITION_STEPS, TRANSITION_CHECKS);
+  assert.equal(migrated.guideVersion, TRANSITION_GUIDE_VERSION);
+  assert.deepEqual(migrated.steps, { T01: "in_progress", T02: "in_progress", T03: "blocked", T04: "in_progress" });
+  assert.deepEqual(migrated.checks, { V10: "needs_recheck", V01: "unable" });
+  assert.equal(old.steps.T01, "complete");
+  assert.equal(old.checks.V10, "passed");
+  assert.equal(migrated.savedAt, old.savedAt);
+  assert.deepEqual(read(migrated), migrated);
+  const imported = restore(JSON.stringify({ ...old, kind: "asme-officer-transition-progress" }));
+  assert.deepEqual(imported, migrated);
+  assert.throws(() => migrateProgress({ ...old, year: "2028-2029" }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /different transition year/);
+  assert.throws(() => migrateProgress({ ...old, steps: { T03: "complete" } }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /incomplete prerequisite/);
+  assert.throws(() => migrateProgress({ ...old, guideVersion: "unknown" }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /different guide version/);
+});
+
+test("manual check questions and resource actions use meaningful officer language", () => {
+  assert.equal(TRANSITION_STEPS.length, 16);
+  for (const step of TRANSITION_STEPS) {
+    assert.ok(step.action.length > 50);
+    assert.ok(step.check.length > 40);
+    assert.doesNotMatch(step.check, /\bV\d{2}\b|consumer|private evidence/);
+  }
+  for (const check of TRANSITION_CHECKS) {
+    assert.ok(check.title.endsWith("?"));
+    assert.doesNotMatch(check.title, /\bV\d{2}\b|effective access|consumer|synthetic/);
+  }
+  assert.equal(TRANSITION_STEPS.find((step) => step.id === "T03").resource, "templates");
+  assert.match(TRANSITION_STEPS.find((step) => step.id === "T02").action, /ASME OSU chapter Google account/);
+});

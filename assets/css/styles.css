@@ -6168,7 +6168,8 @@ body[data-theme="dark"] .command-center-actions > span {
 .transition-controls label,
 .transition-toolbar label { color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
 .transition-controls strong { color: var(--ink); font-size: var(--text-sm); }
-.transition-dialog select { min-width: 0; max-width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink); background: var(--surface); font: inherit; }
+.transition-dialog select,
+.transition-dialog input { min-width: 0; max-width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink); background: var(--surface); font: inherit; }
 .transition-progress-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: var(--text-sm); }
 #transition-progress { display: block; width: 100%; height: 12px; margin-top: 8px; overflow: hidden; border: 0; border-radius: 20px; background: var(--surface-soft); accent-color: var(--scarlet); }
 #transition-progress::-webkit-progress-bar { border-radius: 20px; background: var(--surface-soft); }
@@ -6208,7 +6209,9 @@ body[data-theme="dark"] .command-center-actions > span {
   .transition-controls > div { flex: 1 1 130px; }
   .transition-toolbar > button,
   .transition-toolbar > .file-button { min-height: 44px; }
-  .transition-dialog select { width: 100%; font-size: 16px; }
+  .transition-dialog select,
+  .transition-dialog input { width: 100%; font-size: 16px; }
+  #transition-year-form { flex-basis: 100%; }
   .transition-step { padding: 14px; }
 }
 

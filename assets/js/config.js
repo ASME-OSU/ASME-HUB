@@ -46,6 +46,16 @@ window.ASME_HUB_CONFIG = {
       "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343",
     // Shared writes use Google-authorized direct editing. No client write endpoint.
   },
+  templates: {
+    editUrl: "https://drive.google.com/drive/folders/125_HEyqM4T0lrSSuBfSzPT_o0B8kScHK",
+    sources: {
+      pointsMaster: { title: "Points Master", editUrl: "https://docs.google.com/spreadsheets/d/1UXprLAnzUjlzaojb7BDYTN9Om25xPFRYGQZIyHQRG2M/edit" },
+      attendanceForm: { title: "attendance Form", editUrl: "https://docs.google.com/forms/d/1ofRiLS_WtQpH_poxU4blyKn7pZVriUWL8dsvfCJLLYA/edit" },
+      pointsExport: { title: "Website Export", editUrl: "https://docs.google.com/spreadsheets/d/1CESQs6sY_WC9u0wonYq_CFraFFymtTJkh9SSv2DTXuY/edit" },
+      budgetTracker: { title: "budget tracker", editUrl: "https://docs.google.com/spreadsheets/d/1KMIkxLjNMRFilpicXIqePvy6XvZxgmJrRO3VT7DiCW8/edit" },
+      budgetExport: { title: "Budget Export", editUrl: "https://docs.google.com/spreadsheets/d/1vDHoouuaWX3NvdrflUiulesHU9z1JZ383_Tnu3Wqz-s/edit" },
+    },
+  },
   dataSources: {
     "2026-2027": {
       label: "2026–2027",

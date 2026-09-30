@@ -1,5 +1,5 @@
 import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js";
-import { emptyProgress, exportProgress, importProgress, parseProgress, reconcileProgress, storageKey, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js";
+import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -12,6 +12,31 @@ if (section) {
   const statusLabels = { not_started: "Not started", in_progress: "In progress", blocked: "Blocked", complete: "Complete — officer marked" };
   const checkLabels = { not_checked: "Not checked", checking: "Checking", passed: "Passed — officer reported", failed: "Failed", unable: "Unable to verify", needs_recheck: "Needs recheck" };
   const roleLabels = { president: "President", vice_president: "Vice President", treasurer: "Treasurer", secretary: "Secretary / points", social_chair: "Social Chair", webmaster: "Webmaster", ecouncil: "E-Council Representative", advisor: "Advisor" };
+  let previousGuideRaw = null;
+  let unreadableProgress = false;
+  const migrationNotice = "Guide updated: earlier completed steps are now In progress, and passed checks are now Needs recheck. Other statuses were retained. Review the revised instructions before confirming them again.";
+  function populateTransitionYears(preferred = yearSelect.value) {
+    const saved = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith(TRANSITION_STORAGE_PREFIX)) {
+          const year = key.slice(TRANSITION_STORAGE_PREFIX.length);
+          if (validTransitionYear(year)) saved.push(year);
+        }
+      }
+    } catch { /* The guide remains usable when browser storage is unavailable. */ }
+    const config = window.ASME_HUB_CONFIG || {};
+    const current = config.currentAcademicYear || "2026-2027";
+    const configured = [...Object.keys(config.dataSources || {}), ...(config.registeredTransitionYears || [])];
+    const choices = transitionYearChoices(configured, [...saved, preferred], current);
+    const nextStart = Math.min(Number(current.slice(0, 4)) + 1, 2199);
+    const selected = validTransitionYear(preferred) ? preferred : transitionYear(nextStart);
+    yearSelect.replaceChildren(...choices.map((year) => new Option(year.replace("-", "–"), year)));
+    yearSelect.value = selected;
+    $("transition-start-year").value = selected.slice(0, 4);
+  }
+  populateTransitionYears();
   let progress = emptyProgress(yearSelect.value);
   let currentIndex = 0;
   let opener = null;
@@ -41,17 +66,24 @@ if (section) {
     const missing = unmet(step);
     if (missing.length) return `Complete prerequisite ${missing.join(", ")} before continuing.`;
     const pending = unchecked(step);
-    if (pending.length) return `Cannot continue: required manual ${pending.map((check) => `${check.id} (${checkLabels[checkOf(check.id)]})`).join(", ")} must be recorded as passed after checking the real systems.`;
+    if (pending.length) return `Cannot continue: required manual checks ${pending.map((check) => `${check.title} (${checkLabels[checkOf(check.id)]})`).join(", ")} must be recorded as passed after checking the real systems.`;
     if (statusOf(step.id) !== "complete") return `Mark ${step.id} complete and confirm the officer-reported result before continuing.`;
     return "";
   }
   function readYear() {
     const year = yearSelect.value;
+    previousGuideRaw = null;
+    unreadableProgress = false;
+    $("transition-start-year").value = year.slice(0, 4);
     try {
       const raw = localStorage.getItem(storageKey(year));
-      progress = raw ? parseProgress(JSON.parse(raw), year, TRANSITION_STEPS, TRANSITION_CHECKS) : emptyProgress(year);
-      say(raw ? "Progress loaded from this device. Reconfirm private evidence before activation." : "No local progress for this year yet.");
+      const parsed = raw ? JSON.parse(raw) : null;
+      previousGuideRaw = parsed?.guideVersion === "officer-transition-guide-2" ? raw : null;
+      progress = raw ? migrateProgress(parsed, year, TRANSITION_STEPS, TRANSITION_CHECKS) : emptyProgress(year);
+      say(previousGuideRaw ? migrationNotice + " Your previous saved file is preserved until you save; a backup will be kept on this device." : raw ? "Progress loaded from this device. Reconfirm the real checks before activation." : "No local progress for this year yet.");
     } catch (error) {
+      unreadableProgress = true;
+      previousGuideRaw = null;
       progress = emptyProgress(year);
       say(`Local progress could not be loaded: ${error.message} Existing saved data was not changed.`, true);
     }
@@ -59,11 +91,18 @@ if (section) {
     render();
   }
   function save(next, focusControl) {
+    if (unreadableProgress) {
+      say("Saved progress could not be read and will not be overwritten. Import a valid progress file or choose another year.", true);
+      render();
+      return false;
+    }
     const candidate = { ...next, savedAt: new Date().toISOString() };
     try {
+      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
       localStorage.setItem(storageKey(candidate.year), JSON.stringify(candidate));
+      previousGuideRaw = null;
       progress = candidate;
-      say("Saved on this device. This is an officer-marked status, not automated verification.");
+      say("Saved on this device. Officers perform the checks in the real systems; the Hub records their reported results.");
       if (currentIndex > firstIncomplete()) currentIndex = firstIncomplete();
       render();
       list.querySelector(`[data-transition-control="${focusControl}"]`)?.focus();
@@ -76,6 +115,7 @@ if (section) {
     }
   }
   function render() {
+    $("transition-export").disabled = unreadableProgress;
     const step = TRANSITION_STEPS[currentIndex];
     const completed = TRANSITION_STEPS.filter((entry) => statusOf(entry.id) === "complete").length;
     const current = window.ASME_HUB_CONFIG?.currentAcademicYear || "2026-2027";
@@ -99,23 +139,44 @@ if (section) {
     card.append(node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${byId.get(id).title}`).join("; ") : "None"}`));
     card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
+    if (step.resource) {
+      const url = window.ASME_HUB_CONFIG?.[step.resource]?.editUrl;
+      if (url && /^https:\/\//.test(url)) {
+        const link = node("a", "secondary-button", step.resource === "templates" ? "Open Google Drive Templates folder" : "Open Google Hub Control Center");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        card.append(link);
+      }
+    }
+    for (const key of step.templateActions || []) {
+      const source = window.ASME_HUB_CONFIG?.templates?.sources?.[key];
+      if (source?.editUrl && /^https:\/\//.test(source.editUrl)) {
+        const link = node("a", "secondary-button", `Open ${source.title} template`);
+        link.href = source.editUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        card.append(link);
+      }
+    }
     card.append(node("h4", "", "Manual confirmation"), node("p", "transition-manual-check", step.check));
+    if (checksFor(step).length) card.append(node("p", "", "Perform these checks in the named services, then record your result below. The Hub does not check them automatically."));
     for (const check of checksFor(step)) {
-      const label = node("label", "transition-check-control", `${check.id} · ${check.title}`);
+      const label = node("label", "transition-check-control", check.title);
       const select = node("select");
       select.dataset.transitionControl = check.id;
-      select.setAttribute("aria-label", `${check.id} manual check: ${check.title}`);
+      select.setAttribute("aria-label", `Manual check: ${check.title}`);
       TRANSITION_CHECK_STATUSES.forEach((value) => select.add(new Option(checkLabels[value], value)));
       select.value = checkOf(check.id);
       select.addEventListener("change", () => {
         const value = select.value;
         const missing = unmet(step);
         if (value === "passed" && missing.length) {
-          say(`Complete ${missing.join(", ")} before recording ${check.id} as passed.`, true);
+          say(`Complete ${missing.join(", ")} before recording this check as passed.`, true);
           select.value = checkOf(check.id);
           return;
         }
-        if (value === "passed" && !window.confirm(`Record ${check.id} as officer-reported Passed? Confirm the actual check and private evidence outside this device. This is not automated verification.`)) {
+        if (value === "passed" && !window.confirm(`Record “${check.title}” as Passed? Confirm you performed the check in the named service and recorded the result in the private handoff. The Hub does not perform this check.`)) {
           select.value = checkOf(check.id);
           return;
         }
@@ -138,7 +199,7 @@ if (section) {
         const missing = unmet(step);
         const pending = unchecked(step);
         if (missing.length || pending.length) {
-          say(missing.length ? `Complete ${missing.join(", ")} first.` : `Record manual ${pending.map((check) => check.id).join(", ")} as passed before marking ${step.id} complete.`, true);
+          say(missing.length ? `Complete ${missing.join(", ")} first.` : `Record manual ${pending.map((check) => check.title).join(", ")} as passed before marking ${step.id} complete.`, true);
           select.value = statusOf(step.id);
           return;
         }
@@ -187,6 +248,14 @@ if (section) {
   });
   $("transition-next-reason").tabIndex = -1;
   yearSelect.addEventListener("change", readYear);
+  $("transition-year-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      const year = transitionYear($("transition-start-year").value);
+      populateTransitionYears(year);
+      readYear();
+    } catch (error) { say(error.message, true); }
+  });
   $("transition-export").addEventListener("click", () => {
     const url = URL.createObjectURL(new Blob([exportProgress(progress, TRANSITION_STEPS, TRANSITION_CHECKS)], { type: "application/json" }));
     const link = node("a");
@@ -204,13 +273,19 @@ if (section) {
     if (!file) return;
     try {
       if (file.size > 100_000) throw new Error("Progress files must be under 100 KB.");
-      const imported = importProgress(await file.text(), yearSelect.value, TRANSITION_STEPS, TRANSITION_CHECKS);
+      const text = await file.text();
+      const imported = importProgress(text, yearSelect.value, TRANSITION_STEPS, TRANSITION_CHECKS);
+      const migrated = JSON.parse(text).guideVersion === "officer-transition-guide-2";
       const candidate = { ...imported, savedAt: new Date().toISOString() };
+      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
+      if (migrated) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-import-backup`, text);
       localStorage.setItem(storageKey(candidate.year), JSON.stringify(candidate));
+      previousGuideRaw = null;
+      unreadableProgress = false;
       progress = candidate;
       currentIndex = firstIncomplete();
       render();
-      say("Imported into this device. Reconfirm all private checks before any activation; imported status is not verification.");
+      say(migrated ? migrationNotice + " The imported original was backed up on this device." : "Imported into this device. Reconfirm all real checks before activation; imported status is not verification.");
     } catch (error) {
       say(`Import failed: ${error.message} Existing progress was not changed.`, true);
     }
@@ -225,7 +300,7 @@ if (section) {
       card.append(node("p", "", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
       card.append(node("p", "", `Prerequisites: ${step.needs.join(", ") || "None"}`));
       card.append(node("p", "", step.action), node("p", "", `Manual check: ${step.check}`));
-      checksFor(step).forEach((check) => card.append(node("p", "", `${check.id} · ${check.title}: ${checkLabels[checkOf(check.id)]}`)));
+      checksFor(step).forEach((check) => card.append(node("p", "", `${check.title}: ${checkLabels[checkOf(check.id)]}`)));
       sheet.append(card);
     }
   }
@@ -239,6 +314,9 @@ if (section) {
     document.body.classList.remove("transition-print");
     $("transition-print-sheet").hidden = true;
   });
-  document.addEventListener("transition:year-updated", render);
+  document.addEventListener("transition:year-updated", () => {
+    populateTransitionYears();
+    render();
+  });
   readYear();
 }

@@ -1,17 +1,17 @@
-const SHELL_CACHE = "asme-hub-shell-v65";
+const SHELL_CACHE = "asme-hub-shell-v66";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest?v=20260919b",
   "./assets/hub-mark.svg?v=20260801b",
-  "./assets/css/styles.css?v=20260927b",
+  "./assets/css/styles.css?v=20260930b",
   "./assets/fonts/dm-serif-display-latin.woff2",
   "./assets/fonts/inter-latin.woff2",
-  "./assets/js/config.js?v=20260928b",
+  "./assets/js/config.js?v=20260930b",
   "./assets/js/shared-resources.js?v=20260928b",
   "./assets/js/settings-readback.js?v=20260928b",
-  "./assets/js/app.js?v=20260930a",
-  "./assets/js/transition.js?v=20260927b",
+  "./assets/js/app.js?v=20260930b",
+  "./assets/js/transition.js?v=20260930b",
   "./assets/js/transition-steps.js",
   "./assets/js/transition-state.js",
   "./assets/js/pwa.js?v=20260802f",
