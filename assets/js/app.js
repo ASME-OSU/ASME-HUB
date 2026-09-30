@@ -1889,6 +1889,9 @@
         };
       });
 
+      config.registeredTransitionYears = [...new Set([
+        ...Object.keys(config.dataSources), ...Object.keys(remoteSources), ...inactiveYears,
+      ])];
       if (Object.keys(remoteSources).length || inactiveYears.size) {
         const nextSources = { ...sharedYearSources, ...remoteSources };
         inactiveYears.forEach((year) => delete nextSources[year]);
