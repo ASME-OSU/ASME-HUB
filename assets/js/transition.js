@@ -1,5 +1,5 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js";
-import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js";
+import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20260930c";
+import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20260930c";
 
 const section = document.getElementById("transition");
 if (section) {
