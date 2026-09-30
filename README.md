@@ -94,7 +94,7 @@ but does not turn the static access screen into secure authentication.
 | `assets/js/app.js` | Password check, settings storage, Google Sheets loading, charts, and interface behavior |
 | `data/demo-dashboard.json` | Safe sample aggregate dataset |
 | `integrations/apps-script/Code.gs.example` | Optional Google Sheets aggregate-feed starter |
-| `integrations/apps-script/SettingsWriter.gs.example` | Organization-wide shared-settings writer |
+| `integrations/apps-script/SettingsWriter.gs.example` | Disabled legacy writer; see protected-write contract |
 
 ## Current tool connections
 
@@ -144,13 +144,12 @@ settings** in the sidebar. The panel can:
 - keep the calendar page and Google Calendar iCal subscription URL separate
 - add the next academic year without editing code
 - preview changes for the current browser tab
-- publish a new or updated year for every viewer when the settings writer is connected
+- compare intended values with a fresh public Google settings read
 - restore a preview to the organization-wide shared values
 
 Organization-wide settings live in the `Hub_Settings_Public` tab of the
 [ASME Hub Control Center](https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343).
-The hub loads that tab before displaying an academic year, so one edit applies
-to every viewer. Use one row per academic year and preserve the existing column
+The Hub reads that tab on load; open viewers and cached consumers may need a refresh. Use one row per academic year and preserve the existing column
 headers.
 
 The shared settings row also contains these rollover controls:
@@ -165,45 +164,37 @@ The shared settings row also contains these rollover controls:
   aggregate-only dashboard feed
 - `banking_url` and `fundraising_url`: yearly Finance resource destinations
 
-Before the settings writer is connected, changes made directly in the Hub are
-temporary previews stored in `sessionStorage`; they disappear when that browser
-tab is closed. Once connected, **Publish for everyone** creates a new year row
-or updates the matching existing year and records the change in
-`Settings_Audit`.
+Changes made in the Hub are temporary tab previews. Shared edits use **Edit shared settings**, which opens Google Sheets and requires Google edit permission. All current officers may edit through their authorized Google account. Preserve the previous row/version, re-read it before changing cells, coordinate concurrent edits, and wait for Google's saved status. Keep a new draft noncurrent and preserve historical years.
 
-### Enable organization-wide publishing
+Use **Compare with Google** with the form set to your intended values. It compares a fresh public response, including inactive rows, without replacing the form or using tab previews/deployed defaults as evidence. Missing rows, duplicate keys, invalid current-year flags, schema errors, unavailable reads, and differences never claim success. Matching readback is not proof of editor identity or downstream refresh. Check a fresh Hub tab without previews and each independent consumer. Restore only affected cells from version history after reconciling other edits, then repeat readback.
 
-This writer uses the same convenience barrier as the dashboard. Because the
-Hub is a public static site, its deployment URL and verification value are
-visible to anyone who inspects the client. Use it only for non-sensitive links,
-labels, and aggregate-data configuration.
+The Control Center is currently public in full. Only intentionally public values belong in it; hidden tabs do not protect private notes, edit references, or audits. Public link visibility does not grant access to a private destination. Confirm the publication boundary before adding fields or resources.
 
-1. Create or use the dedicated `ASME Hub Control Center` Google spreadsheet.
-2. Copy `Hub_Settings_Public` into it if the tab is not already present.
-3. Create a standalone Apps Script project in the ASME admin account.
-4. Copy in `integrations/apps-script/SettingsWriter.gs.example` and confirm its
-   `SPREADSHEET_ID` points to the control-center workbook.
-5. Run `setupSettingsWriter()` once and approve spreadsheet access.
-6. Deploy it as a web app that executes as the owner and allows anyone with the
-   link to run it.
-7. Paste the deployment `/exec` URL into `sharedSettings.writeUrl` in
-   `assets/js/config.js`.
-8. Verify preview and organization-wide publishing separately.
-
-The writer updates the matching academic-year row, appends new academic years,
-allows one row to be marked current, and keeps a timestamped audit record.
+The public-token writer has been removed from the client and its example disabled. This does not revoke any existing deployment. An authorized owner must inspect and retire any insecure live writer separately. No protected writer is deployed by this change. See [authorization, conflicts, readback, and recovery contract](integrations/apps-script/SETTINGS_WRITE_CONTRACT.md).
 
 The **Events calendar page** is the human-facing web page. The **Google Calendar
 iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,
 Apple Calendar, Outlook, and other compatible apps.
 
 The full dashboard JSON still takes priority when both sources are present.
+When an attendance Sheet is configured, the Hub first reads its
+`System_Status` and requests member-derived data or dashboard JSON only when
+`system_status` is exactly `LIVE`. A missing, failed, TESTING, or PAUSED status
+leaves attendance data unavailable. A JSON-only dashboard must explicitly
+include `meta.systemStatus: "LIVE"`; existing JSON-only feeds without this field
+will remain unavailable until their generator supplies it. This display check
+does not make a published JSON file private or prove its freshness. Generators
+must separately suppress non-live output and refresh or remove old snapshots.
 Without it, the hub combines `Leaderboard_Public`, `System_Status`,
 `Event_Metrics_Public`, `Monthly_Metrics_Public`,
 `Semester_Metrics_Public`, and the hourly generated calendar snapshot. This
 built-in path fills all five KPIs, monthly and semester comparisons,
 event-level turnout, participation depth, event-type attendance, upcoming
 events, aggregate review reminders, and connection health.
+
+## Check the actual attendance Form destination
+
+For V02, use the [private authorized destination validator](integrations/apps-script/FORM_DESTINATION_VALIDATION.md) or inspect the actual destination in Google Forms. The standalone Apps Script reads Google’s actual linked workbook with read-only scopes and reports match, mismatch, unlinked, inaccessible, or invalid. Its setup and live execution remain pending; local tests cannot confirm annual linkage. Keep IDs and result evidence private. The Hub does not run this checker or automatically mark V02 passed. Confirm the response tab separately; submission and processing rehearsal remain separate checks.
 
 ## Officer meeting view
 
@@ -471,27 +462,28 @@ The annual rollover does not require changing the dashboard code.
 
 1. Open **Year Settings** and choose **Add next year**.
 2. Use the preview to confirm the generated key, label, and links.
-3. Choose **Publish for everyone** when the settings writer is connected.
-   Otherwise open **Edit shared settings** and add the row manually.
+3. Open **Edit shared settings** and add the row under Google authorization.
+   Use **Compare with Google** to check the intended values after Google saves.
 4. Paste the new public Website Export Sheet, attendance form, Points Master,
    calendar page, iCal feed, and optional full aggregate JSON feed.
-5. Mark only the new row `is_current`, leave desired historical rows
-   `is_active`, and set `event_metrics_tab` to the new public aggregate tab.
+5. Keep the draft `is_current` FALSE until annual activation checks pass. Preserve
+   the current year and historical rows; set `event_metrics_tab` to the new public aggregate tab.
 6. Create the new private `Dashboard Staging`,
    `Monthly Dashboard Staging`, and `Semester Dashboard Staging` tabs plus the
    public `Event_Metrics_Public`, `Monthly_Metrics_Public`, and
    `Semester_Metrics_Public` tabs with the same column contracts.
 7. Confirm the new private monthly tab starts in July of the correct academic
    year and ends in June of the next calendar year.
-8. Reload the hub and verify the year and review-period selectors can load the
-   new year, Fall/Spring presets, and every expected month.
+8. When the draft is ready for public visibility, set `is_active` TRUE while
+   keeping it noncurrent. Reload the Hub and check that year, Fall/Spring
+   presets, and every expected month. Activation remains a separate decision.
 9. Run **Sync calendar and deploy Pages**, or wait for the next hourly run, and
    confirm the new calendar reports **LIVE**.
 10. Confirm the year selector can still load
    any prior years that should remain available.
 
 The academic years shown in the selector come from the shared settings rows.
-Remove a row only when officers should no longer see that year.
+Set `is_active` FALSE to hide a year while preserving its historical row.
 
 ## Change the dashboard password
 
@@ -501,10 +493,9 @@ Generate a SHA-256 digest locally:
 printf %s 'NEW ACCESS PHRASE' | shasum -a 256
 ```
 
-Copy the digest into `access.passwordSha256` in `assets/js/config.js`. When the
-no-sign-in settings writer is enabled, copy the same digest into
-`ACCESS_TOKEN` in `SettingsWriter.gs` and redeploy the web app. Do not write the
-plain access phrase into the repository or commit message.
+Copy the digest into `access.passwordSha256` in `assets/js/config.js`. This phrase
+is not Google write authorization. Do not write the plain access phrase into the
+repository or commit message.
 
 Again, this deters casual access only; it does not make GitHub Pages private.
 
@@ -559,3 +550,9 @@ After the dashboard branch is reviewed and merged:
 - Confirm all four system-health cards are live or intentionally noted.
 - Check one desktop width, one tablet width, and one mobile width.
 - Keep this README with the repository when ownership changes.
+
+## Shared chapter resource maintenance
+
+**Tools and resources → Maintain shared chapter links** provides authorized direct Google editing and a fresh read-only resource refresh once a reviewed projection is configured. The default is **not connected**; the current shared launcher still uses bundled config plus annual Google settings. No resource tab or live migration has been verified. **Manage my links** remains visibly personal browser storage.
+
+See [shared resource contract and migration map](integrations/apps-script/SHARED_RESOURCES_CONTRACT.md) for all 17 stable IDs, exact proposed A:H schema, public/private review gates, connection and recovery steps. Six annual actions keep their URL authority in Year Settings. Disable shared entries with explicit FALSE tombstones; deleting rows restores defaults. Failed reads show stale successful data or unconfirmed bundled defaults. A refresh checks the public response only; direct officer edit access and clean-browser live propagation require separate rehearsal. Roles influence presentation and never grant access.
