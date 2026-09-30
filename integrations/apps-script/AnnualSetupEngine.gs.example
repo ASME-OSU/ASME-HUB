@@ -1,0 +1,191 @@
+/* Private, manual configuration after AnnualCopyEngine creation. No activation.
+ * Preview is read-only. Approval is the exact preview digest in private Script
+ * Properties. Journal and readback reconcile uncertain writes without retrying. */
+var AnnualSetupEngine = (function () {
+  var resources = ['pointsMaster', 'attendanceFormEditor', 'pointsExport', 'budgetTracker', 'budgetExport', 'annualFolder'];
+  var headers = ['Timestamp', 'Email Address', 'OSU name.number', 'Is this your first submission this academic year?', 'Preferred first name', 'Last name', 'Year in school', 'Major', 'Public leaderboard display', 'Public alias', 'Event ID', 'Optional note'];
+  function fail(message) { throw new Error(message); }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function validate(copy, setup) {
+    if (!setup || setup.schema !== 1 || setup.year !== copy.year || !setup.resources || !setup.reviews || !setup.points || !setup.exports) fail('Invalid annual setup configuration/year');
+    var keys = {};
+    resources.forEach(function (name) {
+      var key = setup.resources[name];
+      var item = copy.items.filter(function (i) { return i.key === key; })[0];
+      if (!item || keys[key] || (name === 'annualFolder' ? item.kind !== 'folder' : item.kind !== 'copy')) fail('Missing/distinct copied resource keys');
+      if (name !== 'annualFolder') {
+        var expectedMime = name === 'attendanceFormEditor' ? 'application/vnd.google-apps.form' : 'application/vnd.google-apps.spreadsheet';
+        if (item.source.mimeType !== expectedMime) fail('Resource MIME mismatch');
+        var review = setup.reviews[key];
+        if (!review || review.boundScriptsReviewed !== true || review.propertiesAndTriggersReviewed !== true || review.safeForConfiguration !== true || !review.reviewNote || String(review.sourceVersion) !== String(item.source.version)) fail('Bound scripts/properties/triggers review required before configuration');
+      }
+      keys[key] = true;
+    });
+    if (setup.points.oldResponseTab !== 'Form Responses 2' || typeof setup.points.term !== 'string' || !setup.points.term.trim() || setup.points.term.length > 100 || /^[=+@]/.test(setup.points.term)) fail('Reviewed Points term/response template required');
+    if (setup.points.academicYear !== copy.year.slice(0, 4) + '-' + copy.year.slice(7)) fail('Points academic year label must match selected year');
+    ['pointsExport', 'budgetExport'].forEach(function (name) {
+      var target = name === 'pointsExport' ? 'pointsMaster' : 'budgetTracker';
+      var item = copy.items.filter(function (i) { return i.key === setup.resources[target]; })[0];
+      var spec = setup.exports[name];
+      if (!spec || spec.sourceId !== item.source.id || !Number.isInteger(spec.expectedFormulaCells) || spec.expectedFormulaCells < 1) fail('Certified export import source/count required');
+    });
+  }
+  function identity(copy, setup, io) {
+    validate(copy, setup);
+    var result = AnnualCopyEngine.execute(copy, io.copy, true);
+    var ids = {};
+    resources.forEach(function (name) {
+      var operation = result.operations.filter(function (o) { return o.key === setup.resources[name]; })[0];
+      if (!operation || !operation.id || ['created', 'reconciled'].indexOf(operation.state) < 0) fail('Create and reconcile every resource before configuring');
+      if (copy.items.some(function (item) { return item.source && item.source.id === operation.id; })) fail('Source file cannot be a configuration target');
+      ids[name] = operation.id;
+    });
+    if (Object.keys(ids).map(function (k) { return ids[k]; }).some(function (id, index, all) { return all.indexOf(id) !== index; })) fail('Resource identity collision');
+    return ids;
+  }
+  function dates(year) {
+    var first = year.slice(0, 4), second = year.slice(5);
+    return { B4: first + '-08-01', B5: second + '-07-31', B11: first + '-08-01', B12: first + '-12-31', B13: second + '-01-01', B14: second + '-05-31' };
+  }
+  function compact(patches) {
+    // Coalesce only adjacent changed formula cells; constants and unrelated cells
+    // never enter a write range. Thousands of formulas become a few range writes.
+    var constants = [], rows = {};
+    patches.forEach(function (patch) {
+      if (!patch.before.formula || !patch.after.formula) { constants.push(patch); return; }
+      var match = patch.a1.match(/^([A-Z]+)([1-9][0-9]*)$/), column = 0;
+      if (!match) fail('Formula inventory must use single-cell A1');
+      match[1].split('').forEach(function (letter) { column = column * 26 + letter.charCodeAt(0) - 64; });
+      var key = patch.id + ':' + patch.sheet + ':' + match[2];
+      if (!rows[key]) rows[key] = [];
+      rows[key].push({ patch: patch, column: column, row: Number(match[2]), letters: match[1] });
+    });
+    var blocks = [];
+    Object.keys(rows).sort(function (a, b) { var x = rows[a][0], y = rows[b][0]; return (x.patch.id + ':' + x.patch.sheet).localeCompare(y.patch.id + ':' + y.patch.sheet) || x.row - y.row; }).forEach(function (key) {
+      var cells = rows[key].sort(function (a, b) { return a.column - b.column; }), runs = [], run;
+      cells.forEach(function (cell) {
+        if (!run || cell.column !== run[run.length - 1].column + 1) { run = []; runs.push(run); }
+        run.push(cell);
+      });
+      runs.forEach(function (row) {
+        var first = row[0], last = row[row.length - 1];
+        var existing = blocks.filter(function (block) { return block.id === first.patch.id && block.sheet === first.patch.sheet && block.startColumn === first.letters && block.endColumn === last.letters && block.endRow === first.row - 1; })[0];
+        if (!existing) { existing = { kind: 'range', id: first.patch.id, sheet: first.patch.sheet, startColumn: first.letters, endColumn: last.letters, startRow: first.row, endRow: first.row - 1, before: [], after: [] }; blocks.push(existing); }
+        existing.endRow = first.row;
+        existing.before.push(row.map(function (cell) { return cell.patch.before.formula; }));
+        existing.after.push(row.map(function (cell) { return cell.patch.after.formula; }));
+      });
+    });
+    blocks.forEach(function (block) { block.a1 = block.startColumn + block.startRow + ':' + block.endColumn + block.endRow; delete block.startColumn; delete block.endColumn; delete block.startRow; delete block.endRow; });
+    return constants.concat(blocks);
+  }
+  function changes(ids, setup, phase, io) {
+    var form = io.form(ids.attendanceFormEditor);
+    if (form.id !== ids.attendanceFormEditor || form.acceptingResponses !== false) fail('Copied Form identity/closed response review required');
+    var patches = [];
+    function add(resource, tab, a1, before, after) {
+      if (!same(before, after)) patches.push({ kind: 'cell', id: ids[resource], sheet: tab, a1: a1, before: before, after: after });
+    }
+    if (phase === 'destination') {
+      if (form.destinationId && form.destinationId !== ids.pointsMaster) fail('Copied Form has an unexpected destination; inspect before relinking');
+      if (form.destinationId !== ids.pointsMaster) patches.push({ kind: 'destination', id: ids.attendanceFormEditor, before: form.destinationId || null, after: ids.pointsMaster, priorTabs: io.tabs(ids.pointsMaster) });
+      return { patches: patches, form: form };
+    }
+    if (phase !== 'workbooks') fail('Unknown configuration phase');
+    if (form.destinationId !== ids.pointsMaster) fail('Verify copied Form destination before workbook preview');
+    var tabs = io.tabs(ids.pointsMaster).filter(function (tab) { return tab.formId === ids.attendanceFormEditor; });
+    if (tabs.length !== 1 || tabs[0].lastRow > 1 || !same(tabs[0].headers, headers)) fail('Exact linked response tab/header and empty response body required');
+    var responseTab = tabs[0].name;
+    var oldToken = "'" + setup.points.oldResponseTab.replace(/'/g, "''") + "'!";
+    var newToken = "'" + responseTab.replace(/'/g, "''") + "'!";
+    var points = io.workbook(ids.pointsMaster, setup.exports.pointsExport.sourceId);
+    var matchCount = 0;
+    points.formulas.forEach(function (cell) {
+      if (cell.formula.indexOf(oldToken) >= 0) { matchCount++; add('pointsMaster', cell.sheet, cell.a1, { formula: cell.formula }, { formula: cell.formula.split(oldToken).join(newToken) }); }
+    });
+    // Existing configured snapshots may legitimately contain no old-tab references.
+    if (!matchCount && !points.formulas.some(function (cell) { return cell.formula.indexOf(newToken) >= 0; })) fail('Points response formula references missing');
+    function value(resource, sheet, a1, after) { add(resource, sheet, a1, io.cell(ids[resource], sheet, a1), after); }
+    var status = io.cell(ids.pointsMaster, 'Config', 'B5');
+    if (!same(status, { value: 'TESTING' })) fail('Points must remain TESTING during annual configuration');
+    value('pointsMaster', 'Config', 'B2', { value: setup.points.term });
+    value('pointsMaster', 'Config', 'B3', { value: setup.points.academicYear });
+    value('pointsMaster', 'Config', 'B7', { value: responseTab });
+    value('pointsMaster', 'Config', 'B16', { value: ids.attendanceFormEditor });
+    var bounds = dates(setup.year);
+    Object.keys(bounds).forEach(function (a1) { value('budgetTracker', 'Setup & Lists', a1, { date: bounds[a1] }); });
+    ['pointsExport', 'budgetExport'].forEach(function (name) {
+      var spec = setup.exports[name], destination = ids[name === 'pointsExport' ? 'pointsMaster' : 'budgetTracker'];
+      var workbook = io.workbook(ids[name], spec.sourceId);
+      var changed = 0, configured = 0;
+      workbook.formulas.forEach(function (cell) {
+        if (cell.formula.indexOf(spec.sourceId) >= 0) {
+          if (!/IMPORTRANGE\s*\(/i.test(cell.formula)) fail('Export source ID in unsupported formula');
+          changed++;
+          add(name, cell.sheet, cell.a1, { formula: cell.formula }, { formula: cell.formula.split(spec.sourceId).join(destination) });
+        } else if (/IMPORTRANGE\s*\(/i.test(cell.formula)) {
+          if (cell.formula.indexOf(destination) < 0) fail('Unreviewed export import target');
+          configured++;
+        }
+      });
+      if (changed + configured !== spec.expectedFormulaCells) fail('Export formula count changed; inspect exact source inventory');
+      workbook.sourceURLCells.forEach(function (cell) {
+        if (cell.sheet !== 'Read Me' && cell.sheet !== 'README') fail('Source URL outside reviewed Read Me tab');
+        add(name, cell.sheet, cell.a1, { value: cell.value }, { value: cell.value.split(spec.sourceId).join(destination) });
+      });
+    });
+    return { patches: compact(patches), form: form, responseTab: responseTab, responseSheetId: tabs[0].id };
+  }
+  function run(copy, setup, io, phase, approval) {
+    // Identity engine owns its own lock. Re-check inside the same outer project lock
+    // using copy.lock passthrough supplied by the runner (no nested lock acquisition).
+    return io.lock(function () {
+      var ids = identity(copy, setup, io), ledger = io.copy.load(), run = ledger.runs[copy.year];
+      var setupPlan = JSON.stringify(setup);
+      if (run.setup && run.setup.plan !== setupPlan) fail('Saved annual setup differs; preserve and reconcile configuration');
+      var saved = run.setup && run.setup.phases[phase];
+      var planned = saved ? saved.preview : changes(ids, setup, phase, io);
+      var digest = io.digest(JSON.stringify({ copy: copy, setup: setup, phase: phase, ids: ids, preview: planned }));
+      var preview = { schema: 1, year: copy.year, phase: phase, digest: digest, resources: ids, changes: planned.patches, responseTab: planned.responseTab || null, responseSheetId: planned.responseSheetId === undefined ? null : planned.responseSheetId, status: 'review-required' };
+      if (!approval) return preview;
+      if (approval.digest !== digest || approval.phase !== phase || approval.year !== copy.year) fail('Approval must match this exact private preview');
+      if (!run.setup) run.setup = { plan: setupPlan, phases: {} };
+      if (!saved) { planned.patches.forEach(function (patch) { if (!same(io.read(patch), patch.before)) fail('Configuration baseline changed before writes'); }); saved = { digest: digest, preview: planned, operations: {}, state: 'pending' }; run.setup.phases[phase] = saved; io.copy.save(ledger); }
+      planned.patches.forEach(function (patch, index) {
+        var key = String(index), record = saved.operations[key];
+        var current = io.read(patch);
+        if (same(current, patch.after)) {
+          if (!record) fail('Value changed after preview; obtain a new reviewed preview');
+          saved.operations[key] = { state: 'configured', checkedAt: io.now() }; io.copy.save(ledger); return;
+        }
+        if (record) fail('Prior configuration outcome differs/unknown; inspect Google before retry');
+        if (!same(current, patch.before)) fail('Configuration baseline changed; inspect before any writes');
+        saved.operations[key] = { state: 'pending', attemptedAt: io.now() }; io.copy.save(ledger);
+        io.write(patch);
+        if (!same(io.read(patch), patch.after)) fail('Configuration readback unavailable/different; preserve pending intent');
+        saved.operations[key] = { state: 'configured', checkedAt: io.now() }; io.copy.save(ledger);
+      });
+      // Read everything independently again; validation cannot be inferred from journal.
+      planned.patches.forEach(function (patch) { if (!same(io.read(patch), patch.after)) fail('Final configuration readback differs'); });
+      var verified = changes(ids, setup, phase, io);
+      if (verified.patches.length) fail('Final annual configuration still has unapplied changes');
+      saved.state = 'configured'; saved.checkedAt = io.now(); io.copy.save(ledger);
+      return { schema: 1, year: copy.year, phase: phase, digest: digest, status: 'configured', checkedAt: saved.checkedAt, changedCells: planned.patches.length, responseTab: verified.responseTab || null };
+    });
+  }
+  function handoff(copy, setup, io) {
+    return io.lock(function () {
+      var ids = identity(copy, setup, io), ledger = io.copy.load();
+      var saved = ledger.runs[copy.year].setup;
+      if (!saved || saved.plan !== JSON.stringify(setup) || !saved.phases.destination || !saved.phases.workbooks || saved.phases.destination.state !== 'configured' || saved.phases.workbooks.state !== 'configured') fail('Complete both reviewed configuration phases before handoff');
+      if (changes(ids, setup, 'workbooks', io).patches.length) fail('Annual configuration readback differs');
+      var form = io.form(ids.attendanceFormEditor);
+      if (!/^https:\/\/docs\.google\.com\/forms\/d\/[A-Za-z0-9_-]+\/edit(?:[?#].*)?$/.test(form.editUrl) || !/^https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[A-Za-z0-9_-]+\/viewform(?:[?#].*)?$/.test(form.respondentUrl)) fail('Observed Google Form URLs required');
+      var links = {};
+      resources.forEach(function (name) { links[name] = name === 'attendanceFormEditor' ? form.editUrl : name === 'annualFolder' ? 'https://drive.google.com/drive/folders/' + ids[name] : 'https://docs.google.com/spreadsheets/d/' + ids[name] + '/edit'; });
+      links.attendanceFormRespondent = form.respondentUrl;
+      return { schema: 1, type: 'asme-annual-link-handoff', year: copy.year, links: links, verification: { method: 'private-google-readback', checkedAt: io.now(), destinationMatches: true, responseTab: changes(ids, setup, 'workbooks', io).responseTab, annualConfigurationMatches: true, readiness: 'TESTING; delivery/scoring, imports, privacy, totals, access and activation require separate checks' } };
+    });
+  }
+  return { run: run, handoff: handoff, dateBounds: dates };
+}());

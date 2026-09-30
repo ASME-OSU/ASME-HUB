@@ -44,6 +44,10 @@ for (const path of [
   "integrations/apps-script/Code.gs.example",
   "integrations/apps-script/SettingsWriter.gs.example",
   "integrations/apps-script/FormDestinationValidator.gs.example",
+  "integrations/apps-script/AnnualSetupEngine.gs.example",
+  "integrations/apps-script/AnnualSetupRunner.gs.example",
+  "integrations/apps-script/AnnualSettingsDraftEngine.gs.example",
+  "integrations/apps-script/AnnualSettingsDraftRunner.gs.example",
 ]) {
   const result = spawnSync(process.execPath, ["--check", "-"], {
     input: read(path),

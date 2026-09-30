@@ -1,0 +1,103 @@
+/* Add to the same private standalone project as AnnualCopyEngine/Runner.
+ * IDs, review notes and exact preview approval belong only in Script Properties.
+ * No HTTP handler, logs, triggers, publication or IMPORTRANGE authorization. */
+function previewAnnualDestination() { return runAnnualSetup_('destination', false); }
+function configureAnnualDestination() { return runAnnualSetup_('destination', true); }
+function previewAnnualWorkbooks() { return runAnnualSetup_('workbooks', false); }
+function configureAnnualWorkbooks() { return runAnnualSetup_('workbooks', true); }
+function exportAnnualLinkHandoff() { return runAnnualSetup_('handoff', false); }
+function runAnnualSetup_(phase, configure) {
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  var properties = PropertiesService.getScriptProperties();
+  var rawCopy = properties.getProperty('ANNUAL_COPY_CONFIG');
+  var rawSetup = properties.getProperty('ANNUAL_SETUP_CONFIG');
+  if (!rawCopy || !rawSetup) throw new Error('Private annual configuration missing');
+  var copy = JSON.parse(rawCopy), setup = JSON.parse(rawSetup);
+  var io = annualSetupIO_(copy, setup);
+  var result;
+  if (phase === 'handoff') result = AnnualSetupEngine.handoff(copy, setup, io);
+  else {
+    var approval = null;
+    if (configure) {
+      var rawApproval = properties.getProperty('ANNUAL_SETUP_APPROVAL');
+      if (!rawApproval) throw new Error('Inspect preview and record exact approval privately first');
+      approval = JSON.parse(rawApproval);
+    }
+    result = AnnualSetupEngine.run(copy, setup, io, phase, approval);
+  }
+  // Debugger breakpoint: privately inspect result. No private execution logging.
+  return result;
+}
+function annualSetupIO_(copy, setup) {
+  var copyIO = annualCopyIO_(copy), lock = copyIO.lock;
+  copyIO.lock = function (fn) { return fn(); };
+  var books = {}, forms = {};
+  function book(id) { if (!books[id]) books[id] = SpreadsheetApp.openById(id); return books[id]; }
+  function form(id) { if (!forms[id]) forms[id] = FormApp.openById(id); return forms[id]; }
+  function range(id, sheet, a1) {
+    var tab = book(id).getSheetByName(sheet);
+    if (!tab) throw new Error('Reviewed worksheet missing');
+    return tab.getRange(a1);
+  }
+  function cell(id, sheet, a1) {
+    var target = range(id, sheet, a1), formula = target.getFormula();
+    if (formula) return { formula: formula };
+    var value = target.getValue();
+    if (Object.prototype.toString.call(value) === '[object Date]') return { date: Utilities.formatDate(value, book(id).getSpreadsheetTimeZone(), 'yyyy-MM-dd') };
+    return { value: value };
+  }
+  function column(number) {
+    var result = '';
+    while (number) { var digit = (number - 1) % 26; result = String.fromCharCode(65 + digit) + result; number = Math.floor((number - 1) / 26); }
+    return result;
+  }
+  return {
+    copy: copyIO, lock: lock, now: copyIO.now,
+    digest: function (text) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8).map(function (byte) { return ('0' + ((byte + 256) % 256).toString(16)).slice(-2); }).join(''); },
+    cell: cell,
+    form: function (id) {
+      var target = form(id);
+      return { id: target.getId(), destinationId: target.getDestinationId() || null, acceptingResponses: target.isAcceptingResponses(), editUrl: target.getEditUrl(), respondentUrl: target.getPublishedUrl() };
+    },
+    tabs: function (id) {
+      return book(id).getSheets().map(function (sheet) {
+        var url = sheet.getFormUrl(), formId = null;
+        // Sheet may return an editor or responder URL. Resolve through Google,
+        // rather than comparing a published /d/e/ ID with the editable Form ID.
+        if (url) formId = FormApp.openByUrl(url).getId();
+        return { id: sheet.getSheetId(), name: sheet.getName(), formId: formId, lastRow: sheet.getLastRow(), headers: formId ? sheet.getRange(1, 1, 1, 12).getValues()[0] : [] };
+      });
+    },
+    workbook: function (id, sourceId) {
+      var formulas = [], sourceURLCells = [], cells = 0;
+      book(id).getSheets().forEach(function (sheet) {
+        var data = sheet.getDataRange();
+        cells += data.getNumRows() * data.getNumColumns();
+        if (cells > 300000) throw new Error('Workbook exceeds reviewed scan bound; inspect and revise adapter');
+        var matrix = data.getFormulas();
+        matrix.forEach(function (row, r) { row.forEach(function (formula, c) { if (formula) formulas.push({ sheet: sheet.getName(), a1: column(c + 1) + (r + 1), formula: formula }); }); });
+        if (sheet.getName() === 'Read Me' || sheet.getName() === 'README') {
+          var values = data.getValues();
+          values.forEach(function (row, r) { row.forEach(function (value, c) {
+            if (!matrix[r][c] && typeof value === 'string' && value.indexOf('https://docs.google.com/spreadsheets/d/' + sourceId) >= 0) sourceURLCells.push({ sheet: sheet.getName(), a1: column(c + 1) + (r + 1), value: value });
+          }); });
+        }
+      });
+      return { formulas: formulas, sourceURLCells: sourceURLCells };
+    },
+    read: function (patch) {
+      if (patch.kind === 'destination') return form(patch.id).getDestinationId() || null;
+      if (patch.kind === 'range') return range(patch.id, patch.sheet, patch.a1).getFormulas();
+      return cell(patch.id, patch.sheet, patch.a1);
+    },
+    write: function (patch) {
+      if (patch.kind === 'destination') { form(patch.id).setDestination(FormApp.DestinationType.SPREADSHEET, patch.after); return; }
+      var target = range(patch.id, patch.sheet, patch.a1);
+      if (patch.kind === 'range') target.setFormulas(patch.after);
+      else if (patch.after.formula) target.setFormula(patch.after.formula);
+      else if (patch.after.date) target.setValue(Utilities.parseDate(patch.after.date, book(patch.id).getSpreadsheetTimeZone(), 'yyyy-MM-dd'));
+      else target.setValue(patch.after.value);
+      SpreadsheetApp.flush();
+    }
+  };
+}

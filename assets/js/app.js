@@ -4786,6 +4786,21 @@
     button.addEventListener("click", () => openSettings());
   });
 
+  document.addEventListener("transition:annual-settings-draft", async (event) => {
+    try {
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20260930d");
+      const draft = annualSettingsDraft(event.detail?.draft, config);
+      const existing = getYearSource(draft.yearKey);
+      if (existing?.isCurrent === true) throw new Error("This year is current in the loaded Google registry. Choose an inactive transition year.");
+      openSettings(draft.yearKey);
+      fillSettingsForm(draft.yearKey, { ...(existing || {}), ...draft }, !existing);
+      elements.settingsStatus.textContent = "Annual link draft ready for review, inactive and noncurrent. This only fills the form; it has not saved a preview or Google row. Google settings remain authoritative. Review public suitability before saving in Google, then Compare with Google. Form editor and annual folder links remain in the private handoff.";
+      event.detail?.report?.();
+    } catch (error) {
+      event.detail?.report?.(`Cannot prepare Year Settings: ${error.message}`);
+    }
+  });
+
   [elements.settingsClose, elements.settingsCancel].forEach((button) => {
     button.addEventListener("click", closeSettings);
   });

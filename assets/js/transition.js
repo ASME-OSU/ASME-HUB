@@ -1,5 +1,6 @@
 import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20260930c";
 import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20260930c";
+import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20260930d";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -40,6 +41,112 @@ if (section) {
   let progress = emptyProgress(yearSelect.value);
   let currentIndex = 0;
   let opener = null;
+  const annualInputs = new Map();
+  let unreadableAnnualLinks = false;
+  let savedAnnualLinks = {};
+  const annualTools = node("details", "transition-tools");
+  annualTools.append(node("summary", "", "Annual links and automation handoff"));
+  annualTools.append(node("p", "", "Paste this year's copied Google links or import the private automation's link handoff. Checks below validate link format and known template identities only. Google ownership, privacy, Form destination and public export contents still need officer checks."));
+  annualTools.append(node("p", "", "Saved links stay in this browser's local storage, visible to anyone using this browser profile. Use a private officer device. Progress exports and printing exclude these links. Review every link before adding it to the publicly readable Google Control Center."));
+  const annualForm = node("form", "settings-grid");
+  annualForm.id = "transition-annual-links-form";
+  for (const [key, title, mapping] of ANNUAL_LINK_FIELDS) {
+    const label = node("label", "transition-check-control", title);
+    const input = node("input");
+    input.type = "text";
+    input.inputMode = "url";
+    input.autocomplete = "off";
+    input.setAttribute("aria-label", title);
+    label.append(input, node("small", "", `Destination: ${mapping}`));
+    annualInputs.set(key, input);
+    annualForm.append(label);
+  }
+  const annualActions = node("div", "transition-toolbar");
+  const annualSave = node("button", "secondary-button", "Check and save links on this device");
+  annualSave.type = "submit";
+  annualSave.setAttribute("form", annualForm.id);
+  const annualImportLabel = node("label", "secondary-button file-button", "Import automation links");
+  const annualImport = node("input");
+  annualImport.type = "file";
+  annualImport.accept = "application/json,.json";
+  annualImportLabel.append(annualImport);
+  const annualSettings = node("button", "secondary-button", "Prepare Year Settings draft");
+  annualSettings.type = "button";
+  const annualClear = node("button", "secondary-button", "Remove saved links from this device");
+  annualClear.type = "button";
+  annualActions.append(annualSave, annualImportLabel, annualSettings, annualClear);
+  const annualMessage = node("p", "transition-status");
+  annualMessage.setAttribute("role", "status");
+  annualMessage.setAttribute("aria-live", "polite");
+  annualTools.append(annualForm, annualActions, annualMessage);
+  dialog.querySelector(".transition-tools").before(annualTools);
+  function annualSay(message, error = false) {
+    annualMessage.textContent = message;
+    annualMessage.classList.toggle("is-error", error);
+  }
+  function annualDraft() {
+    return validateAnnualLinkDraft({ schema: 1, type: ANNUAL_HANDOFF_TYPE, year: yearSelect.value,
+      links: Object.fromEntries([...annualInputs].map(([key, input]) => [key, input.value])) }, yearSelect.value, window.ASME_HUB_CONFIG);
+  }
+  function fillAnnualLinks(draft) {
+    for (const [key, input] of annualInputs) input.value = draft?.links[key] || "";
+  }
+  function readAnnualLinks() {
+    fillAnnualLinks(null);
+    unreadableAnnualLinks = false;
+    savedAnnualLinks = {};
+    try {
+      const text = localStorage.getItem(annualLinkStorageKey(yearSelect.value));
+      if (text) fillAnnualLinks(importAnnualLinkDraft(text, yearSelect.value, window.ASME_HUB_CONFIG));
+      savedAnnualLinks = annualDraft().links;
+      annualSay(text ? "Annual link draft loaded from this device. Confirm the actual files and checks before use." : "No saved annual links for this year.");
+    } catch (error) { unreadableAnnualLinks = true; annualSay(`Saved links could not be read: ${error.message} Existing saved data is preserved. Import a valid handoff or explicitly remove saved links before saving.`, true); }
+  }
+  annualForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    try {
+      if (unreadableAnnualLinks) throw new Error("Existing saved links are unreadable. Import a valid handoff or remove saved links before saving.");
+      const draft = annualDraft();
+      const changed = JSON.stringify(draft.links) !== JSON.stringify(savedAnnualLinks);
+      if (changed && !save(reconcileProgress(reopenAnnualChecks(progress), TRANSITION_STEPS, TRANSITION_CHECKS))) throw new Error("Could not save the required manual recheck status. Annual links were not saved.");
+      localStorage.setItem(annualLinkStorageKey(draft.year), JSON.stringify(draft));
+      savedAnnualLinks = draft.links;
+      fillAnnualLinks(draft);
+      annualSay(`Link format checked and draft saved on this device.${changed ? " Previous completed annual steps and passed checks were reopened for review." : ""} No Google save or verification was performed.`);
+    } catch (error) { annualSay(`Links were not saved: ${error.message}`, true); }
+  });
+  annualImport.addEventListener("change", async () => {
+    const file = annualImport.files?.[0];
+    annualImport.value = "";
+    if (!file) return;
+    const selectedYear = yearSelect.value;
+    try {
+      if (file.size > 100_000) throw new Error("Annual link files must be under 100 KB.");
+      const draft = importAnnualLinkDraft(await file.text(), selectedYear, window.ASME_HUB_CONFIG);
+      if (yearSelect.value !== selectedYear) throw new Error("The selected year changed while reading this file. Import again for the intended year.");
+      fillAnnualLinks(draft);
+      unreadableAnnualLinks = false;
+      annualSay("Imported link draft for review. Choose Check and save to retain it on this device. Creation results do not certify ownership, privacy or readiness; Form respondent links must come from the actual Form.");
+    } catch (error) { annualSay(`Import failed: ${error.message} Existing fields and saved links were not changed.`, true); }
+  });
+  annualSettings.addEventListener("click", () => {
+    try {
+      const draft = annualDraft();
+      document.dispatchEvent(new CustomEvent("transition:annual-settings-draft", { detail: { draft, report: (error) => {
+        if (error) annualSay(error, true);
+        else dialog.close();
+      } } }));
+    } catch (error) { annualSay(`Cannot prepare settings: ${error.message}`, true); }
+  });
+  annualClear.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(annualLinkStorageKey(yearSelect.value));
+      fillAnnualLinks(null);
+      savedAnnualLinks = {};
+      unreadableAnnualLinks = false;
+      annualSay("Annual links removed from this device. Google files and settings were not changed.");
+    } catch { annualSay("Could not remove local links. Check browser storage.", true); }
+  });
 
   function node(tag, className, value) {
     const element = document.createElement(tag);
@@ -88,6 +195,7 @@ if (section) {
       say(`Local progress could not be loaded: ${error.message} Existing saved data was not changed.`, true);
     }
     currentIndex = firstIncomplete();
+    readAnnualLinks();
     render();
   }
   function save(next, focusControl) {
@@ -139,6 +247,16 @@ if (section) {
     card.append(node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${byId.get(id).title}`).join("; ") : "None"}`));
     card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
+    if (["T05", "T06", "T07", "T09", "T10"].includes(step.id)) {
+      const enterLinks = node("button", "secondary-button", "Enter annual links");
+      enterLinks.type = "button";
+      enterLinks.addEventListener("click", () => {
+        annualTools.open = true;
+        annualTools.scrollIntoView({ block: "start" });
+        annualInputs.get(step.id === "T06" ? "attendanceFormEditor" : step.id === "T07" ? "pointsExport" : step.id === "T09" ? "budgetTracker" : "pointsMaster").focus({ preventScroll: true });
+      });
+      card.append(node("p", "", "Add the copied links in Annual links and automation handoff below. The guide checks their format and prepares an inactive Year Settings draft for review."), enterLinks);
+    }
     if (step.resource) {
       const url = window.ASME_HUB_CONFIG?.[step.resource]?.editUrl;
       if (url && /^https:\/\//.test(url)) {
