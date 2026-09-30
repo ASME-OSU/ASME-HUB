@@ -1,0 +1,103 @@
+/**
+ * PRIVATE standalone Apps Script. Manual execution as the signed-in officer.
+ * Install with the adjacent manifest and instructions. Never deploy as web app.
+ * No responses, cell values, identities, private IDs, or OAuth tokens are logged.
+ */
+function runFormDestinationCheck() {
+  // Set only in the private Google project, never in the public repository.
+  const input = {
+    yearKey: '',
+    form: '', // editable Form ID or https://docs.google.com/forms/d/ID/edit
+    pointsMaster: '' // spreadsheet ID or https://docs.google.com/spreadsheets/d/ID/edit
+  };
+  const result = validateFormDestination_(input, googleDestinationGet_, function () {
+    return new Date().toISOString();
+  });
+  // Safe status only. Inspect `result` with a debugger breakpoint on return.
+  console.info(JSON.stringify({ status: result.status, reason: result.reason, checkedAt: result.checkedAt }));
+  return result;
+}
+
+function destinationId_(value, kind) {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  const idPattern = /^[A-Za-z0-9_-]{10,200}$/;
+  if (idPattern.test(text)) {
+    // The published /d/e/ identifier is not the editable Form ID.
+    if (kind === 'form' && /^1FAIpQL/.test(text)) return null;
+    return text;
+  }
+  const prefix = kind === 'form' ? 'forms' : 'spreadsheets';
+  const match = text.match(new RegExp('^https://docs\\.google\\.com/' + prefix + '/d/([A-Za-z0-9_-]{10,200})/edit(?:[?#][^\\s]*)?$'));
+  if (!match || (kind === 'form' && /^1FAIpQL/.test(match[1]))) return null;
+  return match[1];
+}
+
+/** All transport is fixed-host GET, with metadata field masks and no redirects. */
+function googleDestinationGet_(kind, id) {
+  const url = kind === 'form'
+    ? 'https://forms.googleapis.com/v1/forms/' + encodeURIComponent(id) + '?fields=formId,linkedSheetId'
+    : 'https://sheets.googleapis.com/v4/spreadsheets/' + encodeURIComponent(id) + '?fields=spreadsheetId&includeGridData=false';
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'get',
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      muteHttpExceptions: true,
+      followRedirects: false
+    });
+    const code = response.getResponseCode();
+    if (code !== 200) return { code: code }; // Do not return/log server error bodies.
+    try {
+      return { code: code, data: JSON.parse(response.getContentText()) };
+    } catch (_) {
+      return { code: code, malformed: true };
+    }
+  } catch (_) {
+    return { code: 0 }; // Exceptions can contain request URLs; never echo them.
+  }
+}
+
+/** Injectable reads for local tests. Evidence is private and point-in-time only. */
+function validateFormDestination_(input, read, now) {
+  const checkedAt = now();
+  const base = { checkId: 'V02', checkVersion: 1, method: 'authorized-google-rest', checkedAt: checkedAt };
+  const formId = destinationId_(input && input.form, 'form');
+  const pointsMasterId = destinationId_(input && input.pointsMaster, 'sheet');
+  const yearKey = input && input.yearKey;
+  const year = typeof yearKey === 'string' && yearKey.match(/^(20\d{2})-(20\d{2})$/);
+  if (!formId || !pointsMasterId || !year || Number(year[2]) !== Number(year[1]) + 1) {
+    return Object.assign(base, { status: 'invalid', reason: 'invalid-input' });
+  }
+  const evidence = Object.assign(base, { yearKey: yearKey, formId: formId, intendedWorkbookId: pointsMasterId, observedDestinationId: null });
+  function outcome(status, reason) {
+    return Object.assign(evidence, { status: status, reason: reason });
+  }
+  function get(kind, id) {
+    try { return read(kind, id); } catch (_) { return { code: 0 }; }
+  }
+  function readFailure(response, resource) {
+    if (!response || response.code !== 200) return outcome('inaccessible', resource + '-unavailable');
+    if (response.malformed || !response.data || typeof response.data !== 'object' || Array.isArray(response.data)) {
+      return outcome('invalid', resource + '-invalid-response');
+    }
+    return null;
+  }
+  const form = get('form', formId);
+  const formFailure = readFailure(form, 'form');
+  if (formFailure) return formFailure;
+  if (form.data.formId !== formId) return outcome('invalid', 'form-identity-mismatch');
+  const destination = form.data.linkedSheetId;
+  if (destination !== undefined && destination !== '' && (typeof destination !== 'string' || !/^[A-Za-z0-9_-]{10,200}$/.test(destination))) {
+    return outcome('invalid', 'destination-invalid-response');
+  }
+  evidence.observedDestinationId = destination || null;
+  // Validate the expected workbook is an actual accessible Google Sheet.
+  // A declared ID alone cannot produce a passing result.
+  const sheet = get('sheet', pointsMasterId);
+  const sheetFailure = readFailure(sheet, 'points-master');
+  if (sheetFailure) return sheetFailure;
+  if (sheet.data.spreadsheetId !== pointsMasterId) return outcome('invalid', 'points-master-identity-mismatch');
+  if (!destination) return outcome('unlinked', 'no-linked-sheet');
+  if (destination !== pointsMasterId) return outcome('mismatch', 'different-workbook');
+  return outcome('match', 'actual-destination-matches');
+}

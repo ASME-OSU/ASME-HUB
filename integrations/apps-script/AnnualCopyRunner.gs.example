@@ -1,0 +1,62 @@
+/* Run from the private standalone editor as the authorized Google user.
+ * Configure ANNUAL_COPY_CONFIG JSON in Script Properties, never in this file.
+ * All officers may participate through effective Google permissions; project
+ * access does not bypass Drive rights or change the owner of copied files. */
+function previewAnnualCopies() { return runAnnualCopies_(true); }
+function createOrResumeAnnualCopies() { return runAnnualCopies_(false); }
+function runAnnualCopies_(preview) {
+  // Granular consent can omit a requested grant; stop before configuration or I/O.
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  var raw = PropertiesService.getScriptProperties().getProperty('ANNUAL_COPY_CONFIG');
+  if (!raw) throw new Error('Private configuration missing');
+  var c = JSON.parse(raw);
+  var result = AnnualCopyEngine.execute(c, annualCopyIO_(c), preview);
+  // In Debug, pause on the following line and inspect result privately.
+  return result;
+}
+function annualCopyIO_(c) {
+  var fields = 'id,name,mimeType,version,trashed,driveId,parents,owners(emailAddress),capabilities(canCopy,canEdit,canAddChildren),appProperties';
+  function metadata(id) {
+    var file = Drive.Files.get(id, { fields: fields });
+    var permissions = [], token;
+    do {
+      var page = Drive.Permissions.list(id, { fields: 'nextPageToken,permissions(type,role,emailAddress)', pageSize: 100, pageToken: token });
+      permissions = permissions.concat(page.permissions || []); token = page.nextPageToken;
+    } while (token);
+    file.permissions = permissions; return file;
+  }
+  return {
+    actor: function () { return Session.getEffectiveUser().getEmail(); },
+    now: function () { return new Date().toISOString(); },
+    lock: function (fn) {
+      var lock = LockService.getScriptLock();
+      if (!lock.tryLock(10000)) throw new Error('Another run is active; resume later');
+      try { return fn(); } finally { lock.releaseLock(); }
+    },
+    metadata: metadata,
+    load: function () { return JSON.parse(DriveApp.getFileById(c.ledgerId).getBlob().getDataAsString('UTF-8')); },
+    save: function (ledger) {
+      var content = JSON.stringify(ledger);
+      DriveApp.getFileById(c.ledgerId).setContent(content);
+      // A lost acknowledgement stops the run before another creation.
+      var saved = DriveApp.getFileById(c.ledgerId).getBlob().getDataAsString('UTF-8');
+      if (saved !== content) throw new Error('Ledger write acknowledgement unavailable; inspect and resume');
+    },
+    find: function (operation) {
+      // namespace/year/key validation excludes quote characters.
+      var found = [], token;
+      do {
+        var page = Drive.Files.list({ q: "trashed = false and appProperties has { key='transitionOperation' and value='" + operation + "' }", fields: 'nextPageToken,incompleteSearch,files(id)', pageSize: 100, pageToken: token, spaces: 'drive' });
+        if (page.incompleteSearch) throw new Error('Incomplete reconciliation search');
+        found = found.concat((page.files || []).map(function (file) { return metadata(file.id); })); token = page.nextPageToken;
+      } while (token);
+      return found;
+    },
+    create: function (item, parentId, operation) {
+      var body = { name: item.name, parents: [parentId], appProperties: { transitionOperation: operation } };
+      var options = { fields: 'id', ignoreDefaultVisibility: true };
+      if (item.kind === 'folder') { body.mimeType = 'application/vnd.google-apps.folder'; return Drive.Files.create(body, null, options); }
+      return Drive.Files.copy(body, item.source.id, options);
+    }
+  };
+}

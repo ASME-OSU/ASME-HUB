@@ -26,7 +26,11 @@ if (stylelint.status !== 0) {
 for (const path of [
   "assets/js/config.js",
   "assets/js/app.js",
+  "assets/js/settings-readback.js",
   "assets/js/pwa.js",
+  "assets/js/transition.js",
+  "assets/js/transition-state.js",
+  "assets/js/transition-steps.js",
   "scripts/sync-calendar.mjs",
   "sw.js",
 ]) {
@@ -39,6 +43,7 @@ for (const path of [
 for (const path of [
   "integrations/apps-script/Code.gs.example",
   "integrations/apps-script/SettingsWriter.gs.example",
+  "integrations/apps-script/FormDestinationValidator.gs.example",
 ]) {
   const result = spawnSync(process.execPath, ["--check", "-"], {
     input: read(path),
@@ -66,18 +71,12 @@ for (const path of new Set(localReferences)) {
 const config = read("assets/js/config.js");
 const app = read("assets/js/app.js");
 const styles = read("assets/css/styles.css");
-if (
-  !/\bwriteUrl\b/.test(config) ||
-  !app.includes("requestSettingsWrite") ||
-  !app.includes("publishSettings")
-) {
-  errors.push("The organization-wide settings publishing flow is incomplete.");
+if (app.includes("requestSettingsWrite") || app.includes("publishSettings") || /\bwriteUrl\b/.test(config)) {
+  errors.push("Unverified client settings writes must stay disabled.");
 }
-if (!html.includes('id="settings-publish"')) {
-  errors.push("The Publish for everyone control is missing.");
-}
-if (!existsSync(resolve(root, "integrations/apps-script/SettingsWriter.gs.example"))) {
-  errors.push("The shared-settings Apps Script is missing.");
+if (!html.includes('id="settings-verify"') || !app.includes("verifySharedSettings") ||
+    !existsSync(resolve(root, "assets/js/settings-readback.js"))) {
+  errors.push("The direct-edit settings readback flow is incomplete.");
 }
 if (!app.includes('"select E,G,H,I,J,K,L,M,N where B is not null"')) {
   errors.push("Leaderboard query must exclude the member-name column from its response.");

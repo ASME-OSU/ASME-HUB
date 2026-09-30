@@ -184,6 +184,10 @@
   let setActiveMobileSection = () => {};
   let activeHubSearchItems = [];
   let activeResources = [];
+  let sharedResourceRecords = [];
+  let sharedResourceLoadGeneration = 0;
+  let sharedResourceSnapshot = null;
+  const sharedResourcesCacheKey = "asmeHubSharedResourcesV1";
   let activeUpcomingEvents = [];
   let activeOperations = [];
   let activeBudget = {};
@@ -274,7 +278,7 @@
     settingsFundraising: document.getElementById("settings-fundraising"),
     settingsSharedLink: document.getElementById("settings-shared-link"),
     settingsSharedAction: document.getElementById("settings-shared-action"),
-    settingsPublish: document.getElementById("settings-publish"),
+    settingsVerify: document.getElementById("settings-verify"),
     searchButton: document.getElementById("search-button"),
     searchDialog: document.getElementById("hub-search-dialog"),
     searchClose: document.getElementById("hub-search-close"),
@@ -396,6 +400,7 @@
     configureHubSearch(resources);
     populatePriorityResources();
     renderEventReadiness();
+    updateResourceActions(resources);
   }
 
   function openDialog(dialog, focusTarget) {
@@ -660,7 +665,7 @@
     if (!elements.eventReadinessCard) return;
     const show = Boolean(officerRole().showEventReadiness);
     elements.eventReadinessCard.hidden = !show;
-    const tracker = activeResources.find((resource) => resource.title === "Event Operations");
+    const tracker = activeResources.find((resource) => resource.id === "event-operations");
     if (tracker?.url) {
       elements.eventReadinessLink.href = tracker.url;
       elements.eventReadinessLink.target = "_blank";
@@ -735,7 +740,8 @@
   }
 
   function roleResourceScore(resource, role = officerRole()) {
-    const title = String(resource.title || "").toLowerCase();
+    const bundledTitle = config.resources?.find(item => item.id === resource.id)?.title;
+    const title = String(bundledTitle || resource.title || "").toLowerCase();
     const preferredIndex = role.resourceTitles.findIndex((preferred) =>
       title.includes(preferred.toLowerCase()),
     );
@@ -746,7 +752,8 @@
       selectedOfficerRole === "all" ||
       assignedRoles.includes("all") ||
       assignedRoles.includes(selectedOfficerRole);
-    if (resource.custom && roleMatch) score += resource.pinned ? 2200 : 1400;
+    if (resource.custom) return -3000;
+    if (roleMatch && assignedRoles.length) score += 40;
     if (resource.custom && !roleMatch) score -= 2000;
     if (preferredIndex >= 0) score += 1000 - preferredIndex * 100;
     if (categoryIndex >= 0) score += 30 - categoryIndex;
@@ -1228,6 +1235,7 @@
   }
 
   function fillSettingsForm(yearKey, source = {}, isNew = false) {
+    invalidateSettingsReadback();
     elements.settingsForm.dataset.originalYear = isNew ? "" : yearKey;
     elements.settingsYearKey.value = yearKey || "";
     elements.settingsYearLabel.value =
@@ -1277,6 +1285,7 @@
   }
 
   function closeSettings() {
+    invalidateSettingsReadback();
     if (typeof elements.settingsDialog.close === "function") {
       elements.settingsDialog.close();
     } else {
@@ -1308,7 +1317,7 @@
           ?.eventMetricsSheetTab || "Event_Metrics_Public",
       isActive: elements.settingsIsActive.checked,
       isCurrent: elements.settingsIsCurrent.checked,
-      settingsStatus: "Published from the Officer Hub",
+      settingsStatus: "Tab preview only",
     };
   }
 
@@ -1340,99 +1349,41 @@
     return invalid ? `Check the ${invalid[0]} link.` : "";
   }
 
-  async function requestSettingsWrite(settings) {
-    const writeUrl = String(config.sharedSettings?.writeUrl || "").trim();
-    if (!writeUrl) {
-      throw new Error("Organization-wide publishing has not been connected yet.");
-    }
-
-    const callback = `__asmeHubSettings_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2)}`;
-    const params = new URLSearchParams({
-      action: "saveSettings",
-      callback,
-      token: config.access.passwordSha256,
-      payload: JSON.stringify(settings),
-      _: String(Date.now()),
-    });
-    const url = `${writeUrl}${writeUrl.includes("?") ? "&" : "?"}${params}`;
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      const cleanup = () => {
-        window.clearTimeout(timer);
-        script.remove();
-        delete window[callback];
-      };
-      const fail = (message) => {
-        cleanup();
-        reject(new Error(message));
-      };
-      const timer = window.setTimeout(
-        () => fail("The shared settings request timed out. Please try again."),
-        15000,
-      );
-
-      window[callback] = (result) => {
-        if (!result?.ok) {
-          fail(result?.error || "The shared settings save failed.");
-          return;
-        }
-        cleanup();
-        resolve(result);
-      };
-      script.crossOrigin = "anonymous";
-      script.src = url;
-      script.async = true;
-      script.onerror = () =>
-        fail(
-          "The shared settings service could not be reached. Check the deployment URL and try again.",
-        );
-      document.head.append(script);
-    });
-  }
-
-  async function publishSettings() {
-    const settings = readSettingsForm();
-    const validationMessage = validateSettings(settings);
+  // Readback is deliberately separate from loadSharedYearSources: fallbacks and
+  // tab previews must never be evidence that a Google edit reached the public row.
+  let settingsReadbackGeneration = 0;
+  async function verifySharedSettings() {
+    const expected = readSettingsForm();
+    const generation = ++settingsReadbackGeneration;
+    const validationMessage = validateSettings(expected);
     if (validationMessage) {
       elements.settingsStatus.textContent = validationMessage;
       return;
     }
-
-    elements.settingsPublish.disabled = true;
-    elements.settingsStatus.textContent = "Publishing shared settings…";
+    elements.settingsVerify.disabled = true;
+    elements.settingsStatus.textContent = "Reading Google settings to compare with this form…";
     try {
-      const result = await requestSettingsWrite(settings);
-      const { yearKey, ...source } = settings;
-      if (source.isCurrent) {
-        Object.values(sharedYearSources).forEach((item) => {
-          item.isCurrent = false;
-        });
-        config.currentAcademicYear = yearKey;
-      }
-      sharedYearSources[yearKey] = {
-        ...(sharedYearSources[yearKey] || {}),
-        ...source,
-        settingsUpdated: new Date(),
-      };
-      sessionStorage.removeItem(yearSettingsStorageKey);
-      yearSources = loadYearSources();
-      populateYears(yearKey);
-      elements.settingsStatus.textContent =
-        result.action === "created"
-          ? "The new academic year is now available to every viewer."
-          : "Shared settings updated for every viewer.";
-      window.setTimeout(() => {
-        closeSettings();
-        loadDashboard(yearKey);
-      }, 700);
+      const shared = config.sharedSettings || {};
+      const id = spreadsheetIdFrom(shared.spreadsheetUrl);
+      if (!id || !shared.sheetTab) throw new Error("Settings source is not configured.");
+      const table = await queryPublicSheet(id, shared.sheetTab,
+        "select A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T where A is not null");
+      if (generation !== settingsReadbackGeneration) return;
+      const result = window.ASME_SETTINGS_READBACK.compare(table, expected);
+      elements.settingsStatus.textContent = result.message;
     } catch (error) {
+      if (generation !== settingsReadbackGeneration) return;
       elements.settingsStatus.textContent =
-        error.message || "The shared settings save failed.";
+        "Readback unavailable. No shared save is confirmed. Your form and tab preview are unchanged. Check Google's saved status and access, then retry. " + error.message;
     } finally {
-      elements.settingsPublish.disabled = false;
+      if (generation === settingsReadbackGeneration) elements.settingsVerify.disabled = false;
     }
+  }
+
+  function invalidateSettingsReadback() {
+    settingsReadbackGeneration += 1;
+    elements.settingsVerify.disabled = false;
+    elements.settingsStatus.textContent = "Form changed. Compare with Google again after editing the Sheet; no shared save is confirmed here.";
   }
 
   function showGate() {
@@ -1473,6 +1424,17 @@
     setText("health-insight-status", "Data unavailable");
     setText("health-insight-copy", label);
     setText("overview-attention-count", "—");
+    setText("operations-count", "—");
+    setText("nav-alert-count", "—");
+    setText("healthy-systems-count", "—");
+    if (elements.heroBriefingTitle) elements.heroBriefingTitle.textContent = "Attendance data unavailable";
+    if (elements.heroBriefingCopy) elements.heroBriefingCopy.textContent = label;
+    if (elements.briefingRoleTitle) elements.briefingRoleTitle.textContent = "Attendance data unavailable";
+    if (elements.briefingRoleCopy) elements.briefingRoleCopy.textContent = label;
+    if (elements.briefingPriorityCount) elements.briefingPriorityCount.textContent = "—";
+    const emptyGuide = document.getElementById("attendance-empty-guide");
+    if (emptyGuide) emptyGuide.hidden = false;
+    document.body.classList.add("attendance-data-empty");
     document.getElementById("attendance-chart")?.replaceChildren();
     document.getElementById("attendance-chart-legend")?.replaceChildren();
     document.getElementById("event-type-list")?.replaceChildren();
@@ -1481,6 +1443,9 @@
     document.getElementById("briefing-role-metrics")?.replaceChildren();
     document.getElementById("briefing-upcoming-events")?.replaceChildren();
     document.getElementById("briefing-priorities")?.replaceChildren();
+    document.getElementById("operations-list")?.replaceChildren();
+    document.getElementById("health-grid")?.replaceChildren();
+    document.getElementById("health-attention-grid")?.replaceChildren();
     const donut = document.getElementById("event-type-donut");
     if (donut) donut.style.background = "var(--border)";
     const goalRing = document.getElementById("goal-ring");
@@ -1499,6 +1464,7 @@
 
   async function unlockDashboard() {
     await sharedSettingsReady;
+    await refreshSharedResources();
     const expiresAt =
       Date.now() + Number(config.access.sessionHours || 12) * 60 * 60 * 1000;
     sessionStorage.setItem(unlockStorageKey, String(expiresAt));
@@ -1939,12 +1905,45 @@
     }
   }
 
-  async function loadLeaderboardDashboard(source, { signal } = {}) {
+  async function readPublicPointStatus(source, { signal } = {}) {
     const spreadsheetId = spreadsheetIdFrom(source.attendanceSheetUrl);
     if (!spreadsheetId) {
       throw new Error("The public leaderboard Google Sheet link is not valid.");
     }
+    // Check the public status before reading any member-derived export. A stale
+    // leaderboard can still contain rows after the point system is paused.
+    const statusTable = await queryPublicSheet(
+      spreadsheetId,
+      "System_Status",
+      "select A,B where A is not null", { signal },
+    );
+    const systemStatus =
+      (statusTable.rows || [])
+        .map((row) => [
+          String(sheetCell(row, 0) || "").trim().toLowerCase(),
+          String(sheetCell(row, 1) || "").trim().toUpperCase(),
+        ])
+        .find(([key]) => key === "system_status")?.[1] || "UNKNOWN";
+    if (systemStatus !== "LIVE") {
+      throw new Error("The public point system is not LIVE; attendance data is hidden.");
+    }
+    return spreadsheetId;
+  }
 
+  async function loadDashboardJson(source, { signal } = {}) {
+    // A configured JSON feed takes precedence over the Sheet reader. Gate it
+    // against the same public status when a Sheet is configured.
+    if (source.attendanceSheetUrl) await readPublicPointStatus(source, { signal });
+    const data = await fetchJsonWithTimeout(source.dashboardUrl, { signal });
+    if (!source.attendanceSheetUrl &&
+        String(data.meta?.systemStatus || "").trim().toUpperCase() !== "LIVE") {
+      throw new Error("The public point system is not LIVE; attendance data is hidden.");
+    }
+    return data;
+  }
+
+  async function loadLeaderboardDashboard(source, { signal } = {}) {
+    const spreadsheetId = await readPublicPointStatus(source, { signal });
     const leaderboardTab =
       source.attendanceSheetTab || "Leaderboard_Public";
     const eventMetricsTab =
@@ -1953,18 +1952,15 @@
       source.monthlyMetricsSheetTab || "Monthly_Metrics_Public";
     const semesterMetricsTab =
       source.semesterMetricsSheetTab || "Semester_Metrics_Public";
-    const [leaderboard, statusTable, metricsResult, monthlyResult, semesterResult] =
+    const systemStatus = "LIVE";
+
+    const [leaderboard, metricsResult, monthlyResult, semesterResult] =
       await Promise.all([
       queryPublicSheet(
         spreadsheetId,
         leaderboardTab,
         "select E,G,H,I,J,K,L,M,N where B is not null", { signal },
       ),
-      queryPublicSheet(
-        spreadsheetId,
-        "System_Status",
-        "select A,B where A is not null", { signal },
-      ).then((table) => ({ table, error: null })).catch((error) => ({ table: { rows: [] }, error })),
       queryPublicSheet(
         spreadsheetId,
         eventMetricsTab,
@@ -2014,13 +2010,6 @@
       .map((member) => member.updated)
       .filter(Boolean)
       .sort((a, b) => b.getTime() - a.getTime())[0];
-    const systemStatus =
-      (statusTable.table.rows || [])
-        .map((row) => [
-          String(sheetCell(row, 0) || "").toLowerCase(),
-          String(sheetCell(row, 1) || "").toUpperCase(),
-        ])
-        .find(([key]) => key === "system_status")?.[1] || "UNKNOWN";
     const metricRows = metricsResult.table.rows || [];
     const eventRows = metricRows
       .map((row) => ({
@@ -2152,10 +2141,7 @@
         systemStatus === "LIVE"
           ? "Public attendance totals are connected"
           : `Point system status: ${systemStatus.toLowerCase()}`,
-      detail:
-        statusTable.error
-          ? "Attendance totals loaded; system status unavailable."
-          : "Member totals and event aggregates are loading from the privacy-safe website export.",
+      detail: "Member totals and event aggregates are loading from the privacy-safe website export.",
       actionLabel: "Open public export",
       actionUrl: source.attendanceSheetUrl,
     });
@@ -2211,7 +2197,7 @@
         {
           label: "Attendance",
           status: systemStatus === "LIVE" ? "LIVE" : systemStatus === "UNKNOWN" ? "NOTICE" : "ACTION",
-          detail: systemStatus === "UNKNOWN" ? `Attendance totals loaded; system status unavailable.` : `${formatNumber(members.length)} member totals available`,
+          detail: `${formatNumber(members.length)} member totals available`,
         },
         {
           label: "Event metrics",
@@ -2630,20 +2616,71 @@
     };
   }
 
-  function resolveYearResources(source) {
-    return (config.resources || []).map((resource) => {
-      if (!resource.settingKey) return { ...resource };
-      const url = source?.[resource.settingKey] || resource.url || "";
-      const title =
-        resource.settingKey === "attendanceFormUrl"
-          ? `${source?.label || "Current year"} Attendance Check-In`
-          : resource.settingKey === "pointsMasterUrl"
-            ? `${source?.label || "Current year"} Points Master`
-            : resource.settingKey === "budgetTrackerUrl"
-              ? `${source?.label || "Current year"} Budget Tracker`
-            : resource.title;
-      return { ...resource, title, url };
+  function updateResourceActions(resources) {
+    const eventOperations = resources.find(
+      (resource) => resource.id === "event-operations",
+    );
+    const attendanceCheckIn = resources.find((resource) =>
+      resource.settingKey === "attendanceFormUrl",
+    );
+    const emptyPlanLink = document.getElementById("empty-plan-event");
+    const emptyCheckInLink = document.getElementById("empty-open-checkin");
+    [
+      [emptyPlanLink, eventOperations?.url],
+      [emptyCheckInLink, attendanceCheckIn?.url],
+    ].forEach(([link, url]) => {
+      if (!link) return;
+      if (!url) { link.removeAttribute("href"); link.removeAttribute("target"); link.setAttribute("aria-disabled", "true"); return; }
+      link.removeAttribute("aria-disabled");
+      link.href = url;
+      link.target = url.startsWith("#") ? "_self" : "_blank";
+      link.rel = url.startsWith("#") ? "" : "noopener";
     });
+  }
+
+  function resolveYearResources(source) {
+    return window.ASME_SHARED_RESOURCES.resolve(config.resources || [], sharedResourceRecords,
+      elements.academicYear?.value || config.currentAcademicYear, source);
+  }
+
+  async function refreshSharedResources() {
+    const generation = ++sharedResourceLoadGeneration;
+    const settings = config.sharedResources || {};
+    const status = document.getElementById("shared-resources-status");
+    const editLink = document.getElementById("shared-resources-edit");
+    const button = document.getElementById("shared-resources-refresh");
+    const spreadsheetId = spreadsheetIdFrom(settings.spreadsheetUrl);
+    const connected = !!spreadsheetId && !!settings.sheetTab;
+    editLink.hidden = !connected || !window.ASME_SHARED_RESOURCES.safeUrl(settings.editUrl);
+    if (!editLink.hidden) editLink.href = settings.editUrl;
+    button.disabled = !connected;
+    if (!connected) {
+      sharedResourceRecords = [];
+      status.textContent = "Shared Google resources are not connected. Bundled shared links are shown; annual actions use Year Settings. Repository configuration is the interim shared-link route. My links are personal to this browser.";
+      return;
+    }
+    const sourceKey = `${spreadsheetId}:${settings.sheetTab}`;
+    let cache = null;
+    try { cache = window.ASME_SHARED_RESOURCES.readCache(localStorage.getItem(sharedResourcesCacheKey), sourceKey); } catch (_) { /* Storage may be unavailable. */ }
+    if (sharedResourceSnapshot?.sourceKey === sourceKey) cache = sharedResourceSnapshot;
+    sharedResourceRecords = cache?.records || [];
+    status.textContent = cache ? `Checking Google; showing stale shared resources from ${new Date(cache.checkedAt).toLocaleString()}.` : "Checking Google; bundled shared resources are shown until a valid response arrives.";
+    refreshPersonalizedResources();
+    try {
+      const table = await queryPublicSheet(spreadsheetId, settings.sheetTab, "select A,B,C,D,E,F,G,H");
+      const records = window.ASME_SHARED_RESOURCES.parse(table);
+      if (generation !== sharedResourceLoadGeneration) return;
+      sharedResourceRecords = records;
+      const checkedAt = Date.now();
+      sharedResourceSnapshot = { version: 1, sourceKey, checkedAt, records };
+      let stored = true;
+      try { localStorage.setItem(sharedResourcesCacheKey, JSON.stringify({ version: 1, sourceKey, checkedAt, records })); } catch (_) { stored = false; }
+      status.textContent = `Shared Google resource response checked ${new Date(checkedAt).toLocaleString()}. ${records.length} records; missing IDs use bundled defaults. Roles guide presentation only.${stored ? "" : " Browser cache unavailable."} This read does not confirm a Google save or other consumers.`;
+    } catch (_) {
+      if (generation !== sharedResourceLoadGeneration) return;
+      status.textContent = cache ? `Google resources unavailable or invalid. Stale shared resources from ${new Date(cache.checkedAt).toLocaleString()} remain, including disabled records. Inspect Google and retry.` : "Google resources unavailable or invalid. Bundled defaults are shown; shared changes and disables cannot be confirmed. Inspect Google and retry.";
+    }
+    refreshPersonalizedResources();
   }
 
   function configureHubSearch(resources = []) {
@@ -2701,7 +2738,7 @@
       type: "resource",
       title: resource.title,
       description: resource.description,
-      category: resource.category || "Resource",
+      category: resource.custom ? "Personal link" : resource.category || "Resource",
       url: resource.url || "",
       icon: resource.icon || resource.quickAction?.icon || "link",
       keywords: `${resource.label || ""} ${resource.category || ""}`,
@@ -2819,23 +2856,7 @@
     configureHubSearch(resources);
     populatePriorityResources();
     renderEventReadiness();
-    const eventOperations = resources.find(
-      (resource) => resource.title === "Event Operations",
-    );
-    const attendanceCheckIn = resources.find((resource) =>
-      resource.settingKey === "attendanceFormUrl",
-    );
-    const emptyPlanLink = document.getElementById("empty-plan-event");
-    const emptyCheckInLink = document.getElementById("empty-open-checkin");
-    [
-      [emptyPlanLink, eventOperations?.url],
-      [emptyCheckInLink, attendanceCheckIn?.url],
-    ].forEach(([link, url]) => {
-      if (!link || !url) return;
-      link.href = url;
-      link.target = url.startsWith("#") ? "_self" : "_blank";
-      link.rel = url.startsWith("#") ? "" : "noopener";
-    });
+    updateResourceActions(resources);
     const calendarLink = document.querySelector(".upcoming-panel .text-link");
     if (calendarLink && source.calendarUrl) {
       calendarLink.href = source.calendarUrl;
@@ -2844,7 +2865,7 @@
 
     try {
       const attendanceTask = source.dashboardUrl
-        ? fetchJsonWithTimeout(source.dashboardUrl, { signal: controller.signal })
+        ? loadDashboardJson(source, { signal: controller.signal })
         : source.attendanceSheetUrl
           ? loadLeaderboardDashboard(source, { signal: controller.signal })
           : source.url
@@ -2874,7 +2895,10 @@
               budget.freshnessNotice ? `. ${budget.freshnessNotice}` : ""
             }`;
       if (attendanceResult.status !== "fulfilled") {
-        const message = `Attendance data unavailable for ${sourceLabel}.`;
+        const message = attendanceResult.reason?.message ===
+          "The public point system is not LIVE; attendance data is hidden."
+          ? attendanceResult.reason.message
+          : `Attendance data unavailable for ${sourceLabel}.`;
         showDataError(message);
         activeUpcomingEvents = calendar.events;
         activeBudget = budget;
@@ -4318,7 +4342,7 @@
         const title = document.createElement("strong");
         title.textContent = resource.title;
         const detail = document.createElement("small");
-        detail.textContent = resource.browserOnly
+        detail.textContent = resource.custom ? "Personal browser link" : resource.browserOnly
           ? "Browser only"
           : resource.access === "m365"
             ? "Private · Microsoft 365"
@@ -4391,7 +4415,7 @@
         const category = document.createElement("span");
         category.className = "resource-category";
         category.append(createHubIcon(resourceIconName(resource)));
-        category.append(document.createTextNode(resource.category));
+        category.append(document.createTextNode(resource.custom ? `Personal · ${resource.category}` : resource.category));
 
         const title = document.createElement("h3");
         title.textContent = resource.title;
@@ -4468,7 +4492,7 @@
         title.textContent = resource.quickAction?.label || resource.label;
         const detail = document.createElement("small");
         detail.textContent = resource.url
-          ? resource.browserOnly
+          ? resource.custom ? "Personal browser link" : resource.browserOnly
             ? "Browser-only shortcut"
             : resource.access === "m365"
               ? "Private · Microsoft 365"
@@ -4790,14 +4814,17 @@
         budgetExportSheetTab: "Budget_Public",
         bankingUrl: current.bankingUrl,
         fundraisingUrl: current.fundraisingUrl,
-        isActive: true,
+        isActive: false,
         isCurrent: false,
       },
       true,
     );
   });
 
-  elements.settingsPublish.addEventListener("click", publishSettings);
+  elements.settingsVerify.addEventListener("click", verifySharedSettings);
+  elements.settingsForm.addEventListener("input", invalidateSettingsReadback);
+  elements.settingsForm.addEventListener("change", invalidateSettingsReadback);
+  elements.settingsDialog.addEventListener("close", invalidateSettingsReadback);
 
   elements.settingsReset.addEventListener("click", () => {
     const year = normalizeYearKey(elements.settingsYearKey.value);
@@ -4809,7 +4836,7 @@
     populateYears(year);
     loadDashboard(year);
     elements.settingsStatus.textContent =
-      "This preview has been restored to the shared settings.";
+      "This form uses the last loaded settings (which may be deployed defaults). Compare with Google for fresh readback.";
   });
 
   elements.settingsForm.addEventListener("submit", (event) => {
@@ -4893,6 +4920,7 @@
   });
 
   const prepareHubPrint = () => {
+    if (document.body.classList.contains("transition-print")) return;
     const yearLabel =
       elements.academicYear.selectedOptions[0]?.textContent?.trim() ||
       elements.academicYear.value ||
@@ -5162,6 +5190,8 @@
 
     sharedSettingsReady = loadSharedYearSources();
     await sharedSettingsReady;
+    await refreshSharedResources();
+    document.dispatchEvent(new Event("transition:year-updated"));
 
     const sharedSettingsUrl =
       config.sharedSettings && config.sharedSettings.editUrl;
@@ -5170,9 +5200,7 @@
         if (link && sharedSettingsUrl) link.href = sharedSettingsUrl;
       },
     );
-    elements.settingsPublish.hidden = !String(
-      config.sharedSettings?.writeUrl || "",
-    ).trim();
+
 
     populateYears();
     setupNavigation();
@@ -5195,6 +5223,8 @@
       showGate();
     }
   }
+
+  document.getElementById("shared-resources-refresh")?.addEventListener("click", refreshSharedResources);
 
   initialize();
 })();

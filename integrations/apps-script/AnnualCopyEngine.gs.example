@@ -1,0 +1,98 @@
+/* Private server-side only. Copy into ONE shared standalone Apps Script project.
+ * Adapter contract is synchronous; tests execute this exact engine with fake I/O.
+ * No HTTP handlers, activation, sharing, import edits, or deletion. */
+var AnnualCopyEngine = (function () {
+  var folderMime = 'application/vnd.google-apps.folder';
+  var copyMimes = ['application/vnd.google-apps.spreadsheet', 'application/vnd.google-apps.form', 'application/vnd.google-apps.document'];
+  function fail(reason) { throw new Error(reason); }
+  function emailIdentity(value) { return typeof value === 'string' ? value.trim().toLowerCase() : ''; }
+  function sameEmail(a, b) { var identity = emailIdentity(a); return !!identity && identity === emailIdentity(b); }
+  function privateFile(file, owner) {
+    if (!file || file.trashed || file.driveId || !file.owners || file.owners.length !== 1 || !sameEmail(file.owners[0].emailAddress, owner)) fail('Owner or My Drive identity mismatch');
+    if (!Array.isArray(file.permissions) || !file.permissions.length || file.permissions.some(function (p) { return p.type !== 'user' || !emailIdentity(p.emailAddress); })) fail('Private user-only permissions required');
+  }
+  function validate(c) {
+    if (!c || c.schema !== 1 || !/^\d{4}-\d{4}$/.test(c.year) || Number(c.year.slice(5)) !== Number(c.year.slice(0, 4)) + 1) fail('Invalid year/schema');
+    ['namespace', 'parentId', 'ledgerId', 'intendedOwner'].forEach(function (k) { if (typeof c[k] !== 'string' || !c[k].trim()) fail('Missing ' + k); });
+    if (!/^[a-zA-Z0-9_-]{1,40}$/.test(c.namespace) || c.ledgerId === c.parentId) fail('Invalid namespace/ledger');
+    if (!Array.isArray(c.items) || !c.items.length || c.items.length > 20) fail('Invalid operations');
+    var seen = { root: 'folder' };
+    c.items.forEach(function (item) {
+      if (!item || !/^[a-zA-Z0-9_-]{1,40}$/.test(item.key) || seen[item.key] || seen[item.parentKey] !== 'folder') fail('Invalid operation ordering/key');
+      if (typeof item.name !== 'string' || !item.name.trim() || item.name.length > 180) fail('Invalid name');
+      if (item.kind !== 'folder' && item.kind !== 'copy') fail('Invalid operation kind');
+      if (item.kind === 'copy') {
+        var s = item.source;
+        if (!s || !s.id || !s.name || !s.owner || !s.version || !s.reviewNote || s.cleanReviewed !== true || copyMimes.indexOf(s.mimeType) < 0 || s.id === c.ledgerId) fail('Clean source identity/certification required');
+      }
+      seen[item.key] = item.kind;
+    });
+  }
+  function preflight(c, io) {
+    validate(c);
+    if (!sameEmail(io.actor(), c.intendedOwner)) fail('Execute as the intended copied-file owner');
+    var parent = io.metadata(c.parentId); privateFile(parent, c.intendedOwner);
+    if (parent.mimeType !== folderMime || !parent.capabilities || !parent.capabilities.canAddChildren) fail('Parent cannot receive children');
+    var ledger = io.metadata(c.ledgerId); privateFile(ledger, c.intendedOwner);
+    if (ledger.mimeType !== 'application/json' || !ledger.capabilities || !ledger.capabilities.canEdit) fail('Private editable JSON ledger required');
+    c.items.forEach(function (item) {
+      if (item.kind !== 'copy') return;
+      var source = io.metadata(item.source.id); privateFile(source, item.source.owner);
+      if (source.name !== item.source.name || source.mimeType !== item.source.mimeType || String(source.version) !== String(item.source.version) || !source.capabilities || !source.capabilities.canCopy) fail('Source changed or copy unavailable');
+    });
+  }
+  function marker(c, key) { return c.namespace + ':' + c.year + ':' + key; }
+  function verify(c, item, file, parentId) {
+    privateFile(file, c.intendedOwner);
+    if (file.name !== item.name || file.mimeType !== (item.kind === 'folder' ? folderMime : item.source.mimeType) || !file.parents || file.parents.length !== 1 || file.parents[0] !== parentId || !file.appProperties || file.appProperties.transitionOperation !== marker(c, item.key)) fail('Created/reconciled identity mismatch');
+    if (item.kind === 'copy' && file.id === item.source.id) fail('Copy returned source identity');
+  }
+  function execute(c, io, preview) {
+    // Same project lock is required even for preview, so the ledger snapshot is coherent.
+    return io.lock(function () {
+      preflight(c, io);
+      var ledger = io.load();
+      if (!ledger || ledger.schema !== 1 || !ledger.runs || typeof ledger.runs !== 'object' || Array.isArray(ledger.runs)) fail('Invalid ledger; never reset automatically');
+      var runKey = c.year;
+      var plan = JSON.stringify(c);
+      var run = ledger.runs[runKey];
+      if (run && run.plan !== plan) fail('Existing year plan differs; reconcile before changing configuration');
+      if (!run) run = { plan: plan, operations: {}, actor: io.actor(), startedAt: io.now() };
+      var parents = { root: c.parentId };
+      var summary = [];
+      c.items.forEach(function (item) {
+        var parentId = parents[item.parentKey];
+        var record = run.operations[item.key];
+        if (record && ['pending', 'created'].indexOf(record.state) < 0) fail('Invalid operation state');
+        if (record && record.state === 'created') {
+          var known = io.metadata(record.id); verify(c, item, known, parentId);
+          var matches = io.find(marker(c, item.key));
+          if (matches.length !== 1 || matches[0].id !== known.id) fail('Recorded identity has missing/ambiguous marker');
+          parents[item.key] = known.id;
+          summary.push({ key: item.key, state: 'created', id: known.id }); return;
+        }
+        var candidates = io.find(marker(c, item.key));
+        if (candidates.length > 1) fail('Ambiguous operation; inspect private candidates');
+        if (candidates.length === 1) {
+          verify(c, item, candidates[0], parentId);
+          parents[item.key] = candidates[0].id;
+          if (!preview) { run.operations[item.key] = { state: 'created', id: candidates[0].id, checkedAt: io.now() }; ledger.runs[runKey] = run; io.save(ledger); }
+          summary.push({ key: item.key, state: 'reconciled', id: candidates[0].id }); return;
+        }
+        if (record) fail('Unknown prior creation outcome; inspect Google before any retry');
+        if (preview) { parents[item.key] = 'planned:' + item.key; summary.push({ key: item.key, state: 'would-create', name: item.name }); return; }
+        // Durable intent acknowledgement is required before the non-idempotent write.
+        run.operations[item.key] = { state: 'pending', attemptedAt: io.now() };
+        ledger.runs[runKey] = run; io.save(ledger);
+        var result = io.create(item, parentId, marker(c, item.key));
+        verify(c, item, io.metadata(result.id), parentId);
+        run.operations[item.key] = { state: 'created', id: result.id, checkedAt: io.now() }; io.save(ledger);
+        parents[item.key] = result.id;
+        summary.push({ key: item.key, state: 'created', id: result.id });
+      });
+      return { mode: preview ? 'preview' : 'create/resume', year: c.year, operations: summary,
+        readiness: 'Manual checks required: Form destination/respondent access, submissions/processing, imports, public field review, totals, settings draft/readback and officer access. Creation does not activate a year.' };
+    });
+  }
+  return { execute: execute };
+}());

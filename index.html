@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20260919a">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20260927b">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -139,6 +139,10 @@
           </span>
           <span class="nav-label">Resources</span>
         </a>
+        <a class="nav-link" href="#transition" aria-label="Transition to New Year" title="Transition to New Year">
+          <span class="nav-icon" aria-hidden="true"><svg><use href="#icon-check-square"></use></svg></span>
+          <span class="nav-label">Transition to New Year</span>
+        </a>
         </nav>
 
         <label class="sidebar-role-picker" for="sidebar-officer-role">
@@ -220,6 +224,7 @@
           <a class="mobile-section-link" href="#finances">Finances</a>
           <a class="mobile-section-link" href="#operations">Operations</a>
           <a class="mobile-section-link" href="#resources">Resources</a>
+          <a class="mobile-section-link" href="#transition">Transition</a>
         </nav>
       </header>
 
@@ -712,6 +717,13 @@
               <button class="secondary-button resource-manager-button" id="manage-custom-links" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-plus"></use></svg> Manage my links</button>
             </div>
           </div>
+          <p id="shared-resources-status" role="status">Shared Google resources are not connected.</p>
+          <details class="settings-edit-guidance">
+            <summary>Maintain shared chapter links</summary>
+            <p><a id="shared-resources-edit" class="secondary-button" target="_blank" rel="noopener" hidden>Edit shared resources in Google</a> <button id="shared-resources-refresh" class="secondary-button" type="button" disabled>Refresh shared resources</button></p>
+            <p>Use your authorized Google account. Capture a recoverable version, compare the latest row and coordinate edits. Preserve stable IDs and headers. Edit label, URL, category, comma-separated roles, order, TRUE/FALSE enabled and optional academic year. Leave URL blank for attendance-check-in, points-master, budget-tracker, banking, fundraising and events-calendar; their URLs belong in Year Settings. Disable with FALSE; deleting a row restores its bundled fallback.</p>
+            <p>Wait for Google to report saved, refresh here, inspect the selected year and links, then check a fresh browser without personal links or previews. A public response can lag. On failure inspect Google before retrying; restore only affected cells after reconciling other edits, then recheck. Roles do not grant access. Publish only approved public metadata; hidden tabs do not protect private information.</p>
+          </details>
           <div class="resource-toolbar">
             <label for="resource-filter">Filter resources</label>
             <select id="resource-filter">
@@ -735,6 +747,52 @@
           </section>
           <div class="resource-grid" id="resource-grid"></div>
         </section>
+
+        <section class="transition-section dashboard-section" id="transition" data-mobile-sections="transition" aria-labelledby="transition-title">
+          <div class="section-heading">
+            <div><p class="eyebrow">Officer handoff</p><h2 id="transition-title">Transition to New Year</h2></div>
+          </div>
+          <p>Work through the annual handoff one step at a time. Progress is saved on this device; it does not verify Google systems or activate a year.</p>
+          <p id="transition-launch-summary" class="transition-summary"></p>
+          <button class="primary-button" type="button" id="transition-open">Open transition guide</button>
+        </section>
+
+        <dialog id="transition-dialog" class="transition-dialog" aria-labelledby="transition-dialog-title" aria-describedby="transition-dialog-description">
+          <div class="transition-dialog-shell">
+            <header class="transition-dialog-header">
+              <div><p class="eyebrow">Officer handoff</p><h2 id="transition-dialog-title">Transition to New Year</h2></div>
+              <button type="button" class="transition-close icon-button" id="transition-close" aria-label="Close transition guide">×</button>
+            </header>
+            <div class="transition-dialog-body">
+              <p id="transition-dialog-description">Complete each step and its required officer checks before continuing. Progress is local and is not automated verification or year activation.</p>
+              <div class="transition-controls">
+                <label>Transition year <select id="transition-year"><option value="2027-2028">2027–2028</option><option value="2028-2029">2028–2029</option></select></label>
+                <div><span>Current Hub year</span><strong id="transition-active-year">2026–2027</strong></div>
+                <div><span>Last saved</span><strong id="transition-saved-at">Never</strong></div>
+              </div>
+              <p class="transition-banner" role="note">Preparing <strong id="transition-guide-year">2027–2028</strong> leaves the current Hub year unchanged. Check results in the real systems and keep evidence in the private officer workspace.</p>
+              <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
+              <progress id="transition-progress" value="0" max="16" aria-label="Transition steps completed"></progress>
+              <p id="transition-summary" class="transition-summary"></p>
+              <p id="transition-status" class="transition-status" role="status" aria-live="polite"></p>
+              <div id="transition-steps" class="transition-steps"></div>
+              <p id="transition-next-reason" class="transition-next-reason" aria-live="polite"></p>
+              <div class="transition-step-actions">
+                <button class="secondary-button" type="button" id="transition-back">Back</button>
+                <button class="primary-button" type="button" id="transition-next">Next step</button>
+              </div>
+              <details class="transition-tools"><summary>Save, import, and reference tools</summary>
+                <div class="transition-toolbar" aria-label="Transition tools">
+                  <a class="secondary-button" id="transition-control-center" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener noreferrer">Open Google Control Center</a>
+                  <button class="secondary-button" type="button" id="transition-export">Export progress</button>
+                  <label class="secondary-button file-button">Import progress<input id="transition-import" type="file" accept="application/json,.json"></label>
+                  <button class="secondary-button" type="button" id="transition-print">Print full checklist</button>
+                </div>
+              </details>
+            </div>
+          </div>
+        </dialog>
+        <section id="transition-print-sheet" aria-label="Full officer transition checklist" hidden></section>
 
         <footer class="dashboard-footer">
           <p>ASME Officer Hub</p>
@@ -762,8 +820,22 @@
       <p class="settings-intro">
         Choose the academic year, data sources, and officer links used throughout the Hub. Shared values load from the
         <a id="settings-shared-link" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener">Hub Settings Sheet</a>
-        for every viewer. Preview changes affect only this browser; Publish for everyone saves them for the whole chapter.
+        for viewers when they load the Hub. Changes in this form are tab-only previews. Save shared changes directly in Google with your authorized officer account, then compare the saved row here.
       </p>
+
+      <details class="settings-note">
+        <summary>Save in Google, check conflicts, and recover</summary>
+        <ol>
+          <li>Open <strong>Edit shared settings</strong> and confirm Google grants your officer account edit access. The Hub access phrase does not grant Google access.</li>
+          <li>Before editing, preserve the row in Google version history or an authorized private copy. Re-read the row and coordinate with any other editor; direct Sheet editing cannot prevent conflicting edits.</li>
+          <li>Edit the matching <code>academic_year</code> row in <code>Hub_Settings_Public</code>, keeping its headers. Prepare 2027–2028 with <code>is_current</code> FALSE; leave 2026–2027 current until activation checks pass. Keep historical rows.</li>
+          <li>Only enter values safe for public viewing. This workbook is publicly readable in full; hidden tabs do not protect private edit links, notes, credentials, or audit data.</li>
+          <li>Wait for Google to report the edit saved. Keep this form set to your intended values and choose <strong>Compare with Google</strong>. Differences may indicate an unsaved edit, propagation delay, or another editor's changes. Inspect Google before retrying; do not overwrite automatically.</li>
+          <li>After a matching readback, open a fresh Hub tab without a preview to check the actual year and links. Website points and Website/Newsletter calendars need their own checks.</li>
+          <li>To recover, compare version history and restore only the affected cells in Google after checking other officers' changes. Repeat readback. A whole-file restore could undo someone else's work.</li>
+        </ol>
+        <p>Comparison checks this form's fields only, including inactive rows. It cannot prove who saved them, edit permissions, a form's response destination, or downstream refresh. Timestamp, status notes, and the event metrics tab are maintained and checked in Google.</p>
+      </details>
 
       <div class="settings-grid settings-grid-year">
         <label>
@@ -898,7 +970,7 @@
           <a class="secondary-button settings-sheet-button" id="settings-shared-action" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener">Edit shared settings</a>
           <button class="secondary-button" id="settings-cancel" type="button">Cancel</button>
           <button class="primary-button" type="submit">Preview and refresh</button>
-          <button class="primary-button settings-publish-button" id="settings-publish" type="button" hidden>Publish for everyone</button>
+          <button class="secondary-button" id="settings-verify" type="button">Compare with Google</button>
         </div>
       </div>
     </form>
@@ -971,8 +1043,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20260904a"></script>
-  <script src="assets/js/app.js?v=20260920a"></script>
+  <script src="assets/js/config.js?v=20260928b"></script>
+  <script src="assets/js/shared-resources.js?v=20260928b"></script>
+  <script src="assets/js/settings-readback.js?v=20260928b"></script>
+  <script src="assets/js/app.js?v=20260930a"></script>
+  <script type="module" src="assets/js/transition.js?v=20260927b"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

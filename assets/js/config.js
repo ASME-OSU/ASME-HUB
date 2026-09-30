@@ -44,10 +44,7 @@ window.ASME_HUB_CONFIG = {
     sheetTab: "Hub_Settings_Public",
     editUrl:
       "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343",
-    // Deploy integrations/apps-script/SettingsWriter.gs.example and paste its
-    // /exec URL here to enable organization-wide saves from the settings dialog.
-    writeUrl:
-      "https://script.google.com/macros/s/AKfycbyG2URXdnNUTHn8WVNpZPuLjiZKrggcU624yTKqCqKv0HjMz6GuMS7Cv1LRGWF2OhUjog/exec",
+    // Shared writes use Google-authorized direct editing. No client write endpoint.
   },
   dataSources: {
     "2026-2027": {
@@ -74,8 +71,11 @@ window.ASME_HUB_CONFIG = {
       engagementGoal: 250,
     },
   },
+  // Connect only after public projection/schema and officer edit access are verified.
+  sharedResources: { spreadsheetUrl: "", sheetTab: "", editUrl: "" },
   resources: [
     {
+      id: "executive-board",
       title: "Executive Board SharePoint",
       description: "The main officer workspace for files, handoffs, templates, and internal documentation.",
       label: "Open SharePoint",
@@ -86,6 +86,7 @@ window.ASME_HUB_CONFIG = {
       icon: "settings",
     },
     {
+      id: "event-operations",
       title: "Event Operations",
       description: "Plan and track chapter events, owners, dates, locations, and readiness.",
       label: "Open event tracker",
@@ -101,6 +102,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "officer-tasks",
       title: "Officer Task Tracker",
       description: "Review assigned work, due dates, priorities, and chapter follow-ups.",
       label: "Open task tracker",
@@ -115,6 +117,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "shared-documents",
       title: "Shared Documents",
       description: "Open the Executive Board document library for chapter files and working materials.",
       label: "Open documents",
@@ -124,6 +127,7 @@ window.ASME_HUB_CONFIG = {
       icon: "settings",
     },
     {
+      id: "attendance-check-in",
       title: "Attendance Check-In",
       description: "Member check-in form populated from the current academic-year event list.",
       label: "Open check-in form",
@@ -139,6 +143,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "activity-report",
       title: "Activity Report",
       description: "Open the chapter activity report workspace for recording and reviewing organizational activity.",
       label: "Open activity report",
@@ -153,6 +158,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "points-master",
       title: "Points Master",
       description: "Officer workbook for events, attendance, member points, review items, and website exports.",
       label: "Open Points Master",
@@ -168,6 +174,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "budget-tracker",
       title: "2026–2027 Budget Tracker",
       description: "Open the shared workbook for chapter budget planning and financial tracking.",
       label: "Open budget tracker",
@@ -182,6 +189,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "banking",
       title: "Huntington Online Banking",
       description: "Open Huntington’s official sign-in page for the chapter bank account.",
       label: "Sign in to Huntington",
@@ -196,6 +204,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "fundraising",
       title: "Zeffy",
       description: "Sign in to manage chapter fundraising campaigns, payments, and donor activity.",
       label: "Sign in to Zeffy",
@@ -210,6 +219,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "officer-passwords",
       title: "Officer Password Document",
       description: "Restricted SharePoint workbook for approved officers. Access is controlled by Microsoft 365 permissions.",
       label: "Open password document",
@@ -224,6 +234,7 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "member-points",
       title: "Member Points Dashboard",
       description: "Privacy-safe public leaderboard, point values, and searchable member status.",
       label: "Open member dashboard",
@@ -232,6 +243,7 @@ window.ASME_HUB_CONFIG = {
       icon: "users",
     },
     {
+      id: "newsletter-builder",
       title: "Newsletter Builder",
       description: "Create the chapter newsletter from current events, announcements, and reusable sections.",
       label: "Open builder",
@@ -240,6 +252,7 @@ window.ASME_HUB_CONFIG = {
       icon: "mail",
     },
     {
+      id: "career-packet",
       title: "Career Packet",
       description: "Open the chapter career resource and employer-preparation packet.",
       label: "Open career packet",
@@ -248,6 +261,7 @@ window.ASME_HUB_CONFIG = {
       icon: "users",
     },
     {
+      id: "chapter-website",
       title: "ASME OSU Website",
       description: "Public chapter information, membership, leadership, sponsors, and member resources.",
       label: "Open website",
@@ -256,6 +270,7 @@ window.ASME_HUB_CONFIG = {
       icon: "globe",
     },
     {
+      id: "events-calendar",
       title: "Events Calendar",
       description: "Review upcoming chapter events and approved programming.",
       label: "Open calendar",
@@ -265,6 +280,7 @@ window.ASME_HUB_CONFIG = {
       icon: "calendar",
     },
     {
+      id: "chapter-github",
       title: "ASME OSU GitHub",
       description: "Website, dashboard, and chapter-tool source repositories.",
       label: "Open GitHub",
