@@ -1,13 +1,14 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20260930c";
-import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20260930c";
-import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20260930d";
+import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261001a";
+import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261001a";
+import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261001a";
 
 const section = document.getElementById("transition");
 if (section) {
   const $ = (id) => document.getElementById(id);
   const dialog = $("transition-dialog");
   const list = $("transition-steps");
-  const yearSelect = $("transition-year");
+  const yearInput = $("transition-year");
+  let selectedYear = "";
   const statusLine = $("transition-status");
   const byId = new Map(TRANSITION_STEPS.map((step) => [step.id, step]));
   const statusLabels = { not_started: "Not started", in_progress: "In progress", blocked: "Blocked", complete: "Complete — officer marked" };
@@ -16,7 +17,7 @@ if (section) {
   let previousGuideRaw = null;
   let unreadableProgress = false;
   const migrationNotice = "Guide updated: earlier completed steps are now In progress, and passed checks are now Needs recheck. Other statuses were retained. Review the revised instructions before confirming them again.";
-  function populateTransitionYears(preferred = yearSelect.value) {
+  function populateTransitionYears(preferred = selectedYear) {
     const saved = [];
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -33,15 +34,17 @@ if (section) {
     const choices = transitionYearChoices(configured, [...saved, preferred], current);
     const nextStart = Math.min(Number(current.slice(0, 4)) + 1, 2199);
     const selected = validTransitionYear(preferred) ? preferred : transitionYear(nextStart);
-    yearSelect.replaceChildren(...choices.map((year) => new Option(year.replace("-", "–"), year)));
-    yearSelect.value = selected;
-    $("transition-start-year").value = selected.slice(0, 4);
+    $("transition-year-options").replaceChildren(...choices.map((year) => new Option(year.replace("-", "–"), year.slice(0, 4))));
+    selectedYear = selected;
+    yearInput.value = selected.slice(0, 4);
   }
   populateTransitionYears();
-  let progress = emptyProgress(yearSelect.value);
+  let progress = emptyProgress(selectedYear);
   let currentIndex = 0;
   let opener = null;
   const annualInputs = new Map();
+  const annualLabels = new Map();
+  const stepLinks = { T04: ["annualFolder"], T05: ["pointsMaster"], T06: ["attendanceFormEditor", "attendanceFormRespondent"], T07: ["pointsExport"], T09: ["budgetTracker", "budgetExport"] };
   let unreadableAnnualLinks = false;
   let savedAnnualLinks = {};
   const annualTools = node("details", "transition-tools");
@@ -56,9 +59,11 @@ if (section) {
     input.type = "text";
     input.inputMode = "url";
     input.autocomplete = "off";
+    input.setAttribute("form", annualForm.id);
     input.setAttribute("aria-label", title);
     label.append(input, node("small", "", `Destination: ${mapping}`));
     annualInputs.set(key, input);
+    annualLabels.set(key, label);
     annualForm.append(label);
   }
   const annualActions = node("div", "transition-toolbar");
@@ -85,8 +90,8 @@ if (section) {
     annualMessage.classList.toggle("is-error", error);
   }
   function annualDraft() {
-    return validateAnnualLinkDraft({ schema: 1, type: ANNUAL_HANDOFF_TYPE, year: yearSelect.value,
-      links: Object.fromEntries([...annualInputs].map(([key, input]) => [key, input.value])) }, yearSelect.value, window.ASME_HUB_CONFIG);
+    return validateAnnualLinkDraft({ schema: 1, type: ANNUAL_HANDOFF_TYPE, year: selectedYear,
+      links: Object.fromEntries([...annualInputs].map(([key, input]) => [key, input.value])) }, selectedYear, window.ASME_HUB_CONFIG);
   }
   function fillAnnualLinks(draft) {
     for (const [key, input] of annualInputs) input.value = draft?.links[key] || "";
@@ -96,51 +101,59 @@ if (section) {
     unreadableAnnualLinks = false;
     savedAnnualLinks = {};
     try {
-      const text = localStorage.getItem(annualLinkStorageKey(yearSelect.value));
-      if (text) fillAnnualLinks(importAnnualLinkDraft(text, yearSelect.value, window.ASME_HUB_CONFIG));
+      const text = localStorage.getItem(annualLinkStorageKey(selectedYear));
+      if (text) fillAnnualLinks(importAnnualLinkDraft(text, selectedYear, window.ASME_HUB_CONFIG));
       savedAnnualLinks = annualDraft().links;
       annualSay(text ? "Annual link draft loaded from this device. Confirm the actual files and checks before use." : "No saved annual links for this year.");
     } catch (error) { unreadableAnnualLinks = true; annualSay(`Saved links could not be read: ${error.message} Existing saved data is preserved. Import a valid handoff or explicitly remove saved links before saving.`, true); }
   }
+  function saveAnnualLinks() {
+    if (unreadableAnnualLinks) throw new Error("Existing saved links are unreadable. Import a valid handoff or remove saved links before saving.");
+    const draft = annualDraft();
+    const changedKeys = ANNUAL_LINK_FIELDS.map(([key]) => key).filter((key) => (draft.links[key] || "") !== (savedAnnualLinks[key] || ""));
+    const candidate = reconcileProgress(reopenAnnualChecks(progress, changedKeys, savedAnnualLinks), TRANSITION_STEPS, TRANSITION_CHECKS);
+    const reopened = Object.entries(progress.steps).some(([id, state]) => state === "complete" && candidate.steps[id] === "in_progress") ||
+      Object.entries(progress.checks).some(([id, state]) => state === "passed" && candidate.checks[id] === "needs_recheck");
+    if (changedKeys.length && !save(candidate)) throw new Error("Could not save the required manual recheck status. Annual links were not saved.");
+    localStorage.setItem(annualLinkStorageKey(draft.year), JSON.stringify(draft));
+    savedAnnualLinks = draft.links;
+    fillAnnualLinks(draft);
+    annualSay(`Link format checked and draft saved on this device.${reopened ? " Affected completed steps and checks need review." : ""} Check Google access and connections in Google Drive and Forms.`);
+    return draft;
+  }
   annualForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    try {
-      if (unreadableAnnualLinks) throw new Error("Existing saved links are unreadable. Import a valid handoff or remove saved links before saving.");
-      const draft = annualDraft();
-      const changed = JSON.stringify(draft.links) !== JSON.stringify(savedAnnualLinks);
-      if (changed && !save(reconcileProgress(reopenAnnualChecks(progress), TRANSITION_STEPS, TRANSITION_CHECKS))) throw new Error("Could not save the required manual recheck status. Annual links were not saved.");
-      localStorage.setItem(annualLinkStorageKey(draft.year), JSON.stringify(draft));
-      savedAnnualLinks = draft.links;
-      fillAnnualLinks(draft);
-      annualSay(`Link format checked and draft saved on this device.${changed ? " Previous completed annual steps and passed checks were reopened for review." : ""} No Google save or verification was performed.`);
-    } catch (error) { annualSay(`Links were not saved: ${error.message}`, true); }
+    try { saveAnnualLinks(); } catch (error) { annualSay(`Links were not saved: ${error.message}`, true); }
   });
   annualImport.addEventListener("change", async () => {
     const file = annualImport.files?.[0];
     annualImport.value = "";
     if (!file) return;
-    const selectedYear = yearSelect.value;
+    const importedYear = selectedYear;
     try {
       if (file.size > 100_000) throw new Error("Annual link files must be under 100 KB.");
-      const draft = importAnnualLinkDraft(await file.text(), selectedYear, window.ASME_HUB_CONFIG);
-      if (yearSelect.value !== selectedYear) throw new Error("The selected year changed while reading this file. Import again for the intended year.");
+      const draft = importAnnualLinkDraft(await file.text(), importedYear, window.ASME_HUB_CONFIG);
+      if (selectedYear !== importedYear) throw new Error("The selected year changed while reading this file. Import again for the intended year.");
       fillAnnualLinks(draft);
       unreadableAnnualLinks = false;
       annualSay("Imported link draft for review. Choose Check and save to retain it on this device. Creation results do not certify ownership, privacy or readiness; Form respondent links must come from the actual Form.");
     } catch (error) { annualSay(`Import failed: ${error.message} Existing fields and saved links were not changed.`, true); }
   });
-  annualSettings.addEventListener("click", () => {
+  function prepareAnnualSettings() {
     try {
-      const draft = annualDraft();
+      const draft = saveAnnualLinks();
       document.dispatchEvent(new CustomEvent("transition:annual-settings-draft", { detail: { draft, report: (error) => {
         if (error) annualSay(error, true);
         else dialog.close();
       } } }));
     } catch (error) { annualSay(`Cannot prepare settings: ${error.message}`, true); }
-  });
+  }
+  annualSettings.addEventListener("click", prepareAnnualSettings);
   annualClear.addEventListener("click", () => {
     try {
-      localStorage.removeItem(annualLinkStorageKey(yearSelect.value));
+      const removedKeys = Object.keys(savedAnnualLinks).filter((key) => savedAnnualLinks[key]);
+      if (removedKeys.length && !save(reconcileProgress(reopenAnnualChecks(progress, removedKeys, savedAnnualLinks), TRANSITION_STEPS, TRANSITION_CHECKS))) throw new Error("Could not save required recheck status.");
+      localStorage.removeItem(annualLinkStorageKey(selectedYear));
       fillAnnualLinks(null);
       savedAnnualLinks = {};
       unreadableAnnualLinks = false;
@@ -174,14 +187,14 @@ if (section) {
     if (missing.length) return `Complete prerequisite ${missing.join(", ")} before continuing.`;
     const pending = unchecked(step);
     if (pending.length) return `Cannot continue: required manual checks ${pending.map((check) => `${check.title} (${checkLabels[checkOf(check.id)]})`).join(", ")} must be recorded as passed after checking the real systems.`;
-    if (statusOf(step.id) !== "complete") return `Mark ${step.id} complete and confirm the officer-reported result before continuing.`;
+    if (statusOf(step.id) !== "complete") return `Mark ${step.id} complete before continuing.`;
     return "";
   }
   function readYear() {
-    const year = yearSelect.value;
+    const year = selectedYear;
     previousGuideRaw = null;
     unreadableProgress = false;
-    $("transition-start-year").value = year.slice(0, 4);
+    yearInput.value = year.slice(0, 4);
     try {
       const raw = localStorage.getItem(storageKey(year));
       const parsed = raw ? JSON.parse(raw) : null;
@@ -228,7 +241,7 @@ if (section) {
     const completed = TRANSITION_STEPS.filter((entry) => statusOf(entry.id) === "complete").length;
     const current = window.ASME_HUB_CONFIG?.currentAcademicYear || "2026-2027";
     $("transition-active-year").textContent = current.replace("-", "–");
-    $("transition-guide-year").textContent = yearSelect.value.replace("-", "–");
+    $("transition-guide-year").textContent = selectedYear.replace("-", "–");
     $("transition-saved-at").textContent = progress.savedAt ? new Date(progress.savedAt).toLocaleString() : "Never";
     $("transition-position").textContent = `Step ${currentIndex + 1} of ${TRANSITION_STEPS.length}`;
     $("transition-completion").textContent = `${completed} of ${TRANSITION_STEPS.length} complete`;
@@ -236,8 +249,11 @@ if (section) {
     meter.max = TRANSITION_STEPS.length;
     meter.value = completed;
     meter.setAttribute("aria-label", `${completed} of ${TRANSITION_STEPS.length} transition steps completed; viewing step ${currentIndex + 1}`);
-    $("transition-summary").textContent = `Year ${yearSelect.value.replace("-", "–")} · ${completed} officer-marked complete. Follow the full sequence; some steps involve other roles.`;
-    $("transition-launch-summary").textContent = `${yearSelect.value.replace("-", "–")}: ${completed} of ${TRANSITION_STEPS.length} steps complete on this device.`;
+    $("transition-summary").textContent = `Year ${selectedYear.replace("-", "–")} · ${completed} officer-marked complete. Follow the full sequence; some steps involve other roles.`;
+    $("transition-launch-summary").textContent = `${selectedYear.replace("-", "–")}: ${completed} of ${TRANSITION_STEPS.length} steps complete on this device.`;
+    // Keep the same canonical fields when moving between step cards.
+    for (const label of annualLabels.values()) annualForm.append(label);
+    annualTools.append(annualMessage);
     list.replaceChildren();
     const card = node("article", "transition-step");
     card.id = `transition-${step.id}`;
@@ -247,15 +263,19 @@ if (section) {
     card.append(node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${byId.get(id).title}`).join("; ") : "None"}`));
     card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
-    if (["T05", "T06", "T07", "T09", "T10"].includes(step.id)) {
-      const enterLinks = node("button", "secondary-button", "Enter annual links");
-      enterLinks.type = "button";
-      enterLinks.addEventListener("click", () => {
-        annualTools.open = true;
-        annualTools.scrollIntoView({ block: "start" });
-        annualInputs.get(step.id === "T06" ? "attendanceFormEditor" : step.id === "T07" ? "pointsExport" : step.id === "T09" ? "budgetTracker" : "pointsMaster").focus({ preventScroll: true });
-      });
-      card.append(node("p", "", "Add the copied links in Annual links and automation handoff below. The guide checks their format and prepares an inactive Year Settings draft for review."), enterLinks);
+    if (stepLinks[step.id] || step.id === "T10") {
+      const panel = node("section", "transition-inline-links");
+      panel.append(node("h4", "", step.id === "T10" ? "Send links to Year Settings" : "Save this step's copied links"));
+      panel.append(node("p", "", "Saving checks link format and known template IDs, then retains the draft on this device. Check file permissions and connections in Google Drive and Forms."));
+      for (const key of stepLinks[step.id] || []) panel.append(annualLabels.get(key));
+      const action = node("button", "secondary-button", step.id === "T10" ? "Save links and open Year Settings draft" : "Check and save links on this device");
+      if (step.id === "T10") {
+        action.type = "button";
+        action.addEventListener("click", prepareAnnualSettings);
+        panel.append(node("p", "", "Review the inactive draft in Year Settings, then copy the reviewed values into Google Control Center and use Compare with Google. Pasting links here does not write Google settings or verify Google permissions."));
+      } else { action.type = "submit"; action.setAttribute("form", annualForm.id); }
+      panel.append(action, annualMessage);
+      card.append(panel);
     }
     if (step.resource) {
       const url = window.ASME_HUB_CONFIG?.[step.resource]?.editUrl;
@@ -294,10 +314,6 @@ if (section) {
           select.value = checkOf(check.id);
           return;
         }
-        if (value === "passed" && !window.confirm(`Record “${check.title}” as Passed? Confirm you performed the check in the named service and recorded the result in the private handoff. The Hub does not perform this check.`)) {
-          select.value = checkOf(check.id);
-          return;
-        }
         const checks = { ...progress.checks };
         if (value === "not_checked") delete checks[check.id]; else checks[check.id] = value;
         save(reconcileProgress({ ...progress, checks }, TRANSITION_STEPS, TRANSITION_CHECKS), check.id);
@@ -318,10 +334,6 @@ if (section) {
         const pending = unchecked(step);
         if (missing.length || pending.length) {
           say(missing.length ? `Complete ${missing.join(", ")} first.` : `Record manual ${pending.map((check) => check.title).join(", ")} as passed before marking ${step.id} complete.`, true);
-          select.value = statusOf(step.id);
-          return;
-        }
-        if (!window.confirm(`Mark ${step.id} complete on this device? Confirm its manual checks in the private workflow. This does not verify or activate the year.`)) {
           select.value = statusOf(step.id);
           return;
         }
@@ -365,14 +377,14 @@ if (section) {
     else say("All steps are officer-marked complete. Verify private evidence before any authorized activation.");
   });
   $("transition-next-reason").tabIndex = -1;
-  yearSelect.addEventListener("change", readYear);
+  yearInput.addEventListener("input", () => yearInput.setCustomValidity(""));
   $("transition-year-form").addEventListener("submit", (event) => {
     event.preventDefault();
     try {
-      const year = transitionYear($("transition-start-year").value);
+      const year = transitionYear(yearInput.value);
       populateTransitionYears(year);
       readYear();
-    } catch (error) { say(error.message, true); }
+    } catch (error) { yearInput.setCustomValidity(error.message); yearInput.reportValidity(); say(error.message, true); }
   });
   $("transition-export").addEventListener("click", () => {
     const url = URL.createObjectURL(new Blob([exportProgress(progress, TRANSITION_STEPS, TRANSITION_CHECKS)], { type: "application/json" }));
@@ -392,7 +404,7 @@ if (section) {
     try {
       if (file.size > 100_000) throw new Error("Progress files must be under 100 KB.");
       const text = await file.text();
-      const imported = importProgress(text, yearSelect.value, TRANSITION_STEPS, TRANSITION_CHECKS);
+      const imported = importProgress(text, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
       const migrated = JSON.parse(text).guideVersion === "officer-transition-guide-2";
       const candidate = { ...imported, savedAt: new Date().toISOString() };
       if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
@@ -410,7 +422,7 @@ if (section) {
   });
   function buildPrintSheet() {
     const sheet = $("transition-print-sheet");
-    sheet.replaceChildren(node("h1", "", `Officer transition checklist · ${yearSelect.value.replace("-", "–")}`));
+    sheet.replaceChildren(node("h1", "", `Officer transition checklist · ${selectedYear.replace("-", "–")}`));
     sheet.append(node("p", "", "Officer-marked local status. Reconfirm real systems and private evidence before activation."));
     for (const step of TRANSITION_STEPS) {
       const card = node("article", "transition-print-step");
