@@ -33,7 +33,7 @@ function annualSettingsDraftIO_(copy,setup,c,props) {
     now: function(){return new Date().toISOString();}, digest:digest,
     verifiedHandoff: function(){return AnnualSetupEngine.handoff(copy,setup,setupIO);},
     metadata: function(id){return Drive.Files.get(id,{fields:'id,mimeType,trashed'});},
-    form: function(id) { var f = FormApp.openById(id); return {id:f.getId(),destinationId:f.getDestinationId(),editUrl:f.getEditUrl(),respondentUrl:f.getPublishedUrl(),acceptingResponses:f.isAcceptingResponses()}; },
+    form: function(id) { var f = FormApp.openById(id); return {id:f.getId(),destinationId:annualSetupFormDestinationId_(f),editUrl:f.getEditUrl(),respondentUrl:f.getPublishedUrl(),acceptingResponses:f.isAcceptingResponses()}; },
     readSettings: function() {
       var tab = sheet(), count = tab.getLastRow(); if (count < 2) throw new Error('Existing current year required');
       var range = tab.getRange(1,1,count,20), values = range.getValues().map(function(row){return row.map(function(v){return v instanceof Date ? v.toISOString() : v;});});

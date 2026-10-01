@@ -57,7 +57,7 @@ function annualSetupIO_(copy, setup) {
     cell: cell,
     form: function (id) {
       var target = form(id);
-      return { id: target.getId(), destinationId: target.getDestinationId() || null, acceptingResponses: target.isAcceptingResponses(), editUrl: target.getEditUrl(), respondentUrl: target.getPublishedUrl() };
+      return { id: target.getId(), destinationId: annualSetupFormDestinationId_(target), acceptingResponses: target.isAcceptingResponses(), editUrl: target.getEditUrl(), respondentUrl: target.getPublishedUrl() };
     },
     tabs: function (id) {
       return book(id).getSheets().map(function (sheet) {
@@ -86,7 +86,7 @@ function annualSetupIO_(copy, setup) {
       return { formulas: formulas, sourceURLCells: sourceURLCells };
     },
     read: function (patch) {
-      if (patch.kind === 'destination') return form(patch.id).getDestinationId() || null;
+      if (patch.kind === 'destination') return annualSetupFormDestinationId_(form(patch.id));
       if (patch.kind === 'range') return range(patch.id, patch.sheet, patch.a1).getFormulas();
       return cell(patch.id, patch.sheet, patch.a1);
     },
@@ -100,4 +100,15 @@ function annualSetupIO_(copy, setup) {
       SpreadsheetApp.flush();
     }
   };
+}
+
+/* Google throws for a genuinely unlinked Form instead of returning null.
+ * Only that exact observed condition is a valid empty destination baseline. */
+function annualSetupFormDestinationId_(form) {
+  try { return form.getDestinationId() || null; }
+  catch (error) {
+    var message = error && typeof error.message === 'string' ? error.message : String(error);
+    if (message === 'The form currently has no response destination.' || message === 'Exception: The form currently has no response destination.') return null;
+    throw error;
+  }
 }
