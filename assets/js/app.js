@@ -4788,7 +4788,7 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20260930d");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261001a");
       const draft = annualSettingsDraft(event.detail?.draft, config);
       const existing = getYearSource(draft.yearKey);
       if (existing?.isCurrent === true) throw new Error("This year is current in the loaded Google registry. Choose an inactive transition year.");

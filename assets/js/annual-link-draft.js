@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20260930c";
+import { validTransitionYear } from "./transition-state.js?v=20261001a";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
@@ -84,15 +84,30 @@ export function annualSettingsDraft(draft, config) {
     budgetExportSheetTab: "Budget_Public", isActive: false, isCurrent: false };
 }
 
-export function reopenAnnualChecks(progress) {
+const ANNUAL_DEPENDENCIES = {
+  pointsMaster: { steps: ["T05", "T06", "T07", "T08"], checks: ["V02", "V03", "V04", "V05"] },
+  attendanceFormEditor: { steps: ["T06", "T08"], checks: ["V02", "V03", "V04"] },
+  attendanceFormRespondent: { steps: ["T06", "T08"], checks: ["V02", "V03", "V04"] },
+  pointsExport: { steps: ["T07", "T08"], checks: ["V03", "V04", "V05"] },
+  budgetTracker: { steps: ["T09"], checks: ["V06"] },
+  budgetExport: { steps: ["T09"], checks: ["V06"] },
+  annualFolder: { steps: ["T04", "T05", "T06", "T07", "T08", "T09", "T12"], checks: ["V02", "V03", "V04", "V05", "V06", "V08"] }
+};
+
+export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {}) {
   const checks = { ...progress.checks };
   const steps = { ...progress.steps };
-  // File changes affect incoming access and dependent real-system confirmations.
-  for (const key of ["V02", "V03", "V04", "V05", "V06", "V07", "V09", "V10"]) {
-    if (checks[key] === "passed") checks[key] = "needs_recheck";
+  const affectedSteps = new Set();
+  const affectedChecks = new Set();
+  for (const key of changedKeys) {
+    const dependency = ANNUAL_DEPENDENCIES[key];
+    if (!dependency) continue;
+    [...dependency.steps, "T10", "T11", "T13", "T14", "T15", "T16"].forEach((id) => affectedSteps.add(id));
+    [...dependency.checks, "V07", "V09"].forEach((id) => affectedChecks.add(id));
+    // Initial entry does not undo earlier access checks. Replacing a saved file does.
+    if (previousLinks[key]) { affectedSteps.add("T02"); affectedChecks.add("V10"); }
   }
-  for (const key of ["T02", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T13", "T14", "T15", "T16"]) {
-    if (steps[key] === "complete") steps[key] = "in_progress";
-  }
+  for (const key of affectedChecks) if (checks[key] === "passed") checks[key] = "needs_recheck";
+  for (const key of affectedSteps) if (steps[key] === "complete") steps[key] = "in_progress";
   return { ...progress, steps, checks };
 }
