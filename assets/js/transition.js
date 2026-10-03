@@ -8,6 +8,7 @@ if (section) {
   const dialog = $("transition-dialog");
   const list = $("transition-steps");
   const yearInput = $("transition-year");
+  const yearSetup = $("transition-year-setup");
   let selectedYear = "";
   const statusLine = $("transition-status");
   const byId = new Map(TRANSITION_STEPS.map((step) => [step.id, step]));
@@ -252,6 +253,7 @@ if (section) {
     annualSummary.textContent = `New-year draft links · ${selectedYear.replace("-", "–")} · saved on this device`;
     $("transition-active-year").textContent = current.replace("-", "–");
     $("transition-guide-year").textContent = selectedYear.replace("-", "–");
+    $("transition-change-year").hidden = currentIndex === 0;
     $("transition-saved-at").textContent = progress.savedAt ? new Date(progress.savedAt).toLocaleString() : "Never";
     $("transition-position").textContent = `Step ${currentIndex + 1} of ${TRANSITION_STEPS.length}`;
     $("transition-completion").textContent = `${completed} of ${TRANSITION_STEPS.length} complete`;
@@ -259,11 +261,13 @@ if (section) {
     meter.max = TRANSITION_STEPS.length;
     meter.value = completed;
     meter.setAttribute("aria-label", `${completed} of ${TRANSITION_STEPS.length} transition steps completed; viewing step ${currentIndex + 1}`);
-    $("transition-summary").textContent = `Year ${selectedYear.replace("-", "–")} · ${completed} officer-marked complete. Follow the full sequence; some steps involve other roles.`;
+    $("transition-summary").textContent = "Progress and reported checks are saved on this device.";
     $("transition-launch-summary").textContent = `${selectedYear.replace("-", "–")}: ${completed} of ${TRANSITION_STEPS.length} steps complete on this device.`;
     // Keep the same canonical fields when moving between step cards.
     for (const label of annualLabels.values()) annualForm.append(label);
     annualTools.append(annualMessage);
+    yearSetup.remove();
+    yearSetup.hidden = step.id !== "T01";
     list.replaceChildren();
     const card = node("article", "transition-step");
     card.id = `transition-${step.id}`;
@@ -273,6 +277,7 @@ if (section) {
     card.append(node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${byId.get(id).title}`).join("; ") : "None"}`));
     card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
+    if (step.id === "T01") card.append(yearSetup);
     if (stepLinks[step.id] || step.id === "T10") {
       const panel = node("section", "transition-inline-links");
       panel.append(node("h4", "", step.id === "T10" ? "Review and save the new year's settings" : "Save this step's copied links"));
@@ -380,6 +385,7 @@ if (section) {
   dialog.addEventListener("close", () => { if (opener?.isConnected) opener.focus(); });
   dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
   $("transition-back").addEventListener("click", () => { if (currentIndex > 0) go(currentIndex - 1); });
+  $("transition-change-year").addEventListener("click", () => { go(0); yearInput.focus(); });
   $("transition-next").addEventListener("click", () => {
     const reason = blockingReason(TRANSITION_STEPS[currentIndex]);
     if (reason) { say(reason, true); $("transition-next-reason").focus(); return; }

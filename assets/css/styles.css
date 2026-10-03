@@ -6154,8 +6154,10 @@ body[data-theme="dark"] .command-center-actions > span {
 .transition-dialog-shell { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); }
 .transition-dialog-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
 .transition-dialog-header > div { min-width: 0; flex: 1; }
-.transition-dialog-header h2 { overflow-wrap: anywhere; margin: 0; color: var(--ink); font-size: clamp(1.2rem, 2.3vw, 1.6rem); }
+.transition-dialog-header h2 { overflow-wrap: anywhere; margin: 0; color: var(--ink); font-size: clamp(1.75rem, 4.5vw, 2.5rem); font-variant-numeric: tabular-nums; }
 .transition-dialog-header .eyebrow { margin: 0 0 5px; }
+.transition-year-context { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 5px; color: var(--muted); font-size: var(--text-sm); }
+.transition-change-year { min-height: 44px; padding: 0; border: 0; color: var(--scarlet); background: transparent; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .transition-close { display: inline-grid; flex: 0 0 auto; font-size: 1.75rem; }
 .transition-dialog-body { min-height: 0; padding: 0 24px 24px; overflow-y: auto; overscroll-behavior: contain; }
 .transition-dialog-body > p { line-height: 1.5; }
@@ -6170,7 +6172,7 @@ body[data-theme="dark"] .command-center-actions > span {
 .transition-controls strong { color: var(--ink); font-size: var(--text-sm); }
 .transition-dialog select,
 .transition-dialog input { min-width: 0; max-width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink); background: var(--surface); font: inherit; }
-.transition-progress-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: var(--text-sm); }
+.transition-progress-head { margin-top: 18px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: var(--text-sm); }
 #transition-progress { display: block; width: 100%; height: 12px; margin-top: 8px; overflow: hidden; border: 0; border-radius: 20px; background: var(--surface-soft); accent-color: var(--scarlet); }
 #transition-progress::-webkit-progress-bar { border-radius: 20px; background: var(--surface-soft); }
 #transition-progress::-webkit-progress-value { border-radius: 20px; background: var(--scarlet); }
