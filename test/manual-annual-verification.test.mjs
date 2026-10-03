@@ -91,3 +91,9 @@ test('metadata key and permission order do not invalidate an unchanged Google sn
  assert.equal(f.verify().digest,before);
  f.files[f.ids.pointsMaster].permissions.find(p=>p.emailAddress==='officer@example.org').role='reader';assert.notEqual(f.verify().digest,before);
 });
+
+test('manual verifier enforces aligned annual and semester boundaries',()=>{
+ for(const [a1,date] of [['B4','2027-07-01'],['B5','2028-06-30'],['B11','2027-07-01'],['B14','2028-04-30'],['B14','2028-06-30']]){
+  const f=fixture();f.cells.set('budgetTracker|Setup & Lists|'+a1,{date});assert.throws(f.verify,/configuration mismatch/);assert.equal(f.appends,0);
+ }
+});

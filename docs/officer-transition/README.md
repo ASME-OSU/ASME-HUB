@@ -9,6 +9,9 @@ the same chapter-controlled workspace, with a clearly dated current index.
 
 | Reference | What to read it for |
 |---|---|
+| [Annual Points setup](annual-points-setup.md) | Exact response wiring, imports, generated roster, manual event choices and aligned date rules |
+| [Finance, settings and launch examples](finance-settings-launch.md) | Funding review, saved versus active/current states, evidence, intake, rollback and retention |
+| [Communications rollover](communications-rollover.md) | Exact calendar, newsletter and website sources, transfers, editors and deployment paths |
 | [System flow and ownership](system-flow.md) | Officer steps, where data lives, shared saves and activation |
 | [Script map](script-map.md) | Browser code, Google project files and which examples are installed |
 | [Maintenance and recovery](maintenance.md) | Annual rollover, deployment, backups, access and unresolved acceptance checks |

@@ -18,6 +18,7 @@
 <body><main>
   <h1>Save the new-year Hub settings</h1>
   <p>Use the chapter account configured for annual setup. Your reviewed Hub draft appears here when you open this page from Year Settings. Choose Verify with Google to check it.</p>
+  <p>Importing a draft does not save it. Verify checks the draft; Save writes an inactive, noncurrent Google row. After saving, Compare with Google in the Hub. The year stays hidden from the normal year selector until an authorized editor sets is_active; is_current separately makes it the default year. Points LIVE and opening attendance intake are separate launch actions.</p>
   <section>
     <p id="transfer-status">You can also import a Google save file downloaded from Year Settings.</p>
     <label>Hub Google save file <input id="file" type="file" accept="application/json,.json"></label>

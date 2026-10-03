@@ -109,3 +109,17 @@ test("manual check questions and resource actions use meaningful officer languag
   assert.equal(TRANSITION_STEPS.find((step) => step.id === "T03").resource, "templates");
   assert.match(TRANSITION_STEPS.find((step) => step.id === "T02").action, /ASME OSU chapter Google account/);
 });
+
+
+test("mock feedback revision invalidates guide 3 confirmations and preserves the source", async () => {
+  const { migrateProgress } = await import("../assets/js/transition-state.js");
+  const original = { ...emptyProgress(year), guideVersion: "officer-transition-guide-3", steps: { T01: "complete", T02: "complete", T03: "blocked" }, checks: { V10: "passed", V01: "unable" } };
+  const migrated = migrateProgress(original, year, TRANSITION_STEPS, TRANSITION_CHECKS);
+  assert.equal(migrated.guideVersion, "officer-transition-guide-4");
+  assert.equal(migrated.steps.T01, "in_progress");
+  assert.equal(migrated.checks.V10, "needs_recheck");
+  assert.equal(migrated.steps.T03, "blocked");
+  assert.equal(migrated.checks.V01, "unable");
+  assert.equal(original.checks.V10, "passed");
+  assert.deepEqual(restore(JSON.stringify({ ...original, kind: "asme-officer-transition-progress" })), migrated);
+});

@@ -1,5 +1,5 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261002a";
-import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261001a";
+import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261003b";
+import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261003b";
 import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261002a";
 
 const section = document.getElementById("transition");
@@ -46,6 +46,19 @@ if (section) {
   const annualInputs = new Map();
   const annualLabels = new Map();
   const stepLinks = { T04: ["annualFolder"], T05: ["pointsMaster"], T06: ["attendanceFormEditor", "attendanceFormRespondent"], T07: ["pointsExport"], T09: ["budgetTracker", "budgetExport"] };
+  const setupGuide = ["annual-points-setup.md", "Open response wiring and event setup instructions"];
+  const financeGuide = ["finance-settings-launch.md", "Open finance, settings and launch examples"];
+  const communicationsGuide = ["communications-rollover.md", "Open calendar, newsletter and public-page instructions"];
+  const stepGuides = { T01: [["README.md", "Open the current officer documentation index"]], T03: [setupGuide], T05: [setupGuide], T06: [setupGuide], T07: [setupGuide], T08: [setupGuide], T09: [setupGuide, financeGuide], T10: [financeGuide], T11: [communicationsGuide], T12: [communicationsGuide], T13: [communicationsGuide], T14: [financeGuide], T15: [financeGuide], T16: [financeGuide] };
+  function appendGuideLinks(card, step) {
+    for (const [filename, title] of stepGuides[step.id] || []) {
+      const link = node("a", "secondary-button", title);
+      link.href = `https://github.com/ASME-OSU/ASME-HUB/blob/main/docs/officer-transition/${filename}`;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      card.append(link);
+    }
+  }
   let unreadableAnnualLinks = false;
   let savedAnnualLinks = {};
   const annualTools = node("details", "transition-tools");
@@ -207,7 +220,7 @@ if (section) {
     try {
       const raw = localStorage.getItem(storageKey(year));
       const parsed = raw ? JSON.parse(raw) : null;
-      previousGuideRaw = parsed?.guideVersion === "officer-transition-guide-2" ? raw : null;
+      previousGuideRaw = ["officer-transition-guide-2", "officer-transition-guide-3"].includes(parsed?.guideVersion) ? raw : null;
       progress = raw ? migrateProgress(parsed, year, TRANSITION_STEPS, TRANSITION_CHECKS) : emptyProgress(year);
       say(previousGuideRaw ? migrationNotice + " Your previous saved file is preserved until you save; a backup will be kept on this device." : raw ? "Progress loaded from this device. Reconfirm the real checks before activation." : "No local progress for this year yet.");
     } catch (error) {
@@ -228,7 +241,7 @@ if (section) {
     }
     const candidate = { ...next, savedAt: new Date().toISOString() };
     try {
-      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
+      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(previousGuideRaw).guideVersion}-backup`, previousGuideRaw);
       localStorage.setItem(storageKey(candidate.year), JSON.stringify(candidate));
       previousGuideRaw = null;
       progress = candidate;
@@ -277,6 +290,7 @@ if (section) {
     card.append(node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${byId.get(id).title}`).join("; ") : "None"}`));
     card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
+    appendGuideLinks(card, step);
     if (step.id === "T01") card.append(yearSetup);
     if (stepLinks[step.id] || step.id === "T10") {
       const panel = node("section", "transition-inline-links");
@@ -421,10 +435,10 @@ if (section) {
       if (file.size > 100_000) throw new Error("Progress files must be under 100 KB.");
       const text = await file.text();
       const imported = importProgress(text, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
-      const migrated = JSON.parse(text).guideVersion === "officer-transition-guide-2";
+      const migrated = ["officer-transition-guide-2", "officer-transition-guide-3"].includes(JSON.parse(text).guideVersion);
       const candidate = { ...imported, savedAt: new Date().toISOString() };
-      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
-      if (migrated) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-import-backup`, text);
+      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(previousGuideRaw).guideVersion}-backup`, previousGuideRaw);
+      if (migrated) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(text).guideVersion}-import-backup`, text);
       localStorage.setItem(storageKey(candidate.year), JSON.stringify(candidate));
       previousGuideRaw = null;
       unreadableProgress = false;
@@ -446,6 +460,7 @@ if (section) {
       card.append(node("p", "", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
       card.append(node("p", "", `Prerequisites: ${step.needs.join(", ") || "None"}`));
       card.append(node("p", "", step.action), node("p", "", `Manual check: ${step.check}`));
+      appendGuideLinks(card, step);
       checksFor(step).forEach((check) => card.append(node("p", "", `${check.title}: ${checkLabels[checkOf(check.id)]}`)));
       sheet.append(card);
     }

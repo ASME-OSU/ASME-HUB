@@ -224,7 +224,7 @@ PDF** for a condensed meeting snapshot; the navigation, settings, resources,
 and operational setup panels are omitted from the printed view.
 
 The annual goal status compares actual unique-attendee progress with the
-percentage of the July–June academic year that has elapsed:
+percentage of the August–July academic year that has elapsed:
 
 - **On pace:** actual progress meets or exceeds elapsed-year pace
 - **Watch:** actual progress is up to 10 percentage points behind pace
@@ -252,7 +252,7 @@ The Website Export contains:
 tab must never contain name.# values, emails, notes, or raw submissions.
 
 `Monthly_Metrics_Public` imports from the private
-`Monthly Dashboard Staging` tab. The staging tab generates July through June
+`Monthly Dashboard Staging` tab. The staging tab generates August through July
 from the academic year in `Config!B3` and excludes synthetic `test.*` members.
 Its monthly contract is:
 
@@ -270,8 +270,10 @@ Its monthly contract is:
 
 `Semester_Metrics_Public` imports from the private
 `Semester Dashboard Staging` tab. It uses the same 15-column contract as the
-monthly feed, with `period_key` values of `fall` and `spring`. Fall covers July
-through December; Spring covers January through June. The
+monthly feed, with `period_key` values of `fall` and `spring`. Fall covers August
+through December; Spring covers January through May. Summer (June–July) is
+represented in monthly/year totals; the existing semester feed has only Fall
+and Spring rows. The
 `highly_engaged_attendees` field always means four or more valid events inside
 the selected month or semester.
 
@@ -285,7 +287,7 @@ Google Form → private Points Master → Dashboard Staging
 
 1. Keep form responses, the Point Log, Roster, Review Queue, and Adjustments private.
 2. Let `Dashboard Staging` calculate only event totals and aggregate health counts.
-3. Let `Monthly Dashboard Staging` calculate July–June aggregate review rows.
+3. Let `Monthly Dashboard Staging` calculate August–July aggregate review rows.
 4. Let `Semester Dashboard Staging` calculate the Fall and Spring aggregate rows.
 5. Let `Event_Metrics_Public`, `Monthly_Metrics_Public`, and
    `Semester_Metrics_Public` import only their approved staging ranges.
@@ -477,8 +479,9 @@ The annual rollover does not require changing the dashboard code.
    `Monthly Dashboard Staging`, and `Semester Dashboard Staging` tabs plus the
    public `Event_Metrics_Public`, `Monthly_Metrics_Public`, and
    `Semester_Metrics_Public` tabs with the same column contracts.
-7. Confirm the new private monthly tab starts in July of the correct academic
-   year and ends in June of the next calendar year.
+7. Confirm the new private monthly tab starts in August of the correct academic
+   year and ends in July of the next calendar year. Check May is Spring and
+   June/July are Summer; the semester rows cover August–December and January–May.
 8. When the draft is ready for public visibility, set `is_active` TRUE while
    keeping it noncurrent. Reload the Hub and check that year, Fall/Spring
    presets, and every expected month. Activation remains a separate decision.

@@ -3125,7 +3125,7 @@
     if (!event.date || !period?.start) return false;
     const start = new Date(period.start);
     const end = new Date(start);
-    end.setMonth(end.getMonth() + (period.kind === "semester" ? 6 : 1));
+    end.setMonth(end.getMonth() + (period.kind === "semester" ? 5 : 1));
     return event.date >= start && event.date < end;
   }
 
@@ -4046,8 +4046,8 @@
     if (!target || !startYear) {
       return { label: "Goal set", tone: "is-neutral", variance: null };
     }
-    const start = new Date(startYear, 6, 1);
-    const end = new Date(startYear + 1, 6, 1);
+    const start = new Date(startYear, 7, 1);
+    const end = new Date(startYear + 1, 7, 1);
     const referenceCandidate = new Date(meta.lastUpdated || Date.now());
     const reference = Number.isNaN(referenceCandidate.getTime())
       ? new Date()
