@@ -1,0 +1,93 @@
+/* Add to the SAME private standalone copy/setup/settings project.
+ * Deploy only as USER_ACCESSING. No public POST writer or client OAuth token. */
+function doGet() {
+  annualSettingsWebContext_();
+  return HtmlService.createHtmlOutputFromFile('AnnualSettingsPage').setTitle('ASME annual settings');
+}
+function annualSettingsWebContext_() {
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  var props = PropertiesService.getScriptProperties();
+  function config(key) {
+    var value = props.getProperty(key);
+    if (!value) throw new Error('Annual save is not configured. Contact the chapter setup officer.');
+    return JSON.parse(value);
+  }
+  var manualText=props.getProperty('ANNUAL_MANUAL_SETTINGS_CONFIG');
+  var manual=manualText?readAnnualManualRules_(JSON.parse(manualText)):null;
+  var copy = manual?{intendedOwner:manual.intendedOwner}:config('ANNUAL_COPY_CONFIG');
+  var setup = manual?null:config('ANNUAL_SETUP_CONFIG');
+  var draft = manual?manual.draft:config('ANNUAL_SETTINGS_DRAFT_CONFIG');
+  if (!draft || manual && (manual.year!==draft.year || draft.ledgerId===manual.annualRootId || manual.excludedSourceIds.indexOf(draft.ledgerId)>=0)) throw new Error('Private manual draft target configuration is incomplete.');
+  var active = String(Session.getActiveUser().getEmail()).trim().toLowerCase();
+  var effective = String(Session.getEffectiveUser().getEmail()).trim().toLowerCase();
+  var intended = String(copy.intendedOwner || '').trim().toLowerCase();
+  if (!active || active !== effective || effective !== intended) throw new Error('Sign in as the configured chapter account. This page must run as the user accessing it.');
+  return {props:props,copy:copy,setup:setup,draft:draft,actor:active,manual:manual};
+}
+function previewAnnualSettingsWeb(inputText) {
+  var ctx = annualSettingsWebContext_();
+  // Clearing before parsing means a failed new import cannot save an older preview.
+  var user = PropertiesService.getUserProperties();
+  user.deleteProperty('ANNUAL_WEB_PREVIEW');
+  if (typeof inputText !== 'string' || inputText.length > 16000) throw new Error('Choose a Hub Google save file under 16 KB.');
+  var input = JSON.parse(inputText);
+  if (!input || input.schema !== 1 || input.type !== 'asme-annual-settings-input' || !input.handoff || input.handoff.year !== ctx.draft.year || !input.values || Object.keys(input).sort().join(',') !== 'handoff,schema,type,values') throw new Error('The Hub save file does not match the privately configured annual year.');
+  // Only public row selections are imported. Google resource identities, ledger,
+  // Control Center, year and fixed timestamp always come from private configuration.
+  if (Object.keys(input.values).sort().join(',') !== Object.keys(ctx.draft.values).sort().join(',')) throw new Error('Explicit selections for every public settings field are required.');
+  // Preserve the existing private config's field order for immutable journal repeat.
+  var values = {};
+  Object.keys(ctx.draft.values).forEach(function(key){values[key]=input.values[key];});
+  var draft = Object.assign({}, ctx.draft, {values:values});
+  var io,preview;
+  if (ctx.manual) {
+    var manual=Object.assign({},ctx.manual,{handoff:input.handoff,draft:draft});
+    var verifier=manualAnnualVerificationIO_(manual);
+    preview=verifier.lock(function(){
+      var verified=ManualAnnualVerificationEngine.verify(input.handoff,manual,verifier);
+      draft.manualVerificationDigest=verified.digest;
+      io=manualAnnualDraftIO_(manual,ctx.props,verified.digest,draft);
+      io.lock=function(fn){return fn();};
+      return AnnualSettingsDraftEngine.run(input.handoff,draft,io,null);
+    });
+  } else {
+    io = annualSettingsDraftIO_(ctx.copy,ctx.setup,draft,ctx.props);
+    preview = AnnualSettingsDraftEngine.run(input.handoff,draft,io,null);
+  }
+  var ticket = Utilities.getUuid();
+  var prepared = JSON.stringify({actor:ctx.actor,ticket:ticket,createdAt:Date.now(),handoff:input.handoff,draft:draft,digest:preview.digest,manual:!!ctx.manual});
+  if (Utilities.newBlob(prepared).getBytes().length > 8500) throw new Error('The reviewed settings are too large. Shorten the public notes and URLs.');
+  user.setProperty('ANNUAL_WEB_PREVIEW',prepared);
+  return {ticket:ticket,preview:preview};
+}
+function saveAnnualSettingsWeb(ticket, publicLinkReview, reviewNote) {
+  var ctx = annualSettingsWebContext_();
+  var raw = PropertiesService.getUserProperties().getProperty('ANNUAL_WEB_PREVIEW');
+  if (!raw) throw new Error('Import and verify the Hub save file first.');
+  var prepared = JSON.parse(raw);
+  if (typeof ticket !== 'string' || ticket !== prepared.ticket || prepared.actor !== ctx.actor || !Number.isFinite(prepared.createdAt) || Date.now() - prepared.createdAt < 0 || Date.now() - prepared.createdAt > 30*60*1000) throw new Error('This preview expired or changed. Import and verify the file again.');
+  if (publicLinkReview !== true || typeof reviewNote !== 'string' || !reviewNote.trim() || reviewNote.length > 1000) throw new Error('Review the public row and record a short audience review before saving.');
+  // An administrator's configuration changes invalidate the reviewed preview.
+  var expected = Object.assign({},ctx.draft,{values:prepared.draft.values});
+  if (ctx.manual) expected.manualVerificationDigest=prepared.draft.manualVerificationDigest;
+  if (!!ctx.manual!==prepared.manual) throw new Error('Annual save mode changed. Verify the file again.');
+  if (JSON.stringify(expected) !== JSON.stringify(prepared.draft)) throw new Error('Private annual configuration changed. Import and verify again.');
+  var io = ctx.manual?manualAnnualDraftIO_(Object.assign({},ctx.manual,{handoff:prepared.handoff,draft:prepared.draft}),ctx.props,prepared.draft.manualVerificationDigest,prepared.draft):annualSettingsDraftIO_(ctx.copy,ctx.setup,prepared.draft,ctx.props);
+  return AnnualSettingsDraftEngine.run(prepared.handoff,prepared.draft,io,{year:prepared.draft.year,digest:prepared.digest,publicLinkReview:true,reviewNote:reviewNote.trim()});
+}
+
+// Formula inventories can exceed the 9 KB Script Property value limit.
+// Only a private, chapter-owned JSON file named by private properties is read.
+function readAnnualManualRules_(reference) {
+  if (!reference || reference.schema !== 1 || !/^[A-Za-z0-9_-]{20,200}$/.test(reference.rulesFileId) || !reference.intendedOwner) throw new Error('Private manual rules file reference required.');
+  var owner=String(reference.intendedOwner).trim().toLowerCase();
+  var active=String(Session.getActiveUser().getEmail()).trim().toLowerCase();
+  if (!active || active!==owner || String(Session.getEffectiveUser().getEmail()).trim().toLowerCase()!==owner) throw new Error('Sign in as the configured chapter account.');
+  var metadata=annualCopyIO_({}).metadata(reference.rulesFileId);
+  if (!metadata || metadata.trashed || metadata.driveId || metadata.mimeType!=='application/json' || !metadata.owners || metadata.owners.length!==1 || String(metadata.owners[0].emailAddress).trim().toLowerCase()!==owner || !metadata.capabilities || !metadata.capabilities.canEdit || !Array.isArray(metadata.permissions) || !metadata.permissions.length || metadata.permissions.some(function(p){return p.type!=='user'||!p.emailAddress;})) throw new Error('Private chapter-owned manual rules file required.');
+  var file=DriveApp.getFileById(reference.rulesFileId);
+  if (file.getSize()>250000) throw new Error('Manual rules exceed the reviewed 250 KB bound.');
+  var rules=JSON.parse(file.getBlob().getDataAsString('UTF-8'));
+  if (String(rules.intendedOwner).trim().toLowerCase()!==owner || rules.draft && [rules.draft.ledgerId,rules.draft.controlCenterId,rules.annualRootId].indexOf(reference.rulesFileId)>=0 || rules.excludedSourceIds && rules.excludedSourceIds.indexOf(reference.rulesFileId)>=0) throw new Error('Manual rules owner/target identity conflict.');
+  return Object.assign({},rules,{rulesFileId:reference.rulesFileId});
+}

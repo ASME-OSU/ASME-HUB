@@ -960,6 +960,21 @@
         </div>
       </div>
 
+      <section id="settings-annual-save" hidden aria-labelledby="settings-annual-save-title">
+        <h3 id="settings-annual-save-title">Save the new-year draft in Google</h3>
+        <p>Open the authorized annual save page to verify these settings with Google, review the exact row, and save an inactive year with confirmed readback. You can also download a transfer file. Delivery, scoring, privacy, totals and officer access still need your checks.</p>
+        <div class="settings-grid">
+          <label><span>Public draft status</span><input id="settings-annual-status" type="text" value="Draft; annual checks pending"></label>
+          <label><span>Aggregate event tab</span><input id="settings-annual-event-tab" type="text" value="Event_Metrics_Public"></label>
+        </div>
+        <div class="settings-actions">
+          <button class="primary-button" id="settings-download-annual" type="button">Download Google save file</button>
+          <a class="secondary-button" id="settings-annual-service" target="_blank" rel="noopener" hidden>Open authorized annual save</a>
+        </div>
+        <p id="settings-annual-connection">The authorized annual save service is not connected yet. You can prepare the file; shared saving currently uses Edit shared settings.</p>
+        <small>The file includes private handoff links. Keep it on an officer device and upload it only to the chapter's configured Google service. The chapter service must be configured for the selected year before it can verify manual or automated copies.</small>
+      </section>
+
       <p class="settings-status" id="settings-status" role="status" aria-live="polite"></p>
 
       <div class="settings-actions">
@@ -1044,11 +1059,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261001a"></script>
+  <script src="assets/js/config.js?v=20261002a"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
-  <script src="assets/js/settings-readback.js?v=20260928b"></script>
-  <script src="assets/js/app.js?v=20261001a"></script>
-  <script type="module" src="assets/js/transition.js?v=20261001a"></script>
+  <script src="assets/js/settings-readback.js?v=20261002a"></script>
+  <script src="assets/js/app.js?v=20261002a"></script>
+  <script type="module" src="assets/js/transition.js?v=20261002a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

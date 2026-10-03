@@ -7,8 +7,8 @@
     ["dashboard_json_url", "dashboardUrl"], ["attendance_form_url", "attendanceFormUrl"],
     ["points_master_url", "pointsMasterUrl"], ["calendar_page_url", "calendarUrl"],
     ["calendar_ical_url", "calendarIcalUrl"], ["is_active", "isActive", "boolean"],
-    ["is_current", "isCurrent", "boolean"], ["last_updated", null], ["status_note", null],
-    ["event_metrics_tab", null], ["budget_tracker_url", "budgetTrackerUrl"],
+    ["is_current", "isCurrent", "boolean"], ["last_updated", null], ["status_note", "statusNote"],
+    ["event_metrics_tab", "eventMetricsSheetTab"], ["budget_tracker_url", "budgetTrackerUrl"],
     ["budget_export_sheet_url", "budgetExportSheetUrl"], ["budget_export_sheet_tab", "budgetExportSheetTab"],
     ["banking_url", "bankingUrl"], ["fundraising_url", "fundraisingUrl"],
   ];
@@ -38,7 +38,7 @@
       return fail("Google must have exactly one current year, and that row must be active. Review the year flags without activating a draft.");
     }
     const differences = fields.flatMap(([header, key, type], index) => {
-      if (!key) return [];
+      if (!key || !(key in expected)) return [];
       const value = cell(row, index);
       const actual = type === "boolean" ? boolean(value) : type === "number" ? (text(value) ? Number(value) : NaN) : text(value);
       return actual === expected[key] ? [] : [header];

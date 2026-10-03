@@ -32,7 +32,7 @@ var AnnualSetupEngine = (function () {
   }
   function identity(copy, setup, io) {
     validate(copy, setup);
-    var result = AnnualCopyEngine.execute(copy, io.copy, true);
+    var result = AnnualCopyEngine.verifyCompleted(copy, io.copy);
     var ids = {};
     resources.forEach(function (name) {
       var operation = result.operations.filter(function (o) { return o.key === setup.resources[name]; })[0];

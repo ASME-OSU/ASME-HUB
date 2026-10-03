@@ -94,5 +94,34 @@ var AnnualCopyEngine = (function () {
         readiness: 'Manual checks required: Form destination/respondent access, submissions/processing, imports, public field review, totals, settings draft/readback and officer access. Creation does not activate a year.' };
     });
   }
-  return { execute: execute };
+  function verifyCompleted(c, io) {
+    // Already-created copies retain their immutable historical source certificate.
+    // Verify the journal and copies themselves; never inspect evolving masters,
+    // reconcile pending work, create a resource or write a ledger here.
+    return io.lock(function () {
+      validate(c);
+      if (!sameEmail(io.actor(),c.intendedOwner)) fail('Execute as the intended copied-file owner');
+      var parent = io.metadata(c.parentId); privateFile(parent,c.intendedOwner);
+      if (parent.id !== c.parentId || parent.mimeType !== folderMime) fail('Private parent identity required');
+      var ledgerFile = io.metadata(c.ledgerId); privateFile(ledgerFile,c.intendedOwner);
+      if (ledgerFile.id !== c.ledgerId || ledgerFile.mimeType !== 'application/json' || !ledgerFile.capabilities || !ledgerFile.capabilities.canEdit) fail('Private editable JSON ledger required');
+      var ledger = io.load(), run = ledger && ledger.schema === 1 && ledger.runs && typeof ledger.runs === 'object' && !Array.isArray(ledger.runs) ? ledger.runs[c.year] : null;
+      if (!run || typeof run !== 'object' || Array.isArray(run) || run.plan !== JSON.stringify(c) || !sameEmail(run.actor,c.intendedOwner)) fail('Completed immutable copy plan and actor required');
+      if (!run.operations || typeof run.operations !== 'object' || Array.isArray(run.operations) || Object.keys(run.operations).sort().join(',') !== c.items.map(function(i){return i.key;}).sort().join(',')) fail('Every copy operation must be completed and journaled');
+      var parents = {root:c.parentId}, used = [c.parentId,c.ledgerId], summary = [];
+      c.items.forEach(function(item) {
+        var record = run.operations[item.key];
+        if (!record || record.state !== 'created' || typeof record.id !== 'string' || !record.id || used.indexOf(record.id) >= 0 || c.items.some(function(i){return i.source && i.source.id === record.id;})) fail('Every distinct copy must have a completed journal identity');
+        var known = io.metadata(record.id);
+        if (!known || known.id !== record.id) fail('Recorded copy identity mismatch');
+        verify(c,item,known,parents[item.parentKey]);
+        var matches = io.find(marker(c,item.key));
+        if (!Array.isArray(matches) || matches.length !== 1 || matches[0].id !== known.id) fail('Recorded identity has missing/ambiguous marker');
+        used.push(known.id); parents[item.key] = known.id;
+        summary.push({key:item.key,state:'created',id:known.id});
+      });
+      return {mode:'verify-completed',year:c.year,operations:summary};
+    });
+  }
+  return { execute: execute, verifyCompleted: verifyCompleted };
 }());

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
+import {annualSettingsInput} from '../assets/js/annual-settings-input.js';
 const ctx=vm.createContext({});
 vm.runInContext(readFileSync(new URL('../integrations/apps-script/AnnualSettingsDraftEngine.gs.example',import.meta.url),'utf8'),ctx);
 const engine=ctx.AnnualSettingsDraftEngine,clone=x=>JSON.parse(JSON.stringify(x));
@@ -24,3 +25,14 @@ test('append readback preserves current row and repeat avoids duplicates',()=>{c
 test('lost append result reconciles same row; unresolved pending cannot retry',()=>{const f=fixture(),a=approve(f),append=f.io.append;f.io.append=row=>{append(row);throw Error('Lost result');};assert.throws(()=>engine.run(f.handoff,f.config,f.io,a),/Lost result/);f.io.append=append;engine.run(f.handoff,f.config,f.io,a);assert.equal(f.appends,1);const g=fixture(),b=approve(g);g.io.append=()=>{throw Error('Unknown');};assert.throws(()=>engine.run(g.handoff,g.config,g.io,b),/Unknown/);assert.throws(()=>engine.run(g.handoff,g.config,g.io,b),/Unknown prior append/);});
 test('invalid headers/current flags/duplicate rows reject before writes',()=>{for(const change of [f=>{f.data.headers[1]='wrong';},f=>{f.data.rows.push(clone(f.data.rows[0]));},f=>{f.data.rows[0][11]=false;},f=>{f.data.rows[0][10]=false;}]){const f=fixture();change(f);assert.throws(()=>engine.run(f.handoff,f.config,f.io));assert.equal(f.appends,0);}});
 test('Form mismatch, absent public review, stale approval and injection reject',()=>{const f=fixture(),a=approve(f);assert.throws(()=>engine.run(f.handoff,f.config,f.io,{...a,publicLinkReview:false}),/public link review/);f.form.destinationId='wrong';assert.throws(()=>engine.run(f.handoff,f.config,f.io,a),/destination mismatch/);const g=fixture(),b=approve(g);g.config.values.engagement_goal=100;assert.throws(()=>engine.run(g.handoff,g.config,g.io,b),/Exact private preview/);g.config.values.status_note='=IMPORTDATA("bad")';assert.throws(()=>engine.run(g.handoff,g.config,g.io),/literal/);});
+test('actual Hub transfer file verifies and reconciles old journal despite reordered link fields',()=>{
+ const f=fixture(), approval=approve(f);engine.run(f.handoff,f.config,f.io,approval);
+ const v=f.config.values,l=f.handoff.links;
+ const settings={yearKey:f.handoff.year,isActive:false,isCurrent:false,label:v.display_label,engagementGoal:v.engagement_goal,attendanceSheetUrl:l.pointsExport,attendanceFormUrl:l.attendanceFormRespondent,pointsMasterUrl:l.pointsMaster,budgetTrackerUrl:l.budgetTracker,budgetExportSheetUrl:l.budgetExport,attendanceSheetTab:v.leaderboard_tab,dashboardUrl:v.dashboard_json_url,calendarUrl:v.calendar_page_url,calendarIcalUrl:v.calendar_ical_url,budgetExportSheetTab:v.budget_export_sheet_tab,bankingUrl:v.banking_url,fundraisingUrl:v.fundraising_url};
+ const input=annualSettingsInput(clone(f.handoff),settings,{currentAcademicYear:'2026-2027'},{statusNote:v.status_note,eventMetricsTab:v.event_metrics_tab});
+ assert.notDeepEqual(Object.keys(input.handoff.links),Object.keys(f.handoff.links));
+ const config={...f.config,values:Object.fromEntries(Object.keys(f.config.values).map(k=>[k,input.values[k]]))};
+ const preview=engine.run(input.handoff,config,f.io);assert.equal(preview.digest,approval.digest);
+ assert.equal(engine.run(input.handoff,config,f.io,approval).status,'draft-readback-matched');assert.equal(f.appends,1);
+ input.handoff.links.extra='injected';assert.throws(()=>engine.run(input.handoff,config,f.io),/handoff differs/);
+});

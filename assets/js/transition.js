@@ -1,6 +1,6 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261001a";
+import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261002a";
 import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261001a";
-import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261001a";
+import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261002a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -48,12 +48,13 @@ if (section) {
   let unreadableAnnualLinks = false;
   let savedAnnualLinks = {};
   const annualTools = node("details", "transition-tools");
-  annualTools.append(node("summary", "", "Annual links and automation handoff"));
-  annualTools.append(node("p", "", "Paste this year's copied Google links or import the private automation's link handoff. Checks below validate link format and known template identities only. Google ownership, privacy, Form destination and public export contents still need officer checks."));
+  const annualSummary = node("summary", "", "New-year draft links");
+  annualTools.append(annualSummary);
+  annualTools.append(node("p", "", "These are the new year's draft links entered in the steps above. Expand this section to review or change them together, or import the private automation's link handoff. Link checks cover format and known template identities; officers still check Google access, privacy and business results."));
   annualTools.append(node("p", "", "Saved links stay in this browser's local storage, visible to anyone using this browser profile. Use a private officer device. Progress exports and printing exclude these links. Review every link before adding it to the publicly readable Google Control Center."));
   const annualForm = node("form", "settings-grid");
   annualForm.id = "transition-annual-links-form";
-  for (const [key, title, mapping] of ANNUAL_LINK_FIELDS) {
+  for (const [key, title, description] of ANNUAL_LINK_FIELDS) {
     const label = node("label", "transition-check-control", title);
     const input = node("input");
     input.type = "text";
@@ -61,7 +62,7 @@ if (section) {
     input.autocomplete = "off";
     input.setAttribute("form", annualForm.id);
     input.setAttribute("aria-label", title);
-    label.append(input, node("small", "", `Destination: ${mapping}`));
+    label.append(input, node("small", "", description));
     annualInputs.set(key, input);
     annualLabels.set(key, label);
     annualForm.append(label);
@@ -85,6 +86,13 @@ if (section) {
   annualMessage.setAttribute("aria-live", "polite");
   annualTools.append(annualForm, annualActions, annualMessage);
   dialog.querySelector(".transition-tools").before(annualTools);
+  const currentTools = node("details", "transition-tools");
+  const currentSummary = node("summary", "", "Current Hub settings");
+  const currentSettings = node("button", "secondary-button", "View current Hub settings");
+  currentSettings.type = "button";
+  currentSettings.addEventListener("click", () => document.dispatchEvent(new CustomEvent("transition:current-settings")));
+  currentTools.append(currentSummary, node("p", "", "The current year uses the shared Google Control Center settings. Review those separately from the new-year draft below."), currentSettings);
+  annualTools.before(currentTools);
   function annualSay(message, error = false) {
     annualMessage.textContent = message;
     annualMessage.classList.toggle("is-error", error);
@@ -240,6 +248,8 @@ if (section) {
     const step = TRANSITION_STEPS[currentIndex];
     const completed = TRANSITION_STEPS.filter((entry) => statusOf(entry.id) === "complete").length;
     const current = window.ASME_HUB_CONFIG?.currentAcademicYear || "2026-2027";
+    currentSummary.textContent = `Current Hub settings · ${current.replace("-", "–")}`;
+    annualSummary.textContent = `New-year draft links · ${selectedYear.replace("-", "–")} · saved on this device`;
     $("transition-active-year").textContent = current.replace("-", "–");
     $("transition-guide-year").textContent = selectedYear.replace("-", "–");
     $("transition-saved-at").textContent = progress.savedAt ? new Date(progress.savedAt).toLocaleString() : "Never";
@@ -265,14 +275,14 @@ if (section) {
     card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
     if (stepLinks[step.id] || step.id === "T10") {
       const panel = node("section", "transition-inline-links");
-      panel.append(node("h4", "", step.id === "T10" ? "Send links to Year Settings" : "Save this step's copied links"));
+      panel.append(node("h4", "", step.id === "T10" ? "Review and save the new year's settings" : "Save this step's copied links"));
       panel.append(node("p", "", "Saving checks link format and known template IDs, then retains the draft on this device. Check file permissions and connections in Google Drive and Forms."));
       for (const key of stepLinks[step.id] || []) panel.append(annualLabels.get(key));
-      const action = node("button", "secondary-button", step.id === "T10" ? "Save links and open Year Settings draft" : "Check and save links on this device");
+      const action = node("button", "secondary-button", step.id === "T10" ? "Review new-year settings" : "Check and save links on this device");
       if (step.id === "T10") {
         action.type = "button";
         action.addEventListener("click", prepareAnnualSettings);
-        panel.append(node("p", "", "Review the inactive draft in Year Settings, then copy the reviewed values into Google Control Center and use Compare with Google. Pasting links here does not write Google settings or verify Google permissions."));
+        panel.append(node("p", "", "Review the inactive draft in Year Settings. Open the authorized annual save page to transfer the draft directly. You can also download a Google save file. Google verifies the copied files and connections, saves an inactive row and reads it back. If that service is not connected, use Edit shared settings and Compare with Google."));
       } else { action.type = "submit"; action.setAttribute("form", annualForm.id); }
       panel.append(action, annualMessage);
       card.append(panel);

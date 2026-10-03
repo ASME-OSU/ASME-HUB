@@ -64,3 +64,26 @@ test('email normalization never authorizes a distinct or missing Google identity
   assert.throws(() => engine.execute(f.config, f.io, false), /Owner/);
   assert.equal(f.creates(), 0);
 });
+
+test('completed-copy verification survives master rename/version changes without reads or writes to masters', () => {
+  const f=fixture();engine.execute(f.config,f.io,false);
+  f.files.source.name='Renamed current master';f.files.source.version='99';
+  const writes=f.writes(), creates=f.creates(), metadata=f.io.metadata;
+  f.io.metadata=id=>{assert.notEqual(id,'source');return metadata(id);};
+  const result=engine.verifyCompleted(f.config,f.io);
+  assert.equal(result.mode,'verify-completed');assert.equal(result.operations[1].id,'new2');
+  assert.equal(f.writes(),writes);assert.equal(f.creates(),creates);
+  f.io.metadata=metadata;
+  assert.throws(()=>engine.execute(f.config,f.io,false),/Source changed/);
+});
+test('completed-copy verification rejects pending, missing, extra and altered journal plans',()=>{
+  for(const mutate of [f=>{f.ledger().runs[f.config.year].operations.points.state='pending';},f=>{delete f.ledger().runs[f.config.year].operations.points;},f=>{f.ledger().runs[f.config.year].operations.extra={state:'created',id:'extra'};},f=>{f.config.items[1].source.version='2';},f=>{f.ledger().runs[f.config.year].actor='other@example.test';}]){
+    const f=fixture();engine.execute(f.config,f.io,false);mutate(f);
+    const writes=f.writes();assert.throws(()=>engine.verifyCompleted(f.config,f.io));assert.equal(f.writes(),writes);assert.equal(f.creates(),2);
+  }
+});
+test('completed-copy verification rejects lost/tampered/public/ambiguous copied identities',()=>{
+  for(const mutate of [f=>{delete f.files.new2;},f=>{f.files.new2.parents=['wrong'];},f=>{f.files.new2.appProperties.transitionOperation='wrong';},f=>{f.files.new2.permissions.push({type:'anyone'});},f=>{f.files.new2.id='wrong';},f=>{f.files.duplicate={...f.files.new2,id:'duplicate'};}]){
+    const f=fixture();engine.execute(f.config,f.io,false);mutate(f);assert.throws(()=>engine.verifyCompleted(f.config,f.io));assert.equal(f.creates(),2);
+  }
+});

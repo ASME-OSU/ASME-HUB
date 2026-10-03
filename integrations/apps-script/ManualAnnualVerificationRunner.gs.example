@@ -1,0 +1,22 @@
+/* Same private project and existing scopes; read-only manual verifier adapter. */
+function manualAnnualVerificationIO_(c) {
+  var copyIO=annualCopyIO_({ledgerId:c.draft.ledgerId});
+  var io=annualSetupIO_({ledgerId:c.draft.ledgerId},{});
+  io.actor=copyIO.actor;io.metadata=copyIO.metadata;
+  io.headers=function(id,name,count) {
+    var tab=SpreadsheetApp.openById(id).getSheetByName(name);
+    if (!tab || tab.getLastColumn()!==count) throw new Error('Exact expected public export columns required');
+    return tab.getRange(1,1,1,count).getValues()[0];
+  };
+  return io;
+}
+function manualAnnualDraftIO_(c,props,digest,draft) {
+  // Reuse only the generic settings/journal adapter, never copy/setup identity.
+  var io=annualSettingsDraftIO_({intendedOwner:c.intendedOwner,ledgerId:'unused-manual-copy-ledger'},{},draft,props);
+  io.verifiedHandoff=function() {
+    var result=ManualAnnualVerificationEngine.verify(c.handoff,c,manualAnnualVerificationIO_(c));
+    if (result.digest!==digest) throw new Error('Annual resources changed since review. Verify the draft again.');
+    return result.handoff;
+  };
+  return io;
+}

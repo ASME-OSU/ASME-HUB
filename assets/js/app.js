@@ -1234,7 +1234,12 @@
     }
   }
 
+  let annualSaveHandoff = null;
+  let buildAnnualSettingsInput = null;
+  let buildAnnualTransferUrl = null;
   function fillSettingsForm(yearKey, source = {}, isNew = false) {
+    annualSaveHandoff = null;
+    document.getElementById("settings-annual-save").hidden = true;
     invalidateSettingsReadback();
     elements.settingsForm.dataset.originalYear = isNew ? "" : yearKey;
     elements.settingsYearKey.value = yearKey || "";
@@ -1354,6 +1359,16 @@
   let settingsReadbackGeneration = 0;
   async function verifySharedSettings() {
     const expected = readSettingsForm();
+    if (!document.getElementById("settings-annual-save").hidden) {
+      expected.statusNote = document.getElementById("settings-annual-status").value.trim();
+      expected.eventMetricsSheetTab = document.getElementById("settings-annual-event-tab").value.trim();
+      expected.engagementGoal = Number(elements.settingsEngagementGoal.value);
+      expected.attendanceSheetTab = elements.settingsAttendanceTab.value.trim();
+      expected.budgetExportSheetTab = elements.settingsBudgetTab.value.trim();
+    } else {
+      // The ordinary settings form does not expose this annual-only field.
+      delete expected.eventMetricsSheetTab;
+    }
     const generation = ++settingsReadbackGeneration;
     const validationMessage = validateSettings(expected);
     if (validationMessage) {
@@ -4788,17 +4803,62 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261001a");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261002a");
+      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261002a");
+      buildAnnualSettingsInput = annualSettingsInput;
+      buildAnnualTransferUrl = annualSettingsTransferUrl;
       const draft = annualSettingsDraft(event.detail?.draft, config);
       const existing = getYearSource(draft.yearKey);
       if (existing?.isCurrent === true) throw new Error("This year is current in the loaded Google registry. Choose an inactive transition year.");
       openSettings(draft.yearKey);
       fillSettingsForm(draft.yearKey, { ...(existing || {}), ...draft }, !existing);
+      annualSaveHandoff = event.detail.draft;
+      document.getElementById("settings-annual-save").hidden = false;
+      document.getElementById("settings-annual-status").value = "Draft; annual checks pending";
+      document.getElementById("settings-annual-event-tab").value = existing?.eventMetricsSheetTab || "Event_Metrics_Public";
+      const service = document.getElementById("settings-annual-service");
+      const serviceUrl = config.annualSettingsSave?.url || "";
+      if (/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(serviceUrl)) {
+        service.href = serviceUrl;
+        service.hidden = false;
+        document.getElementById("settings-annual-connection").textContent = "The authorized annual save service is connected. Google will independently verify this draft against the chapter’s configured annual rules.";
+      } else {
+        service.hidden = true;
+        document.getElementById("settings-annual-connection").textContent = "The authorized annual save service is not connected yet. You can prepare the file; shared saving currently uses Edit shared settings.";
+      }
       elements.settingsStatus.textContent = "Annual link draft ready for review, inactive and noncurrent. This only fills the form; it has not saved a preview or Google row. Google settings remain authoritative. Review public suitability before saving in Google, then Compare with Google. Form editor and annual folder links remain in the private handoff.";
       event.detail?.report?.();
     } catch (error) {
       event.detail?.report?.(`Cannot prepare Year Settings: ${error.message}`);
     }
+  });
+
+  document.addEventListener("transition:current-settings", () => openSettings(config.currentAcademicYear));
+  function reviewedAnnualSettingsInput() {
+    if (!buildAnnualSettingsInput) throw new Error("Open the new-year draft from the transition guide first.");
+    const reviewed = { ...readSettingsForm(), engagementGoal: Number(elements.settingsEngagementGoal.value), attendanceSheetTab: elements.settingsAttendanceTab.value.trim(), budgetExportSheetTab: elements.settingsBudgetTab.value.trim() };
+    return buildAnnualSettingsInput(annualSaveHandoff, reviewed, config, {
+      statusNote: document.getElementById("settings-annual-status").value.trim(),
+      eventMetricsTab: document.getElementById("settings-annual-event-tab").value.trim(),
+    });
+  }
+  document.getElementById("settings-annual-service").addEventListener("click", (event) => {
+    try {
+      event.currentTarget.href = buildAnnualTransferUrl(config.annualSettingsSave?.url || "", reviewedAnnualSettingsInput());
+      elements.settingsStatus.textContent = "Draft sent to the Google save page for review. Choose Verify with Google, then confirm the inactive save there.";
+    } catch (error) { event.preventDefault(); elements.settingsStatus.textContent = error.message; }
+  });
+  document.getElementById("settings-download-annual").addEventListener("click", async () => {
+    try {
+      const input = reviewedAnnualSettingsInput();
+      const url = URL.createObjectURL(new Blob([JSON.stringify(input, null, 2)], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `asme-${input.handoff.year}-google-save.json`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      elements.settingsStatus.textContent = "Google save file downloaded. Import it on the authorized annual save page to verify and save. Downloading does not save settings to Google.";
+    } catch (error) { elements.settingsStatus.textContent = error.message; }
   });
 
   [elements.settingsClose, elements.settingsCancel].forEach((button) => {

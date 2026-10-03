@@ -1,4 +1,4 @@
-const SHELL_CACHE = "asme-hub-shell-v69";
+const SHELL_CACHE = "asme-hub-shell-v70";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
@@ -7,13 +7,14 @@ const SHELL_ASSETS = [
   "./assets/css/styles.css?v=20261001a",
   "./assets/fonts/dm-serif-display-latin.woff2",
   "./assets/fonts/inter-latin.woff2",
-  "./assets/js/config.js?v=20261001a",
+  "./assets/js/config.js?v=20261002a",
   "./assets/js/shared-resources.js?v=20260928b",
-  "./assets/js/settings-readback.js?v=20260928b",
-  "./assets/js/app.js?v=20261001a",
-  "./assets/js/transition.js?v=20261001a",
-  "./assets/js/annual-link-draft.js?v=20261001a",
-  "./assets/js/transition-steps.js?v=20261001a",
+  "./assets/js/settings-readback.js?v=20261002a",
+  "./assets/js/app.js?v=20261002a",
+  "./assets/js/transition.js?v=20261002a",
+  "./assets/js/annual-link-draft.js?v=20261002a",
+  "./assets/js/annual-settings-input.js?v=20261002a",
+  "./assets/js/transition-steps.js?v=20261002a",
   "./assets/js/transition-state.js?v=20261001a",
   "./assets/js/pwa.js?v=20260802f",
   "./assets/icons/icon-192.png?v=20260919b",

@@ -31,6 +31,8 @@ for (const path of [
   "assets/js/transition.js",
   "assets/js/transition-state.js",
   "assets/js/transition-steps.js",
+  "assets/js/annual-link-draft.js",
+  "assets/js/annual-settings-input.js",
   "scripts/sync-calendar.mjs",
   "sw.js",
 ]) {
@@ -45,15 +47,31 @@ for (const path of [
   "integrations/apps-script/SettingsWriter.gs.example",
   "integrations/apps-script/FormDestinationValidator.gs.example",
   "integrations/apps-script/AnnualSetupEngine.gs.example",
+  "integrations/apps-script/AnnualCopyEngine.gs.example",
   "integrations/apps-script/AnnualSetupRunner.gs.example",
   "integrations/apps-script/AnnualSettingsDraftEngine.gs.example",
   "integrations/apps-script/AnnualSettingsDraftRunner.gs.example",
+  "integrations/apps-script/AnnualSettingsWebApp.gs.example",
+  "integrations/apps-script/ManualAnnualVerificationEngine.gs.example",
+  "integrations/apps-script/ManualAnnualVerificationRunner.gs.example",
 ]) {
   const result = spawnSync(process.execPath, ["--check", "-"], {
     input: read(path),
     encoding: "utf8",
   });
   if (result.status !== 0) errors.push(`${path}: ${result.stderr.trim()}`);
+}
+
+const annualPage = read("integrations/apps-script/AnnualSettingsPage.html.example");
+const annualPageScript = annualPage.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+if (!annualPageScript) errors.push("Annual settings Google page script is missing.");
+else {
+  const result = spawnSync(process.execPath, ["--check", "-"], { input: annualPageScript, encoding: "utf8" });
+  if (result.status !== 0) errors.push(`Annual settings Google page: ${result.stderr.trim()}`);
+}
+const annualWebManifest = JSON.parse(read("integrations/apps-script/AnnualSettingsWebApp.appsscript.json.example"));
+if (annualWebManifest.webapp?.executeAs !== "USER_ACCESSING" || annualWebManifest.webapp?.access !== "MYSELF") {
+  errors.push("Annual save example must require chapter-self access and the accessing user's authority.");
 }
 
 const html = read("index.html");

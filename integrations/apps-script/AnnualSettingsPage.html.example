@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font: 16px system-ui, sans-serif; color: #1c2530; background: #f6f7f9; margin: 0; }
+    main { max-width: 760px; margin: auto; padding: 24px; }
+    section { background: white; padding: 20px; border-radius: 12px; margin: 16px 0; }
+    label { display: block; margin: 16px 0; }
+    button { padding: 12px 16px; font: inherit; border-radius: 6px; cursor: pointer; }
+    textarea { width: 100%; box-sizing: border-box; min-height: 80px; font: inherit; }
+    td, th { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid #ddd; overflow-wrap: anywhere; }
+    table { width: 100%; table-layout: fixed; }
+    #status { white-space: pre-wrap; }
+  </style>
+</head>
+<body><main>
+  <h1>Save the new-year Hub settings</h1>
+  <p>Use the chapter account configured for annual setup. Your reviewed Hub draft appears here when you open this page from Year Settings. Choose Verify with Google to check it.</p>
+  <section>
+    <p id="transfer-status">You can also import a Google save file downloaded from Year Settings.</p>
+    <label>Hub Google save file <input id="file" type="file" accept="application/json,.json"></label>
+    <button id="verify" type="button" disabled>Verify with Google</button>
+  </section>
+  <section id="review" hidden>
+    <h2>Review the verified draft</h2>
+    <p id="summary"></p>
+    <p>Google checked the configured copies, file types, Form destination and closed state, and existing settings. Delivery, scoring, import authorization, totals, privacy and officer access still need the guide's checks.</p>
+    <p>The Control Center workbook is publicly readable. Review every value and linked destination below.</p>
+    <table><thead><tr><th>Setting</th><th>Value to save</th></tr></thead><tbody id="row"></tbody></table>
+    <label><input id="public-review" type="checkbox"> I reviewed every value and link for its public audience.</label>
+    <label>Audience review note <textarea id="note" maxlength="1000" placeholder="Record the actual audience review"></textarea></label>
+    <button id="save" type="button" disabled>Save inactive year and confirm</button>
+  </section>
+  <p id="status" role="status" aria-live="polite">Choose the Hub save file to begin.</p>
+</main>
+<script>
+  const byId = id => document.getElementById(id);
+  let ticket = null, busy = false, transferredSource = null;
+  function controls() {
+    byId('file').disabled = busy;
+    byId('verify').disabled = busy || (!transferredSource && !byId('file').files.length);
+    byId('save').disabled = busy || !ticket || !byId('public-review').checked || !byId('note').value.trim();
+  }
+  function clearReview() {
+    ticket = null;
+    byId('review').hidden = true;
+    byId('row').replaceChildren();
+    byId('public-review').checked = false;
+    byId('note').value = '';
+    controls();
+  }
+  function fail(error) {
+    busy = false; clearReview();
+    byId('status').textContent = 'Google could not confirm the operation: ' + error.message + ' Keep any private journal intact. After an uncertain save, verify the same file again to reconcile its readback.';
+    controls();
+  }
+  byId('file').addEventListener('change', () => { transferredSource = null; clearReview(); byId('transfer-status').textContent = 'Using the selected file.'; byId('status').textContent = 'Ready to verify the selected file.'; });
+  byId('public-review').addEventListener('change', controls);
+  byId('note').addEventListener('input', controls);
+  byId('verify').addEventListener('click', async () => {
+    clearReview(); busy = true; controls(); byId('status').textContent = 'Checking the configured annual resources with Google…';
+    try {
+      const file = byId('file').files[0];
+      if (file && file.size > 16000) throw new Error('Choose a file under 16 KB.');
+      const source = file ? await file.text() : transferredSource;
+      if (!source || new TextEncoder().encode(source).length > 16000) throw new Error('Choose a draft under 16 KB.');
+      google.script.run.withSuccessHandler(result => {
+        const preview = result.preview;
+        ticket = result.ticket;
+        preview.headers.forEach((header, index) => {
+          const tr = document.createElement('tr');
+          [header, String(preview.row[index])].forEach(value => { const td = document.createElement('td'); td.textContent = value; tr.append(td); });
+          byId('row').append(tr);
+        });
+        byId('summary').textContent = 'New year: ' + preview.year + '. Current Hub year: ' + preview.currentYear + '. The new row will be inactive and noncurrent.';
+        byId('review').hidden = false; busy = false; controls();
+        byId('status').textContent = 'Google verification passed. Review the exact row before saving.';
+      }).withFailureHandler(fail).previewAnnualSettingsWeb(source);
+    } catch (error) { fail(error); }
+  });
+  byId('save').addEventListener('click', () => {
+    busy = true; controls(); byId('status').textContent = 'Saving the inactive draft and checking Google readback…';
+    google.script.run.withSuccessHandler(result => {
+      clearReview(); busy = false; controls();
+      byId('status').textContent = 'Saved ' + result.year + ' and confirmed every value in Google at ' + result.checkedAt + '. The year remains inactive and noncurrent. Return to the Hub, compare with Google and complete the remaining guide checks.';
+    }).withFailureHandler(fail).saveAnnualSettingsWeb(ticket, byId('public-review').checked, byId('note').value);
+  });
+  // The draft fragment is input only. Loading the page never verifies or writes.
+  google.script.url.getLocation(location => {
+    try {
+      if (!location.hash) return;
+      if (!location.hash.startsWith('annual=') || location.hash.length > 96007) throw new Error('Unrecognized Hub draft transfer. Use the file fallback.');
+      const source = decodeURIComponent(location.hash.slice(7));
+      if (new TextEncoder().encode(source).length > 16000) throw new Error('The transferred draft exceeds 16 KB.');
+      const input = JSON.parse(source);
+      if (input.schema !== 1 || input.type !== 'asme-annual-settings-input') throw new Error('Unrecognized Hub draft format.');
+      transferredSource = source;
+      byId('transfer-status').textContent = 'Hub draft received for ' + input.handoff.year + '. No Google settings have been saved.';
+      byId('status').textContent = 'Ready. Choose Verify with Google.';
+      controls();
+    } catch (error) { fail(error); }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+/* Read-only live verification for manually copied annual resources.
+ * Caller owns the same-project lock. No copy/setup journal is synthesized. */
+var ManualAnnualVerificationEngine = (function () {
+  var resources = ['pointsMaster','attendanceFormEditor','pointsExport','budgetTracker','budgetExport','annualFolder'];
+  var folderMime = 'application/vnd.google-apps.folder';
+  function fail(message) { throw new Error(message); }
+  function same(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function id(value,name) {
+    var path = name === 'annualFolder' ? '^https://drive\\.google\\.com/drive/folders/([A-Za-z0-9_-]{20,200})$' : name === 'attendanceFormEditor' ? '^https://docs\\.google\\.com/forms/d/([A-Za-z0-9_-]{20,200})/edit$' : '^https://docs\\.google\\.com/spreadsheets/d/([A-Za-z0-9_-]{20,200})/edit$';
+    var m = new RegExp(path).exec(value); if (!m) fail('Full canonical Google link required: '+name); return m[1];
+  }
+  function verify(handoff,c,io) {
+    if (!c || c.schema !== 1 || !/^20\d{2}-20\d{2}$/.test(c.year) || Number(c.year.slice(5)) !== Number(c.year.slice(0,4))+1 || !c.intendedOwner || !/^[A-Za-z0-9_-]{20,200}$/.test(c.annualRootId) || !Array.isArray(c.excludedSourceIds) || c.excludedSourceIds.length < 5 || c.excludedSourceIds.some(function(x){return !/^[A-Za-z0-9_-]{20,200}$/.test(x);}) || !c.draft || !c.points || !c.points.term || !c.responseHeaders || c.responseHeaders.length !== 12 || !Array.isArray(c.schemas) || !c.schemas.length || !c.imports) fail('Trusted manual annual rules are incomplete');
+    if (!handoff || handoff.schema !== 1 || handoff.type !== 'asme-annual-link-handoff' || handoff.year !== c.year || !handoff.links || !same(Object.keys(handoff.links).sort(),resources.concat(['attendanceFormRespondent']).sort())) fail('Selected manual year and seven exact links required');
+    var owner = String(c.intendedOwner).trim().toLowerCase();
+    if (!owner || String(io.actor()).trim().toLowerCase() !== owner) fail('Execute as the configured chapter owner');
+    var cache = {}, identities = [];
+    function metadata(resourceId,mime,allowPublicReader) {
+      var file = cache[resourceId];
+      if (!file) {
+        file = io.metadata(resourceId);
+        if (!file || file.id !== resourceId || file.trashed || file.driveId || !file.owners || file.owners.length !== 1 || String(file.owners[0].emailAddress).trim().toLowerCase() !== owner || !file.capabilities || !file.capabilities.canEdit || !Array.isArray(file.permissions) || !file.permissions.length || file.permissions.some(function(p){return !(p.type === 'user' && p.emailAddress) && !(allowPublicReader && c.publicExportReadersAllowed === true && p.type === 'anyone' && p.role === 'reader');})) fail('Private editable chapter-owned annual identity required');
+        cache[resourceId] = file;
+        identities.push({id:file.id,name:file.name,mimeType:file.mimeType,parents:file.parents || [],owners:file.owners,permissions:file.permissions,canEdit:file.capabilities.canEdit});
+      }
+      if (mime && file.mimeType !== mime) fail('Manual resource file type mismatch');
+      return file;
+    }
+    metadata(c.annualRootId,folderMime);
+    var ids = {}, seen = [c.annualRootId,c.draft.controlCenterId,c.draft.ledgerId].concat(c.excludedSourceIds);
+    resources.forEach(function(name) {
+      var resourceId = id(handoff.links[name],name);
+      if (seen.indexOf(resourceId) >= 0) fail('Template/original or duplicate annual resource rejected');
+      seen.push(resourceId);ids[name]=resourceId;
+      metadata(resourceId,name === 'annualFolder' ? folderMime : name === 'attendanceFormEditor' ? 'application/vnd.google-apps.form' : 'application/vnd.google-apps.spreadsheet',name === 'pointsExport' || name === 'budgetExport');
+    });
+    function descendant(resourceId,target) {
+      var visited = [];
+      for (var depth=0;depth<8;depth++) {
+        if (visited.indexOf(resourceId)>=0) fail('Annual parent cycle');
+        visited.push(resourceId);
+        var file = metadata(resourceId), parents = file.parents;
+        if (!parents || parents.length !== 1) fail('Single annual parent required');
+        if (parents[0] === target) return;
+        resourceId=parents[0];metadata(resourceId,folderMime);
+      }
+      fail('Resource is outside the allowed annual folder/root');
+    }
+    descendant(ids.annualFolder,c.annualRootId);
+    resources.filter(function(name){return name !== 'annualFolder';}).forEach(function(name){descendant(ids[name],ids.annualFolder);});
+    var form = io.form(ids.attendanceFormEditor);
+    if (!form || form.id !== ids.attendanceFormEditor || form.acceptingResponses !== false || form.destinationId !== ids.pointsMaster || form.editUrl !== handoff.links.attendanceFormEditor || form.respondentUrl !== handoff.links.attendanceFormRespondent || !/^https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[A-Za-z0-9_-]{20,200}\/viewform$/.test(form.respondentUrl)) fail('Closed copied Form identity, destination and observed URLs must match');
+    var tabs = io.tabs(ids.pointsMaster).filter(function(tab){return tab.formId === ids.attendanceFormEditor;});
+    if (tabs.length !== 1 || !same(tabs[0].headers,c.responseHeaders) || tabs[0].lastRow > 1) fail('Exact empty linked Form response tab/header required');
+    var response = tabs[0], cells = [], workbooks = {};
+    function cell(resource,sheet,a1,expected) {
+      var value = io.cell(ids[resource],sheet,a1);cells.push({resource:resource,sheet:sheet,a1:a1,value:value});
+      if (!(Array.isArray(expected) ? expected.some(function(option){return same(value,option);}) : same(value,expected))) fail('Manual annual configuration mismatch: '+resource+'/'+sheet+'/'+a1);
+    }
+    cell('pointsMaster','Config','B2',{value:c.points.term});
+    cell('pointsMaster','Config','B3',{value:c.year.slice(0,4)+'-'+c.year.slice(7)});
+    cell('pointsMaster','Config','B5',[{value:'TESTING'},{value:'PAUSED'}]);
+    cell('pointsMaster','Config','B7',{value:response.name});
+    cell('pointsMaster','Config','B16',{value:ids.attendanceFormEditor});
+    var first=c.year.slice(0,4),second=c.year.slice(5);
+    var dates={B4:first+'-08-01',B5:second+'-07-31',B11:first+'-08-01',B12:first+'-12-31',B13:second+'-01-01',B14:second+'-05-31'};
+    Object.keys(dates).forEach(function(a1){cell('budgetTracker','Setup & Lists',a1,{date:dates[a1]});});
+    var schemas=c.schemas.map(function(spec){
+      if (!ids[spec.resource] || spec.resource === 'annualFolder' || spec.resource === 'attendanceFormEditor' || !spec.sheet || !Array.isArray(spec.headers) || !spec.headers.length) fail('Explicit workbook header schema required');
+      var actual=io.headers(ids[spec.resource],spec.sheet,spec.headers.length);
+      if (!same(actual,spec.headers)) fail('Manual workbook headers differ');
+      return {resource:spec.resource,sheet:spec.sheet,headers:actual};
+    });
+    ['pointsMaster','pointsExport','budgetTracker','budgetExport'].forEach(function(name){if (!c.schemas.some(function(s){return s.resource === name;})) fail('All four workbook header schemas required');});
+    [['pointsExport',c.draft.values.leaderboard_tab],['pointsExport',c.draft.values.event_metrics_tab],['budgetExport',c.draft.values.budget_export_sheet_tab]].forEach(function(pair){if (!c.schemas.some(function(s){return s.resource===pair[0]&&s.sheet===pair[1];})) fail('Selected public export tabs require trusted header schemas');});
+    ['pointsMaster','pointsExport','budgetTracker','budgetExport'].forEach(function(name){workbooks[name]=io.workbook(ids[name],'');});
+    var responseToken="'"+response.name.replace(/'/g,"''")+"'!";
+    if (!workbooks.pointsMaster.formulas.some(function(f){return f.formula.indexOf(responseToken)>=0;}) || workbooks.pointsMaster.formulas.some(function(f){return response.name !== 'Form Responses 2' && f.formula.indexOf("'Form Responses 2'!")>=0;})) fail('Points formulas must use the observed response tab');
+    ['pointsExport','budgetExport'].forEach(function(name) {
+      var expected=c.imports[name],target=ids[name === 'pointsExport' ? 'pointsMaster' : 'budgetTracker'];
+      if (!Array.isArray(expected) || !expected.length || expected.length > 10000) fail('Explicit bounded export import-cell inventory required');
+      var actual=workbooks[name].formulas.filter(function(f){return /IMPORTRANGE\s*\(/i.test(f.formula);});
+      if (actual.length !== expected.length) fail('Export import-cell count differs');
+      var keys={};
+      expected.forEach(function(spec){
+        var key=spec.sheet+'!'+spec.a1;
+        if (keys[key] || !spec.sheet || !/^[A-Z]+[1-9][0-9]*$/.test(spec.a1) || typeof spec.formulaTemplate !== 'string' || spec.formulaTemplate.indexOf('{{SOURCE_ID}}')<0) fail('Exact unique export import formula template required');
+        keys[key]=true;
+        var formula=spec.formulaTemplate.split('{{SOURCE_ID}}').join(target), found=actual.filter(function(f){return f.sheet===spec.sheet&&f.a1===spec.a1;});
+        var calls=formula.match(/IMPORTRANGE\s*\(/ig)||[], sources=[],match;
+        var sourcePattern=/IMPORTRANGE\s*\(\s*"(?:https:\/\/docs\.google\.com\/spreadsheets\/d\/)?([A-Za-z0-9_-]+)(?:\/edit)?"\s*[,;]/ig;
+        while ((match=sourcePattern.exec(formula))) sources.push(match[1]);
+        if (found.length!==1 || found[0].formula!==formula || !sources.length || sources.length!==calls.length || sources.some(function(source){return source!==target;})) fail('Exact copied-master import formula mismatch');
+      });
+    });
+    // Original IDs in formulas or Read Me URL constants reveal stale imports.
+    Object.keys(workbooks).forEach(function(name){
+      var book=workbooks[name];
+      if (book.formulas.some(function(f){return c.excludedSourceIds.some(function(source){return f.formula.indexOf(source)>=0;});})) fail('Original template references remain in annual formulas');
+      if (book.sourceURLCells.some(function(cell){return c.excludedSourceIds.some(function(source){return cell.value.indexOf(source)>=0;});})) fail('Original template URLs remain in Read Me');
+    });
+    var links={};resources.forEach(function(name){links[name]=name==='attendanceFormEditor'?form.editUrl:name==='annualFolder'?'https://drive.google.com/drive/folders/'+ids[name]:'https://docs.google.com/spreadsheets/d/'+ids[name]+'/edit';});links.attendanceFormRespondent=form.respondentUrl;
+    identities.sort(function(a,b){return a.id.localeCompare(b.id);});
+    var rules=Object.assign({},c,{draft:Object.assign({},c.draft)});delete rules.handoff;delete rules.draft.manualVerificationDigest;
+    var snapshot={config:rules,identities:identities,form:form,response:response,cells:cells,schemas:schemas,workbooks:workbooks};
+    return {handoff:{schema:1,type:'asme-annual-link-handoff',year:c.year,links:links},digest:io.digest(JSON.stringify(snapshot)),readiness:'Inactive draft (TESTING or PAUSED);  bound scripts/properties/triggers, delivery, scoring, import authorization, export privacy, totals and officer access require human checks'};
+  }
+  return {verify:verify};
+}());

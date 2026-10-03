@@ -23,7 +23,8 @@ var AnnualSettingsDraftEngine = (function () {
     });
     if (!c.values.display_label || !c.values.leaderboard_tab || !c.values.budget_export_sheet_tab || !c.values.event_metrics_tab) fail('Explicit labels and sheet tabs required');
     var trusted = io.verifiedHandoff();
-    if (!trusted || trusted.year !== handoff.year || !same(trusted.links, handoff.links)) fail('New resource handoff differs from private Google configuration readback');
+    var keys = ['pointsMaster','attendanceFormEditor','pointsExport','budgetTracker','budgetExport','annualFolder','attendanceFormRespondent'];
+    if (!trusted || trusted.year !== handoff.year || !trusted.links || !handoff.links || !same(Object.keys(trusted.links).sort(),keys.slice().sort()) || !same(Object.keys(handoff.links).sort(),keys.slice().sort()) || keys.some(function(key){return trusted.links[key] !== handoff.links[key];})) fail('New resource handoff differs from private Google configuration readback');
     var ids = {}, seen = [];
     ['pointsMaster','attendanceFormEditor','pointsExport','budgetTracker','budgetExport','annualFolder'].forEach(function (name) {
       var resourceId = id(handoff.links[name],name), meta = io.metadata(resourceId);
@@ -33,6 +34,7 @@ var AnnualSettingsDraftEngine = (function () {
     });
     var form = io.form(ids.attendanceFormEditor);
     if (form.id !== ids.attendanceFormEditor || form.destinationId !== ids.pointsMaster || form.editUrl !== handoff.links.attendanceFormEditor || form.respondentUrl !== handoff.links.attendanceFormRespondent || form.acceptingResponses !== false || !/^https:\/\/docs\.google\.com\/forms\/d\/(?:e\/)?[A-Za-z0-9_-]{20,}\/viewform(?:[?#].*)?$/.test(form.respondentUrl)) fail('Observed closed copied Form URL/destination mismatch');
+    return trusted;
   }
   function dataset(data,target) {
     if (!data || !same(data.headers,headers) || !Array.isArray(data.rows) || !Array.isArray(data.formulas) || data.formulas.some(function(row){return row.some(function(v){return !!v;});})) fail('Exact A:T headers and literal rows required');
@@ -48,10 +50,12 @@ var AnnualSettingsDraftEngine = (function () {
   }
   function run(handoff,c,io,approval) {
     return io.lock(function () {
-      validate(handoff,c,io);
+      var trusted = validate(handoff,c,io);
       var data = io.readSettings(), existing = dataset(data,c.year), ledger = io.load();
       if (!ledger || ledger.schema !== 1 || !ledger.runs) fail('Private draft ledger malformed');
-      var plan = JSON.stringify({ handoff: { year: handoff.year, links: handoff.links }, config: c });
+      // Browser JSON field order differs from the original private handoff order.
+      // Retain the authoritative handoff order so existing journals remain exact.
+      var plan = JSON.stringify({ handoff: { year: handoff.year, links: trusted.links }, config: c });
       var saved = ledger.runs[c.year];
       if (saved && saved.plan !== plan) fail('Saved draft plan differs; inspect private journal');
       var row = saved ? saved.row : headers.map(function(key) {

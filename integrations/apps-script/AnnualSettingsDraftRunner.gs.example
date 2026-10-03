@@ -1,5 +1,6 @@
 /* Install in the SAME private standalone project as copy/setup engines.
- * Private properties only; no web deployment, triggers, public logs or secrets. */
+ * Private properties only; optional authenticated same-project web UI.
+ * No triggers, public logs, public POST writer or client-held secrets. */
 function previewAnnualSettingsDraft() { return runAnnualSettingsDraft_(false); }
 function appendOrReadbackAnnualSettingsDraft() { return runAnnualSettingsDraft_(true); }
 function runAnnualSettingsDraft_(confirmed) {

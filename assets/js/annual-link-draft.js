@@ -2,13 +2,13 @@ import { validTransitionYear } from "./transition-state.js?v=20261001a";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
-  ["pointsMaster", "Points Master (officer edit link)", "points_master_url"],
-  ["attendanceFormEditor", "Attendance Form editor", "Private handoff only"],
-  ["attendanceFormRespondent", "Attendance Form respondent link", "attendance_form_url"],
-  ["pointsExport", "Sanitized Points Export", "attendance_sheet_url"],
-  ["budgetTracker", "Budget tracker", "budget_tracker_url"],
-  ["budgetExport", "Sanitized Budget Export", "budget_export_sheet_url"],
-  ["annualFolder", "Annual Drive folder", "Private handoff only"],
+  ["pointsMaster", "Points Master (officer edit link)", "Opens the new year’s officer Points Master."],
+  ["attendanceFormEditor", "Attendance Form editor", "Keep the Form editor link in your annual handoff."],
+  ["attendanceFormRespondent", "Attendance Form respondent link", "The member-facing check-in link."],
+  ["pointsExport", "Sanitized Points Export", "Provides approved attendance totals to the Hub."],
+  ["budgetTracker", "Budget tracker", "Opens the new year’s officer budget workbook."],
+  ["budgetExport", "Sanitized Budget Export", "Provides approved finance summaries to the Hub."],
+  ["annualFolder", "Annual Drive folder", "The folder holding this year’s copied files."],
 ];
 const fieldKeys = new Set(ANNUAL_LINK_FIELDS.map(([key]) => key));
 const idPattern = /^[A-Za-z0-9_-]{20,200}$/;

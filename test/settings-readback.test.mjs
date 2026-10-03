@@ -40,9 +40,18 @@ for (const [name, change] of [
   assert.equal(result.matched, false);
   assert.match(result.message, /No shared save is confirmed/);
 });
-test('status and timestamp are excluded and explicitly not a Hub save', () => {
+test('timestamp is excluded and explicitly not a Hub save', () => {
   const f = fixture(); f.table.rows[1].c[12].v = 'old timestamp';
   const result = compare(f.table, f.expected);
   assert.equal(result.matched, true);
   assert.match(result.message, /not confirmation of a Hub save/);
+});
+
+test('annual public status and event metrics tab differences are reported',()=>{
+ for (const [key,index] of [['statusNote',13],['eventMetricsSheetTab',14]]) {
+  const f=fixture(); f.table.rows[1].c[index].v='changed';
+  assert.equal(compare(f.table,f.expected).matched,false);
+  assert.match(compare(f.table,f.expected).message,new RegExp(fields[index][0]));
+  delete f.expected[key]; assert.equal(compare(f.table,f.expected).matched,true);
+ }
 });
