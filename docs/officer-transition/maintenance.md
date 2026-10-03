@@ -45,6 +45,16 @@ organization-controlled backup.
 
 ## Code and deployment changes
 
+Clean templates retain headers, formulas, validation and approved policy/setup
+values, but no attendance or transaction records. Form response table shading
+alone is not data. The Points template has one empty, unlinked **Form Responses 2**
+placeholder; its name preserves the reviewed processing/setup contract. Native
+copies can retain inherited Form associations, so check the actual Form
+destination rather than inferring linkage from an empty sheet or tab name.
+After linking an annual Form, retarget every response formula and Config to its
+observed tab. Remove an empty obsolete placeholder only after checking that it
+is unlinked and has no remaining dependencies; preserve a before-change backup.
+
 For public changes, run `npm run check` and `npm test`, inspect the diff for
 private data, then verify the exact main commit's Quality checks and Pages
 deployment. Changes to cached site assets require their query versions and
