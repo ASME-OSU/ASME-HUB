@@ -23,6 +23,8 @@ var AnnualSetupEngine = (function () {
     });
     if (setup.points.oldResponseTab !== 'Form Responses 2' || typeof setup.points.term !== 'string' || !setup.points.term.trim() || setup.points.term.length > 100 || /^[=+@]/.test(setup.points.term)) fail('Reviewed Points term/response template required');
     if (setup.points.academicYear !== copy.year.slice(0, 4) + '-' + copy.year.slice(7)) fail('Points academic year label must match selected year');
+    if (!Number.isInteger(setup.points.expectedResponseFormulaCells) || setup.points.expectedResponseFormulaCells < 1) fail('Reviewed Points response formula cell count required');
+    reviewedDates(setup);
     ['pointsExport', 'budgetExport'].forEach(function (name) {
       var target = name === 'pointsExport' ? 'pointsMaster' : 'budgetTracker';
       var item = copy.items.filter(function (i) { return i.key === setup.resources[target]; })[0];
@@ -43,9 +45,37 @@ var AnnualSetupEngine = (function () {
     if (Object.keys(ids).map(function (k) { return ids[k]; }).some(function (id, index, all) { return all.indexOf(id) !== index; })) fail('Resource identity collision');
     return ids;
   }
+  // Selected annual convention: August–July, Fall August–December, Spring January–May.
   function dates(year) {
     var first = year.slice(0, 4), second = year.slice(5);
     return { B4: first + '-08-01', B5: second + '-07-31', B11: first + '-08-01', B12: first + '-12-31', B13: second + '-01-01', B14: second + '-05-31' };
+  }
+  function reviewedDates(setup) {
+    var policy = setup.datePolicy, keys = ['B4', 'B5', 'B11', 'B12', 'B13', 'B14'];
+    if (!policy || policy.reviewed !== true || typeof policy.reviewNote !== 'string' || !policy.reviewNote.trim() || !policy.budgetBounds || !same(Object.keys(policy.budgetBounds).sort(), keys.slice().sort())) fail('Explicit reviewed date policy and all six budget bounds required');
+    var bounds = policy.budgetBounds;
+    keys.forEach(function (key) {
+      var value = bounds[key];
+      if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || isNaN(Date.parse(value + 'T00:00:00Z')) || new Date(value + 'T00:00:00Z').toISOString().slice(0, 10) !== value) fail('Budget policy bounds must be real ISO dates');
+      if (value.slice(0, 4) !== setup.year.slice(0, 4) && value.slice(0, 4) !== setup.year.slice(5)) fail('Budget policy dates must belong to selected year');
+    });
+    if (bounds.B4.slice(0, 4) !== setup.year.slice(0, 4) || bounds.B5.slice(0, 4) !== setup.year.slice(5)) fail('Budget policy annual bounds must span selected year');
+    if (!(bounds.B4 <= bounds.B11 && bounds.B11 <= bounds.B12 && bounds.B12 < bounds.B13 && bounds.B13 <= bounds.B14 && bounds.B14 <= bounds.B5)) fail('Budget policy annual/Fall/Spring bounds are inconsistent');
+    if (!same(keys.map(function (key) { return bounds[key]; }), keys.map(function (key) { return dates(setup.year)[key]; }))) fail('Budget policy must follow August–July, Fall August–December and Spring January–May');
+    return bounds;
+  }
+  function retargetImport(formula, source, destination) {
+    var calls = formula.match(/IMPORTRANGE\s*\(/ig) || [], matches = 0;
+    // Only literal spreadsheet IDs/URLs in the first IMPORTRANGE argument.
+    // Reject dynamic/unreviewed sources, including a source ID with a suffix.
+    var pattern = /IMPORTRANGE\s*\(\s*"((?:https:\/\/docs\.google\.com\/spreadsheets\/d\/)?)([A-Za-z0-9_-]+)((?:\/edit)?)"\s*([,;])/ig;
+    var result = formula.replace(pattern, function (all, prefix, id, suffix, separator) {
+      matches++;
+      if (id !== source && id !== destination) fail('Unreviewed export import target');
+      return all.replace('"' + prefix + id + suffix + '"', '"' + prefix + destination + suffix + '"');
+    });
+    if (matches !== calls.length) fail('Export import requires reviewed literal source arguments');
+    return result;
   }
   function compact(patches) {
     // Coalesce only adjacent changed formula cells; constants and unrelated cells
@@ -99,10 +129,14 @@ var AnnualSetupEngine = (function () {
     var oldToken = "'" + setup.points.oldResponseTab.replace(/'/g, "''") + "'!";
     var newToken = "'" + responseTab.replace(/'/g, "''") + "'!";
     var points = io.workbook(ids.pointsMaster, setup.exports.pointsExport.sourceId);
-    var matchCount = 0;
+    var matchCount = 0, responseInventory = { formulaCells: 0, occurrences: 0, sheets: {} };
     points.formulas.forEach(function (cell) {
+      var references = cell.formula.split(oldToken).length - 1;
+      if (newToken !== oldToken) references += cell.formula.split(newToken).length - 1;
+      if (references) { responseInventory.formulaCells++; responseInventory.occurrences += references; responseInventory.sheets[cell.sheet] = (responseInventory.sheets[cell.sheet] || 0) + 1; }
       if (cell.formula.indexOf(oldToken) >= 0) { matchCount++; add('pointsMaster', cell.sheet, cell.a1, { formula: cell.formula }, { formula: cell.formula.split(oldToken).join(newToken) }); }
     });
+    if (responseInventory.formulaCells !== setup.points.expectedResponseFormulaCells) fail('Points response formula count changed; inspect exact source inventory');
     // Existing configured snapshots may legitimately contain no old-tab references.
     if (!matchCount && !points.formulas.some(function (cell) { return cell.formula.indexOf(newToken) >= 0; })) fail('Points response formula references missing');
     function value(resource, sheet, a1, after) { add(resource, sheet, a1, io.cell(ids[resource], sheet, a1), after); }
@@ -112,29 +146,25 @@ var AnnualSetupEngine = (function () {
     value('pointsMaster', 'Config', 'B3', { value: setup.points.academicYear });
     value('pointsMaster', 'Config', 'B7', { value: responseTab });
     value('pointsMaster', 'Config', 'B16', { value: ids.attendanceFormEditor });
-    var bounds = dates(setup.year);
+    var bounds = reviewedDates(setup);
     Object.keys(bounds).forEach(function (a1) { value('budgetTracker', 'Setup & Lists', a1, { date: bounds[a1] }); });
     ['pointsExport', 'budgetExport'].forEach(function (name) {
       var spec = setup.exports[name], destination = ids[name === 'pointsExport' ? 'pointsMaster' : 'budgetTracker'];
       var workbook = io.workbook(ids[name], spec.sourceId);
-      var changed = 0, configured = 0;
+      var importCells = 0;
       workbook.formulas.forEach(function (cell) {
-        if (cell.formula.indexOf(spec.sourceId) >= 0) {
-          if (!/IMPORTRANGE\s*\(/i.test(cell.formula)) fail('Export source ID in unsupported formula');
-          changed++;
-          add(name, cell.sheet, cell.a1, { formula: cell.formula }, { formula: cell.formula.split(spec.sourceId).join(destination) });
-        } else if (/IMPORTRANGE\s*\(/i.test(cell.formula)) {
-          if (cell.formula.indexOf(destination) < 0) fail('Unreviewed export import target');
-          configured++;
-        }
+        if (/IMPORTRANGE\s*\(/i.test(cell.formula)) {
+          importCells++;
+          add(name, cell.sheet, cell.a1, { formula: cell.formula }, { formula: retargetImport(cell.formula, spec.sourceId, destination) });
+        } else if (cell.formula.indexOf(spec.sourceId) >= 0) fail('Export source ID in unsupported formula');
       });
-      if (changed + configured !== spec.expectedFormulaCells) fail('Export formula count changed; inspect exact source inventory');
+      if (importCells !== spec.expectedFormulaCells) fail('Export formula count changed; inspect exact source inventory');
       workbook.sourceURLCells.forEach(function (cell) {
         if (cell.sheet !== 'Read Me' && cell.sheet !== 'README') fail('Source URL outside reviewed Read Me tab');
         add(name, cell.sheet, cell.a1, { value: cell.value }, { value: cell.value.split(spec.sourceId).join(destination) });
       });
     });
-    return { patches: compact(patches), form: form, responseTab: responseTab, responseSheetId: tabs[0].id };
+    return { patches: compact(patches), form: form, responseTab: responseTab, responseSheetId: tabs[0].id, responseInventory: responseInventory, datePolicy: setup.datePolicy };
   }
   function run(copy, setup, io, phase, approval) {
     // Identity engine owns its own lock. Re-check inside the same outer project lock
@@ -146,7 +176,7 @@ var AnnualSetupEngine = (function () {
       var saved = run.setup && run.setup.phases[phase];
       var planned = saved ? saved.preview : changes(ids, setup, phase, io);
       var digest = io.digest(JSON.stringify({ copy: copy, setup: setup, phase: phase, ids: ids, preview: planned }));
-      var preview = { schema: 1, year: copy.year, phase: phase, digest: digest, resources: ids, changes: planned.patches, responseTab: planned.responseTab || null, responseSheetId: planned.responseSheetId === undefined ? null : planned.responseSheetId, status: 'review-required' };
+      var preview = { schema: 1, year: copy.year, phase: phase, digest: digest, resources: ids, changes: planned.patches, responseTab: planned.responseTab || null, responseSheetId: planned.responseSheetId === undefined ? null : planned.responseSheetId, status: 'review-required', responseInventory: planned.responseInventory || null, datePolicy: planned.datePolicy || null };
       if (!approval) return preview;
       if (approval.digest !== digest || approval.phase !== phase || approval.year !== copy.year) fail('Approval must match this exact private preview');
       if (!run.setup) run.setup = { plan: setupPlan, phases: {} };
@@ -170,7 +200,7 @@ var AnnualSetupEngine = (function () {
       var verified = changes(ids, setup, phase, io);
       if (verified.patches.length) fail('Final annual configuration still has unapplied changes');
       saved.state = 'configured'; saved.checkedAt = io.now(); io.copy.save(ledger);
-      return { schema: 1, year: copy.year, phase: phase, digest: digest, status: 'configured', checkedAt: saved.checkedAt, changedCells: planned.patches.length, responseTab: verified.responseTab || null };
+      return { schema: 1, year: copy.year, phase: phase, digest: digest, status: 'configured', checkedAt: saved.checkedAt, changedOperations: planned.patches.length, changedCells: planned.patches.reduce(function (count, patch) { return count + (patch.kind === 'range' ? patch.after.reduce(function (sum, row) { return sum + row.length; }, 0) : patch.kind === 'cell' ? 1 : 0); }, 0), responseInventory: verified.responseInventory || null, responseTab: verified.responseTab || null };
     });
   }
   function handoff(copy, setup, io) {

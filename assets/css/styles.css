@@ -6127,96 +6127,6 @@ body[data-theme="dark"] .command-center-actions > span {
   }
 }
 
-/* Officer transition guide */
-.transition-section {
-  margin: 30px 0;
-  padding: clamp(20px, 2.6vw, 30px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-2xl);
-  background: var(--surface);
-}
-.transition-section > p { max-width: 78ch; color: var(--muted); }
-.transition-section .section-heading h2 { color: var(--ink); }
-.transition-section .primary-button { padding: 10px 22px; }
-.transition-dialog {
-  width: min(820px, calc(100vw - 32px));
-  max-width: none;
-  max-height: calc(100dvh - 32px);
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  color: var(--ink);
-  background: var(--surface);
-  box-shadow: 0 28px 90px rgba(3, 16, 31, 0.28);
-}
-.transition-dialog::backdrop { background: rgba(2, 12, 24, 0.64); backdrop-filter: blur(7px); }
-.transition-dialog-shell { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); }
-.transition-dialog-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
-.transition-dialog-header > div { min-width: 0; flex: 1; }
-.transition-dialog-header h2 { overflow-wrap: anywhere; margin: 0; color: var(--ink); font-size: clamp(1.75rem, 4.5vw, 2.5rem); font-variant-numeric: tabular-nums; }
-.transition-dialog-header .eyebrow { margin: 0 0 5px; }
-.transition-year-context { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 5px; color: var(--muted); font-size: var(--text-sm); }
-.transition-change-year { min-height: 44px; padding: 0; border: 0; color: var(--scarlet); background: transparent; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
-.transition-close { display: inline-grid; flex: 0 0 auto; font-size: 1.75rem; }
-.transition-dialog-body { min-height: 0; padding: 0 24px 24px; overflow-y: auto; overscroll-behavior: contain; }
-.transition-dialog-body > p { line-height: 1.5; }
-.transition-banner { margin: 16px 0; padding: 12px 15px; border-left: 4px solid var(--scarlet); border-radius: var(--radius-lg); background: var(--surface-soft); font-size: var(--text-sm); line-height: 1.5; }
-.transition-controls,
-.transition-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; margin: 18px 0; }
-.transition-controls > *,
-.transition-toolbar > label { display: grid; gap: 5px; }
-.transition-controls span,
-.transition-controls label,
-.transition-toolbar label { color: var(--muted); font-size: var(--text-sm); font-weight: 700; }
-.transition-controls strong { color: var(--ink); font-size: var(--text-sm); }
-.transition-dialog select,
-.transition-dialog input { min-width: 0; max-width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink); background: var(--surface); font: inherit; }
-.transition-progress-head { margin-top: 18px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; font-size: var(--text-sm); }
-#transition-progress { display: block; width: 100%; height: 12px; margin-top: 8px; overflow: hidden; border: 0; border-radius: 20px; background: var(--surface-soft); accent-color: var(--scarlet); }
-#transition-progress::-webkit-progress-bar { border-radius: 20px; background: var(--surface-soft); }
-#transition-progress::-webkit-progress-value { border-radius: 20px; background: var(--scarlet); }
-#transition-progress::-moz-progress-bar { border-radius: 20px; background: var(--scarlet); }
-.transition-summary { font-size: var(--text-sm); font-weight: 750; color: var(--ink) !important; }
-.transition-status { min-height: 1.5em; color: var(--muted); font-size: var(--text-sm); }
-.transition-status.is-error { color: var(--scarlet); }
-.transition-step { padding: 19px; border: 1px solid var(--border); border-radius: var(--radius-xl); background: var(--surface-soft); }
-.transition-step-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
-.transition-step h3 { margin: 0; color: var(--ink); font-size: var(--text-lg); }
-.transition-step h4 { margin: 18px 0 6px; color: var(--ink); font-size: var(--text-sm); }
-.transition-step p { overflow-wrap: anywhere; line-height: 1.55; }
-.transition-step-state { color: var(--scarlet); font-size: var(--text-sm); font-weight: 800; }
-.transition-owner,
-.transition-prerequisites,
-.transition-dependency-note { margin: 9px 0; color: var(--muted); font-size: var(--text-sm); }
-.transition-check-control,
-.transition-status-control { display: grid; max-width: 470px; gap: 5px; margin-top: 12px; color: var(--ink); font-size: var(--text-sm); font-weight: 700; }
-.transition-step-actions { display: flex; justify-content: space-between; gap: 12px; margin: 16px 0; }
-.transition-step-actions button { min-height: 44px; padding: 10px 22px; }
-.transition-step-actions button[aria-disabled="true"] { opacity: 0.6; cursor: not-allowed; }
-.transition-step-actions button:disabled { opacity: 0.5; }
-.transition-next-reason { font-size: var(--text-sm); color: var(--muted); }
-.transition-tools { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
-.transition-tools summary { cursor: pointer; color: var(--ink); font-weight: 700; }
-#transition-print-sheet { display: none; }
-
-@media (max-width: 720px) {
-  .transition-section { margin: 10px 0; padding: 18px; }
-  .transition-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 16px; }
-  .transition-dialog-shell { max-height: calc(100dvh - 18px); }
-  .transition-dialog-header { padding: 16px; }
-  .transition-dialog-body { padding: 0 16px 20px; }
-  .transition-controls { gap: 12px; }
-  .transition-controls > label { flex-basis: 100%; }
-  .transition-controls > div { flex: 1 1 130px; }
-  .transition-toolbar > button,
-  .transition-toolbar > .file-button { min-height: 44px; }
-  .transition-dialog select,
-  .transition-dialog input { width: 100%; font-size: 16px; }
-  #transition-year-form { flex-basis: 100%; }
-  .transition-step { padding: 14px; }
-}
-
 @media print {
   #transition-print-sheet,
   .transition-dialog,
@@ -6228,20 +6138,6 @@ body[data-theme="dark"] .command-center-actions > span {
   .transition-print-step h2 { margin: 4px 0; font-size: 11pt; color: #15253a; }
   .transition-print-step p { margin: 3px 0; font-size: 8pt; line-height: 1.4; }
   #transition-print-sheet h1 { font-size: 16pt; color: #15253a; }
-}
-
-.transition-inline-links {
-  display: grid;
-  gap: 12px;
-  margin-block: 18px;
-  padding: 16px;
-  border: 1px solid var(--border-color, #ddd);
-  border-radius: 10px;
-}
-
-.transition-inline-links .transition-check-control {
-  max-width: none;
-  margin-top: 0;
 }
 
 #transition-year-form {

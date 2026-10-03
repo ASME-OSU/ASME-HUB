@@ -14,7 +14,8 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261003b">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261003d">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -782,10 +783,6 @@
               <p id="transition-status" class="transition-status" role="status" aria-live="polite"></p>
               <div id="transition-steps" class="transition-steps"></div>
               <p id="transition-next-reason" class="transition-next-reason" aria-live="polite"></p>
-              <div class="transition-step-actions">
-                <button class="secondary-button" type="button" id="transition-back">Back</button>
-                <button class="primary-button" type="button" id="transition-next">Next step</button>
-              </div>
               <details class="transition-tools"><summary>Save, import, and reference tools</summary>
                 <p>Last saved on this device: <strong id="transition-saved-at">Never</strong></p>
                 <div class="transition-toolbar" aria-label="Transition tools">
@@ -796,6 +793,10 @@
                 </div>
               </details>
             </div>
+            <footer class="transition-step-actions">
+              <button class="secondary-button" type="button" id="transition-back">Back</button>
+              <button class="primary-button" type="button" id="transition-next">Next step</button>
+            </footer>
           </div>
         </dialog>
         <section id="transition-print-sheet" aria-label="Full officer transition checklist" hidden></section>
@@ -1067,8 +1068,8 @@
   <script src="assets/js/config.js?v=20261003a"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261002a"></script>
-  <script type="module" src="assets/js/transition.js?v=20261003b"></script>
+  <script src="assets/js/app.js?v=20261003b"></script>
+  <script type="module" src="assets/js/transition.js?v=20261003e"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

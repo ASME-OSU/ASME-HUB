@@ -43,6 +43,21 @@ After upload, check owner, parent folder and restricted permissions, and verify
 the downloaded package against its manifest. A local ZIP alone is not an
 organization-controlled backup.
 
+## Transition interface source map
+
+| File | Responsibility |
+|---|---|
+| `assets/js/transition-steps.js` | Canonical sixteen-step instructions and required checks |
+| `assets/js/transition.js` | Shared step shell, numbered procedures, resource rows and existing progress/link controls |
+| `assets/js/transition-state.js` | Progress validation, prerequisites, migration and reconciliation |
+| `assets/css/transition.css` | Scoped light/dark design tokens, components and mobile layouts; follows the Hub theme |
+| `index.html`, `sw.js` | Accessible dialog/header/fixed footer and matching offline asset versions |
+
+Visual changes must preserve the manual-check states, independent draft saves,
+local-progress meaning and blocked advancement. Percent complete reflects
+completed steps, not the step currently being viewed. Use the shared stylesheet
+for all sixteen steps; do not add separate theme storage for the guide.
+
 ## Code and deployment changes
 
 Clean templates retain headers, formulas, validation and approved policy/setup

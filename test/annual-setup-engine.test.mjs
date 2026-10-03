@@ -11,7 +11,7 @@ const headers = ['Timestamp', 'Email Address', 'OSU name.number', 'Is this your 
 function fixture() {
   const resources = { pointsMaster: 'points', attendanceFormEditor: 'form', pointsExport: 'pointsExport', budgetTracker: 'budget', budgetExport: 'budgetExport', annualFolder: 'annual' };
   const copy = { schema: 1, year: '2028-2029', items: Object.values(resources).map(key => key === 'annual' ? { key, kind: 'folder' } : { key, kind: 'copy', source: { id: 'source_' + key, version: '1', mimeType: key === 'form' ? 'application/vnd.google-apps.form' : 'application/vnd.google-apps.spreadsheet' } }) };
-  const setup = { schema: 1, year: copy.year, resources, reviews: Object.fromEntries(Object.values(resources).filter(k => k !== 'annual').map(key => [key, { boundScriptsReviewed: true, propertiesAndTriggersReviewed: true, safeForConfiguration: true, sourceVersion: '1', reviewNote: 'Synthetic fixture source reviewed' }])), points: { oldResponseTab: 'Form Responses 2', term: 'Fall 2028', academicYear: '2028-29' }, exports: { pointsExport: { sourceId: 'source_points', expectedFormulaCells: 1 }, budgetExport: { sourceId: 'source_budget', expectedFormulaCells: 2 } } };
+  const setup = { schema: 1, year: copy.year, resources, reviews: Object.fromEntries(Object.values(resources).filter(k => k !== 'annual').map(key => [key, { boundScriptsReviewed: true, propertiesAndTriggersReviewed: true, safeForConfiguration: true, sourceVersion: '1', reviewNote: 'Synthetic fixture source reviewed' }])), points: { oldResponseTab: 'Form Responses 2', term: 'Fall 2028', academicYear: '2028-29', expectedResponseFormulaCells: 4 }, datePolicy: { reviewed: true, reviewNote: 'Synthetic fixture: selected aligned August–July convention', budgetBounds: { B4: '2028-08-01', B5: '2029-07-31', B11: '2028-08-01', B12: '2028-12-31', B13: '2029-01-01', B14: '2029-05-31' } }, exports: { pointsExport: { sourceId: 'source_points', expectedFormulaCells: 1 }, budgetExport: { sourceId: 'source_budget', expectedFormulaCells: 2 } } };
   let ledger = { schema: 1, runs: { [copy.year]: { operations: {} } } }, saves = 0, writes = 0;
   const ids = Object.fromEntries(Object.entries(resources).map(([name, key]) => [name, 'new_' + key]));
   const form = { id: ids.attendanceFormEditor, acceptingResponses: false, destinationId: null, editUrl: 'https://docs.google.com/forms/d/new_form/edit', respondentUrl: 'https://docs.google.com/forms/d/e/observed_published_form/viewform' };
@@ -74,3 +74,39 @@ test('intent acknowledgement failure never sends the configuration write', () =>
 test('lost formula range acknowledgement reconciles without repeating range', () => { const f = fixture(); f.destination(); const approved = f.approve('workbooks'), write = f.io.write; let uncertain = false; f.io.write = patch => { write(patch); if (patch.kind === 'range' && !uncertain) { uncertain = true; throw Error('Lost range acknowledgement'); } }; assert.throws(() => engine.run(f.copy, f.setup, f.io, 'workbooks', approved), /Lost range/); const writes = f.writes(); f.io.write = write; engine.run(f.copy, f.setup, f.io, 'workbooks', approved); assert.equal(f.writes(), writes + 2); });
 test('unchanged configured repeat and handoff use observed Form URLs with no external writes', () => { const f = fixture(); f.destination(); const approved = f.approve('workbooks'); engine.run(f.copy, f.setup, f.io, 'workbooks', approved); const writes = f.writes(); engine.run(f.copy, f.setup, f.io, 'workbooks', approved); const handoff = engine.handoff(f.copy, f.setup, f.io); assert.equal(f.writes(), writes); assert.equal(handoff.type, 'asme-annual-link-handoff'); assert.equal(handoff.links.attendanceFormRespondent, f.form.respondentUrl); assert.equal(Object.keys(handoff.links).length, 7); assert.equal(handoff.verification.destinationMatches, true); });
 test('handoff refuses missing configuration, changed baseline and LIVE status', () => { const f = fixture(); assert.throws(() => engine.handoff(f.copy, f.setup, f.io), /Complete/); f.workbooks(); f.set(f.ids.pointsMaster, 'Config', 'B5', { value: 'LIVE' }); assert.throws(() => engine.handoff(f.copy, f.setup, f.io), /TESTING/); });
+
+test('new automation requires reviewed response inventory and explicit valid date policy before linking', () => {
+  for (const mutate of [f => delete f.setup.points.expectedResponseFormulaCells, f => delete f.setup.datePolicy, f => f.setup.datePolicy.reviewed = false, f => f.setup.datePolicy.budgetBounds.B14 = '2029-02-30', f => f.setup.datePolicy.budgetBounds.B13 = '2028-12-01']) {
+    const f = fixture(); mutate(f); assert.throws(() => f.approve('destination'), /count|policy|dates|bounds/); assert.equal(f.writes(), 0);
+  }
+});
+test('response inventory counts formula cells separately from occurrences and blocks partial/missing formulas', () => {
+  const f = fixture(); f.destination(); const preview = engine.run(f.copy, f.setup, f.io, 'workbooks');
+  assert.deepEqual(clone(preview.responseInventory), { formulaCells: 4, occurrences: 8, sheets: { Roster: 4 } });
+  f.set(f.ids.pointsMaster, 'Roster', 'A2', { value: 'Overwritten' });
+  assert.throws(() => f.approve('workbooks'), /response formula count/); assert.equal(f.writes(), 1);
+});
+test('annual setup requires aligned August–July / January–May convention', () => {
+  for (const [key, date] of [['B4', '2028-07-01'], ['B14', '2029-04-30'], ['B14', '2029-06-30']]) {
+    const f = fixture(); f.setup.datePolicy.budgetBounds[key] = date;
+    assert.throws(() => f.approve('destination'), /August|bounds/); assert.equal(f.writes(), 0);
+  }
+  const f = fixture(); f.workbooks();
+  assert.deepEqual(f.io.cell(f.ids.budgetTracker, 'Setup & Lists', 'B14'), { date: '2029-05-31' });
+});
+test('every import call must have an exact reviewed source; substring matches, mixed and dynamic sources block', () => {
+  for (const formula of ['=IMPORTRANGE("source_budget_extra","A1")', '=IMPORTRANGE("source_budget","A1")+IMPORTRANGE("other","B1")', '=IMPORTRANGE(A1,"B1")', '=IMPORTRANGE("https://docs.google.com/spreadsheets/d/source_budget/edit?x=1","A1")']) {
+    const f = fixture(); f.destination(); f.set(f.ids.budgetExport, 'Budget_Public', 'C2', { formula });
+    assert.throws(() => f.approve('workbooks'), /target|literal/); assert.equal(f.writes(), 1);
+  }
+});
+test('import retargeting preserves same-ID strings outside source arguments and handles several calls per cell', () => {
+  const f = fixture(); f.set(f.ids.budgetExport, 'Budget_Public', 'C2', { formula: '=IFERROR(IMPORTRANGE("source_budget","A1")+IMPORTRANGE("source_budget","B1"),"source_budget")' }); f.workbooks();
+  assert.equal(f.io.cell(f.ids.budgetExport, 'Budget_Public', 'C2').formula, '=IFERROR(IMPORTRANGE("new_budget","A1")+IMPORTRANGE("new_budget","B1"),"source_budget")');
+});
+
+test('result distinguishes formula/cell writes from compacted operations', () => {
+  const f = fixture(); f.destination(); const result = engine.run(f.copy, f.setup, f.io, 'workbooks', f.approve('workbooks'));
+  assert.equal(result.changedCells, 18); assert.equal(result.changedOperations, 14);
+  assert.equal(result.responseInventory.formulaCells, 4);
+});

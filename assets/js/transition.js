@@ -1,5 +1,5 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261002a";
-import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261001a";
+import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261003b";
+import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261003b";
 import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261002a";
 
 const section = document.getElementById("transition");
@@ -9,6 +9,8 @@ if (section) {
   const list = $("transition-steps");
   const yearInput = $("transition-year");
   const yearSetup = $("transition-year-setup");
+  // The year panel is detached on later steps; retain its datalist across reloads.
+  const yearOptions = $("transition-year-options");
   let selectedYear = "";
   const statusLine = $("transition-status");
   const byId = new Map(TRANSITION_STEPS.map((step) => [step.id, step]));
@@ -35,7 +37,7 @@ if (section) {
     const choices = transitionYearChoices(configured, [...saved, preferred], current);
     const nextStart = Math.min(Number(current.slice(0, 4)) + 1, 2199);
     const selected = validTransitionYear(preferred) ? preferred : transitionYear(nextStart);
-    $("transition-year-options").replaceChildren(...choices.map((year) => new Option(year.replace("-", "–"), year.slice(0, 4))));
+    yearOptions.replaceChildren(...choices.map((year) => new Option(year.replace("-", "–"), year.slice(0, 4))));
     selectedYear = selected;
     yearInput.value = selected.slice(0, 4);
   }
@@ -46,6 +48,42 @@ if (section) {
   const annualInputs = new Map();
   const annualLabels = new Map();
   const stepLinks = { T04: ["annualFolder"], T05: ["pointsMaster"], T06: ["attendanceFormEditor", "attendanceFormRespondent"], T07: ["pointsExport"], T09: ["budgetTracker", "budgetExport"] };
+  const setupGuide = ["annual-points-setup.md", "Open response wiring and event setup instructions"];
+  const financeGuide = ["finance-settings-launch.md", "Open finance, settings and launch examples"];
+  const communicationsGuide = ["communications-rollover.md", "Open calendar, newsletter and public-page instructions"];
+  const stepGuides = { T01: [["README.md", "Open the current officer documentation index"]], T03: [setupGuide], T05: [setupGuide], T06: [setupGuide], T07: [setupGuide], T08: [setupGuide], T09: [setupGuide, financeGuide], T10: [financeGuide], T11: [communicationsGuide], T12: [communicationsGuide], T13: [communicationsGuide], T14: [financeGuide], T15: [financeGuide], T16: [financeGuide] };
+  function resourceRow(url, title, description, kind = "document") {
+    const row = node("div", `transition-resource transition-resource-${kind}`);
+    const tile = node("span", "transition-resource-icon");
+    tile.setAttribute("aria-hidden", "true");
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", `#icon-${kind === "sheet" ? "chart" : kind === "guide" ? "check-square" : "link"}`);
+    svg.append(use);
+    tile.append(svg);
+    const copy = node("div", "transition-resource-copy");
+    copy.append(node("strong", "", title), node("small", "", description));
+    const link = node("a", "secondary-button", kind === "guide" ? "View guide ↗" : "Open link ↗");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.setAttribute("aria-label", title);
+    row.append(tile, copy, link);
+    return row;
+  }
+  function appendGuideLinks(card, step, rows = false) {
+    for (const [filename, title] of stepGuides[step.id] || []) {
+      const url = `https://github.com/ASME-OSU/ASME-HUB/blob/main/docs/officer-transition/${filename}`;
+      if (rows) card.append(resourceRow(url, title.replace(/^Open (?:the )?/, "").replace(/^./, (letter) => letter.toUpperCase()), "Read the detailed procedure and worked examples.", "guide"));
+      else {
+        const link = node("a", "secondary-button", title);
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        card.append(link);
+      }
+    }
+  }
   let unreadableAnnualLinks = false;
   let savedAnnualLinks = {};
   const annualTools = node("details", "transition-tools");
@@ -61,6 +99,7 @@ if (section) {
     input.type = "text";
     input.inputMode = "url";
     input.autocomplete = "off";
+    input.placeholder = "Paste the copied Google link";
     input.setAttribute("form", annualForm.id);
     input.setAttribute("aria-label", title);
     label.append(input, node("small", "", description));
@@ -207,7 +246,7 @@ if (section) {
     try {
       const raw = localStorage.getItem(storageKey(year));
       const parsed = raw ? JSON.parse(raw) : null;
-      previousGuideRaw = parsed?.guideVersion === "officer-transition-guide-2" ? raw : null;
+      previousGuideRaw = ["officer-transition-guide-2", "officer-transition-guide-3"].includes(parsed?.guideVersion) ? raw : null;
       progress = raw ? migrateProgress(parsed, year, TRANSITION_STEPS, TRANSITION_CHECKS) : emptyProgress(year);
       say(previousGuideRaw ? migrationNotice + " Your previous saved file is preserved until you save; a backup will be kept on this device." : raw ? "Progress loaded from this device. Reconfirm the real checks before activation." : "No local progress for this year yet.");
     } catch (error) {
@@ -228,7 +267,7 @@ if (section) {
     }
     const candidate = { ...next, savedAt: new Date().toISOString() };
     try {
-      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
+      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(previousGuideRaw).guideVersion}-backup`, previousGuideRaw);
       localStorage.setItem(storageKey(candidate.year), JSON.stringify(candidate));
       previousGuideRaw = null;
       progress = candidate;
@@ -256,7 +295,7 @@ if (section) {
     $("transition-change-year").hidden = currentIndex === 0;
     $("transition-saved-at").textContent = progress.savedAt ? new Date(progress.savedAt).toLocaleString() : "Never";
     $("transition-position").textContent = `Step ${currentIndex + 1} of ${TRANSITION_STEPS.length}`;
-    $("transition-completion").textContent = `${completed} of ${TRANSITION_STEPS.length} complete`;
+    $("transition-completion").textContent = `${Math.round(completed / TRANSITION_STEPS.length * 100)}% complete`;
     const meter = $("transition-progress");
     meter.max = TRANSITION_STEPS.length;
     meter.value = completed;
@@ -272,15 +311,38 @@ if (section) {
     const card = node("article", "transition-step");
     card.id = `transition-${step.id}`;
     const heading = node("div", "transition-step-heading");
-    heading.append(node("h3", "", `${step.id} · ${step.title}`), node("span", "transition-step-state", statusLabels[statusOf(step.id)]));
+    const identity = node("div", "transition-step-identity");
+    identity.append(node("span", "transition-step-badge", step.id));
+    const title = node("div", "transition-step-title");
+    title.append(node("h3", "", step.title), node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
+    identity.append(title);
+    const pill = node("span", "transition-step-state", statusLabels[statusOf(step.id)]);
+    pill.dataset.state = statusOf(step.id);
+    heading.append(identity, pill);
     card.append(heading);
-    card.append(node("p", "transition-owner", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${byId.get(id).title}`).join("; ") : "None"}`));
-    card.append(node("h4", "", "Officer instructions"), node("p", "transition-action", step.action));
+    card.append(node("h4", "", "What you need to do"));
+    const procedure = node("ol", "transition-procedure");
+    for (const action of step.action.split(/(?<=[.!?])\s+(?=[A-Z])/u)) procedure.append(node("li", "", action));
+    card.append(procedure);
+    const resources = node("section", "transition-resources");
+    appendGuideLinks(resources, step, true);
+    if (step.resource) {
+      const url = window.ASME_HUB_CONFIG?.[step.resource]?.editUrl;
+      if (url && /^https:\/\//.test(url)) resources.append(resourceRow(url, step.resource === "templates" ? "Google Drive Templates folder" : "Google Hub Control Center", "Open the chapter's shared source and review its contents."));
+    }
+    for (const key of step.templateActions || []) {
+      const source = window.ASME_HUB_CONFIG?.templates?.sources?.[key];
+      if (source?.editUrl && /^https:\/\//.test(source.editUrl)) resources.append(resourceRow(source.editUrl, `${source.title} template`, "Open the template and make a copy for this year.", key === "attendanceForm" ? "document" : "sheet"));
+    }
+    if (resources.childElementCount) {
+      resources.prepend(node("h4", "", "Links and resources"));
+      card.append(resources);
+    }
     if (step.id === "T01") card.append(yearSetup);
     if (stepLinks[step.id] || step.id === "T10") {
       const panel = node("section", "transition-inline-links");
-      panel.append(node("h4", "", step.id === "T10" ? "Review and save the new year's settings" : "Save this step's copied links"));
+      panel.append(node("h4", "", step.id === "T10" ? "Review and save the new year's settings" : "Save for next year"));
       panel.append(node("p", "", "Saving checks link format and known template IDs, then retains the draft on this device. Check file permissions and connections in Google Drive and Forms."));
       for (const key of stepLinks[step.id] || []) panel.append(annualLabels.get(key));
       const action = node("button", "secondary-button", step.id === "T10" ? "Review new-year settings" : "Check and save links on this device");
@@ -292,28 +354,10 @@ if (section) {
       panel.append(action, annualMessage);
       card.append(panel);
     }
-    if (step.resource) {
-      const url = window.ASME_HUB_CONFIG?.[step.resource]?.editUrl;
-      if (url && /^https:\/\//.test(url)) {
-        const link = node("a", "secondary-button", step.resource === "templates" ? "Open Google Drive Templates folder" : "Open Google Hub Control Center");
-        link.href = url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        card.append(link);
-      }
-    }
-    for (const key of step.templateActions || []) {
-      const source = window.ASME_HUB_CONFIG?.templates?.sources?.[key];
-      if (source?.editUrl && /^https:\/\//.test(source.editUrl)) {
-        const link = node("a", "secondary-button", `Open ${source.title} template`);
-        link.href = source.editUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        card.append(link);
-      }
-    }
-    card.append(node("h4", "", "Manual confirmation"), node("p", "transition-manual-check", step.check));
-    if (checksFor(step).length) card.append(node("p", "", "Perform these checks in the named services, then record your result below. The Hub does not check them automatically."));
+    const confirmation = node("section", "transition-confirmation");
+    card.append(confirmation);
+    confirmation.append(node("h4", "", "Manual confirmation"), node("p", "transition-manual-check", step.check));
+    if (checksFor(step).length) confirmation.append(node("p", "", "Perform these checks in the named services, then record your result below. The Hub does not check them automatically."));
     for (const check of checksFor(step)) {
       const label = node("label", "transition-check-control", check.title);
       const select = node("select");
@@ -334,7 +378,7 @@ if (section) {
         save(reconcileProgress({ ...progress, checks }, TRANSITION_STEPS, TRANSITION_CHECKS), check.id);
       });
       label.append(select);
-      card.append(label);
+      confirmation.append(label);
     }
     const control = node("label", "transition-status-control", "Officer progress");
     const select = node("select");
@@ -358,7 +402,7 @@ if (section) {
       save(reconcileProgress({ ...progress, steps }, TRANSITION_STEPS, TRANSITION_CHECKS), step.id);
     });
     control.append(select);
-    card.append(control);
+    confirmation.append(control);
     const reason = blockingReason(step);
     list.append(card);
     $("transition-back").disabled = currentIndex === 0;
@@ -421,10 +465,10 @@ if (section) {
       if (file.size > 100_000) throw new Error("Progress files must be under 100 KB.");
       const text = await file.text();
       const imported = importProgress(text, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
-      const migrated = JSON.parse(text).guideVersion === "officer-transition-guide-2";
+      const migrated = ["officer-transition-guide-2", "officer-transition-guide-3"].includes(JSON.parse(text).guideVersion);
       const candidate = { ...imported, savedAt: new Date().toISOString() };
-      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-backup`, previousGuideRaw);
-      if (migrated) localStorage.setItem(`${storageKey(candidate.year)}:guide-2-import-backup`, text);
+      if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(previousGuideRaw).guideVersion}-backup`, previousGuideRaw);
+      if (migrated) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(text).guideVersion}-import-backup`, text);
       localStorage.setItem(storageKey(candidate.year), JSON.stringify(candidate));
       previousGuideRaw = null;
       unreadableProgress = false;
@@ -446,6 +490,7 @@ if (section) {
       card.append(node("p", "", `Responsible: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
       card.append(node("p", "", `Prerequisites: ${step.needs.join(", ") || "None"}`));
       card.append(node("p", "", step.action), node("p", "", `Manual check: ${step.check}`));
+      appendGuideLinks(card, step);
       checksFor(step).forEach((check) => card.append(node("p", "", `${check.title}: ${checkLabels[checkOf(check.id)]}`)));
       sheet.append(card);
     }
