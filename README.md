@@ -86,6 +86,11 @@ but does not turn the static access screen into secure authentication.
 
 ## Repository map
 
+For annual rollover and future maintainers, start with the
+[officer transition documentation](docs/officer-transition/README.md). It maps
+the officer flow, script responsibilities, hosting/ownership, shared saves and
+private handoff records, with maintenance and recovery instructions.
+
 | File | Purpose |
 | --- | --- |
 | `index.html` | Dashboard structure and accessible labels |
@@ -170,7 +175,7 @@ Use **Compare with Google** with the form set to your intended values. It compar
 
 The Control Center is currently public in full. Only intentionally public values belong in it; hidden tabs do not protect private notes, edit references, or audits. Public link visibility does not grant access to a private destination. Confirm the publication boundary before adding fields or resources.
 
-The public-token writer has been removed from the client and its example disabled. This does not revoke any existing deployment. An authorized owner must inspect and retire any insecure live writer separately. No protected writer is deployed by this change. See [authorization, conflicts, readback, and recovery contract](integrations/apps-script/SETTINGS_WRITE_CONTRACT.md).
+The public-token writer has been removed from the client and its example disabled. This does not revoke any existing deployment. An authorized owner must inspect and retire any insecure live writer separately. The separate authenticated annual save service is connected for the inactive 2027–2028 draft; it does not edit current-year rows or activate years. See [the officer save flow](docs/officer-transition/system-flow.md), [annual save contract](integrations/apps-script/ANNUAL_SETTINGS_DRAFT.md), and [authorization, conflicts, readback, and recovery contract](integrations/apps-script/SETTINGS_WRITE_CONTRACT.md).
 
 The **Events calendar page** is the human-facing web page. The **Google Calendar
 iCal URL** is the public `basic.ics` subscription feed used by Google Calendar,

@@ -3,6 +3,11 @@
 The Hub intentionally uses plain HTML, CSS, and JavaScript so a new officer can
 maintain it without a build system.
 
+Start with [officer transition maintenance and recovery](docs/officer-transition/maintenance.md)
+when changing the annual flow. Update its system/script map when responsibilities
+change. Private resource IDs, rules, evidence and installed source snapshots belong
+in the chapter-controlled handoff workspace, not this repository.
+
 Before opening a pull request:
 
 1. Run `npm ci`, then `npm run check` (this includes the CSS lint rules).
