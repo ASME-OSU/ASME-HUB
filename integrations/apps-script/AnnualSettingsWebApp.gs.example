@@ -48,6 +48,9 @@ function previewAnnualSettingsWeb(inputText) {
       draft.manualVerificationDigest=verified.digest;
       io=manualAnnualDraftIO_(manual,ctx.props,verified.digest,draft);
       io.lock=function(fn){return fn();};
+      // This canonical result was just observed under this same preview lock.
+      // Save uses the normal adapter to independently verify the digest again.
+      io.verifiedHandoff=function(){return verified.handoff;};
       return AnnualSettingsDraftEngine.run(input.handoff,draft,io,null);
     });
   } else {

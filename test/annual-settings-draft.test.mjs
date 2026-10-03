@@ -36,3 +36,54 @@ test('actual Hub transfer file verifies and reconciles old journal despite reord
  assert.equal(engine.run(input.handoff,config,f.io,approval).status,'draft-readback-matched');assert.equal(f.appends,1);
  input.handoff.links.extra='injected';assert.throws(()=>engine.run(input.handoff,config,f.io),/handoff differs/);
 });
+
+test('unused checkbox rows survive preview, append and repeated readback exactly',()=>{
+ const f=fixture(),placeholders=[];
+ for(const active of [false,'FALSE',''])for(const current of [false,'FALSE','']){
+  const row=Array(20).fill('');row[10]=active;row[11]=current;placeholders.push(row);
+ }
+ // Exercise placeholders before the current year as well as trailing rows.
+ f.data.rows.unshift(clone(placeholders[0]));f.data.rows.push(...clone(placeholders.slice(1)));
+ f.data.formulas=Array.from({length:f.data.rows.length+1},()=>Array(20).fill(''));
+ const baseline=clone(f.data.rows),before=clone(f.data);
+ const preview=engine.run(f.handoff,f.config,f.io);
+ assert.equal(preview.currentYear,'2026-2027');assert.deepEqual(f.data,before);
+ assert.equal(f.appends,0);assert.equal(Object.keys(f.ledger.runs).length,0);
+ const approval={year:preview.year,digest:preview.digest,publicLinkReview:true,reviewNote:'Reviewed public row and links'};
+ assert.equal(engine.run(f.handoff,f.config,f.io,approval).status,'draft-readback-matched');
+ assert.deepEqual(f.data.rows.slice(0,-1),baseline);assert.deepEqual(f.ledger.runs[f.config.year].baseline,baseline);
+ assert.equal(f.data.rows.at(-1)[0],f.config.year);assert.equal(f.data.rows.at(-1)[10],false);assert.equal(f.data.rows.at(-1)[11],false);
+ const saved=clone(f.data);
+ assert.equal(engine.run(f.handoff,f.config,f.io,approval).status,'draft-readback-matched');
+ assert.equal(f.appends,1);assert.deepEqual(f.data,saved);
+});
+
+test('a blank-year row with an active or current TRUE checkbox rejects before writes',()=>{
+ for(const index of [10,11])for(const value of [true,'TRUE']){
+  const f=fixture(),row=Array(20).fill('');row[10]=false;row[11]=false;row[index]=value;
+  f.data.rows.push(row);f.data.formulas.push(Array(20).fill(''));
+  assert.throws(()=>engine.run(f.handoff,f.config,f.io),undefined,`blank-year field ${index}=${value} must reject`);
+  assert.equal(f.appends,0);assert.equal(Object.keys(f.ledger.runs).length,0);
+ }
+});
+
+test('a blank-year row containing any nonflag data cannot masquerade as an unused row',()=>{
+ for(let index=1;index<20;index++){
+  if(index===10||index===11)continue;
+  for(const value of ['unexpected',0,false,' ']){
+   const f=fixture(),row=Array(20).fill('');row[10]=false;row[11]=false;row[index]=value;
+   f.data.rows.push(row);f.data.formulas.push(Array(20).fill(''));
+   assert.throws(()=>engine.run(f.handoff,f.config,f.io),undefined,`blank-year field ${index}=${JSON.stringify(value)} must reject`);
+   assert.equal(f.appends,0);assert.equal(Object.keys(f.ledger.runs).length,0);
+  }
+ }
+});
+
+test('a changed unused checkbox row invalidates repeated readback without another append',()=>{
+ const f=fixture(),row=Array(20).fill('');row[10]=false;row[11]=false;
+ f.data.rows.push(row);f.data.formulas.push(Array(20).fill(''));
+ const approval=approve(f);engine.run(f.handoff,f.config,f.io,approval);
+ f.data.rows[1][10]=''; // Still a valid unused row, but no longer the exact baseline.
+ assert.throws(()=>engine.run(f.handoff,f.config,f.io,approval),/rows changed|baseline/i);
+ assert.equal(f.appends,1);
+});

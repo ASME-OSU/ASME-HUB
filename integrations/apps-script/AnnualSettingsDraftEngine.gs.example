@@ -7,6 +7,11 @@ var AnnualSettingsDraftEngine = (function () {
   function same(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
   function year(value) { var m = /^(\d{4})-(\d{4})$/.exec(value); return !!m && Number(m[1]) >= 2000 && Number(m[1]) <= 2199 && Number(m[2]) === Number(m[1]) + 1; }
   function flag(value) { if (value === true || value === 'TRUE') return true; if (value === false || value === 'FALSE') return false; fail('Explicit TRUE/FALSE flags required'); }
+  function unused(row) {
+    return row.length === 20 && row.every(function(value,index) {
+      return index === 10 || index === 11 ? value === '' || value === false || value === 'FALSE' : value === '';
+    });
+  }
   function id(url, name) {
     var re = name === 'annualFolder' ? /^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]{20,})(?:[?#].*)?$/ : name === 'attendanceFormEditor' ? /^https:\/\/docs\.google\.com\/forms\/d\/([A-Za-z0-9_-]{20,})\/edit(?:[?#].*)?$/ : /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([A-Za-z0-9_-]{20,})\/edit(?:[?#].*)?$/;
     var match = re.exec(url); if (!match) fail('Observed full Google resource URL required: ' + name); return match[1];
@@ -40,6 +45,9 @@ var AnnualSettingsDraftEngine = (function () {
     if (!data || !same(data.headers,headers) || !Array.isArray(data.rows) || !Array.isArray(data.formulas) || data.formulas.some(function(row){return row.some(function(v){return !!v;});})) fail('Exact A:T headers and literal rows required');
     var keys = [], current = [], found = null;
     data.rows.forEach(function (row,index) {
+      // Sheets can prefill unused rows with unchecked flag checkboxes.
+      // Keep those rows in the immutable baseline, but they are not years.
+      if (unused(row)) return;
       if (row.length !== 20 || !year(row[0]) || keys.indexOf(row[0]) >= 0) fail('Malformed/blank/duplicate annual row');
       keys.push(row[0]); var active = flag(row[10]), isCurrent = flag(row[11]);
       if (isCurrent) { if (!active) fail('Current year must be active'); current.push(row[0]); }
@@ -69,7 +77,7 @@ var AnnualSettingsDraftEngine = (function () {
       var baseline = saved ? saved.baseline : data.rows;
       var digest = saved ? saved.digest : io.digest(JSON.stringify({plan:plan,headers:headers,row:row,baseline:baseline}));
       var publicFields = headers.filter(function(key){ return !!linkFields[key] || /_url$/.test(key); });
-      var preview = { schema:1,year:c.year,digest:digest,status:'review-required',headers:headers.slice(),row:row.slice(),currentYear:data.rows.filter(function(r){return flag(r[11]);})[0][0],publicLinkFields:publicFields,warning:'The entire Control Center workbook is publicly readable. Every row value and these links require an explicit public audience review.' };
+      var preview = { schema:1,year:c.year,digest:digest,status:'review-required',headers:headers.slice(),row:row.slice(),currentYear:data.rows.filter(function(r){return !unused(r) && flag(r[11]);})[0][0],publicLinkFields:publicFields,warning:'The entire Control Center workbook is publicly readable. Every row value and these links require an explicit public audience review.' };
       if (!approval) return preview;
       if (approval.year !== c.year || approval.digest !== digest || approval.publicLinkReview !== true || typeof approval.reviewNote !== 'string' || !approval.reviewNote.trim()) fail('Exact private preview approval and public link review certificate required');
       if (saved) {

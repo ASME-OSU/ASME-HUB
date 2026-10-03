@@ -47,7 +47,7 @@ window.ASME_HUB_CONFIG = {
     // Shared writes use Google-authorized direct editing. No client write endpoint.
   },
   // Connect a reviewed chapter-owned Google deployment after its private rehearsal.
-  annualSettingsSave: { url: "" },
+  annualSettingsSave: { url: "https://script.google.com/macros/s/AKfycbyO2AXflctg0NogMpsc2ziWBw1XwYRPLrzDua04CA2Op_Fqutdwex3zhR4uAffG_4YGTA/exec" },
   templates: {
     editUrl: "https://drive.google.com/drive/folders/125_HEyqM4T0lrSSuBfSzPT_o0B8kScHK",
     sources: {

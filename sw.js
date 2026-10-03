@@ -1,4 +1,4 @@
-const SHELL_CACHE = "asme-hub-shell-v70";
+const SHELL_CACHE = "asme-hub-shell-v71";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
@@ -7,7 +7,7 @@ const SHELL_ASSETS = [
   "./assets/css/styles.css?v=20261001a",
   "./assets/fonts/dm-serif-display-latin.woff2",
   "./assets/fonts/inter-latin.woff2",
-  "./assets/js/config.js?v=20261002a",
+  "./assets/js/config.js?v=20261003a",
   "./assets/js/shared-resources.js?v=20260928b",
   "./assets/js/settings-readback.js?v=20261002a",
   "./assets/js/app.js?v=20261002a",

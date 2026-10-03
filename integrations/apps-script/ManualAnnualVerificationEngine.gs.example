@@ -5,12 +5,23 @@ var ManualAnnualVerificationEngine = (function () {
   var folderMime = 'application/vnd.google-apps.folder';
   function fail(message) { throw new Error(message); }
   function same(a,b) { return JSON.stringify(a) === JSON.stringify(b); }
+  // Advanced Drive response key order is not a resource change.
+  function canonical(value) {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (value && typeof value === 'object') {
+      var ordered={};Object.keys(value).sort().forEach(function(key){ordered[key]=canonical(value[key]);});return ordered;
+    }
+    return value;
+  }
+  function permissions(value) {
+    return value.map(canonical).sort(function(a,b){return JSON.stringify(a).localeCompare(JSON.stringify(b));});
+  }
   function id(value,name) {
     var path = name === 'annualFolder' ? '^https://drive\\.google\\.com/drive/folders/([A-Za-z0-9_-]{20,200})$' : name === 'attendanceFormEditor' ? '^https://docs\\.google\\.com/forms/d/([A-Za-z0-9_-]{20,200})/edit$' : '^https://docs\\.google\\.com/spreadsheets/d/([A-Za-z0-9_-]{20,200})/edit$';
     var m = new RegExp(path).exec(value); if (!m) fail('Full canonical Google link required: '+name); return m[1];
   }
   function verify(handoff,c,io) {
-    if (!c || c.schema !== 1 || !/^20\d{2}-20\d{2}$/.test(c.year) || Number(c.year.slice(5)) !== Number(c.year.slice(0,4))+1 || !c.intendedOwner || !/^[A-Za-z0-9_-]{20,200}$/.test(c.annualRootId) || !Array.isArray(c.excludedSourceIds) || c.excludedSourceIds.length < 5 || c.excludedSourceIds.some(function(x){return !/^[A-Za-z0-9_-]{20,200}$/.test(x);}) || !c.draft || !c.points || !c.points.term || !c.responseHeaders || c.responseHeaders.length !== 12 || !Array.isArray(c.schemas) || !c.schemas.length || !c.imports) fail('Trusted manual annual rules are incomplete');
+    if (!c || c.schema !== 1 || !/^20\d{2}-20\d{2}$/.test(c.year) || Number(c.year.slice(5)) !== Number(c.year.slice(0,4))+1 || !c.intendedOwner || !/^[A-Za-z0-9_-]{10,200}$/.test(c.annualRootId) || !Array.isArray(c.excludedSourceIds) || c.excludedSourceIds.length < 5 || c.excludedSourceIds.some(function(x){return !/^[A-Za-z0-9_-]{20,200}$/.test(x);}) || !c.draft || !c.points || !c.points.term || !c.responseHeaders || c.responseHeaders.length !== 12 || !Array.isArray(c.schemas) || !c.schemas.length || !c.imports) fail('Trusted manual annual rules are incomplete');
     if (!handoff || handoff.schema !== 1 || handoff.type !== 'asme-annual-link-handoff' || handoff.year !== c.year || !handoff.links || !same(Object.keys(handoff.links).sort(),resources.concat(['attendanceFormRespondent']).sort())) fail('Selected manual year and seven exact links required');
     var owner = String(c.intendedOwner).trim().toLowerCase();
     if (!owner || String(io.actor()).trim().toLowerCase() !== owner) fail('Execute as the configured chapter owner');
@@ -21,7 +32,7 @@ var ManualAnnualVerificationEngine = (function () {
         file = io.metadata(resourceId);
         if (!file || file.id !== resourceId || file.trashed || file.driveId || !file.owners || file.owners.length !== 1 || String(file.owners[0].emailAddress).trim().toLowerCase() !== owner || !file.capabilities || !file.capabilities.canEdit || !Array.isArray(file.permissions) || !file.permissions.length || file.permissions.some(function(p){return !(p.type === 'user' && p.emailAddress) && !(allowPublicReader && c.publicExportReadersAllowed === true && p.type === 'anyone' && p.role === 'reader');})) fail('Private editable chapter-owned annual identity required');
         cache[resourceId] = file;
-        identities.push({id:file.id,name:file.name,mimeType:file.mimeType,parents:file.parents || [],owners:file.owners,permissions:file.permissions,canEdit:file.capabilities.canEdit});
+        identities.push({id:file.id,name:file.name,mimeType:file.mimeType,parents:file.parents || [],owners:file.owners,permissions:permissions(file.permissions),canEdit:file.capabilities.canEdit});
       }
       if (mime && file.mimeType !== mime) fail('Manual resource file type mismatch');
       return file;
@@ -103,7 +114,7 @@ var ManualAnnualVerificationEngine = (function () {
     identities.sort(function(a,b){return a.id.localeCompare(b.id);});
     var rules=Object.assign({},c,{draft:Object.assign({},c.draft)});delete rules.handoff;delete rules.draft.manualVerificationDigest;
     var snapshot={config:rules,identities:identities,form:form,response:response,cells:cells,schemas:schemas,workbooks:workbooks};
-    return {handoff:{schema:1,type:'asme-annual-link-handoff',year:c.year,links:links},digest:io.digest(JSON.stringify(snapshot)),readiness:'Inactive draft (TESTING or PAUSED);  bound scripts/properties/triggers, delivery, scoring, import authorization, export privacy, totals and officer access require human checks'};
+    return {handoff:{schema:1,type:'asme-annual-link-handoff',year:c.year,links:links},digest:io.digest(JSON.stringify(canonical(snapshot))),readiness:'Inactive draft (TESTING or PAUSED);  bound scripts/properties/triggers, delivery, scoring, import authorization, export privacy, totals and officer access require human checks'};
   }
   return {verify:verify};
 }());

@@ -42,6 +42,6 @@ function annualSettingsDraftIO_(copy,setup,c,props) {
     },
     load: function(){verifyJournal(); return journalIO.load();},
     save: function(value){verifyJournal(); journalIO.save(value);},
-    append: function(row){var tab = sheet(); tab.getRange(tab.getLastRow()+1,1,1,20).setValues([row]); SpreadsheetApp.flush();}
+    append: function(row){var tab = sheet(), next = tab.getLastRow()+1; if (next > tab.getMaxRows()) tab.insertRowsAfter(tab.getMaxRows(),next-tab.getMaxRows()); tab.getRange(next,1,1,20).setValues([row]); SpreadsheetApp.flush();}
   };
 }

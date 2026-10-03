@@ -5,9 +5,11 @@ Install both `AnnualSettingsDraftEngine.gs.example` and `AnnualSettingsDraftRunn
 ## Officer route through the Google page
 
 1. Paste copied links in the relevant guide steps. Step 10 opens the inactive Year Settings draft. Review its public row fields and choose **Open authorized annual save**. The reviewed draft transfers directly; **Download Google save file** is the fallback.
-2. Choose **Open authorized annual save** when the chapter has connected the service. Sign in as the configured chapter account and choose **Verify with Google**.
+2. Choose **Open authorized annual save**. The chapter service is connected for the 2027–2028 draft. Sign in as the configured chapter account and choose **Verify with Google**.
 3. Google independently verifies the configured annual copies and setup, exact Google file types, observed Form editor/respondent URLs, closed responses, correct Points Master destination, settings schema and current year. Review the exact row and its public audience, record the audience review, then choose **Save inactive year and confirm**.
 4. The existing engine journals intent, appends an inactive/noncurrent row, independently reads it back and checks that other rows remained unchanged. Its confirmation supplies the year and readback time. Return to the Hub and use **Compare with Google**; remaining guide checks and eventual activation are separate actions.
+
+The connected deployment uses reviewed manual-copy rules for 2027–2028, runs as the signed-in chapter account and remains accessible only to that account. A maintainer must review and update the private year/rules before using this route for a later transition. Loading a draft never saves it or changes the current year.
 
 The private administrator selects either the existing automated-copy configuration or the independently verified manual-copy mode described in [MANUAL_ANNUAL_VERIFICATION.md](MANUAL_ANNUAL_VERIFICATION.md). Uploaded links never establish their own authority. Without a connected service, use **Edit shared settings** and **Compare with Google**. The guide distinguishes collapsed **Current Hub settings** from **New-year draft links**, which are saved on the officer's device.
 
@@ -53,7 +55,7 @@ Put explicit selections in private `ANNUAL_SETTINGS_DRAFT_CONFIG`:
 }
 ```
 
-These are illustrative selections; inspect actual export tabs and intentionally choose each field and a fixed timestamp. The writer never copies current-year values implicitly. The target year must be consecutive within 2000–2199. Current and historical rows must have exact A:T headers, literal values, unique valid years and explicit flags, with exactly one active current year.
+These are illustrative selections; inspect actual export tabs and intentionally choose each field and a fixed timestamp. The writer never copies current-year values implicitly. The target year must be consecutive within 2000–2199. Empty rows containing only blank or unchecked active/current cells are accepted and preserved exactly. Active blank-year rows or other content without a year are rejected. If the sheet is full, the append adds one physical row; it never replaces an unused checkbox row. Current and historical rows must have exact A:T headers, literal values, unique valid years and explicit flags, with exactly one active current year.
 
 Run `previewAnnualSettingsDraft` privately and inspect `headers` and the exact 20 values in `row`. The Control Center's entire workbook is publicly readable: Points Master and budget tracker URLs themselves become public references, even if the target files require authorization. Confirm the intended public audience of every field, including any dashboard, banking or fundraising URL. If any operational reference must stay private, stop before approving and design a separate private authority/public projection. A hidden tab does not solve whole-file sharing.
 

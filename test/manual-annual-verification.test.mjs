@@ -75,3 +75,19 @@ test('PAUSED manual copies verify; LIVE is rejected and changing nonlive status 
  assert.throws(()=>draftEngine.run(f.handoff,p.c,f.io,{year:f.draft.year,digest:p.preview.digest,publicLinkReview:true,reviewNote:'Reviewed'}),/Snapshot changed/);
  f.cells.set('pointsMaster|Config|B5',{value:'LIVE'});assert.throws(f.verify,/configuration mismatch/);assert.equal(f.appends,0);
 });
+
+test('Google My Drive root IDs can be shorter than copied-file IDs',()=>{
+ const f=fixture(),nativeRoot='0AMLDoBfVZDuJUk9PVA';
+ f.files[nativeRoot]={...f.files[f.root],id:nativeRoot};
+ f.files[f.ids.annualFolder].parents=[nativeRoot];f.config.annualRootId=nativeRoot;
+ assert.ok(f.verify().digest);
+ f.files[nativeRoot].mimeType='application/vnd.google-apps.spreadsheet';assert.throws(f.verify,/file type/);
+});
+
+test('metadata key and permission order do not invalidate an unchanged Google snapshot',()=>{
+ const f=fixture();f.files[f.ids.pointsMaster].permissions.push({type:'user',role:'writer',emailAddress:'officer@example.org'});
+ const before=f.verify().digest;
+ for(const file of Object.values(f.files))file.permissions=file.permissions.reverse().map(p=>Object.fromEntries(Object.entries(p).reverse()));
+ assert.equal(f.verify().digest,before);
+ f.files[f.ids.pointsMaster].permissions.find(p=>p.emailAddress==='officer@example.org').role='reader';assert.notEqual(f.verify().digest,before);
+});

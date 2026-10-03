@@ -56,15 +56,15 @@ function manualFixture(){
  f.configs.ANNUAL_MANUAL_SETTINGS_CONFIG={schema:1,intendedOwner:rules.intendedOwner,rulesFileId:id};
  const metadata={mimeType:'application/json',owners:[{emailAddress:rules.intendedOwner}],capabilities:{canEdit:true},permissions:[{type:'user',emailAddress:rules.intendedOwner}]};
  f.ctx.annualCopyIO_=()=>({metadata:()=>metadata});f.ctx.DriveApp={getFileById:()=>({getSize:()=>JSON.stringify(rules).length,getBlob:()=>({getDataAsString:()=>JSON.stringify(rules)})})};
- let locks=0;const manualIO={lock:fn=>{locks++;return fn();}};
+ let locks=0,verifications=0;const manualIO={lock:fn=>{locks++;return fn();}};
  f.ctx.manualAnnualVerificationIO_=()=>manualIO;
- f.ctx.ManualAnnualVerificationEngine={verify:(handoff,c)=>{const snapshot={...c,draft:{...c.draft}};delete snapshot.handoff;delete snapshot.draft.manualVerificationDigest;return {handoff,digest:JSON.stringify(snapshot)};}};
+ f.ctx.ManualAnnualVerificationEngine={verify:(handoff,c)=>{verifications++;const snapshot={...c,draft:{...c.draft}};delete snapshot.handoff;delete snapshot.draft.manualVerificationDigest;return {handoff,digest:JSON.stringify(snapshot)};}};
  f.ctx.manualAnnualDraftIO_=(c,props,digest)=>({lock:manualIO.lock,verifiedHandoff:()=>{const fresh=f.ctx.ManualAnnualVerificationEngine.verify(c.handoff,c);if(fresh.digest!==digest)throw Error('Annual resources changed');return fresh.handoff;}});
  const run=f.ctx.AnnualSettingsDraftEngine.run;f.ctx.AnnualSettingsDraftEngine.run=(handoff,draft,io,approval)=>{if(io.verifiedHandoff)io.verifiedHandoff();return run(handoff,draft,io,approval);};
- return {...f,rules,metadata,get locks(){return locks;}};
+ return {...f,rules,metadata,get locks(){return locks;},get verifications(){return verifications;}};
 }
 test('manual web mode reads private rules and re-verifies snapshot under lock for save',()=>{
- const f=manualFixture();f.preview();assert.equal(f.locks,1);assert.equal(f.save().status,'draft-readback-matched');
+ const f=manualFixture();f.preview();assert.equal(f.locks,1);assert.equal(f.verifications,1);assert.equal(f.save().status,'draft-readback-matched');assert.equal(f.verifications,2);
  const raw=JSON.parse(f.stored.get('ANNUAL_WEB_PREVIEW'));assert.equal(raw.manual,true);assert.ok(raw.draft.manualVerificationDigest);assert.equal(f.calls.some(c=>c.draft&&!c.handoff),false);
  f.rules.points.term='Changed';assert.throws(f.save,/resources changed/);
 });
