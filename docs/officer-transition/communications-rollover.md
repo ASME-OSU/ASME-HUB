@@ -113,8 +113,18 @@ record the feed generation timestamp, consumer URL, observed fields and reviewer
 | Consumer | Scheduled generation | Officer confirmation |
 |---|---|---|
 | Hub | Hourly at minute 17, plus main pushes/manual dispatch | **Actions → Sync calendar and deploy Pages → Run workflow**. Check build and deploy results, then public `data/calendar.json`: `generatedAt`, target `calendars[year].feedUrl` and occurrence. Refresh Hub. The browser may show LIVE for a snapshot up to six hours old and fallback up to 24 hours; that badge alone is insufficient for annual acceptance. |
-| Website | Hourly at minute 23 | Run the calendar-feed workflow, check public `data/calendar-events.json` `generatedAt` and event fields, then hard refresh the Calendar page and homepage. The visible “Synced from our calendar” label has no timestamp; use the JSON timestamp. A cached card can appear before the refreshed feed. |
+| Website | Hourly at minute 23 | Run the calendar-feed workflow, check public `data/calendar-events.json` `generatedAt` and event fields, then hard refresh the Calendar page and homepage. The visible “Synced from our calendar” label has no timestamp; record the JSON timestamp and successful workflow check time separately. A cached card can appear before the refreshed feed. |
 | Newsletter | Hourly at minute 17 | Run the sync workflow, check published `calendar-events.json`, click **Refresh Events**, and read **calendar data updated**. Use **Update Imported Event** or **Sync Imported Events** for already imported copies; feed refresh alone leaves editable issue content unchanged. |
+
+Website and Newsletter sync scripts keep the existing JSON unchanged when the
+event array matches the latest calendar read. Their `generatedAt` records the
+last changed feed generation, rather than every successful poll. An older
+timestamp alone does not prove a stale feed. In an unchanged-content check,
+record the successful workflow run URL/time and its “Calendar is unchanged”
+result alongside the JSON timestamp and matching event fields. For all-day
+items compare the calendar date: Website serializes noon UTC and displays
+Eastern time; Newsletter serializes midnight UTC and displays UTC for these
+items. The different ISO times preserve the same intended date.
 
 Schedules are targets, not a delivery guarantee. For this handoff use a **90
 minute review window after a confirmed source edit** as a troubleshooting
@@ -124,8 +134,11 @@ workflow and checks the result, public JSON and source identity. If dispatch
 fails, publication is stale, the workflow is disabled, or the expected event
 still differs, record FAIL/BLOCKED with the owner and preserve the previous
 source/content until repaired. Do not pass the check because the iframe updated
-while cards or newsletter stayed stale. A launch requires successful generation
-**after** the relevant edit and observed matching output, even within 90 minutes.
+while cards or newsletter stayed stale. A launch requires a successful calendar
+read **after** the relevant edit and observed matching output, even within 90
+minutes. If the edit changes serialized event fields, verify the changed feed
+and its new generation timestamp; a successful unchanged-content result cannot
+prove that a missing changed event propagated.
 
 ## T12: transfer the editable newsletter correctly
 
