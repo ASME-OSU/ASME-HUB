@@ -1,5 +1,5 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261003b";
-import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261003b";
+import { TRANSITION_CHECKS, TRANSITION_STEPS } from "./transition-steps.js?v=20261004a";
+import { emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261004a";
 import { ANNUAL_HANDOFF_TYPE, ANNUAL_LINK_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261002a";
 
 const section = document.getElementById("transition");
@@ -246,7 +246,7 @@ if (section) {
     try {
       const raw = localStorage.getItem(storageKey(year));
       const parsed = raw ? JSON.parse(raw) : null;
-      previousGuideRaw = ["officer-transition-guide-2", "officer-transition-guide-3"].includes(parsed?.guideVersion) ? raw : null;
+      previousGuideRaw = TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(parsed?.guideVersion) ? raw : null;
       progress = raw ? migrateProgress(parsed, year, TRANSITION_STEPS, TRANSITION_CHECKS) : emptyProgress(year);
       say(previousGuideRaw ? migrationNotice + " Your previous saved file is preserved until you save; a backup will be kept on this device." : raw ? "Progress loaded from this device. Reconfirm the real checks before activation." : "No local progress for this year yet.");
     } catch (error) {
@@ -465,7 +465,7 @@ if (section) {
       if (file.size > 100_000) throw new Error("Progress files must be under 100 KB.");
       const text = await file.text();
       const imported = importProgress(text, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
-      const migrated = ["officer-transition-guide-2", "officer-transition-guide-3"].includes(JSON.parse(text).guideVersion);
+      const migrated = TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(JSON.parse(text).guideVersion);
       const candidate = { ...imported, savedAt: new Date().toISOString() };
       if (previousGuideRaw) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(previousGuideRaw).guideVersion}-backup`, previousGuideRaw);
       if (migrated) localStorage.setItem(`${storageKey(candidate.year)}:${JSON.parse(text).guideVersion}-import-backup`, text);

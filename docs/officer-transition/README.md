@@ -1,15 +1,15 @@
 # Officer transition: start here
 
-This folder explains how the Hub, Google files and annual save service work so
-future officers can operate and maintain them. It contains public documentation;
-private configuration, resource inventories and evidence belong in the chapter's
-**Officer Transition — 2027–2028 — Private Handoff** Google Drive folder.
-Sign in to the chapter account to find that folder. Keep future-year handoffs in
-the same chapter-controlled workspace, with a clearly dated current index.
+Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**, choose the year in T01, and ask the outgoing President for the private handoff folder and checklist. Record the folder/checklist links and name the coordinator, Points maintainer and one settings editor in that private checklist. Check existing annual folders and copies before creating more.
+
+The Secretary/Points officer copies files, manages reviewed inputs and Form choices, and tests results. The Points maintainer performs response-formula wiring, export imports and date-formula repairs, then records the checks. The Treasurer reviews actual funding evidence. The Webmaster maintains shared tool links, calendars and published pages. No installed one-click annual setup button is implied by these instructions.
+
+This folder contains public documentation. Keep private configuration, exact operational file inventories, test/member records and evidence in the chapter-controlled private handoff folder. If you cannot find it, ask the outgoing President for its location; do not assume a dated example folder is the current handoff.
 
 | Reference | What to read it for |
 |---|---|
-| [Annual Points setup](annual-points-setup.md) | Exact response wiring, imports, generated roster, manual event choices and aligned date rules |
+| [Annual Points setup](annual-points-setup.md) | Normal officer checklist, separate maintainer wiring/import/date procedures, generated profiles, manual choices and recovery tests |
+| [Profile recovery migration](profile-recovery-migration.md) | Maintainer repair of existing copies: exact first-complete-profile and same/prior-row formulas, preserved attendance and regression checks |
 | [Finance, settings and launch examples](finance-settings-launch.md) | Funding review, saved versus active/current states, evidence, intake, rollback and retention |
 | [Communications rollover](communications-rollover.md) | Exact calendar, newsletter and website sources, transfers, editors and deployment paths |
 | [System flow and ownership](system-flow.md) | Officer steps, where data lives, shared saves and activation |
@@ -24,13 +24,9 @@ under **Transition to New Year**. Select the year in Step 1 and work through the
 sixteen steps. A saved inactive settings row is one milestone; it does not mean
 the new year is activated or every handoff check passed.
 
-## Current documented baseline
+## Dated baseline and annual acceptance
 
-As checked October 3, 2026, the Google save service is connected for an inactive
-2027–2028 draft; the current production year remains 2026–2027. Private fixture
-copy/setup and save/readback/repeat rehearsals passed. The real production annual
-copies and incoming team still need their acceptance checks. Treat this as a
-dated reference, and consult the private current-state record before execution.
+Production remains **2026–2027** pending a separately approved annual launch. Earlier copy/setup/save rehearsals checked their own fixtures. In the October 4 second mock, actual Form delivery and ordinary scoring worked, but a skipped-profile recovery sequence failed before repair. Its preserved responses recalculated after repair as 5, 0, 8, 0 and 5; the recovered member became ACTIVE while earlier unmatched attendance stayed zero/review. Private TESTING/PAUSED suppression was observed on that populated mock pair. Signed-out output, LIVE contribution and actual incoming-officer acceptance remain separate checks. See the [dated Points results](annual-points-setup.md#dated-rehearsal-results) and ask the coordinator for current private evidence before execution.
 
 The private folder should contain a readable START HERE/system guide, the current
 checkpoint and coordinator tracker, activation/rollback instructions, installed

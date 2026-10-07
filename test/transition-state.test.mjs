@@ -115,11 +115,42 @@ test("mock feedback revision invalidates guide 3 confirmations and preserves the
   const { migrateProgress } = await import("../assets/js/transition-state.js");
   const original = { ...emptyProgress(year), guideVersion: "officer-transition-guide-3", steps: { T01: "complete", T02: "complete", T03: "blocked" }, checks: { V10: "passed", V01: "unable" } };
   const migrated = migrateProgress(original, year, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(migrated.guideVersion, "officer-transition-guide-4");
+  assert.equal(migrated.guideVersion, "officer-transition-guide-5");
   assert.equal(migrated.steps.T01, "in_progress");
   assert.equal(migrated.checks.V10, "needs_recheck");
   assert.equal(migrated.steps.T03, "blocked");
   assert.equal(migrated.checks.V01, "unable");
   assert.equal(original.checks.V10, "passed");
   assert.deepEqual(restore(JSON.stringify({ ...original, kind: "asme-officer-transition-progress" })), migrated);
+});
+
+
+test("round-2 recovery acceptance reopens guide 4 completion without losing unresolved work", async () => {
+  const { migrateProgress, TRANSITION_GUIDE_VERSION, TRANSITION_PREVIOUS_GUIDE_VERSIONS } = await import("../assets/js/transition-state.js");
+  const original = {
+    ...emptyProgress(year), guideVersion: "officer-transition-guide-4", savedAt: "2026-10-03T18:00:00.000Z",
+    steps: Object.fromEntries(TRANSITION_STEPS.filter(step => Number(step.id.slice(1)) <= 8).map(step => [step.id, "complete"])),
+    checks: { V01: "passed", V02: "passed", V03: "passed", V04: "passed", V05: "passed", V06: "failed", V07: "unable", V08: "checking", V09: "needs_recheck", V10: "passed" },
+  };
+  original.steps.T09 = "blocked";
+  original.steps.T10 = "in_progress";
+  const before = structuredClone(original);
+  const migrated = migrateProgress(original, year, TRANSITION_STEPS, TRANSITION_CHECKS);
+  assert.equal(TRANSITION_GUIDE_VERSION, "officer-transition-guide-5");
+  assert.ok(TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(original.guideVersion));
+  assert.equal(migrated.steps.T08, "in_progress");
+  assert.equal(migrated.checks.V04, "needs_recheck");
+  assert.ok(Object.values(migrated.steps).every(status => status !== "complete"));
+  assert.ok(Object.values(migrated.checks).every(status => status !== "passed"));
+  assert.equal(migrated.steps.T09, "blocked");
+  assert.equal(migrated.steps.T10, "in_progress");
+  for (const id of ["V06", "V07", "V08", "V09"]) assert.equal(migrated.checks[id], original.checks[id]);
+  assert.equal(migrated.year, original.year);
+  assert.equal(migrated.savedAt, original.savedAt);
+  assert.deepEqual(original, before);
+  assert.deepEqual(read(migrated), migrated);
+  assert.deepEqual(restore(JSON.stringify({ ...original, kind: "asme-officer-transition-progress" })), migrated);
+  assert.deepEqual(restore(exportProgress(migrated, TRANSITION_STEPS, TRANSITION_CHECKS)), migrated);
+  assert.throws(() => migrateProgress({ ...original, year: "2028-2029" }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /different transition year/);
+  assert.throws(() => migrateProgress({ ...original, checks: { ...original.checks, V04: "automatic_pass" } }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /unknown check/);
 });
