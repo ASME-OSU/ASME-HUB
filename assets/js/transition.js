@@ -408,7 +408,7 @@ if (section) {
     $("transition-back").disabled = currentIndex === 0;
     $("transition-next").textContent = currentIndex === TRANSITION_STEPS.length - 1 ? "Finish review" : "Next step";
     $("transition-next").setAttribute("aria-disabled", reason ? "true" : "false");
-    $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? "All steps are officer-marked complete. Confirm authoritative evidence before any activation." : "Ready for the next step.");
+    $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? "All steps are marked complete. Before making the new year current, the coordinator must review the private readiness checklist and approve the launch." : "Ready for the next step.");
   }
   function go(index) {
     currentIndex = index;
@@ -434,7 +434,7 @@ if (section) {
     const reason = blockingReason(TRANSITION_STEPS[currentIndex]);
     if (reason) { say(reason, true); $("transition-next-reason").focus(); return; }
     if (currentIndex < TRANSITION_STEPS.length - 1) go(currentIndex + 1);
-    else say("All steps are officer-marked complete. Verify private evidence before any authorized activation.");
+    else say("All steps are marked complete. Before making the new year current, the coordinator must review the private readiness checklist and approve the launch.");
   });
   $("transition-next-reason").tabIndex = -1;
   yearInput.addEventListener("input", () => yearInput.setCustomValidity(""));
