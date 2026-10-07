@@ -1,6 +1,7 @@
 export const TRANSITION_STATE_VERSION = 1;
 // Bump when step/check meaning changes so old completion is never silently reused.
-export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-4";
+export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-5";
+export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = ["officer-transition-guide-2", "officer-transition-guide-3", "officer-transition-guide-4"];
 export const TRANSITION_STORAGE_PREFIX = "asmeHubTransitionProgressV1:";
 export const TRANSITION_STATUSES = ["not_started", "in_progress", "blocked", "complete"];
 export const TRANSITION_CHECK_STATUSES = ["not_checked", "checking", "passed", "failed", "unable", "needs_recheck"];
@@ -36,7 +37,7 @@ export function transitionYearChoices(configured, saved, current) {
 // Only known earlier guides can migrate. Validate them first;
 // changed instructions require fresh confirmation, while retaining blocked work.
 export function migrateProgress(value, year, steps, checks) {
-  if (!["officer-transition-guide-2", "officer-transition-guide-3"].includes(value?.guideVersion)) return parseProgress(value, year, steps, checks);
+  if (!TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(value?.guideVersion)) return parseProgress(value, year, steps, checks);
   const next = parseProgress({ ...value, guideVersion: TRANSITION_GUIDE_VERSION }, year, steps, checks);
   for (const id of Object.keys(next.steps)) if (next.steps[id] === "complete") next.steps[id] = "in_progress";
   for (const id of Object.keys(next.checks)) if (next.checks[id] === "passed") next.checks[id] = "needs_recheck";

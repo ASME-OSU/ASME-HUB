@@ -7,7 +7,7 @@ funding, event bookings, public fields, activation or retention.
 
 The coordinator keeps exact resource IDs, named holders, evidence and snapshots
 in the private handoff tracker. The public examples here use resource labels.
-Resolve those labels against the private resource inventory before working.
+Ask the coordinator for the private list of this year’s files. Match each example label to the correct file link before editing; save the Treasurer, Points maintainer and settings editor contacts there.
 
 The chosen reporting convention is **August 1–July 31**, with **Fall August–
 December, Spring January–May and Summer June–July**. For 2027–2028, the Budget
@@ -19,7 +19,7 @@ reporting rule, not confirmation of the fictional event dates or room bookings.
 
 ## T09: distinguish the funding plan from transactions and legacy totals
 
-Open the private Budget Tracker, then **Funding Setup**. The current authority
+Open the private Budget Tracker, then **Funding Setup**. **Funding authority** means the amount the chapter is approved to spend; it is separate from the account balance. The funding approval
 status is `B12`; the confirmed allocation and remaining allocation are `B14` and
 `B15`. These cells calculate; do not type into them. In the separate Budget Export,
 read `Budget_Public` rows by `metric_key`, including `funding_model_status`,
@@ -63,11 +63,11 @@ not evidence.
 
 | Input / review | Editable location | Evidence to obtain |
 |---|---|---|
-| OSU allocation, reserve, unpaid commitments | Funding Setup B5:D5 | Actual approved allocation; reserve decision; itemized outstanding commitments with no double counting |
-| Huntington allocation, reserve, unpaid commitments | Funding Setup B6:D6 | Actual approved allocation; reserve decision; outstanding commitments and their account |
-| OSU restrictions, or confirmed None | Funding Setup B8 | Applicable allocation terms; verify each intended category/spend is permitted |
+| OSU allocation, reserve, unpaid commitments | Funding Setup B5:D5 | Approved amount available: dated allocation award/approval notice. Money set aside: approved reserve decision. Unpaid obligations: itemized approved orders/invoices not yet paid, without double counting |
+| Huntington allocation, reserve, unpaid commitments | Funding Setup B6:D6 | Chapter-approved bank-funded annual plan; approved reserve decision; itemized unpaid orders/invoices assigned to that account |
+| OSU restrictions, or confirmed None | Funding Setup B8 | Spending restrictions: allocation terms or written funding-office confirmation; check that each intended category/spend is permitted |
 | Fourteen category amounts per account | Category Budgets B5:C18 | Reviewed annual category plan; justification for each amount, including every retained zero |
-| Opening balances | Existing authorized ledger/account reconciliation, not these six funding cells | Dated opening balance and reconciliation evidence; keep account details private; do not substitute balance for allocation |
+| Opening balances | Existing authorized ledger/account reconciliation, not these six funding cells | Starting balances: dated account statement and reconciled ledger with outstanding items. Keep account details private; do not substitute balance for allocation |
 | Review and approval | Private approval record, then Funding Setup B10 | Treasurer review and the chapter's actual required financial approval; do not invent approvers or dates |
 
 There are **six** funding dollar inputs in B5:D6 and **28** category inputs in
@@ -85,7 +85,13 @@ uncheck B10 and repeat the review. Old **Setup & Lists** funding cells and the
 hidden **Budgets** tab are compatibility outputs, not funding-entry locations.
 
 Finally compare the tracker, export and Hub. Record actual values and refresh
-times. A private import authorization or spreadsheet readback does not establish
+times. Connected exports can lag behind a completed review. If the tracker says
+Confirmed but the export still shows earlier figures, leave the reviewed inputs
+and B10 unchanged while the import refreshes; reopen the export and compare the
+funding status, plan, expenses and remaining amount. Do not redo approval just to
+force a refresh. If it remains stale or errors, ask the Treasurer and maintainer
+to check the import source, authorization and errors and record the unresolved
+check. Verify the Hub only after the export agrees. A private import authorization or spreadsheet readback does not establish
 a successful public Hub display. See the [funding workflow](../../README.md#funding-authority-confirmation-workflow).
 
 ## T10: four states with different effects
@@ -95,7 +101,7 @@ a successful public Hub display. See the [funding workflow](../../README.md#fund
 | 1. Device draft | Save new-year links or preview in the Hub | Browser/device state only | Export/import on the intended second device; review target year and links |
 | 2. Google saved draft | Verify actual resources and save an inactive/noncurrent row through the authorized Google page, or use the documented direct editor route | A Google row exists; year stays out of normal selector and is not default | Google save/readback receipt, exact A:T row, Compare with Google |
 | 3. Visible year | Authorized editor sets `is_active=TRUE` after approved review | Eligible for normal year selection; `is_current=FALSE` keeps existing default | Fresh source read and fresh Hub selector check; independent consumers remain separate |
-| 4. Current year | Authorized activation sets target `is_current=TRUE`, with `is_active=TRUE`, and outgoing `is_current=FALSE` | Target becomes default; exactly one current active row | Both rows, invariant, fresh Hub and every required consumer check |
+| 4. Current year | Authorized activation sets target `is_current=TRUE`, with `is_active=TRUE`, and outgoing `is_current=FALSE` | Target becomes default; exactly one current active row | Reopen both Google rows: exactly one active year must be current. Reopen the Hub, website and other tools using these settings and check each result |
 
 The transition guide can select a target for preparation even when the normal
 year selector hides its inactive row. Importing a Google save file, opening a
@@ -106,6 +112,28 @@ After an uncertain save, preserve the journal and verify the **same** draft to
 reconcile what Google already contains. Do not create another year row or change
 current flags as a diagnostic step. See the [annual-save contract](../../integrations/apps-script/ANNUAL_SETTINGS_DRAFT.md)
 and [readback/recovery rules](../../integrations/apps-script/SETTINGS_WRITE_CONTRACT.md).
+
+### Normal save and the direct Google editor route
+
+The coordinator names **one settings editor** in the private handoff. That editor
+normally uses **Year Settings → Open authorized annual save**, signs in with the
+chapter Google account, chooses **Verify with Google**, reviews the full public
+row, then chooses **Save inactive year and confirm**. After saving, use **Compare
+with Google** and reopen the Control Center to compare all twenty columns A
+through T with the intended values. Record the observation privately.
+
+If that page is unavailable or an existing row needs reconciliation, the named
+settings editor uses **Year Settings → Edit shared settings** to open the chapter
+Control Center's `Hub_Settings_Public` tab. Review the headers and latest rows,
+coordinate with other editors, and preserve a private before-state. Add or amend
+only the approved target row in the exact column order below; keep K
+`is_active=FALSE` and L `is_current=FALSE`, preserve the outgoing/current row,
+and keep private notes out of this public sheet. Reopen it after saving and
+compare A:T plus the outgoing flags; confirm one row per academic-year key.
+A maintainer reviews uncertainty, conflicting values, duplicate rows or a
+changed schema before retrying. Routine officers do not activate a year while
+saving its draft. The direct route is for the named authorized editor, not a
+second concurrent writer.
 
 ### Worked twenty-column row
 
@@ -176,15 +204,39 @@ receipts. It does not change the tracker A04/C03 status:
 | next_action | Obtain actual funding evidence; review all zeros; verify actual tracker/export/Hub and consumer restore; repeat for final target-year files |
 
 Configuration and readback have narrower scope than the full operating loop.
-The mock Form delivery/scoring/duplicate/unmatched cases were **NOT RUN**; populated
-TESTING/PAUSED public suppression was **NOT VERIFIED**; newsletter transfer,
-target-year phone checks and successor acceptance were **NOT RUN**. Do not fill
+In that **October 3** mock, Form delivery/scoring/duplicate/unmatched cases were **NOT RUN**, and populated TESTING/PAUSED suppression was **NOT VERIFIED**. The separate October 4 round-2 Form check observed ordinary scoring and private populated suppression, and found a profile-recovery failure before repair; see the dated results in the [Points guide](annual-points-setup.md#dated-rehearsal-results). Newsletter transfer has its own dated evidence. Actual target-year phone checks and successor acceptance remain separate unverified annual checks. Do not fill
 their PASS cells using the finance record. A record can be complete while its
 gate remains open.
 
-Before T15, reconcile every required guide check with its V01–V11 gate and tracker
-row. If an automation is optional, record the manual verified route and reason;
+Before T15, use the mapping below to match every required guide check with the coordinator’s launch gates and private tracker row. If an automation is optional, record the manual verified route and reason;
 required FAILED, stale, conflicting or unverified checks block activation.
+
+### Guide checks and the coordinator's launch checklist
+
+Officers use the Hub's **V01–V10** checks. The coordinator uses the broader
+**V01–V11** launch checklist in the private handoff/readiness record. The first
+ten IDs refer to the corresponding topics below, but launch requires current
+evidence from the actual annual files and tools, not only a Hub progress mark.
+
+| Hub guide check | Coordinator launch topic |
+|---|---|
+| V01 | Approved clean originals and intended annual copies, scripts and integrations |
+| V02 | Exact Form destination, response tab and twelve headers |
+| V03 | Actual delivered submission in the intended annual file |
+| V04 | Points, duplicates, unmatched identities and profile recovery |
+| V05 | Public field approval and complete signed-out/privacy checks, including snapshots/caches |
+| V06 | Actual funding evidence, tracker/export figures and approved Hub output |
+| V07 | Google saved row, public audience review, fresh values and settings flags |
+| V08 | Calendar sources and correct events/time zones in every required tool |
+| V09 | Approved published website/CMS/pages, links and phone checks |
+| V10 | Incoming officers perform their normal tasks in each required service |
+| No additional Hub checkbox | V11: incoming coordinator exports/resumes progress and links in another browser/device, and demonstrates safe recovery from an uncertain operation |
+
+Before changing the current year, the coordinator also records the actual
+handoff/intake decision and captures a fresh production snapshot and rollback
+record. Use the [ordered launch](#t15-ordered-launch-and-intake-example) and
+[rollback inventory](#rollback-inventory) below; these are launch prerequisites,
+not extra checkboxes that activate the year automatically.
 
 ## T15: ordered launch and intake example
 
@@ -267,8 +319,42 @@ authorized decision.
 | Mock evidence, screenshots, receipts and local drafts | Coordinator | Keep rehearsal evidence separate from actual acceptance; record retain/archive/dispose decision and owner; do not publish private payloads |
 | Shared private tracker and unresolved decisions | Incoming coordinator | Assign each open action, next step and due date; successor demonstrates resuming work from the inventory |
 
-For the October mock, three fictional finance rows were retained as a worked
-example, no Form responses existed to clean, production settings were unchanged,
+### Test cleanup checklist for the Points maintainer
+
+The coordinator approves **retain as evidence** or **remove** for each marked
+test record. Keep failure reproductions and receipts while they are needed for
+repair; do not interpret “cleanup” as permission to erase them.
+
+1. Close the copied Form's **Responses → Accepting responses** control and keep
+   Points TESTING/PAUSED. Save a named spreadsheet version and a private response
+   backup before any approved removal. Inventory each fictional identity,
+   timestamp, event, Form response and linked response-sheet row; distinguish
+   these from all real submissions.
+2. If approved for removal, the maintainer opens **Responses → Individual** in
+   the exact copied Form, matches the marked test submission and removes that
+   individual response. Never use **Delete all responses** when any real response
+   or retained test exists. Form deletion and spreadsheet cleanup are separate;
+   check the linked sheet rather than assuming one removed the other.
+3. In the actual linked response tab, match the same test marker/timestamp/event
+   and clear only that raw response's A:L data cells, preserving row 1 headers,
+   the response-tab structure and every calculated-sheet formula. Do not delete
+   Roster, Point Log, Member Totals or Review Queue formula rows. Confirm the
+   Form remains linked and compare the remaining raw responses with the Form.
+4. Review separately any approved test Adjustments and test Events inputs;
+   clear only identified removable inputs after checking dependencies and
+   historical event IDs. Keep all real member history and existing formulas.
+5. Reopen the calculated Roster, Point Log, private Member Totals, Review Queue,
+   each public export and any generated feed/snapshot after refresh. Verify the
+   removed test contributes no profile, points, review item or public output.
+   Record actual remaining response/test counts and retained evidence. If output
+   persists, keep intake closed and investigate the source/import/cache before
+   declaring cleanup complete.
+6. The Points officer checks the recorded result and the coordinator records
+   final status, intake state, retained test evidence and cleanup owner in the
+   private handoff. A clean mock does not prove that real annual intake works.
+
+For the **October 3** mock, three fictional finance rows were retained as a worked
+example and no Form responses existed to clean. The **October 4 round-2** Form check retained five marked fictional responses as recovery evidence and closed intake. Production settings were unchanged,
 and no real campaign or website update occurred. This describes rehearsal
 closeout, not successor acceptance. Actual archive/cleanup/retention approval,
 incoming access, launch, intake and consumer recovery remain

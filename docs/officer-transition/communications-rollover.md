@@ -1,16 +1,52 @@
 # Calendar, newsletter and public-page rollover
 
-Use this with Hub steps T11–T13. The webmaster owns source/deployment changes;
-the calendar owner confirms schedules; the communications officer owns the
-editable newsletter; the President and corporate liaison confirm board and
-sponsor facts. Record their decisions and evidence in the private annual handoff.
+Use this with Hub steps T11–T13. Ask the transition coordinator to record the
+actual people responsible for communications, the calendar and website in the
+private handoff checklist. A role listed here does not appoint a new officer.
 
-This is a source-checked procedure as of October 3, 2026. Production is
-2026–2027. A 2027–2028 example below is preparation, not an approved schedule,
-board, sponsor renewal, publication or send. Follow the chapter's approved
-launch record in [Finance, settings and launch](finance-settings-launch.md).
+## Officer route: start here
 
-## T11: the actual shared-link editor
+1. **T11 — shared tool links:** open the Hub and click the Newsletter Builder,
+   career guide and chapter website cards. If a destination needs changing,
+   give the Webmaster the old link, proposed link and reason. The Webmaster
+   updates the shared Hub links using [the source instructions below](#webmaster-t11-shared-tool-links).
+   Year-specific links are handled in T10; personal links change only your browser.
+2. **T12 — calendar:** ask the calendar owner to confirm reuse of the existing
+   calendar. Reuse keeps members' subscriptions. Have the event owner confirm
+   each date, Eastern time, room and description before adding it. Ask the
+   Points officer to set attendance rules separately; an academic date on the
+   calendar earns no automatic attendance credit.
+3. **T12 — newsletter:** open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/)
+   and follow [the editable handoff checklist](#t12-transfer-the-editable-newsletter-correctly).
+   Export and verify an untouched backup before editing. A new tab shares this
+   browser's saved draft, templates and defaults; use a separate browser profile
+   for the incoming officer's transfer and New Issue check.
+4. **T13 — public pages:** collect the approved board, event and sponsor facts
+   in the private handoff. Give them to the Webmaster for a private page preview,
+   then follow the approved publication decision. Record missing facts as PENDING.
+   Keep the currently accurate public content until its replacement is approved.
+5. **Before launch:** each tool's owner records what they checked, the actual
+   result, time, evidence and recovery copy. The coordinator reviews these checks
+   using [Finance, settings and launch](finance-settings-launch.md). Saving a
+   draft, a readiness percentage or a Hub checkmark does not approve a send or launch.
+
+## Dated evidence and current responsibilities
+
+The source map below was reviewed October 3, 2026. Production was 2026–2027;
+2027–2028 examples are private preparation with fictional or pending facts.
+Before a real handoff, confirm the current year and source versions again.
+The earlier isolated newsletter rehearsal passed draft/template transfer,
+organization defaults, New Issue, reload and previews. The separate October 4
+round 2 rehearsal proved only same-browser editable draft restoration: the
+restored export's complete issue state matched its untouched backup. Round 2
+cross-profile transfer/defaults/New Issue, template merge, future mobile/dark
+preview, Check Links, calendar propagation and publication were **NOT RUN**.
+The original draft was restored; defaults and the template library were unchanged;
+two recoverable rehearsal revision snapshots remained. These dated rehearsals
+do not complete the actual incoming officer's acceptance or authorize a send.
+Keep the exact exports and findings in the private handoff.
+
+## Webmaster T11: shared tool links
 
 The Hub's `sharedResources` Google source is **unconnected**: its
 `spreadsheetUrl`, `sheetTab` and `editUrl` are empty. There is currently no
@@ -30,8 +66,8 @@ the reviewed year row. A personal browser link changes only that browser.
 For a shared-launcher change, run the Hub's `npm run check` and `npm test`, review
 the diff, and use the normal authorized GitHub merge/deployment route.
 `.github/workflows/pages.yml` deploys main after checks and calendar sync.
-Check the effective card in a fresh session with personal overrides absent,
-then open its intended destination. Restore the old source value and redeploy
+Open the Hub in a separate browser profile where no personal links have been
+added. Click the changed shared tool card and confirm its destination. Restore the old source value and redeploy
 if the shared destination fails. A local edited file has not updated the live Hub.
 
 ## T12: decide whether to reuse the calendar
@@ -59,7 +95,13 @@ different from a secret iCal address; never publish the secret address. The
 calendar page URL used by the Hub remains the human-facing chapter webpage.
 Keep the calendar's time zone and each timed event in **America/New_York**.
 
-The inspected public ID is
+### Webmaster: calendar sources and update routes
+
+A **feed** is a saved event list that another tool downloads; a **workflow** is
+the GitHub job that creates and publishes that list. The calendar owner confirms
+events; the Webmaster checks these source/update routes.
+
+The October 3 inspected public ID was
 `c93730cdacb567b0f010d1367080e3028ec5c7657d9713b675ac9e5c437b9fba@group.calendar.google.com`.
 Verify it again in the owner account before a real transition.
 
@@ -108,7 +150,7 @@ May 31/June 1 semester boundaries using the selected policy; May remains Spring.
 For the real calendar use existing approved events as comparison evidence;
 record the feed generation timestamp, consumer URL, observed fields and reviewer.
 
-### Refresh and stale-feed decisions
+### Webmaster: refresh and stale-feed decisions
 
 | Consumer | Scheduled generation | Officer confirmation |
 |---|---|---|
@@ -136,8 +178,9 @@ still differs, record FAIL/BLOCKED with the owner and preserve the previous
 source/content until repaired. Do not pass the check because the iframe updated
 while cards or newsletter stayed stale. A launch requires a successful calendar
 read **after** the relevant edit and observed matching output, even within 90
-minutes. If the edit changes serialized event fields, verify the changed feed
-and its new generation timestamp; a successful unchanged-content result cannot
+minutes. If an edit changes an event title, date, time or other published details, check
+those details in the published calendar data and each tool, including the changed
+feed and its new generation timestamp; a successful unchanged-content result cannot
 prove that a missing changed event propagated.
 
 ## T12: transfer the editable newsletter correctly
@@ -148,21 +191,31 @@ establish these separate scopes:
 
 | Control/file | Contains | Does not transfer |
 |---|---|---|
-| **Templates → Export Draft .json** / **Import Draft .json**; `asme-newsletter-draft.json` | Versioned editable issue: events and calendar provenance, enabled sections, appearance, featured/announcement content, quick links, issue text, footer, logos/social URLs, unsubscribe, subject and preheader | Saved organization-default record, custom template library, previous-draft/revision history, auto-sort/editor preferences, Brevo login/lists/campaigns |
+| **Templates → Export Draft .json** / **Import Draft .json**; `asme-newsletter-draft.json` | Versioned editable issue: events and the calendar-source information saved with them, enabled sections, appearance, featured/announcement content, quick links, issue text, footer, logos/social URLs, unsubscribe, subject and inbox preview text (preheader) | Saved organization-default record, custom template library, previous-draft/revision history, auto-sort/editor preferences, Brevo login/lists/campaigns |
 | **Templates → Export .json** / **Import .json**; `asme-newsletter-templates.json` | Array of user-saved templates with name, saved date and issue state | Current unsaved issue, saved organization-default record, revisions/preferences or Brevo configuration. Import merges into the incoming library and replaces templates with the same name. |
 | **Settings → Save as Defaults** | Saves current branding/footer/three quick links/social URLs and unsubscribe field for future new issues in **that browser** | No exported file or cross-browser sync. The outgoing browser's defaults are not automatically installed by draft import. |
 | **Restore ASME Defaults** | Resets and saves bundled official starting fields on this browser | Does not recover the outgoing officer's reviewed chapter defaults; bundled footer still needs address confirmation. |
 | HTML download / **Copy HTML for Brevo** | Rendered email HTML | Editable builder project or saved defaults/templates; preview/readiness does not establish a sent email result. |
 
-1. Preserve the outgoing current issue with **Export Draft .json** and the
-   custom library with **Export .json** if used. Save dated, distinct filenames
-   in the annual Communications folder; keep an untouched backup. Never use
+1. Open **Templates → Export Draft .json** for the current issue. If the custom
+   template library is used, also choose **Export .json** for that library.
+   Find each file in your browser Downloads list and confirm it exists and is
+   not empty. Open the draft JSON as text: it should identify
+   `asme-newsletter-draft`, show an export date (`exportedAt`) and include the
+   expected issue under `state`. The library file is a list of saved templates.
+   Save dated, distinct filenames in the annual Communications folder and keep
+   an untouched backup. If the download indicator times out, inspect Downloads
+   before retrying; a file may have downloaded successfully. Ask the Webmaster
+   to inspect any unreadable file before overwriting a draft. Never use
    **Clear Saved Draft** as the first handoff action.
-2. In a separate browser/profile, export any existing incoming draft before
+2. In a separate browser/profile (not another tab), export and verify any
+   existing incoming draft before
    **Import Draft .json**. Import the issue file; confirm the actual subject,
-   preheader, issue date, each event/featured section, signature, three quick
+   inbox preview text (preheader), issue date, each event/featured section, signature, three quick
    links, logos, footer/address, social destinations and `{{ unsubscribe }}`.
-   Compare them with the outgoing file/UI, not just the import-success alert.
+   Compare them with the outgoing file and visible editor. Dismiss any import
+   success alert, then export the imported issue and compare the saved fields.
+   A success alert alone does not verify that the correct issue was imported.
 3. Import the templates file separately if needed. Before doing so, compare
    names and preserve incoming templates that would be replaced. Open each
    required saved template and review its carryover content.
@@ -177,23 +230,29 @@ establish these separate scopes:
    re-import the verified issue. Reopen/reload to check persistence. Record
    exact file, browser/profile, comparison fields, time and result privately.
 6. Review Desktop, Mobile and Email dark mode previews; run **Check Links** and
-   open any “Could not verify” destinations manually. Brevo sender, approved
-   recipient/list and mailing address are separate decisions. Obtain the
-   sending officer's authorization for any actual test email or campaign.
+   open any “Could not verify” destinations manually. The readiness score checks
+   selected content fields; it cannot verify approved facts, sender, recipient
+   list or send permission. The communications officer must obtain the actual
+   approved mailing address, sender and recipient list and record who approves
+   sending. Leave these PENDING until confirmed; obtain authorization for any
+   actual test email or campaign.
 
 Before using a starter or saved template, inspect **Events**, **Featured**,
 **Announce**, **Links**, **Design** and **Settings**. Replace old May/June sample
 events, outdated issue text and outgoing-year President signature. Confirm every
-employer benefit, room, RSVP destination, sponsor statement and image. Starting
+employer benefit, room, RSVP destination, sponsor statement and image. Review
+disabled sections too: switching a section Off hides it from the email but keeps
+its old fields in the editable export. Recheck them before turning it On. Starting
 a new issue still creates a placeholder event; remove or replace it. Keep the
 unsubscribe field exactly `{{ unsubscribe }}` and obtain a verified mailing
 address; the bundled city/organization text is not confirmation of a full address.
 
-Source inspection verifies transfer scope, not this chapter's completed
-cross-browser transfer. Record that actual transfer and new-issue test as NOT
-RUN until performed. No email was sent while creating this procedure.
+Source inspection explains transfer scope. Record the actual incoming
+officer's cross-profile transfer and New Issue/defaults check as **NOT RUN** until
+performed, even where the earlier isolated rehearsal passed. No email was sent
+in either documented rehearsal.
 
-## T13: exact public-page source and deployment map
+## Webmaster T13: public-page source and publication map
 
 Website sources live in
 [ASME-OSU-Website](https://github.com/ASME-OSU/ASME-OSU-Website).
@@ -207,7 +266,7 @@ WordPress can insert extra paragraphs/breaks into otherwise correct source.
 |---|---|---|
 | [Leadership](https://org.osu.edu/asme/leadership/) | `Leadership Page.html`: `.lb-current-year`, `.lb-year-tabs`, `.lb-year-panel` | Paste reviewed block into Leadership. Verify incoming cards plus outgoing archive and every prior archive tab on desktop/phone. |
 | [Calendar](https://org.osu.edu/asme/calendar/) | `Calendar Page.html`; source/feed map above | Paste Calendar block for label/embed changes; verify cards **and** iframe **and** subscribe route. |
-| [Member resources](https://org.osu.edu/asme/member-resources/) | `Member Resources Page.html` | Paste matching block; open Join, career and membership/points destinations. Preserve inline SVG and semantic wrappers. |
+| [Member resources](https://org.osu.edu/asme/member-resources/) | `Member Resources Page.html` | Paste matching block; open Join, career and membership/points destinations. Keep existing icons and page structure (including inline SVG and semantic HTML wrappers). |
 | [Join](https://org.osu.edu/asme/join/) | `Join Page.html`, `Join Page Integration.js` | HTML paste plus deployed script when changed; review normal Brevo/signup route. Link inspection does not prove a real signup delivery. |
 | [Member points](https://org.osu.edu/asme/member-points-page/) | `Member Points Page.html`, `Member Points Integration.js`; existing export configuration in source | Deploy JS/required footer and paste page block if changed; verify only reviewed sanitized target export and status/snapshots. No private master link goes in public source. |
 | Sponsors | `Current Sponsors Page.html`, `Sponsor ASME Page.html` | Copy only renewed/approved listings and destinations into matching WordPress pages; verify logos, benefits and inquiry links. A year change alone does not renew sponsorship. |
@@ -292,7 +351,7 @@ Keep expected result, actual result, exact source/URL, observation time, owner,
 status and next action in the private acceptance record. Optional features need
 an explicit coordinator-approved N/A reason; uncertainty is not PASS.
 
-## Source evidence and limits
+## Webmaster source evidence and limits
 
 The map was checked against the Hub checkout and read-only existing local sibling
 repositories at these revisions: Newsletter `3e252d35ad9ba2f6b54b359f45ba26c11b495f1f`,
