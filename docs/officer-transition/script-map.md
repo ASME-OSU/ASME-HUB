@@ -19,7 +19,7 @@
 | `.github/workflows/pages.yml` | Checks/tests, calendar synchronization and static Pages deployment on main or hourly schedule |
 | `.github/workflows/quality.yml` | Checks/tests on pull requests and main pushes |
 
-## New annual architecture — saved source installed; execution pending
+## New annual architecture — installed and private native rehearsal verified
 
 | Source | Intended installed location / responsibility |
 |---|---|
@@ -27,9 +27,9 @@
 | [EventSync.gs](../../integrations/apps-script/transition-simple/EventSync.gs) | Copied Points Master's bound menu: manual dropdown sync and **Enable automatic event sync** installs its chapter-authorized Events edit trigger once |
 | [SanityCheck.gs](../../integrations/apps-script/transition-simple/SanityCheck.gs) | Bound read-only **Run Pre-Flight Sanity Check**; shared helpers also included with standalone provisioner; actual scoring/export/privacy checks explicitly manual |
 
-The standalone provisioner performs initial sync only. Automatic trigger ownership stays in the copied master's bound project; do not install duplicate standalone triggers. A bound source copy is not trigger installation. The new helpers have native saved/reopened source readback: three standalone files and EventSync/SanityCheck in the canonical master’s bound project, with normalized hashes matching reviewed source. This verifies installed editor source, not annual execution or web deployment. No canonical trigger was created; the existing web deployment remains version3. Bound-menu pre-flight, chapter configuration/authorization, copied-file inheritance, automatic trigger and full provisioner/Form/import acceptance remain pending. Direct editor runSanityCheck reached SpreadsheetApp.getUi error; acceptance must use the open spreadsheet menu. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version.
+The standalone provisioner performs initial sync only. Automatic trigger ownership stays in the copied master's bound project; do not install duplicate standalone triggers. A bound source copy is not trigger installation. The three standalone helper files and canonical bound EventSync/SanityCheck sources are installed, saved and reopened with matching reviewed hashes. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Run SanityCheck from the copied spreadsheet’s ASME Tools menu; the native menu report passed 8/8. A direct standalone editor execution lacks the spreadsheet UI context. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version.
 
-Native canonical protected proxy and export Config B1 rewrites have fresh-copy evidence. The private synthetic-row proxy fixture proves calculations/suppression/cleanup, not actual Form delivery. Fresh six/35 pointer formula inheritance still requires desktop Allow access and resolved-output acceptance.
+Native canonical protected proxy and export Config B1 rewrites have fresh-copy evidence. The private synthetic-row proxy fixture proves calculations/suppression/cleanup, not actual Form delivery. The private 2030 copies also passed desktop Allow access and bounded all-tab resolved-output checks; production/public sharing and its consumers remain separate.
 
 ## Installed standalone Google project
 

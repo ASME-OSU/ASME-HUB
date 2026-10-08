@@ -78,3 +78,20 @@ test("unchanged links and unknown keys preserve progress", () => {
   assert.deepEqual(reopenAnnualChecks(prior, []), prior);
   assert.deepEqual(reopenAnnualChecks(prior, ["unknown"]), prior);
 });
+
+test("optional private mock context validates editor types and excludes canonical or conflicting files",()=>{
+ const center=sheet("mock_center_123456789012345678"),project="https://script.google.com/u/0/home/projects/mock_project_123456789012345678/edit";
+ const value={...handoff({pointsMaster:id}),mock:{controlCenterUrl:center+"#gid=0",scriptProjectUrl:project+"?foo=bar"}};
+ const checked=validateAnnualLinkDraft(value,year);assert.deepEqual(checked.mock,{controlCenterUrl:center,scriptProjectUrl:project});
+ assert.deepEqual(importAnnualLinkDraft(JSON.stringify(checked),year),checked);
+ assert.throws(()=>validateAnnualLinkDraft(value,year,{sharedSettings:{spreadsheetUrl:center}}),/separate copied/);
+ assert.throws(()=>validateAnnualLinkDraft({...value,mock:{controlCenterUrl:sheet(id)}},year),/separate copied/);
+ for(const mock of [[],{unknown:"url"},{controlCenterUrl:42},{scriptProjectUrl:"https://script.google.com/macros/s/deployment_123456789012345678/exec"},{scriptProjectUrl:"https://script.google.com.evil.test/home/projects/mock_project_123456789012345678/edit"}]) assert.throws(()=>validateAnnualLinkDraft({...value,mock},year));
+ assert.throws(()=>annualSettingsDraft(checked),/legacy annual save/);
+ assert.deepEqual(validateAnnualLinkDraft({...handoff(),mock:{controlCenterUrl:"",scriptProjectUrl:""}},year),handoff());
+});
+
+test("private mock context changes invalidate registry/access readiness",()=>{
+ const prior=completedProgress(),next=reconcileProgress(reopenAnnualChecks(prior,["controlCenterUrl"],{controlCenterUrl:sheet(id)}),TRANSITION_STEPS,TRANSITION_CHECKS);
+ assert.equal(next.steps.T01,"in_progress");assert.equal(next.steps.T02,"in_progress");assert.equal(next.steps.T05,"in_progress");assert.equal(next.checks.V07,"needs_recheck");assert.equal(next.checks.V10,"needs_recheck");
+});
