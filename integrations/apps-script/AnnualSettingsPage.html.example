@@ -17,12 +17,23 @@
 </head>
 <body><main>
   <h1>Save the new-year Hub settings</h1>
-  <p>Use the chapter account configured for annual setup. Your reviewed Hub draft appears here when you open this page from Year Settings. Choose Verify with Google to check it.</p>
+  <p>Open this service in the chapter browser profile. If Google selects a personal account, switch to the configured chapter account or open a separate chapter profile; download the draft below before changing profiles. Use the chapter account configured for annual setup. Your reviewed Hub draft appears here when you open this page from Year Settings. Choose Verify with Google to check it.</p>
   <p>Importing a draft does not save it. Verify checks the draft; Save writes an inactive, noncurrent Google row. After saving, Compare with Google in the Hub. The year stays hidden from the normal year selector until an authorized editor sets is_active; is_current separately makes it the default year. Points LIVE and opening attendance intake are separate launch actions.</p>
   <section>
     <p id="transfer-status">You can also import a Google save file downloaded from Year Settings.</p>
     <label>Hub Google save file <input id="file" type="file" accept="application/json,.json"></label>
+    <button id="download-draft" type="button" disabled>Download draft for another profile or retry</button>
     <button id="verify" type="button" disabled>Verify with Google</button>
+  </section>
+  <section>
+    <h2>Legacy fresh-copy setup — retired</h2>
+    <p>The canonical Points Master now uses the protected _Raw_Ingest proxy. These legacy setup controls are retired. The outgoing President/transition coordinator should use the chapter-private AnnualProvisioner editor entry <code>provision2027_2028()</code> for 2027–2028 after installation and one-time configuration. <a href="mailto:asme@osu.edu?subject=Annual%20transition%20setup%20handoff">Contact the chapter coordinator at asme@osu.edu</a>. Annual settings verification and inactive-year saving remain available below.</p>
+    <button id="setup-destination" type="button" disabled>Preview Form destination</button>
+    <button id="setup-workbooks" type="button" disabled>Preview workbook wiring</button>
+    <div id="setup-review" hidden><pre id="setup-details" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto"></pre>
+    <label><input id="setup-approved" type="checkbox"> I reviewed the exact changes, copied identities and private source review.</label>
+    <button id="setup-configure" type="button" disabled>Configure reviewed copies and read back</button></div>
+    <button id="download-receipt" type="button" disabled>Download private setup receipt</button>
   </section>
   <section id="review" hidden>
     <h2>Review the verified draft</h2>
@@ -38,9 +49,14 @@
 </main>
 <script>
   const byId = id => document.getElementById(id);
-  let ticket = null, busy = false, transferredSource = null;
+  let ticket = null, busy = false, transferredSource = null, retainedSource = null, setupTicket = null, setupReceipt = null;
   function controls() {
     byId('file').disabled = busy;
+    byId('download-draft').disabled = busy || !retainedSource;
+    byId('setup-destination').disabled = true;
+    byId('setup-workbooks').disabled = true;
+    byId('setup-configure').disabled = true;
+    byId('download-receipt').disabled = busy || !setupReceipt;
     byId('verify').disabled = busy || (!transferredSource && !byId('file').files.length);
     byId('save').disabled = busy || !ticket || !byId('public-review').checked || !byId('note').value.trim();
   }
@@ -52,21 +68,37 @@
     byId('note').value = '';
     controls();
   }
-  function fail(error) {
-    busy = false; clearReview();
-    byId('status').textContent = 'Google could not confirm the operation: ' + error.message + ' Keep any private journal intact. After an uncertain save, verify the same file again to reconcile its readback.';
+  function fail(error, stage = 'verify') {
+    busy = false;
+    const message = error && error.message ? error.message : String(error);
+    const rejected = /expired|replaced|account|configuration changed|resources changed|public row|mismatch|baseline|Unknown prior append|differs|approval/i.test(message);
+    if (stage !== 'save' || rejected) clearReview();
+    byId('status').textContent = (stage === 'save' && !rejected ? 'Save confirmation is uncertain. Keep this draft and private journal. Choose Save again with this same review to reconcile Google and the ledger before any append. ' : 'Google rejected or could not verify this operation. ') + message + (rejected ? ' Download the retained draft, correct the stated issue, then verify it again.' : ' If the ticket expires, verify the same draft again; do not change its values to bypass recovery.');
     controls();
   }
-  byId('file').addEventListener('change', () => { transferredSource = null; clearReview(); byId('transfer-status').textContent = 'Using the selected file.'; byId('status').textContent = 'Ready to verify the selected file.'; });
+  function download(name, source) {
+    const url = URL.createObjectURL(new Blob([source], {type:'application/json'}));
+    const link = document.createElement('a'); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+  }
+  byId('download-draft').addEventListener('click', () => download('asme-annual-settings-input.json', retainedSource));
+  byId('download-receipt').addEventListener('click', () => download('asme-private-setup-receipt.json', JSON.stringify(setupReceipt, null, 2)));
+  byId('setup-approved').addEventListener('change', controls);
+  function retiredSetup() { byId('status').textContent = 'Legacy fresh-copy setup is retired for proxy masters. Ask the chapter coordinator to use AnnualProvisioner after installation.'; }
+  byId('setup-destination').addEventListener('click', retiredSetup);
+  byId('setup-workbooks').addEventListener('click', retiredSetup);
+  byId('setup-configure').addEventListener('click', retiredSetup);
+  byId('file').addEventListener('change', () => { transferredSource = null; retainedSource = null; clearReview(); byId('transfer-status').textContent = 'Using the selected file.'; byId('status').textContent = 'Ready to verify the selected file.'; });
   byId('public-review').addEventListener('change', controls);
   byId('note').addEventListener('input', controls);
   byId('verify').addEventListener('click', async () => {
+    if (busy) return;
     clearReview(); busy = true; controls(); byId('status').textContent = 'Checking the configured annual resources with Google…';
     try {
       const file = byId('file').files[0];
       if (file && file.size > 16000) throw new Error('Choose a file under 16 KB.');
       const source = file ? await file.text() : transferredSource;
       if (!source || new TextEncoder().encode(source).length > 16000) throw new Error('Choose a draft under 16 KB.');
+      retainedSource = source;
       google.script.run.withSuccessHandler(result => {
         const preview = result.preview;
         ticket = result.ticket;
@@ -75,18 +107,19 @@
           [header, String(preview.row[index])].forEach(value => { const td = document.createElement('td'); td.textContent = value; tr.append(td); });
           byId('row').append(tr);
         });
-        byId('summary').textContent = 'New year: ' + preview.year + '. Current Hub year: ' + preview.currentYear + '. The new row will be inactive and noncurrent.';
+        byId('summary').textContent = 'New year: ' + preview.year + '. Current Hub year: ' + preview.currentYear + '. The new row will be inactive and noncurrent. Configured draft timestamp: ' + result.draftTimestamp + '. Verified: ' + result.verifiedAt + '. Expires: ' + result.expiresAt + '.';
         byId('review').hidden = false; busy = false; controls();
         byId('status').textContent = 'Google verification passed. Review the exact row before saving.';
       }).withFailureHandler(fail).previewAnnualSettingsWeb(source);
     } catch (error) { fail(error); }
   });
   byId('save').addEventListener('click', () => {
+    if (busy || !ticket || !byId('public-review').checked || !byId('note').value.trim()) return;
     busy = true; controls(); byId('status').textContent = 'Saving the inactive draft and checking Google readback…';
     google.script.run.withSuccessHandler(result => {
       clearReview(); busy = false; controls();
-      byId('status').textContent = 'Saved ' + result.year + ' and confirmed every value in Google at ' + result.checkedAt + '. The year remains inactive and noncurrent. Return to the Hub, compare with Google and complete the remaining guide checks.';
-    }).withFailureHandler(fail).saveAnnualSettingsWeb(ticket, byId('public-review').checked, byId('note').value);
+      byId('status').textContent = 'Saved ' + result.year + ' and confirmed every value in Google at ' + result.checkedAt + '. First confirmed: ' + (result.firstConfirmedAt || result.checkedAt) + '. Configured draft timestamp: ' + result.draftTimestamp + '. The year remains inactive and noncurrent. Return to the Hub, compare with Google and complete the remaining guide checks.';
+    }).withFailureHandler(error => fail(error, 'save')).saveAnnualSettingsWeb(ticket, byId('public-review').checked, byId('note').value);
   });
   // The draft fragment is input only. Loading the page never verifies or writes.
   google.script.url.getLocation(location => {
@@ -97,7 +130,7 @@
       if (new TextEncoder().encode(source).length > 16000) throw new Error('The transferred draft exceeds 16 KB.');
       const input = JSON.parse(source);
       if (input.schema !== 1 || input.type !== 'asme-annual-settings-input') throw new Error('Unrecognized Hub draft format.');
-      transferredSource = source;
+      transferredSource = source; retainedSource = source;
       byId('transfer-status').textContent = 'Hub draft received for ' + input.handoff.year + '. No Google settings have been saved.';
       byId('status').textContent = 'Ready. Choose Verify with Google.';
       controls();

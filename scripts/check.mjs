@@ -43,6 +43,9 @@ for (const path of [
 }
 
 for (const path of [
+  "integrations/apps-script/transition-simple/AnnualProvisioner.gs",
+  "integrations/apps-script/transition-simple/EventSync.gs",
+  "integrations/apps-script/transition-simple/SanityCheck.gs",
   "integrations/apps-script/Code.gs.example",
   "integrations/apps-script/SettingsWriter.gs.example",
   "integrations/apps-script/FormDestinationValidator.gs.example",

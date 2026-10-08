@@ -1,156 +1,25 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import { TRANSITION_CHECKS, TRANSITION_STEPS } from "../assets/js/transition-steps.js";
-import { emptyProgress, exportProgress, importProgress, parseProgress, reconcileProgress, storageKey } from "../assets/js/transition-state.js";
-
-const year = "2027-2028";
-const read = (value, selected = year) => parseProgress(value, selected, TRANSITION_STEPS, TRANSITION_CHECKS);
-const restore = (text, selected = year) => importProgress(text, selected, TRANSITION_STEPS, TRANSITION_CHECKS);
-
-test("year keys isolate progress and export contains only bounded status data", () => {
-  assert.notEqual(storageKey(year), storageKey("2028-2029"));
-  const progress = { ...emptyProgress(year), savedAt: "2026-09-27T12:00:00.000Z", steps: { T01: "complete", T02: "blocked" } };
-  const text = exportProgress(progress, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.deepEqual(restore(text).steps, progress.steps);
-  assert.deepEqual(Object.keys(JSON.parse(text)).sort(), ["checks", "guideVersion", "kind", "savedAt", "steps", "version", "year"]);
-  assert.throws(() => restore(text, "2028-2029"), /different transition year/);
-});
-
-test("malformed and incompatible imports are rejected without accepting partial state", () => {
-  assert.throws(() => restore("{"), /valid JSON/);
-  const base = JSON.parse(exportProgress(emptyProgress(year), TRANSITION_STEPS, TRANSITION_CHECKS));
-  assert.throws(() => restore(JSON.stringify({ ...base, version: 2 })), /unsupported version/);
-  assert.throws(() => restore(JSON.stringify({ ...base, guideVersion: "old" })), /different guide version/);
-  assert.throws(() => restore(JSON.stringify({ ...base, steps: { T99: "complete" } })), /unknown step/);
-  assert.throws(() => restore(JSON.stringify({ ...base, checks: { V02: "automatic_pass" } })), /unknown check/);
-});
-
-test("a completed step cannot bypass prerequisites or separate manual checks", () => {
-  const base = emptyProgress(year);
-  assert.throws(() => read({ ...base, steps: { T08: "complete" } }), /incomplete prerequisite/);
-  assert.throws(() => read({ ...base, steps: { T01: "complete", T03: "complete" } }), /unchecked manual check/);
-  assert.deepEqual(read({ ...base, steps: { T01: "complete", T03: "complete" }, checks: { V01: "passed" } }).steps,
-    { T01: "complete", T03: "complete" });
-});
-
-test("revoking an upstream step invalidates dependent completion and passed checks", () => {
-  const previous = {
-    ...emptyProgress(year),
-    steps: { T01: "complete", T02: "complete", T04: "complete" },
-    checks: { V10: "passed" },
-  };
-  const changed = reconcileProgress({ ...previous, steps: { ...previous.steps, T01: "in_progress" } }, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(changed.steps.T02, "in_progress");
-  assert.equal(changed.steps.T04, "in_progress");
-  assert.equal(changed.checks.V10, "needs_recheck");
-  assert.equal(previous.checks.V10, "passed");
-});
-
-test("checks in drafted steps also become stale when prerequisites are reopened", () => {
-  const progress = { ...emptyProgress(year), steps: { T01: "in_progress", T02: "in_progress" }, checks: { V10: "passed" } };
-  assert.throws(() => read(progress), /incomplete prerequisite/);
-  const repaired = reconcileProgress(progress, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(repaired.checks.V10, "needs_recheck");
-  assert.equal(read(repaired).checks.V10, "needs_recheck");
-});
-
-test("transition start years are constrained, consecutive, and support distant future years", async () => {
-  const { transitionYear, transitionYearChoices, validTransitionYear } = await import("../assets/js/transition-state.js");
-  assert.equal(transitionYear(2000), "2000-2001");
-  assert.equal(transitionYear("2199"), "2199-2200");
-  assert.equal(transitionYear("2050"), "2050-2051");
-  for (const value of ["", 1999, 2200, "2027.5", "2027-2028", "2e3", "NaN"]) {
-    assert.throws(() => transitionYear(value), /whole starting year/);
-  }
-  for (const value of ["1999-2000", "2200-2201", "2027-2029", "2027–2028", null]) {
-    assert.equal(validTransitionYear(value), false);
-    assert.throws(() => storageKey(value), /Invalid transition year/);
-  }
-  assert.deepEqual(transitionYearChoices(["2026-2027", "2035-2036", "bad"], ["2050-2051", "2035-2036"], "2026-2027"),
-    ["2026-2027", "2027-2028", "2035-2036", "2050-2051"]);
-  assert.deepEqual(transitionYearChoices([], [], "2199-2200"), ["2199-2200"]);
-  const future = { ...emptyProgress("2050-2051"), steps: { T01: "complete" } };
-  assert.deepEqual(restore(exportProgress(future, TRANSITION_STEPS, TRANSITION_CHECKS), "2050-2051"), future);
-  assert.throws(() => read({ ...future, year: "2050-2051" }, "2027-2028"), /different transition year/);
-});
-
-test("known prior guide progress migrates visibly to recheck without losing blocked work", async () => {
-  const { migrateProgress, TRANSITION_GUIDE_VERSION } = await import("../assets/js/transition-state.js");
-  const old = {
-    ...emptyProgress(year), guideVersion: "officer-transition-guide-2", savedAt: "2026-09-30T12:00:00.000Z",
-    steps: { T01: "complete", T02: "complete", T03: "blocked", T04: "in_progress" }, checks: { V10: "passed", V01: "unable" },
-  };
-  const migrated = migrateProgress(old, year, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(migrated.guideVersion, TRANSITION_GUIDE_VERSION);
-  assert.deepEqual(migrated.steps, { T01: "in_progress", T02: "in_progress", T03: "blocked", T04: "in_progress" });
-  assert.deepEqual(migrated.checks, { V10: "needs_recheck", V01: "unable" });
-  assert.equal(old.steps.T01, "complete");
-  assert.equal(old.checks.V10, "passed");
-  assert.equal(migrated.savedAt, old.savedAt);
-  assert.deepEqual(read(migrated), migrated);
-  const imported = restore(JSON.stringify({ ...old, kind: "asme-officer-transition-progress" }));
-  assert.deepEqual(imported, migrated);
-  assert.throws(() => migrateProgress({ ...old, year: "2028-2029" }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /different transition year/);
-  assert.throws(() => migrateProgress({ ...old, steps: { T03: "complete" } }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /incomplete prerequisite/);
-  assert.throws(() => migrateProgress({ ...old, guideVersion: "unknown" }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /different guide version/);
-});
-
-test("manual check questions and resource actions use meaningful officer language", () => {
-  assert.equal(TRANSITION_STEPS.length, 16);
-  for (const step of TRANSITION_STEPS) {
-    assert.ok(step.action.length > 50);
-    assert.ok(step.check.length > 40);
-    assert.doesNotMatch(step.check, /\bV\d{2}\b|consumer|private evidence/);
-  }
-  for (const check of TRANSITION_CHECKS) {
-    assert.ok(check.title.endsWith("?"));
-    assert.doesNotMatch(check.title, /\bV\d{2}\b|effective access|consumer|synthetic/);
-  }
-  assert.equal(TRANSITION_STEPS.find((step) => step.id === "T03").resource, "templates");
-  assert.match(TRANSITION_STEPS.find((step) => step.id === "T02").action, /ASME OSU chapter Google account/);
-});
+import test from 'node:test';import assert from 'node:assert/strict';
+import {TRANSITION_STEPS as steps,TRANSITION_CHECKS as checks} from '../assets/js/transition-steps.js';
+import {emptyProgress,createTransitionRun,parseProgress,exportProgress,importProgress,migrateProgress,launchEligibility,reconcileProgress,storageKey,progressSummary,transitionYear} from '../assets/js/transition-state.js';
+const year='2027-2028',run=(mode='rehearsal',id='a')=>emptyProgress(year,createTransitionRun(id,mode,id));
+const read=v=>parseProgress(v,year,steps,checks);
+const ready=()=>({...run('production'),steps:Object.fromEntries(steps.filter(s=>!s.launch).map(s=>[s.id,'complete'])),checks:Object.fromEntries(checks.map(c=>[c.id,'passed']))});
+test('five-step definition includes wiring, scoring, communications and cleanup without automatic activation',()=>{assert.equal(steps.length,5);assert.equal(checks.length,10);assert.match(steps[1].action,/actual response tab/);assert.match(steps[2].action,/scoring/);assert.match(steps[4].action,/NO-GO/);});
+test('same-year named mock runs isolate state and skipped reason survives export',()=>{const a={...run(),steps:{T02:'skipped'},reasons:{T02:'Mock only'}};assert.notEqual(storageKey(year,'a'),storageKey(year,'b'));assert.deepEqual(importProgress(exportProgress(a,steps,checks),year,steps,checks),a);assert.throws(()=>read({...a,reasons:{}}),/reason/);});
+test('strict production activation requires every earlier step and all checks',()=>{const p=ready();assert.equal(launchEligibility(p,steps,checks).eligible,true);assert.equal(read({...p,steps:{...p.steps,T05:'complete'}}).steps.T05,'complete');for(const id of ['T01','T02','T03','T04'])assert.throws(()=>read({...p,steps:{...p.steps,[id]:'blocked',T05:'complete'}}),/prerequisites/);assert.throws(()=>read({...p,run:run().run,steps:{...p.steps,T05:'complete'}}),/rehearsal/);});
+test('mock skip never completes launch, later communications can be reported independently',()=>{const a={...run(),steps:{T02:'skipped',T04:'complete',T05:'skipped'},checks:{V08:'passed',V09:'passed'},reasons:{T02:'Isolated mock',T05:'NO-GO'}};assert.deepEqual(read(a),a);assert.equal(launchEligibility(a,steps,checks).eligible,false);assert.equal(progressSummary(a,steps,checks).stepCounts.skipped,2);});
+test('changed prerequisite reopens dependent confirmations and activation',()=>{const p=ready();p.steps.T05='complete';const n=reconcileProgress({...p,steps:{...p.steps,T02:'blocked'}},steps,checks,p);assert.equal(n.steps.T03,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V04,'needs_recheck');assert.equal(n.checks.V10,'passed');});
+test('imported production completion requires fresh checks',()=>{const p=ready();p.steps.T05='complete';const n=importProgress(exportProgress(p,steps,checks),year,steps,checks);assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');});
+test('16-step versions2-6 migrate without changing original or carrying launch readiness',()=>{for(const v of [2,3,4,5,6]){const p={version:v===6?2:1,guideVersion:'officer-transition-guide-'+v,year,run:run().run,savedAt:null,reasons:{},notes:{},steps:{T03:'blocked',T15:'complete',T16:'complete'},checks:{V01:'unable',V10:'passed'}};const before=structuredClone(p),n=migrateProgress(p,year,steps,checks);assert.deepEqual(p,before);assert.equal(n.steps.T02,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');assert.match(n.notes.T02,/T03: blocked/);assert.deepEqual(read(n),n);assert.throws(()=>migrateProgress({...p,checks:{V99:'passed'}},year,steps,checks),/Unknown check/);}});
+test('corrupt and mismatched progress is rejected and years stay bounded',()=>{assert.throws(()=>read({...run(),steps:{T16:'complete'}}),/unknown step/);assert.throws(()=>importProgress('{',year,steps,checks),/valid JSON/);assert.throws(()=>read({...run(),notes:{T01:'x'.repeat(2001)}}),/invalid notes/);assert.equal(transitionYear('2199'),'2199-2200');assert.throws(()=>transitionYear('2200'));});
 
 
-test("mock feedback revision invalidates guide 3 confirmations and preserves the source", async () => {
-  const { migrateProgress } = await import("../assets/js/transition-state.js");
-  const original = { ...emptyProgress(year), guideVersion: "officer-transition-guide-3", steps: { T01: "complete", T02: "complete", T03: "blocked" }, checks: { V10: "passed", V01: "unable" } };
-  const migrated = migrateProgress(original, year, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(migrated.guideVersion, "officer-transition-guide-5");
-  assert.equal(migrated.steps.T01, "in_progress");
-  assert.equal(migrated.checks.V10, "needs_recheck");
-  assert.equal(migrated.steps.T03, "blocked");
-  assert.equal(migrated.checks.V01, "unable");
-  assert.equal(original.checks.V10, "passed");
-  assert.deepEqual(restore(JSON.stringify({ ...original, kind: "asme-officer-transition-progress" })), migrated);
-});
-
-
-test("round-2 recovery acceptance reopens guide 4 completion without losing unresolved work", async () => {
-  const { migrateProgress, TRANSITION_GUIDE_VERSION, TRANSITION_PREVIOUS_GUIDE_VERSIONS } = await import("../assets/js/transition-state.js");
-  const original = {
-    ...emptyProgress(year), guideVersion: "officer-transition-guide-4", savedAt: "2026-10-03T18:00:00.000Z",
-    steps: Object.fromEntries(TRANSITION_STEPS.filter(step => Number(step.id.slice(1)) <= 8).map(step => [step.id, "complete"])),
-    checks: { V01: "passed", V02: "passed", V03: "passed", V04: "passed", V05: "passed", V06: "failed", V07: "unable", V08: "checking", V09: "needs_recheck", V10: "passed" },
-  };
-  original.steps.T09 = "blocked";
-  original.steps.T10 = "in_progress";
-  const before = structuredClone(original);
-  const migrated = migrateProgress(original, year, TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(TRANSITION_GUIDE_VERSION, "officer-transition-guide-5");
-  assert.ok(TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(original.guideVersion));
-  assert.equal(migrated.steps.T08, "in_progress");
-  assert.equal(migrated.checks.V04, "needs_recheck");
-  assert.ok(Object.values(migrated.steps).every(status => status !== "complete"));
-  assert.ok(Object.values(migrated.checks).every(status => status !== "passed"));
-  assert.equal(migrated.steps.T09, "blocked");
-  assert.equal(migrated.steps.T10, "in_progress");
-  for (const id of ["V06", "V07", "V08", "V09"]) assert.equal(migrated.checks[id], original.checks[id]);
-  assert.equal(migrated.year, original.year);
-  assert.equal(migrated.savedAt, original.savedAt);
-  assert.deepEqual(original, before);
-  assert.deepEqual(read(migrated), migrated);
-  assert.deepEqual(restore(JSON.stringify({ ...original, kind: "asme-officer-transition-progress" })), migrated);
-  assert.deepEqual(restore(exportProgress(migrated, TRANSITION_STEPS, TRANSITION_CHECKS)), migrated);
-  assert.throws(() => migrateProgress({ ...original, year: "2028-2029" }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /different transition year/);
-  assert.throws(() => migrateProgress({ ...original, checks: { ...original.checks, V04: "automatic_pass" } }, year, TRANSITION_STEPS, TRANSITION_CHECKS), /unknown check/);
+test('legacy corruption is rejected before aggregation can hide it', () => {
+ const old={...run('production'),guideVersion:'officer-transition-guide-6',steps:{T16:'complete'},checks:{V10:'passed'}};
+ for(const field of ['reasons','notes'])for(const invalid of [null,[],false,''])assert.throws(()=>migrateProgress({...old,[field]:invalid},year,steps,checks),/legacy evidence/);
+ for(const run of [null,undefined,[],{id:'a',name:'A',mode:'unknown'},{name:'A',mode:'production'},{id:'a',name:'A'},{id:'a',mode:'production'}])assert.throws(()=>migrateProgress({...old,run},year,steps,checks),/run|name/);
+ for(const savedAt of [false,0,undefined,'garbage'])assert.throws(()=>migrateProgress({...old,savedAt},year,steps,checks),/save time/);
+ assert.throws(()=>migrateProgress({...old,steps:{T16:'skipped'}},year,steps,checks),/needs a reason/);
+ const missingEarlyEvidence={version:1,guideVersion:'officer-transition-guide-2',year,savedAt:null,steps:{},checks:{}};
+ assert.doesNotThrow(()=>migrateProgress(missingEarlyEvidence,year,steps,checks));
 });

@@ -1,14 +1,13 @@
 # Maintenance, records and recovery
 
-## Each annual handoff
+## Each annual handoff: five-step guide 7
 
 1. Name a coordinator and incoming maintainer. Confirm their real access to
    chapter Google, ASME-OSU GitHub and each separate officer service. Record
    recovery ownership in the private tracker; keep credentials in the authorized
    credential system.
 2. Review canonical templates, chosen year, annual folder and exact source
-   schemas/formulas. A maintainer updates the **private** verification rules,
-   exclusions, target settings workbook and separate save ledger. Pasted Hub
+   schemas/formulas. For the new local helper, the maintainer installs/read backs the three scripts, canonical protected proxy/export pointers and one-time private chapter config. The new helpers have native saved/reopened source readback: three standalone files and EventSync/SanityCheck in the canonical master’s bound project, with normalized hashes matching reviewed source. This verifies installed editor source, not annual execution or web deployment. No canonical trigger was created; the existing web deployment remains version3. Bound-menu pre-flight, chapter configuration/authorization, copied-file inheritance, automatic trigger and full provisioner/Form/import acceptance remain pending. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. The older fallback retains its separate verification rules/exclusions/ledger. Pasted Hub
    links cannot choose those trusted targets. Never connect rehearsal resources
    as the production route.
 3. Rehearse with isolated copies, closed Form and TESTING/PAUSED Points status.
@@ -47,16 +46,16 @@ organization-controlled backup.
 
 | File | Responsibility |
 |---|---|
-| `assets/js/transition-steps.js` | Canonical sixteen-step instructions and required checks |
+| `assets/js/transition-steps.js` | Canonical five-step instructions and required checks |
 | `assets/js/transition.js` | Shared step shell, numbered procedures, resource rows and existing progress/link controls |
 | `assets/js/transition-state.js` | Progress validation, prerequisites, migration and reconciliation |
 | `assets/css/transition.css` | Scoped light/dark design tokens, components and mobile layouts; follows the Hub theme |
 | `index.html`, `sw.js` | Accessible dialog/header/fixed footer and matching offline asset versions |
 
 Visual changes must preserve the manual-check states, independent draft saves,
-local-progress meaning and blocked advancement. Percent complete reflects
+local-progress meaning independent observations with incomplete prerequisites, reasoned skips and strict production T05 gating. Percent complete reflects
 completed steps, not the step currently being viewed. Use the shared stylesheet
-for all sixteen steps; do not add separate theme storage for the guide.
+for all five steps; do not add separate theme storage for the guide.
 
 ## Code and deployment changes
 
@@ -66,8 +65,7 @@ alone is not data. The Points template has one empty, unlinked **Form Responses 
 placeholder; its name preserves the reviewed processing/setup contract. Native
 copies can retain inherited Form associations, so check the actual Form
 destination rather than inferring linkage from an empty sheet or tab name.
-After linking an annual Form, retarget every response formula and Config to its
-observed tab. Remove an empty obsolete placeholder only after checking that it
+With the current proxy architecture, Config B7 points to the actual linked tab while protected _Raw_Ingest feeds stable Roster/Point Log formulas. Both exports use Config B1 for their matching private working master. Do not run annual bulk response/import replacements; one-time legacy/canonical migrations need separate maintainer review. Remove an empty obsolete placeholder only after checking that it
 is unlinked and has no remaining dependencies; preserve a before-change backup.
 
 For public changes, run `npm run check` and `npm test`, inspect the diff for
@@ -79,13 +77,15 @@ are not bundled into the Pages site.
 For Google changes, compare installed source with the reviewed snapshots,
 preserve properties/configuration and ledgers, rehearse privately and update the
 existing deployment deliberately. Confirm self-only access and accessing-user
-execution. Keep annual engines in the same project so they share its lock.
+execution. Keep the older fallback engines together for their existing locks. The new provisioner is standalone with shared helper definitions; EventSync/SanityCheck are bound to the copied master. Enable automatic event sync once from its bound menu and verify the actual chapter-owned trigger, without a duplicate standalone trigger.
 Record deployment version, source hashes and readback evidence privately.
 GitHub deployment success does not certify the Google deployment.
 
-## Failed or uncertain saves
+## Failed or uncertain provisioner runs and saves
 
-Keep the exact original input, rules and ledger. Check the Google row and recorded
+For the new provisioner, preserve the same year/config/receipt and artifact intent; reconcile that matching run rather than creating duplicates. Completed repeats verify existing identities/row without resetting records. A response-bearing copy or conflicting existing year requires maintenance review.
+
+For the older annual-save fallback, keep the exact original input, rules and ledger. Check the Google row and recorded
 intent before retrying. A matching recorded row can be reconciled by readback;
 a pending operation without its expected row blocks another append. Do not clear
 the journal, replace the target year or create a second project to force retry.
@@ -97,6 +97,8 @@ affected cells from the reviewed before-change snapshot/version history after
 reconciling other edits. Re-run fresh readback and consumer checks.
 
 ## Acceptance still required
+
+Native synthetic raw-row proxy scoring/suppression/cleanup and six/35export-pointer inheritance passed, but do not prove actual Form delivery/linking or resolved imports. New saved helper source is verified; actual copied trigger ownership, full provisioner retry, desktop Allow access, resolved/sanitized outputs, deployed ordinary-browser five-step flow and incoming-officer acceptance remain pending. Source_row indexes the filtered proxy: raw cleanup must locate timestamp/fictional identity/event independently. Official postal address and approved statistic year/definitions are still owner decisions; production remains NO-GO.
 
 The October 3, 2026 development checks do not close actual production annual
 readiness. The private tracker retains gates for exact-file intake/scoring,

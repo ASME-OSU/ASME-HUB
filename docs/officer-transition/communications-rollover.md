@@ -1,27 +1,26 @@
 # Calendar, newsletter and public-page rollover
 
-Use this with Hub steps T11–T13. Ask the transition coordinator to record the
+Use this with **T04 — Communications & Calendar**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
 actual people responsible for communications, the calendar and website in the
-private handoff checklist. A role listed here does not appoint a new officer.
+private handoff checklist. A role listed here does not appoint a new officer. Contact the outgoing President or transition coordinator through [asme@osu.edu](mailto:asme@osu.edu) to obtain the private checklist and owner contacts.
 
 ## Officer route: start here
 
-1. **T11 — shared tool links:** open the Hub and click the Newsletter Builder,
+1. **T04 — shared tool links:** open the Hub and click the Newsletter Builder,
    career guide and chapter website cards. If a destination needs changing,
-   give the Webmaster the old link, proposed link and reason. The Webmaster
-   updates the shared Hub links using [the source instructions below](#webmaster-t11-shared-tool-links).
-   Year-specific links are handled in T10; personal links change only your browser.
-2. **T12 — calendar:** ask the calendar owner to confirm reuse of the existing
+   choose Resources → Maintain shared chapter links → Edit shared resources in Google. The named authorized editor updates the reviewed stable row, waits for Google save, then chooses Refresh shared resources and checks the destination/read timestamp. Give missing-source or feed failures to the Webmaster using [the source instructions below](#webmaster-t04-shared-tool-links).
+   Year-specific links are handled in T02; personal links change only your browser.
+2. **T04 — calendar:** ask the calendar owner to confirm reuse of the existing
    calendar. Reuse keeps members' subscriptions. Have the event owner confirm
-   each date, Eastern time, room and description before adding it. Ask the
+   each date, Eastern time, room and description before adding it through the normal Google Calendar event editor. For an approved isolated rehearsal select the training calendar explicitly, keep guests empty and check the Calendar field again before Save. Ask the
    Points officer to set attendance rules separately; an academic date on the
    calendar earns no automatic attendance credit.
-3. **T12 — newsletter:** open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/)
-   and follow [the editable handoff checklist](#t12-transfer-the-editable-newsletter-correctly).
+3. **T04 — newsletter:** open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/)
+   and follow [the editable handoff checklist](#t04-transfer-the-editable-newsletter-correctly).
    Export and verify an untouched backup before editing. A new tab shares this
    browser's saved draft, templates and defaults; use a separate browser profile
    for the incoming officer's transfer and New Issue check.
-4. **T13 — public pages:** collect the approved board, event and sponsor facts
+4. **T04 — public pages:** collect the approved board, event and sponsor facts
    in the private handoff. Give them to the Webmaster for a private page preview,
    then follow the approved publication decision. Record missing facts as PENDING.
    Keep the currently accurate public content until its replacement is approved.
@@ -29,6 +28,14 @@ private handoff checklist. A role listed here does not appoint a new officer.
    result, time, evidence and recovery copy. The coordinator reviews these checks
    using [Finance, settings and launch](finance-settings-launch.md). Saving a
    draft, a readiness percentage or a Hub checkmark does not approve a send or launch.
+
+## Current V3 results and owner inputs
+
+The October 7 V3 rehearsal verified normal creation/deletion of Fall and Spring events on a private training calendar; the editor initially selected the production ASME Public calendar, so **verify the Calendar field before every Save and leave guests empty during rehearsal**. No production mock event was created. This proves event editing/cleanup, while propagation across all three consumers and target-year filtering require separate acceptance on the final implementation.
+
+The exact Spring JSON was imported into a fresh builder with matching content and editability, and its matching HTML rendered locally; the original newsletter draft was restored. Generic filenames previously referred to the original issue, so loading the intended template and verifying subject/year/event before export is required. These local results do not establish delivery in remote email clients or image coverage when disconnected. WordPress Visual editor draft save/reload/preview succeeded for an unpublished rehearsal page. Keep that route separate from actual publication approval.
+
+The official physical mailing address remains **PENDING owner confirmation**. Keep the builder’s missing-address warning, obtain the approved address from the responsible officer, enter it under Design, save approved defaults and inspect the exported HTML footer. The chapter email is not a postal address. Public membership/event/partner figures remain **PENDING approved facts**: source review found Join 466+/25+ and Sponsor 466+/25+/20+, while the dated V3 CMS observation showed Sponsor 126+/6+/5+. Reconcile the actual published surfaces, periods and definitions, or label their distinct approved bases beside each claim. Do not infer an approved replacement from these observations.
 
 ## Dated evidence and current responsibilities
 
@@ -46,31 +53,27 @@ two recoverable rehearsal revision snapshots remained. These dated rehearsals
 do not complete the actual incoming officer's acceptance or authorize a send.
 Keep the exact exports and findings in the private handoff.
 
-## Webmaster T11: shared tool links
+## Webmaster T04: shared tool links
 
-The Hub's `sharedResources` Google source is **unconnected**: its
-`spreadsheetUrl`, `sheetTab` and `editUrl` are empty. There is currently no
-officer-facing Google shared-launcher editor. The webmaster edits the
-`resources` array in [assets/js/config.js](../../assets/js/config.js), identifying
-the card by its stable `id` and changing its `url` (and outdated title/description
-when needed). Examples are `newsletter-builder`, `career-packet` and
-`chapter-website`. Save the previous value in the private handoff and review the
-patch before deployment. Do not create a new Google source merely to complete
-this step.
+The remediation config connects the chapter Control Center’s **Shared_Resources_Public** tab through the existing A:H contract, with its normal **Edit shared resources in Google** link. Release and an ordinary fresh-browser edit/refresh/restore test are still required before accepting this as the deployed routine workflow. In Resources, expand **Maintain shared chapter links**, open the editor with the authorized chapter account, preserve the latest row and a recoverable version, and coordinate changes. Keep stable IDs and headers; edit label, URL, category, comma-separated roles, order, TRUE/FALSE enabled and optional academic year. A FALSE row disables the shared item; deleting it restores its bundled fallback.
+
+Wait for Google to report saved. Choose **Refresh shared resources**, check the response read time, then click the actual changed destination and repeat in a fresh browser with no personal links. An unavailable/invalid feed shows a stale or bundled fallback; that is not proof of a successful shared change. Reconcile Google before retrying and restore only the affected row after considering other editors. Private handoff/checklist references were intentionally reviewed for this projection; their contents and access stay private, and a listed reference does not grant access. Never place passwords, member records or private notes in the public rows.
+
+The Webmaster changes [assets/js/config.js](../../assets/js/config.js) only for source connection, bundled fallback or deployment repair. Routine reviewed rows do not require a GitHub patch. If infrastructure is missing, identify the owner and requested editor/source receipt rather than calling a disabled editor connected.
 
 Annual cards with a `settingKey` get their effective URLs from the selected
 year's Google settings instead: attendance Form, Points Master, calendar,
 budget tracker/export, banking and fundraising. Keep those annual values in
 the reviewed year row. A personal browser link changes only that browser.
 
-For a shared-launcher change, run the Hub's `npm run check` and `npm test`, review
+For a source connection or bundled fallback change, run the Hub's `npm run check` and `npm test`, review
 the diff, and use the normal authorized GitHub merge/deployment route.
 `.github/workflows/pages.yml` deploys main after checks and calendar sync.
 Open the Hub in a separate browser profile where no personal links have been
 added. Click the changed shared tool card and confirm its destination. Restore the old source value and redeploy
 if the shared destination fails. A local edited file has not updated the live Hub.
 
-## T12: decide whether to reuse the calendar
+## T04: decide whether to reuse the calendar
 
 **Default preparation route: reuse the existing chapter calendar**, subject to
 the calendar owner's recorded confirmation. The public website promises
@@ -95,6 +98,12 @@ different from a secret iCal address; never publish the secret address. The
 calendar page URL used by the Hub remains the human-facing chapter webpage.
 Keep the calendar's time zone and each timed event in **America/New_York**.
 
+### Target-year preview and isolated rehearsal
+
+The repaired Newsletter Calendar UI adds **Academic year (August–July)** with a `YYYY-YYYY` value, **Preview year**, **Upcoming**, **Load fictional Fall/Spring**, **Remove fictional events**, **Refresh chapter snapshot**, **Open Calendar** and **Open event editor**. Year preview changes this browser’s calendar view only. Fictional Fall/Spring records are local fixtures, create no Google events, and are marked TEST ONLY—DO NOT SEND if imported into an issue. They do not overwrite defaults/templates; use revision recovery after an intentional draft import. Remove fictional events, then Refresh chapter snapshot to return to official published JSON while retaining the selected year. Website’s matching controls are **Academic year (August–July)**, **Preview year**, **Upcoming dates**, **Refresh chapter snapshot**, **Load fictional Fall/Spring**, and **Remove fictional events**. Fictional mode hides the live embedded Google iframe; official year preview adjusts the iframe display dates while preserving the same calendar source. These controls require the reviewed release; source edits alone do not prove live behavior.
+
+For actual rehearsal event creation, use an approved private training calendar in the Google editor, verify its Calendar field before every Save, and keep guests empty. Record one Fall and one Spring event’s title/date/time/timezone, inspect the intended preview consumers, delete only those events and verify removal. The regular production source remains the approved chapter calendar; a local fixture preview does not establish actual Google-to-JSON propagation. Ask the Webmaster for a receipt naming each consumer’s source ID, timezone, generation job, last generation/read time, changed event result and cleanup result. An annual Hub row change does not reconfigure Website or Newsletter.
+
 ### Webmaster: calendar sources and update routes
 
 A **feed** is a saved event list that another tool downloads; a **workflow** is
@@ -110,7 +119,7 @@ Verify it again in the owner account before a real transition.
 | Hub annual link and feed | Google `Hub_Settings_Public`: `calendar_page_url` column I is the chapter calendar webpage; `calendar_ical_url` column J is the **public** iCal address (JavaScript properties `calendarUrl` and `calendarIcalUrl`). Review through Year Settings and save/read back the target row. Deployed fallback is `assets/js/config.js` → `dataSources[year].calendarUrl/calendarIcalUrl`. | `scripts/sync-calendar.mjs` reads active years from Google; `.github/workflows/pages.yml` generates `data/calendar.json` in the Pages artifact. An inactive draft is intentionally absent from the snapshot. Do not activate a draft just to test its calendar. |
 | Website event cards and homepage featured event | [ASME-OSU-Website/scripts/sync-calendar.mjs](https://github.com/ASME-OSU/ASME-OSU-Website/blob/main/scripts/sync-calendar.mjs): `CALENDAR_ID`, `TIME_ZONE`; derives `ICAL_URL` and `EMBED_URL`. | **Actions → Refresh public calendar feed → Run workflow**, `.github/workflows/update-calendar-feed.yml`; generated `data/calendar-events.json`; `Calendar Integration.js` renders it. Verify the public JSON after Pages publication. |
 | Website iframe, subscribe button and visible year | [ASME-OSU-Website/Calendar Page.html](https://github.com/ASME-OSU/ASME-OSU-Website/blob/main/Calendar%20Page.html): subscribe `href`, iframe `src`, and `#acp-calendar-label`. | Edit repository source, then paste the whole reviewed custom HTML block into the matching WordPress Calendar page and preview/publish through the authorized route. GitHub publication does not paste HTML into WordPress. |
-| Newsletter Calendar feed | [ASME-Newsletter-Builder/scripts/sync-calendar.mjs](https://github.com/ASME-OSU/ASME-Newsletter-Builder/blob/main/scripts/sync-calendar.mjs): `CALENDAR_ID`, `TIME_ZONE`; derives public iCal/embed URLs. No source field exists in the current Calendar UI. | **Actions → Sync public calendar → Run workflow**, `.github/workflows/sync-calendar.yml`; generated `calendar-events.json`; then **Calendar → Refresh Events** in the builder. That button downloads the published JSON; it does not query Google or run Actions. |
+| Newsletter Calendar feed | [ASME-Newsletter-Builder/scripts/sync-calendar.mjs](https://github.com/ASME-OSU/ASME-Newsletter-Builder/blob/main/scripts/sync-calendar.mjs): `CALENDAR_ID`, `TIME_ZONE`; derives public iCal/embed URLs. The repaired Calendar UI exposes a target academic-year preview and local fixture mode; it does not change the canonical Google source. | **Actions → Sync public calendar → Run workflow**, `.github/workflows/sync-calendar.yml`; generated `calendar-events.json`; then **Calendar → Refresh chapter snapshot** in the builder. That button downloads the published JSON; it does not query Google or run Actions. |
 | Newsletter Open Calendar link | [ASME-Newsletter-Builder/index.html](https://github.com/ASME-OSU/ASME-Newsletter-Builder/blob/main/index.html): Calendar section's **Open Calendar** anchor. | Update its embedded `src` calendar ID/time zone separately when replacing the calendar. Review normal repository checks and Pages publication. |
 | Attendance and Points | Annual Points `Events` rows and copied Form's `Event ID` question; see [Annual Points setup](annual-points-setup.md). | Calendar import does not create Points rows or Form choices. Manual mode needs separate edits to both. Use the generated Points Event ID as the reconciliation key; a calendar UID is a different identifier. |
 
@@ -155,12 +164,12 @@ record the feed generation timestamp, consumer URL, observed fields and reviewer
 | Consumer | Scheduled generation | Officer confirmation |
 |---|---|---|
 | Hub | Hourly at minute 17, plus main pushes/manual dispatch | **Actions → Sync calendar and deploy Pages → Run workflow**. Check build and deploy results, then public `data/calendar.json`: `generatedAt`, target `calendars[year].feedUrl` and occurrence. Refresh Hub. The browser may show LIVE for a snapshot up to six hours old and fallback up to 24 hours; that badge alone is insufficient for annual acceptance. |
-| Website | Hourly at minute 23 | Run the calendar-feed workflow, check public `data/calendar-events.json` `generatedAt` and event fields, then hard refresh the Calendar page and homepage. The visible “Synced from our calendar” label has no timestamp; record the JSON timestamp and successful workflow check time separately. A cached card can appear before the refreshed feed. |
-| Newsletter | Hourly at minute 17 | Run the sync workflow, check published `calendar-events.json`, click **Refresh Events**, and read **calendar data updated**. Use **Update Imported Event** or **Sync Imported Events** for already imported copies; feed refresh alone leaves editable issue content unchanged. |
+| Website | Hourly at minute 23 | Run the calendar-feed workflow, check public `data/calendar-events.json` `generatedAt` and event fields, then hard refresh the Calendar page and homepage. The repaired consumer reports generated/source-checked/browser-read times and annual coverage; verify that release and record those fields with the workflow result. A cached card can appear before the refreshed feed. |
+| Newsletter | Hourly at minute 17 | Run the sync workflow, check published `calendar-events.json`, click **Refresh chapter snapshot**, and record its generated/source-checked/browser-read times and selected-year coverage. Use **Update Imported Event** or **Sync Imported Events** for already imported copies; feed refresh alone leaves editable issue content unchanged. |
 
 Website and Newsletter sync scripts keep the existing JSON unchanged when the
 event array matches the latest calendar read. Their `generatedAt` records the
-last changed feed generation, rather than every successful poll. An older
+last changed feed generation, rather than every successful poll. The repaired source writes `checkedAt`, `calendarId`, `windowStart` and `windowEnd` for successful reads and coverage, including the following complete academic year; verify the deployed JSON. A browser refresh rereads that JSON, while the scheduled job separately fetches Google. An older
 timestamp alone does not prove a stale feed. In an unchanged-content check,
 record the successful workflow run URL/time and its “Calendar is unchanged”
 result alongside the JSON timestamp and matching event fields. For all-day
@@ -183,7 +192,7 @@ those details in the published calendar data and each tool, including the change
 feed and its new generation timestamp; a successful unchanged-content result cannot
 prove that a missing changed event propagated.
 
-## T12: transfer the editable newsletter correctly
+## T04: transfer the editable newsletter correctly
 
 Use the hosted builder's **Templates** and **Settings** controls. The code and
 [builder user guide](https://github.com/ASME-OSU/ASME-Newsletter-Builder/blob/main/USER_GUIDE.md)
@@ -197,7 +206,7 @@ establish these separate scopes:
 | **Restore ASME Defaults** | Resets and saves bundled official starting fields on this browser | Does not recover the outgoing officer's reviewed chapter defaults; bundled footer still needs address confirmation. |
 | HTML download / **Copy HTML for Brevo** | Rendered email HTML | Editable builder project or saved defaults/templates; preview/readiness does not establish a sent email result. |
 
-1. Open **Templates → Export Draft .json** for the current issue. If the custom
+1. Load the intended saved template if exporting a particular Fall/Spring issue; inspect its subject, issue year/date and event in preview before **Templates → Export Draft .json**. A numbered filename such as JSON (15) is not evidence of which issue was exported. If the custom
    template library is used, also choose **Export .json** for that library.
    Find each file in your browser Downloads list and confirm it exists and is
    not empty. Open the draft JSON as text: it should identify
@@ -252,12 +261,12 @@ officer's cross-profile transfer and New Issue/defaults check as **NOT RUN** unt
 performed, even where the earlier isolated rehearsal passed. No email was sent
 in either documented rehearsal.
 
-## Webmaster T13: public-page source and publication map
+## Webmaster T04: public-page source and publication map
 
 Website sources live in
 [ASME-OSU-Website](https://github.com/ASME-OSU/ASME-OSU-Website).
 Edit the source, preview it, then update the matching **WordPress Pages → page →
-custom HTML/code editor** through the chapter's authorized publishing route.
+custom HTML/code editor** through the chapter's authorized publishing route. Routine content can also use **WordPress Admin Login → Pages → intended page → Visual editor**: preserve the current content, edit an approved draft, choose Save Draft, reload, then Preview on desktop/mobile. Do not publish until the responsible content owner approves. Confirm that preview is the intended draft, and keep rehearsal pages unpublished and out of menus. Repository and CMS updates remain separate when repository-managed custom blocks are changed.
 Preserve the current editor/formatting settings. Never assume a GitHub merge
 updated a WordPress page. Compare the live rendered result after publication;
 WordPress can insert extra paragraphs/breaks into otherwise correct source.
@@ -342,7 +351,7 @@ changing every `2026` string to `2027`.
 |---|---|---|
 | President | Appointed roles/names, approved photos/contacts and publication date | Keep draft private; no invented officers or premature heading |
 | Calendar/event owner | Approved date/time/zone, room, speaker, description and cancellation status | Keep tentative event off public calendar and attendance selection |
-| Points officer | Approved period/category/value and manual Form choice/open-close decisions | No automatic credit from calendar or newsletter import |
+| Points officer | Approved period/category/value and verified sync or manual Form choices/open-close decisions | No automatic credit from calendar or newsletter import |
 | Corporate liaison | Renewal period, approved logo/use terms, benefit wording and contact destination | Preserve only currently accurate public commitment; do not imply renewal |
 | Communications officer | Mailing address, sender, issue date, subject/signature, links and recipient/list approval | Save unsent editable draft; no campaign/test-send evidence claim |
 | Webmaster | Current source revision, reviewed patch, WordPress active block, deployed feeds and desktop/phone results | Record blocked consumer and recovery source; do not substitute local preview |
@@ -359,8 +368,7 @@ Website `d7891a0f91c55fa6dccfb8e7946111b510c634f8`, Career
 `b74308aa2ad2f1b8c8ec3b267fb4114576e66a97`. Website sponsor and Career UI files
 already had local edits; this procedure does not adopt or publish those edits.
 The linked repository main may advance: verify the current source, active
-WordPress editor and deployment before a real rollover. The actual incoming
-browser import, calendar propagation, target-year phone checks, board/sponsor
+WordPress editor and deployment before a real rollover. The actual incoming officer’s cross-device acceptance, calendar propagation, target-year phone checks, board/sponsor
 decisions, publication and send remain unverified until officers perform and
 record them. Public docs contain no private roster, funding evidence or handoff
 resource inventory.

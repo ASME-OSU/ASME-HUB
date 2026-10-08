@@ -819,7 +819,7 @@
     const priorities = prioritizedOperations();
     const unique = Number(kpis.uniqueAttendees) || 0;
     const checkIns = Number(kpis.totalCheckIns) || 0;
-    const events = Number(kpis.eventsHeld) || 0;
+    const events = metricNumber(kpis.eventsHeld);
     const average = Number(kpis.averageTurnout) || 0;
     const repeatRate = Math.round(Number(kpis.repeatAttendanceRate) || 0);
     const goal = Number(kpis.engagementGoal) || 0;
@@ -1247,6 +1247,7 @@
       source.label || displayLabelForYear(yearKey);
     elements.settingsEngagementGoal.value =
       source.engagementGoal || source.goal || "";
+    elements.settingsEngagementGoal.setCustomValidity("");
     elements.settingsAttendanceSheet.value =
       source.attendanceSheetUrl || "";
     elements.settingsAttendanceTab.value =
@@ -1302,7 +1303,7 @@
     return {
       yearKey: normalizeYearKey(elements.settingsYearKey.value),
       label: elements.settingsYearLabel.value.trim(),
-      engagementGoal: Number(elements.settingsEngagementGoal.value) || 250,
+      engagementGoal: Number(elements.settingsEngagementGoal.value),
       attendanceSheetUrl: elements.settingsAttendanceSheet.value.trim(),
       attendanceSheetTab:
         elements.settingsAttendanceTab.value.trim() || "Leaderboard_Public",
@@ -1331,6 +1332,7 @@
       return "Use an academic year in the format 2026-2027.";
     }
     if (!settings.label) return "Add a display label for this year.";
+    if (!Number.isInteger(settings.engagementGoal) || settings.engagementGoal <= 0) return "Enter a positive whole-number engagement goal.";
     if (!settings.dashboardUrl && !settings.attendanceSheetUrl) {
       return "Add either a public leaderboard Sheet or a full dashboard JSON URL.";
     }
@@ -1412,22 +1414,31 @@
     window.setTimeout(() => elements.password.focus(), 50);
   }
 
-  function clearDashboardState(label = "Loading dashboard…") {
+  function clearDashboardState(label = "Loading dashboard…", source = {}) {
+    const isLoading = label.startsWith("Loading ");
     activeDashboardData = null;
     activeUpcomingEvents = [];
     activeOperations = [];
     activeBudget = {};
     activeHealth = [];
+    attendanceChartItems = [];
+    attendanceChartPeriodLabel = "";
+    selectedPeriod = "ytd";
     ["kpi-unique-attendees", "kpi-total-checkins", "kpi-events-held", "kpi-average-turnout", "kpi-repeat-rate", "hero-kpi-unique", "hero-kpi-checkins", "hero-kpi-events"].forEach((id) => setText(id, "—"));
     ["kpi-unique-attendees-context", "kpi-total-checkins-context", "kpi-events-held-context", "kpi-average-turnout-context", "kpi-repeat-rate-context"].forEach((id) => setText(id, label));
     setText("last-updated", label);
-    setText("period-summary", "Data unavailable");
+    setText("freshness-label", "Data status");
+    document.getElementById("freshness-dot")?.classList.remove("is-stale");
+    document.getElementById("freshness-dot")?.classList.add("is-unavailable");
+    setText("period-summary", isLoading ? "Loading" : "Data unavailable");
     setText("period-detail", label);
     setText("goal-percent", "—");
     setText("goal-current", "—");
     setText("goal-target", "—");
     setText("goal-note", label);
-    setText("goal-status", "Unavailable");
+    setText("goal-status", isLoading ? "Loading" : "Unavailable");
+    const goalStatus = document.getElementById("goal-status");
+    if (goalStatus) goalStatus.className = "pace-chip is-neutral";
     setText("donut-total", "—");
     setText("trend-summary", label);
     setText("funnel-period", "—");
@@ -1442,9 +1453,9 @@
     setText("operations-count", "—");
     setText("nav-alert-count", "—");
     setText("healthy-systems-count", "—");
-    if (elements.heroBriefingTitle) elements.heroBriefingTitle.textContent = "Attendance data unavailable";
+    if (elements.heroBriefingTitle) elements.heroBriefingTitle.textContent = isLoading ? "Dashboard loading" : "Attendance data unavailable";
     if (elements.heroBriefingCopy) elements.heroBriefingCopy.textContent = label;
-    if (elements.briefingRoleTitle) elements.briefingRoleTitle.textContent = "Attendance data unavailable";
+    if (elements.briefingRoleTitle) elements.briefingRoleTitle.textContent = isLoading ? "Dashboard loading" : "Attendance data unavailable";
     if (elements.briefingRoleCopy) elements.briefingRoleCopy.textContent = label;
     if (elements.briefingPriorityCount) elements.briefingPriorityCount.textContent = "—";
     const emptyGuide = document.getElementById("attendance-empty-guide");
@@ -1461,11 +1472,15 @@
     document.getElementById("operations-list")?.replaceChildren();
     document.getElementById("health-grid")?.replaceChildren();
     document.getElementById("health-attention-grid")?.replaceChildren();
+    setText("attendance-chart-desc", label);
+    ["attendance-chart", "event-type-donut", "goal-ring"].forEach((id) => {
+      document.getElementById(id)?.setAttribute("aria-label", label);
+    });
     const donut = document.getElementById("event-type-donut");
     if (donut) donut.style.background = "var(--border)";
     const goalRing = document.getElementById("goal-ring");
     if (goalRing) goalRing.style.setProperty("--goal-progress", "0%");
-    renderBudget({ available: false, error: label });
+    renderBudget({ available: false, error: label }, source);
     elements.periodFilter.disabled = true;
     setReportControlsDisabled(true);
     document.getElementById("main-content")?.setAttribute("aria-busy", "true");
@@ -1579,7 +1594,7 @@
 
       window[callback] = (data) => {
         cleanup();
-        if (!data || !data.table) {
+        if (!data || data.status === "error" || !Array.isArray(data.table?.cols) || !Array.isArray(data.table?.rows)) {
           reject(new Error("The Google Sheet returned an unexpected response."));
           return;
         }
@@ -1766,6 +1781,9 @@
           "Some approved expenses are uncategorized in the export",
         );
       }
+      if (!categories.size) {
+        qualityMessages.push("Category data is absent from the public export");
+      }
       if (incompleteCategories.length) {
         qualityMessages.push(
           `Category data is incomplete for ${incompleteCategories.length} export row${
@@ -1810,9 +1828,11 @@
   function sheetTimestamp(value) {
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     if (typeof value === "number") {
+      if (!Number.isFinite(value)) return null;
       const serialDate = new Date(
         Date.UTC(1899, 11, 30) + value * 86400000,
       );
+      if (Number.isNaN(serialDate.getTime())) return null;
       return new Date(
         serialDate.getUTCFullYear(),
         serialDate.getUTCMonth(),
@@ -1827,14 +1847,15 @@
       /^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?\)$/,
     );
     if (dateConstructor) {
-      return new Date(
-        Number(dateConstructor[1]),
-        Number(dateConstructor[2]),
-        Number(dateConstructor[3]),
-        Number(dateConstructor[4] || 0),
-        Number(dateConstructor[5] || 0),
-        Number(dateConstructor[6] || 0),
-      );
+      const parts = dateConstructor.slice(1).map((part) => Number(part || 0));
+      const [year, month, day, hour, minute, second] = parts;
+      if (month > 11 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) return null;
+      const parsed = new Date(year, month, day, hour, minute, second);
+      // JS normalizes February 30 / April 31; a Sheet date must retain its
+      // exact Gregorian fields, including leap years and native 0-based month.
+      if (parsed.getFullYear() !== year || parsed.getMonth() !== month || parsed.getDate() !== day ||
+          parsed.getHours() !== hour || parsed.getMinutes() !== minute || parsed.getSeconds() !== second) return null;
+      return parsed;
     }
 
     const clean = String(value || "").trim();
@@ -1960,6 +1981,62 @@
     return data;
   }
 
+  function selectedYearPeriods(year) {
+    const match = String(year || "").match(/(\d{4})\s*[–—-]\s*(\d{4})/);
+    if (!match || Number(match[2]) !== Number(match[1]) + 1) return { months: [], semesters: [] };
+    const startYear = Number(match[1]);
+    const months = Array.from({ length: 12 }, (_, index) => {
+      const start = new Date(startYear, 7 + index, 1);
+      const key = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+      return { periodKey: key, monthKey: key, label: new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(start), start, unavailable: true };
+    });
+    const semesters = [
+      { periodKey: "fall", semesterKey: "fall", label: `Fall ${startYear}`, start: new Date(startYear, 7, 1), unavailable: true },
+      { periodKey: "spring", semesterKey: "spring", label: `Spring ${startYear + 1}`, start: new Date(startYear + 1, 0, 1), unavailable: true },
+    ];
+    return { months, semesters };
+  }
+
+  function validateMetricResult(result, headers) {
+    if (result.error) return;
+    const table = result.table;
+    if (!Array.isArray(table?.rows) || !Array.isArray(table?.cols) || table.cols.length !== headers.length ||
+        headers.some((header, index) => header && String(table.cols[index]?.label || "").trim() !== header)) {
+      result.error = new Error("The export has missing or unexpected headers.");
+    }
+  }
+
+  function readPeriodMetrics(result, keyName, presets) {
+    const prefix = keyName === "monthKey" ? ["month_key", "month_label", "month_start"] : ["period_key", "period_label", "period_start"];
+    validateMetricResult(result, [...prefix, "unique_attendees", "total_checkins", "events_held", "average_turnout", "repeat_attendees", "repeat_rate", "new_attendees", "top_event_type", "top_event_name", "top_event_attendance", "last_updated", "highly_engaged_attendees"]);
+    const fallback = () => presets.map((period) => ({ ...period }));
+    if (result.error) return fallback();
+    const periods = [];
+    for (const row of result.table.rows) {
+      if (!row.c?.some((cell) => cell?.v !== null && cell?.v !== undefined && cell.v !== "")) continue;
+      const key = String(sheetCell(row, 0) || "").trim();
+      const start = sheetTimestamp(sheetCell(row, 2));
+      const preset = presets.find((period) => period.periodKey === key);
+      const numeric = [3, 4, 5, 6, 7, 8, 9, 12, 14].map((index) => metricNumber(sheetCell(row, index)));
+      if (!key || !start || numeric.some((value) => value === null || value < 0) ||
+          periods.some((period) => period.periodKey === key) ||
+          (presets.length && (!preset || start.getFullYear() !== preset.start.getFullYear() || start.getMonth() !== preset.start.getMonth() || start.getDate() !== 1))) {
+        result.error = new Error("Reporting periods contain invalid or wrong-year data.");
+        return fallback();
+      }
+      periods.push({ periodKey: key, [keyName]: key, label: preset?.label || String(sheetCell(row, 1)), start,
+        uniqueAttendees: numeric[0], totalCheckIns: numeric[1], eventsHeld: numeric[2], averageTurnout: numeric[3],
+        repeatAttendees: numeric[4], repeatAttendanceRate: numeric[5] <= 1 ? numeric[5] * 100 : numeric[5],
+        newAttendees: numeric[6], topEventType: normalizeEventType(sheetCell(row, 10)), topEventName: String(sheetCell(row, 11)),
+        topEventAttendance: numeric[7], highlyEngagedAttendees: numeric[8], updated: sheetTimestamp(sheetCell(row, 13, true) || sheetCell(row, 13)) });
+    }
+    if (presets.length && periods.length !== presets.length) {
+      result.error = new Error("The export is missing selected-year reporting periods.");
+      return fallback();
+    }
+    return periods;
+  }
+
   async function loadLeaderboardDashboard(source, { signal } = {}) {
     const spreadsheetId = await readPublicPointStatus(source, { signal });
     const leaderboardTab =
@@ -2028,60 +2105,49 @@
       .map((member) => member.updated)
       .filter(Boolean)
       .sort((a, b) => b.getTime() - a.getTime())[0];
-    const metricRows = metricsResult.table.rows || [];
-    const eventRows = metricRows
-      .map((row) => ({
-        id: String(sheetCell(row, 0) || "").trim(),
-        name: String(sheetCell(row, 1) || "").trim(),
-        date: sheetTimestamp(sheetCell(row, 2)),
-        type: normalizeEventType(sheetCell(row, 3)),
-        attendance: Number(sheetCell(row, 4)) || 0,
-        formStatus: String(sheetCell(row, 5) || "").trim(),
-        status: String(sheetCell(row, 6) || "").trim(),
-      }))
-      .filter((event) => event.id && event.name);
+    const eventHeaders = ["event_id", "event_name", "event_date", "event_type", "attendance", "form_status", "event_status", "", "metric", "value", "status", "detail"];
+    validateMetricResult(metricsResult, eventHeaders);
+    const metricRows = metricsResult.error ? [] : metricsResult.table.rows;
     const healthMetrics = {};
-    metricRows.forEach((row) => {
+    const eventRows = [];
+    for (const row of metricRows) {
+      const id = String(sheetCell(row, 0) || "").trim();
+      const name = String(sheetCell(row, 1) || "").trim();
       const key = String(sheetCell(row, 8) || "").trim();
-      if (!key || key.toLowerCase() === "metric") return;
-      healthMetrics[key] = {
-        value: sheetCell(row, 9),
-        status: String(sheetCell(row, 10) || "").toUpperCase(),
-        detail: String(sheetCell(row, 11) || "").trim(),
-      };
-    });
+      if (key) {
+        const value = sheetCell(row, 9);
+        const counter = metricNumber(value);
+        if ((["open_review_items", "past_forms_open"].includes(key) &&
+            (counter === null || counter < 0 || !Number.isInteger(counter))) || healthMetrics[key]) {
+          metricsResult.error = new Error("Event health counters are malformed.");
+          break;
+        }
+        healthMetrics[key] = { value, status: String(sheetCell(row, 10) || "").toUpperCase(), detail: String(sheetCell(row, 11) || "").trim() };
+      }
+      if (!id && !name) {
+        if (row.c?.slice(0, 7).some((cell) => cell?.v !== null && cell?.v !== undefined && cell.v !== "")) {
+          metricsResult.error = new Error("An event record is missing its identifier or name.");
+          break;
+        }
+        continue;
+      }
+      const dateValue = sheetCell(row, 2);
+      const date = dateValue === "" ? null : sheetTimestamp(dateValue);
+      const attendance = metricNumber(sheetCell(row, 4));
+      if (!id || !name || attendance === null || attendance < 0 || !Number.isInteger(attendance) || (dateValue !== "" && !date) || eventRows.some((event) => event.id === id)) {
+        metricsResult.error = new Error("An event record has invalid or duplicate fields.");
+        break;
+      }
+      eventRows.push({ id, name, date, type: normalizeEventType(sheetCell(row, 3)), attendance,
+        formStatus: String(sheetCell(row, 5) || "").trim(), status: String(sheetCell(row, 6) || "").trim() });
+    }
+    const metricsAvailable = !metricsResult.error;
+    // An unavailable or malformed table never contributes partial/fabricated event totals.
+    if (!metricsAvailable) eventRows.length = 0;
     const attendedEvents = eventRows.filter((event) => event.attendance > 0);
-    const metricsAvailable = !metricsResult.error && eventRows.length > 0;
-    const parsePeriodMetric = (row, keyName) => {
-      const rawRepeatRate = Number(sheetCell(row, 8)) || 0;
-      return {
-        periodKey: String(sheetCell(row, 0) || "").trim(),
-        [keyName]: String(sheetCell(row, 0) || "").trim(),
-        label: String(sheetCell(row, 1) || "").trim(),
-        start: sheetTimestamp(sheetCell(row, 2)),
-        uniqueAttendees: Number(sheetCell(row, 3)) || 0,
-        totalCheckIns: Number(sheetCell(row, 4)) || 0,
-        eventsHeld: Number(sheetCell(row, 5)) || 0,
-        averageTurnout: Number(sheetCell(row, 6)) || 0,
-        repeatAttendees: Number(sheetCell(row, 7)) || 0,
-        repeatAttendanceRate:
-          rawRepeatRate <= 1 ? rawRepeatRate * 100 : rawRepeatRate,
-        newAttendees: Number(sheetCell(row, 9)) || 0,
-        topEventType: normalizeEventType(sheetCell(row, 10)),
-        topEventName: String(sheetCell(row, 11) || "").trim(),
-        topEventAttendance: Number(sheetCell(row, 12)) || 0,
-        updated: sheetTimestamp(
-          sheetCell(row, 13, true) || sheetCell(row, 13),
-        ),
-        highlyEngagedAttendees: Number(sheetCell(row, 14)) || 0,
-      };
-    };
-    const monthlyMetrics = (monthlyResult.table.rows || [])
-      .map((row) => parsePeriodMetric(row, "monthKey"))
-      .filter((month) => /^\d{4}-\d{2}$/.test(month.monthKey));
-    const semesterMetrics = (semesterResult.table.rows || [])
-      .map((row) => parsePeriodMetric(row, "semesterKey"))
-      .filter((semester) => ["fall", "spring"].includes(semester.semesterKey));
+    const presets = selectedYearPeriods(source.academicYearKey || source.label);
+    const monthlyMetrics = readPeriodMetrics(monthlyResult, "monthKey", presets.months);
+    const semesterMetrics = readPeriodMetrics(semesterResult, "semesterKey", presets.semesters);
     const aggregateUpdated = sheetTimestamp(
       healthMetrics.last_updated?.value,
     );
@@ -2148,7 +2214,7 @@
         severity: "warning",
         title: "Event metrics feed needs attention",
         detail:
-          "The privacy-safe Event_Metrics_Public tab could not be read, so event-level KPIs are temporarily unavailable.",
+          `The ${eventMetricsTab} feed is unavailable: ${metricsResult.error?.message || "unexpected response"} Check export sharing, headers and import authorization, then Retry.`,
         actionLabel: "Open public export",
         actionUrl: source.attendanceSheetUrl,
       });
@@ -2174,6 +2240,7 @@
           : "",
         isDemo: false,
         isPartial: !metricsAvailable,
+        eventMetricsAvailable: metricsAvailable,
         sourceLabel: metricsAvailable
           ? "Public aggregate exports"
           : "Public leaderboard export",
@@ -2221,7 +2288,7 @@
           label: "Event metrics",
           status: metricsAvailable ? "LIVE" : "ACTION",
           detail: metricsAvailable
-            ? `${formatNumber(eventRows.length)} configured events`
+            ? `${formatNumber(eventRows.length)} configured event${eventRows.length === 1 ? "" : "s"}`
             : "Aggregate event feed unavailable",
         },
         {
@@ -2657,8 +2724,17 @@
   }
 
   function resolveYearResources(source) {
-    return window.ASME_SHARED_RESOURCES.resolve(config.resources || [], sharedResourceRecords,
-      elements.academicYear?.value || config.currentAcademicYear, source);
+    const year = elements.academicYear?.value || config.currentAcademicYear;
+    const label = source?.label || displayLabelForYear(year);
+    return window.ASME_SHARED_RESOURCES.resolve(config.resources || [], sharedResourceRecords, year, source)
+      .map((item) => {
+        if (!["attendanceFormUrl", "pointsMasterUrl", "budgetTrackerUrl"].includes(item.settingKey)) return item;
+        // Shared labels remain descriptive; the selected year is always explicit.
+        const title = String(item.title).replace(label, "").replace(/\d{4}\s*[–—-]\s*\d{2,4}\s*/g, "").trim();
+        return { ...item, title: `${label} ${title}`, quickAction: item.quickAction ? {
+          ...item.quickAction, detail: `${label} ${item.settingKey === "budgetTrackerUrl" ? "workbook" : item.settingKey === "pointsMasterUrl" ? "Points Master" : "attendance form"}`,
+        } : undefined };
+      });
   }
 
   async function refreshSharedResources() {
@@ -2856,7 +2932,7 @@
     dashboardLoadController = controller;
     const generation = ++dashboardLoadGeneration;
     const configuredSource = getYearSource(year);
-    const source = configuredSource ? { ...configuredSource } : null;
+    const source = configuredSource ? { ...configuredSource, academicYearKey: year } : null;
     const isCurrent = () => generation === dashboardLoadGeneration && !controller.signal.aborted;
     if (!source) {
       clearDashboardState("No active academic year is configured.");
@@ -2866,7 +2942,11 @@
     }
 
     const sourceLabel = source.label || year;
-    clearDashboardState(`Loading ${sourceLabel}…`);
+    updateYearLabel();
+    clearDashboardState(`Loading ${sourceLabel}…`, source);
+    const presets = selectedYearPeriods(year);
+    populatePeriodFilter(presets.semesters, presets.months);
+    elements.periodFilter.disabled = true;
 
     const resources = [...resolveYearResources(source), ...loadCustomLinks()];
     renderResources(resources);
@@ -2926,7 +3006,7 @@
           label: "Budget feed", status: budgetNeedsAttention ? "ACTION" : "LIVE",
           detail: budgetHealthDetail,
         }]);
-        renderOperations(calendar.operations);
+        renderOperations([{ severity: "warning", title: "Attendance data unavailable", detail: `${message} Check export sharing, System_Status and import authorization, then Retry.`, actionLabel: "Open public export", actionUrl: source.attendanceSheetUrl }, ...calendar.operations]);
         return;
       }
       const data = attendanceResult.value;
@@ -2978,6 +3058,8 @@
   }
 
   function showDataError(message) {
+    // Replace every loading description together; no cached chart may reappear on resize.
+    clearDashboardState(message, getYearSource() || {});
     document.getElementById("last-updated").textContent = "Data unavailable";
     const operations = document.getElementById("operations-list");
     const item = document.createElement("article");
@@ -3048,6 +3130,7 @@
         const option = document.createElement("option");
         option.value = semester.semesterKey;
         option.textContent = semester.label || semester.semesterKey;
+        option.disabled = semester.unavailable === true;
         return option;
       }),
     );
@@ -3058,6 +3141,7 @@
         const option = document.createElement("option");
         option.value = month.monthKey;
         option.textContent = month.label || month.monthKey;
+        option.disabled = month.unavailable === true;
         return option;
       }),
     );
@@ -3067,7 +3151,7 @@
     elements.periodFilter.replaceChildren(...children);
     elements.periodFilter.value = selectedPeriod;
     elements.periodFilter.disabled =
-      months.length === 0 && semesters.length === 0;
+      ![...months, ...semesters].some((period) => !period.unavailable);
   }
 
   function eventTrendFromRows(events) {
@@ -3177,6 +3261,7 @@
       renderEventTypes(data.eventTypes || []);
       renderParticipationFunnel(data.kpis || {}, label);
       renderEventPerformance(events, label);
+      if (data.meta?.eventMetricsAvailable === false) renderEventMetricsUnavailable();
       const latestActive = [...months]
         .reverse()
         .find((month) => month.totalCheckIns > 0);
@@ -3210,7 +3295,7 @@
         ? sheetTimestamp(period.updated)?.toISOString() ||
           data.meta?.lastUpdated
         : data.meta?.lastUpdated,
-      isPartial: false,
+      isPartial: data.meta?.eventMetricsAvailable === false,
     };
 
     renderFreshness(periodMeta);
@@ -3224,6 +3309,7 @@
     renderEventTypes(eventTypesFromRows(events));
     renderParticipationFunnel(periodKpis, label);
     renderEventPerformance(events, label);
+    if (data.meta?.eventMetricsAvailable === false) renderEventMetricsUnavailable();
     renderHealthInsight(period, previous, kind);
     setText("period-summary", label);
     setText(
@@ -3236,6 +3322,17 @@
           } · Leading type: ${period.topEventType}`
         : `No recorded attendance for this ${kind} yet.`,
     );
+  }
+
+  function renderEventMetricsUnavailable() {
+    attendanceChartItems = [];
+    const message = "Event metrics unavailable. Check the public export and retry.";
+    setText("attendance-chart-desc", message);
+    document.getElementById("attendance-chart")?.setAttribute("aria-label", message);
+    document.getElementById("event-type-donut")?.setAttribute("aria-label", message);
+    setText("trend-summary", "Event metrics unavailable");
+    setText("performance-summary", "Configured events unavailable");
+    document.getElementById("event-performance-body")?.replaceChildren();
   }
 
   function renderAttendanceEmptyState(kpis = {}) {
@@ -3291,7 +3388,7 @@
     setText(
       "kpi-average-turnout",
       hasMetric(kpis.averageTurnout)
-        ? Number(kpis.averageTurnout).toFixed(1)
+        ? Number(kpis.eventsHeld) === 0 ? "No events yet" : Number(kpis.averageTurnout).toFixed(1)
         : "—",
     );
     setText(
@@ -3350,8 +3447,8 @@
         "kpi-total-checkins-context",
         "Summed from member event totals",
       );
-      setText("kpi-events-held-context", "Add a full aggregate JSON feed");
-      setText("kpi-average-turnout-context", "Add a full aggregate JSON feed");
+      setText("kpi-events-held-context", "Event metrics unavailable; check the public export");
+      setText("kpi-average-turnout-context", "Event metrics unavailable; check the public export");
       setText(
         "kpi-repeat-rate-context",
         reliableRepeatRate
@@ -3369,6 +3466,9 @@
           ? "Attended two or more events"
           : `Needs ${minimumReliableSample} participants for a stable rate`,
       );
+    }
+    if (hasMetric(kpis.eventsHeld) && Number(kpis.eventsHeld) === 0) {
+      setText("kpi-average-turnout-context", "Average turnout is available after an event records attendance.");
     }
   }
 
@@ -3406,7 +3506,7 @@
       const unavailableContext = document.getElementById("budget-used-context");
       if (unavailableContext) unavailableContext.hidden = true;
       if (emptyProgress) emptyProgress.hidden = false;
-      renderBudgetCategories([]);
+      renderBudgetCategories([], { unavailableMessage: budget.error || "Category data unavailable. Check the public budget export." });
       return;
     }
 
@@ -3496,7 +3596,7 @@
         ? `${money(approvedExpenses)} approved spending while funding authority is unconfirmed`
         : "Confirm funding authority before calculating budget usage";
     }
-    renderBudgetCategories(budget.categories || []);
+    renderBudgetCategories(budget.categories || [], { fundingIsConfirmed });
 
     const updated = budget.updatedAt ? new Date(budget.updatedAt) : null;
     const freshness = updated && !Number.isNaN(updated.getTime())
@@ -3520,7 +3620,7 @@
     );
   }
 
-  function renderBudgetCategories(categories) {
+  function renderBudgetCategories(categories, { fundingIsConfirmed = false, unavailableMessage = "" } = {}) {
     const donut = document.getElementById("budget-category-donut");
     const total = document.getElementById("budget-category-total");
     const legend = document.getElementById("budget-category-legend");
@@ -3537,7 +3637,7 @@
       chartPalette[6],
     ];
     const sourceCategories = Array.isArray(categories) ? categories : [];
-    const hasIncompleteCategory = sourceCategories.some(
+    const hasIncompleteCategory = !sourceCategories.length || sourceCategories.some(
       (category) =>
         metricNumber(category.actual) === null ||
         metricNumber(category.planned) === null,
@@ -3579,10 +3679,10 @@
 
     if (hasIncompleteCategory) {
       donut.style.background = "conic-gradient(var(--border) 0 100%)";
-      donut.setAttribute("aria-label", "Category spending data is incomplete");
+      donut.setAttribute("aria-label", unavailableMessage || "Category spending data is incomplete");
       const empty = document.createElement("p");
       empty.className = "budget-empty-state";
-      empty.textContent = "Category data is incomplete.";
+      empty.textContent = unavailableMessage || "Category data is incomplete.";
       legend.append(empty);
     } else if (!actualTotal) {
       donut.style.background = "conic-gradient(var(--border) 0 100%)";
@@ -3627,13 +3727,21 @@
     if (!paced.length) {
       const empty = document.createElement("p");
       empty.className = "budget-empty-state";
-      empty.textContent = sourceCategories.length
-        ? "Category data is incomplete."
-        : "Add category budgets to see pacing.";
+      empty.textContent = unavailableMessage || (hasIncompleteCategory
+        ? "Category data is incomplete. Check the category rows in the public export."
+        : fundingIsConfirmed
+          ? "Zero category allocations reviewed. Add allocations to see pacing."
+          : "Treasurer review required. Category allocations are zero; confirm the funding plan.");
       bars.append(empty);
       return;
     }
 
+    if (!fundingIsConfirmed) {
+      const review = document.createElement("p");
+      review.className = "budget-empty-state";
+      review.textContent = "Treasurer review required. Category pacing uses an unreviewed funding plan.";
+      bars.append(review);
+    }
     bars.append(
       ...paced.map((category) => {
         const row = document.createElement("div");
@@ -3688,6 +3796,11 @@
     const chartPanel = svg.closest(".trend-panel");
     const legend = document.getElementById("attendance-chart-legend");
     const summary = document.getElementById("trend-summary");
+    const chartDescription = items.length
+      ? `Attendance for ${periodLabel || "the selected academic year"}: ${items.map((item) => `${item.label}, ${formatNumber(item.attendance)} check-ins`).join("; ")}.`
+      : `No recorded attendance for ${periodLabel || "the selected academic year"} yet.`;
+    svg.setAttribute("aria-label", chartDescription);
+    setText("attendance-chart-desc", chartDescription);
     svg.replaceChildren();
     legend.replaceChildren();
 
@@ -3862,13 +3975,13 @@
       const sizeChanged =
         Math.abs(width - attendanceChartSize.width) >= 1 ||
         Math.abs(height - attendanceChartSize.height) >= 1;
-      if (width && height && sizeChanged) {
+      if (activeDashboardData && activeDashboardData.meta?.eventMetricsAvailable !== false && width && height && sizeChanged) {
         renderAttendanceChart(attendanceChartItems, attendanceChartPeriodLabel);
       }
     }).observe(attendanceChartElement);
   } else {
     window.addEventListener("resize", () => {
-      renderAttendanceChart(attendanceChartItems, attendanceChartPeriodLabel);
+      if (activeDashboardData && activeDashboardData.meta?.eventMetricsAvailable !== false) renderAttendanceChart(attendanceChartItems, attendanceChartPeriodLabel);
     });
   }
 
@@ -4377,6 +4490,13 @@
   function renderResources(resources) {
     const container = document.getElementById("resource-grid");
     activeResources = resources;
+    window.ASME_TRANSITION_RESOURCES = activeResources;
+    window.ASME_TRANSITION_RESOURCE_SNAPSHOT = {
+      resources: activeResources, records: sharedResourceRecords, defaults: config.resources || [],
+    };
+    if (typeof CustomEvent === "function") {
+      document.dispatchEvent(new CustomEvent("transition:resources-updated", { detail: window.ASME_TRANSITION_RESOURCE_SNAPSHOT }));
+    }
     renderFrequentResources(resources);
     const categories = [...new Set(resources.map((resource) => resource.category))]
       .filter(Boolean)
@@ -4803,7 +4923,7 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261002a");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261008b");
       const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261002a");
       buildAnnualSettingsInput = annualSettingsInput;
       buildAnnualTransferUrl = annualSettingsTransferUrl;
@@ -4835,6 +4955,15 @@
 
   document.addEventListener("transition:current-settings", () => openSettings(config.currentAcademicYear));
   function reviewedAnnualSettingsInput() {
+    const goal = elements.settingsEngagementGoal;
+    goal.setCustomValidity("");
+    const value = Number(goal.value);
+    if (!Number.isInteger(value) || value <= 0) {
+      const message = "Enter a positive whole-number engagement goal.";
+      goal.setCustomValidity(message);
+      goal.reportValidity();
+      throw new Error(message);
+    }
     if (!buildAnnualSettingsInput) throw new Error("Open the new-year draft from the transition guide first.");
     const reviewed = { ...readSettingsForm(), engagementGoal: Number(elements.settingsEngagementGoal.value), attendanceSheetTab: elements.settingsAttendanceTab.value.trim(), budgetExportSheetTab: elements.settingsBudgetTab.value.trim() };
     return buildAnnualSettingsInput(annualSaveHandoff, reviewed, config, {
@@ -4900,6 +5029,7 @@
   });
 
   elements.settingsVerify.addEventListener("click", verifySharedSettings);
+  elements.settingsEngagementGoal.addEventListener("input", () => elements.settingsEngagementGoal.setCustomValidity(""));
   elements.settingsForm.addEventListener("input", invalidateSettingsReadback);
   elements.settingsForm.addEventListener("change", invalidateSettingsReadback);
   elements.settingsDialog.addEventListener("close", invalidateSettingsReadback);

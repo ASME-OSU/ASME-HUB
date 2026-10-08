@@ -26,8 +26,29 @@ test('opening transferred draft never calls verification or save; explicit verif
  f.get('save').events.click();assert.equal(f.calls[1].type,'save');assert.deepEqual(f.calls[1].args,['reviewed',true,'Audience reviewed']);
 });
 test('malformed transfer cannot enable a save; selecting a fallback replaces transferred data',async()=>{
- const bad=page('annual=%broken');assert.equal(bad.calls.length,0);assert.equal(bad.get('verify').disabled,true);assert.match(bad.get('status').textContent,/could not confirm/);
+ const bad=page('annual=%broken');assert.equal(bad.calls.length,0);assert.equal(bad.get('verify').disabled,true);assert.match(bad.get('status').textContent,/could not verify/);
  const f=page(new URL(annualSettingsTransferUrl(service,input)).hash.slice(1)),replacement={...input,values:{status_note:'File replacement'}};
  f.get('file').files=[{size:100,text:async()=>JSON.stringify(replacement)}];f.get('file').events.change();await f.get('verify').events.click();assert.equal(f.calls[0].source,JSON.stringify(replacement));
  f.chain.failure({message:'Changed resources'});assert.equal(f.get('save').disabled,true);assert.equal(f.get('review').hidden,true);
+});
+
+test('double click cannot dispatch twice; uncertain save keeps exact review for reconciliation',async()=>{
+ const f=page(new URL(annualSettingsTransferUrl(service,input)).hash.slice(1));await f.get('verify').events.click();
+ f.get('public-review').checked=true;f.get('note').value='Reviewed';f.get('note').events.input();
+ f.get('save').events.click();f.get('save').events.click();assert.equal(f.calls.filter(c=>c.type==='save').length,1);
+ f.chain.failure({message:'Network response lost'});assert.equal(f.get('save').disabled,false);assert.equal(f.get('review').hidden,false);assert.match(f.get('status').textContent,/uncertain.*reconcile/);
+ f.get('save').events.click();assert.equal(f.calls.filter(c=>c.type==='save').length,2);assert.deepEqual(f.calls[1].args,f.calls[2].args);
+});
+test('expired verification clears approval while keeping retained draft downloadable',async()=>{
+ const f=page(new URL(annualSettingsTransferUrl(service,input)).hash.slice(1));await f.get('verify').events.click();
+ f.get('public-review').checked=true;f.get('note').value='Reviewed';f.get('note').events.input();f.get('save').events.click();
+ f.chain.failure({message:'This verification expired after 30 minutes.'});assert.equal(f.get('save').disabled,true);assert.equal(f.get('download-draft').disabled,false);assert.match(f.get('status').textContent,/Download the retained draft/);
+});
+
+test('retired fresh-copy controls stay disabled and cannot dispatch legacy calls while settings save works',async()=>{
+ const f=page(new URL(annualSettingsTransferUrl(service,input)).hash.slice(1));
+ for(const id of ['setup-destination','setup-workbooks','setup-configure']){assert.equal(f.get(id).disabled,true);f.get(id).events.click();assert.match(f.get('status').textContent,/retired.*AnnualProvisioner/);}
+ assert.equal(f.calls.length,0);await f.get('verify').events.click();f.get('public-review').checked=true;f.get('note').value='Reviewed';f.get('note').events.input();assert.equal(f.get('save').disabled,false);f.get('save').events.click();assert.equal(f.calls[1].type,'save');
+ for(const id of ['setup-destination','setup-workbooks','setup-configure'])assert.equal(f.get(id).disabled,true);
+ const html=readFileSync(new URL('../integrations/apps-script/AnnualSettingsPage.html.example',import.meta.url),'utf8');assert.match(html,/Legacy fresh-copy setup — retired/);assert.match(html,/id="setup-destination" type="button" disabled/);assert.match(html,/id="setup-workbooks" type="button" disabled/);
 });

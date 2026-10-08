@@ -6,8 +6,8 @@ function fixture() {
   const configs = {ANNUAL_COPY_CONFIG:{intendedOwner:'chapter@example.org'},ANNUAL_SETUP_CONFIG:{schema:1},ANNUAL_SETTINGS_DRAFT_CONFIG:{schema:1,year:'2027-2028',controlCenterId:'configured-center',ledgerId:'configured-ledger',draftTimestamp:'2026-10-01T00:00:00Z',values:{display_label:'Private configured draft'}}};
   const stored = new Map(), calls = [], actor = {active:'chapter@example.org',effective:'chapter@example.org'};
   const props = {getProperty:key=>JSON.stringify(configs[key])};
-  const user = {getProperty:key=>stored.get(key),setProperty:(key,value)=>stored.set(key,value),deleteProperty:key=>stored.delete(key)};
-  const ctx = vm.createContext({ScriptApp:{AuthMode:{FULL:'FULL'},requireAllScopes:()=>calls.push('scopes')},Session:{getActiveUser:()=>({getEmail:()=>actor.active}),getEffectiveUser:()=>({getEmail:()=>actor.effective})},PropertiesService:{getScriptProperties:()=>props,getUserProperties:()=>user},Utilities:{getUuid:()=> 'private-ticket',newBlob:text=>({getBytes:()=>Buffer.from(text)})},HtmlService:{createHtmlOutputFromFile:name=>({setTitle:()=>name})},annualSettingsDraftIO_:(copy,setup,draft)=>{calls.push({draft});return {};},AnnualSettingsDraftEngine:{run:(handoff,draft,io,approval)=>{calls.push({handoff,draft,approval});if(handoff.links.wrong)throw Error('Handoff mismatch');if(approval&&approval.digest!=='verified-digest')throw Error('Stale preview');return approval?{status:'draft-readback-matched',year:draft.year,activation:false}:{digest:'verified-digest',row:[false,false],year:draft.year};}}});
+  const user = {getProperty:key=>stored.get(key),setProperty:(key,value)=>stored.set(key,value),deleteProperty:key=>stored.delete(key),getProperties:()=>Object.fromEntries(stored)};
+  const ctx = vm.createContext({ScriptApp:{AuthMode:{FULL:'FULL'},requireAllScopes:()=>calls.push('scopes')},Session:{getActiveUser:()=>({getEmail:()=>actor.active}),getEffectiveUser:()=>({getEmail:()=>actor.effective})},PropertiesService:{getScriptProperties:()=>props,getUserProperties:()=>user},LockService:{getUserLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},Utilities:{getUuid:()=> 'private-ticket',newBlob:text=>({getBytes:()=>Buffer.from(text)})},HtmlService:{createHtmlOutputFromFile:name=>({setTitle:()=>name})},annualSettingsDraftIO_:(copy,setup,draft)=>{calls.push({draft});return {};},AnnualSettingsDraftEngine:{run:(handoff,draft,io,approval)=>{calls.push({handoff,draft,approval});if(handoff.links.wrong)throw Error('Handoff mismatch');if(approval&&approval.digest!=='verified-digest')throw Error('Stale preview');return approval?{status:'draft-readback-matched',year:draft.year,activation:false}:{digest:'verified-digest',row:[false,false],year:draft.year};}}});
   vm.runInContext(readFileSync(new URL('../integrations/apps-script/AnnualSettingsWebApp.gs.example',import.meta.url),'utf8'),ctx);
   const input={schema:1,type:'asme-annual-settings-input',handoff:{schema:1,type:'asme-annual-link-handoff',year:'2027-2028',links:{pointsMaster:'configured-copy'}},values:{display_label:'2027–2028'}};
   return {ctx,configs,stored,calls,actor,input,preview:()=>ctx.previewAnnualSettingsWeb(JSON.stringify(input)),save:()=>ctx.saveAnnualSettingsWeb('private-ticket',true,'Reviewed public links')};
@@ -32,17 +32,17 @@ test('import rejects wrong schema/year, unknown fields and oversized files',()=>
   for(const change of [x=>{x.schema=2;},x=>{x.handoff.year='2028-2029';},x=>{x.controlCenterId='attacker';}]){const f=fixture();change(f.input);assert.throws(f.preview,/save file/);assert.equal(f.stored.size,0);}
   const f=fixture();assert.throws(()=>f.ctx.previewAnnualSettingsWeb(' '.repeat(16001)),/16 KB/);
 });
-test('failed import clears previous authorization to save',()=>{
-  const f=fixture();f.preview();f.input.handoff.links.wrong=true;assert.throws(f.preview,/Handoff mismatch/);assert.throws(f.save,/verify.*first/);
+test('failed import never silently replaces another tab exact authorization',()=>{
+  const f=fixture();f.preview();f.input.handoff.links.wrong=true;assert.throws(f.preview,/Handoff mismatch/);f.input.handoff.links.wrong=false;assert.equal(f.save().status,'draft-readback-matched');
 });
 test('save requires server preview, exact ticket and public review',()=>{
   const f=fixture();assert.throws(f.save,/first/);f.preview();
-  assert.throws(()=>f.ctx.saveAnnualSettingsWeb('wrong',true,'Reviewed'),/expired or changed/);
+  assert.throws(()=>f.ctx.saveAnnualSettingsWeb('wrong',true,'Reviewed'),/expired or was replaced/);
   assert.throws(()=>f.ctx.saveAnnualSettingsWeb('private-ticket',false,'Reviewed'),/public row/);
   assert.throws(()=>f.ctx.saveAnnualSettingsWeb('private-ticket',true,' '),/public row/);
 });
 test('expired preview and changed private config block a save',()=>{
-  const f=fixture();f.preview();const saved=JSON.parse(f.stored.get('ANNUAL_WEB_PREVIEW'));saved.createdAt=0;f.stored.set('ANNUAL_WEB_PREVIEW',JSON.stringify(saved));assert.throws(f.save,/expired/);
+  const f=fixture();f.preview();const saved=JSON.parse(f.stored.get('ANNUAL_WEB_settings_private-ticket'));saved.createdAt=0;f.stored.set('ANNUAL_WEB_settings_private-ticket',JSON.stringify(saved));assert.throws(f.save,/expired/);
   const g=fixture();g.preview();g.configs.ANNUAL_SETTINGS_DRAFT_CONFIG.controlCenterId='changed';assert.throws(g.save,/configuration changed/);
 });
 test('deployment defaults to chapter self and accessing-user authority with existing scopes',()=>{
@@ -65,9 +65,49 @@ function manualFixture(){
 }
 test('manual web mode reads private rules and re-verifies snapshot under lock for save',()=>{
  const f=manualFixture();f.preview();assert.equal(f.locks,1);assert.equal(f.verifications,1);assert.equal(f.save().status,'draft-readback-matched');assert.equal(f.verifications,2);
- const raw=JSON.parse(f.stored.get('ANNUAL_WEB_PREVIEW'));assert.equal(raw.manual,true);assert.ok(raw.draft.manualVerificationDigest);assert.equal(f.calls.some(c=>c.draft&&!c.handoff),false);
+ const raw=JSON.parse(f.stored.get('ANNUAL_WEB_settings_private-ticket'));assert.equal(raw.manual,true);assert.ok(raw.draft.manualVerificationDigest);assert.equal(f.calls.some(c=>c.draft&&!c.handoff),false);
  f.rules.points.term='Changed';assert.throws(f.save,/resources changed/);
 });
 test('manual rules file must remain private and chapter-owned; wrong actor stops reading it',()=>{
  for(const change of [f=>{f.metadata.permissions.push({type:'anyone'});},f=>{f.metadata.owners[0].emailAddress='other@example.org';},f=>{f.actor.active='other@example.org';}]){const f=manualFixture();change(f);assert.throws(f.preview,/chapter/);assert.equal(f.calls.some(c=>c.handoff),false);}
+});
+
+test('independent tickets survive another tab verification; timestamps do not change immutable draft',()=>{
+ const f=fixture();let next=0;f.ctx.Utilities.getUuid=()=>`ticket-${++next}`;
+ const first=f.preview(),second=f.preview();
+ assert.notEqual(first.ticket,second.ticket);assert.equal(first.draftTimestamp,f.configs.ANNUAL_SETTINGS_DRAFT_CONFIG.draftTimestamp);
+ assert.equal(Date.parse(first.expiresAt)-Date.parse(first.verifiedAt),30*60*1000);
+ for(const result of [first,second])assert.equal(f.ctx.saveAnnualSettingsWeb(result.ticket,true,'Audience reviewed').status,'draft-readback-matched');
+ assert.equal(f.stored.size,2);
+});
+test('ticket storage is bounded to five; eviction, actor mismatch and future clock reject usefully',()=>{
+ const f=fixture();let next=0;f.ctx.Utilities.getUuid=()=>`ticket-${++next}`;
+ const tickets=Array.from({length:6},()=>f.preview().ticket);assert.equal(f.stored.size,5);
+ assert.throws(()=>f.ctx.saveAnnualSettingsWeb(tickets[0],true,'Reviewed'),/replaced/);
+ const key='ANNUAL_WEB_settings_'+tickets[5],state=JSON.parse(f.stored.get(key));
+ state.actor='wrong@example.org';f.stored.set(key,JSON.stringify(state));assert.throws(()=>f.ctx.saveAnnualSettingsWeb(tickets[5],true,'Reviewed'),/account/);
+ state.actor=f.actor.active;state.createdAt=Date.now()+60000;f.stored.set(key,JSON.stringify(state));assert.throws(()=>f.ctx.saveAnnualSettingsWeb(tickets[5],true,'Reviewed'),/expired/);
+});
+test('old preview always saves its reviewed payload; concurrent draft edits cannot repurpose it',()=>{
+ const f=fixture();let next=0;f.ctx.Utilities.getUuid=()=>`ticket-${++next}`;const original=f.preview();
+ f.input.values.display_label='Other tab changed label';const edited=f.preview();
+ f.ctx.saveAnnualSettingsWeb(original.ticket,true,'Reviewed original');
+ assert.equal(f.calls.filter(c=>c.approval).at(-1).draft.values.display_label,'2027–2028');
+ f.ctx.saveAnnualSettingsWeb(edited.ticket,true,'Reviewed changed');
+ assert.equal(f.calls.filter(c=>c.approval).at(-1).draft.values.display_label,'Other tab changed label');
+});
+test('officer setup uses same bounded engine approval and returns actual handoff receipt',()=>{
+ const f=fixture();f.configs.ANNUAL_COPY_CONFIG.year='2027-2028';f.configs.ANNUAL_SETUP_CONFIG.year='2027-2028';
+ f.ctx.annualSetupIO_=()=>({digest:source=>source});
+ const runs=[];f.ctx.AnnualSetupEngine={run:(copy,setup,io,phase,approval)=>{runs.push({phase,approval});return approval?{year:copy.year,phase,status:'configured',checkedAt:'readback-time'}:{year:copy.year,digest:'setup-digest',phase,changes:[]};},handoff:()=>({type:'asme-annual-link-handoff',verification:{annualConfigurationMatches:true}})};
+ const preview=f.ctx.previewAnnualSetupWeb('workbooks');assert.equal(runs[0].approval,null);
+ assert.throws(()=>f.ctx.configureAnnualSetupWeb(preview.ticket,false),/Review/);
+ const result=f.ctx.configureAnnualSetupWeb(preview.ticket,true);assert.equal(result.handoff.verification.annualConfigurationMatches,true);
+ assert.deepEqual(JSON.parse(JSON.stringify(runs.at(-1).approval)),{year:'2027-2028',phase:'workbooks',digest:'setup-digest'});
+ f.configs.ANNUAL_SETUP_CONFIG.changed=true;assert.throws(()=>f.ctx.configureAnnualSetupWeb(preview.ticket,true),/configuration changed/);
+});
+test('manual-only setup waits for maintainer instead of synthesizing copy authority',()=>{
+ const f=manualFixture();delete f.configs.ANNUAL_COPY_CONFIG;delete f.configs.ANNUAL_SETUP_CONFIG;
+ assert.throws(()=>f.ctx.previewAnnualSetupWeb('destination'),/maintainer handoff/);
+ assert.equal(f.stored.size,0);
 });

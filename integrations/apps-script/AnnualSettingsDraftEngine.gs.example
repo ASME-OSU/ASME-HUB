@@ -60,22 +60,25 @@ var AnnualSettingsDraftEngine = (function () {
     return io.lock(function () {
       var trusted = validate(handoff,c,io);
       var data = io.readSettings(), existing = dataset(data,c.year), ledger = io.load();
-      if (!ledger || ledger.schema !== 1 || !ledger.runs) fail('Private draft ledger malformed');
+      if (!ledger || ledger.schema !== 1 || !ledger.runs || typeof ledger.runs !== 'object' || Array.isArray(ledger.runs)) fail('Private draft ledger malformed');
       // Browser JSON field order differs from the original private handoff order.
       // Retain the authoritative handoff order so existing journals remain exact.
       var plan = JSON.stringify({ handoff: { year: handoff.year, links: trusted.links }, config: c });
       var saved = ledger.runs[c.year];
       if (saved && saved.plan !== plan) fail('Saved draft plan differs; inspect private journal');
-      var row = saved ? saved.row : headers.map(function(key) {
+      var row = headers.map(function(key) {
         if (key === 'academic_year') return c.year;
         if (key === 'is_active' || key === 'is_current') return false;
         if (key === 'last_updated') return c.draftTimestamp;
         if (linkFields[key]) return handoff.links[linkFields[key]];
         return c.values[key];
       });
+      if (saved && (!same(saved.row,row) || ['pending','verified'].indexOf(saved.state)<0 || !Array.isArray(saved.baseline) || saved.baseline.some(function(r){return !Array.isArray(r) || r.length!==20;}))) fail('Private draft journal row/state/baseline is corrupt; preserve and inspect it.');
+      if (saved && dataset({headers:headers,rows:saved.baseline,formulas:[]},c.year)) fail('Private draft journal baseline contains the target year; preserve and inspect it.');
       if (existing && !same(existing.row,row)) fail('Existing target row differs; append-only writer cannot overwrite');
       var baseline = saved ? saved.baseline : data.rows;
-      var digest = saved ? saved.digest : io.digest(JSON.stringify({plan:plan,headers:headers,row:row,baseline:baseline}));
+      var digest = io.digest(JSON.stringify({plan:plan,headers:headers,row:row,baseline:baseline}));
+      if (saved && saved.digest!==digest) fail('Private draft journal digest is corrupt; preserve and inspect it.');
       var publicFields = headers.filter(function(key){ return !!linkFields[key] || /_url$/.test(key); });
       var preview = { schema:1,year:c.year,digest:digest,status:'review-required',headers:headers.slice(),row:row.slice(),currentYear:data.rows.filter(function(r){return !unused(r) && flag(r[11]);})[0][0],publicLinkFields:publicFields,warning:'The entire Control Center workbook is publicly readable. Every row value and these links require an explicit public audience review.' };
       if (!approval) return preview;
@@ -86,7 +89,7 @@ var AnnualSettingsDraftEngine = (function () {
       } else {
         if (existing) fail('Unjournaled existing target row; inspect Google');
         if (!same(data.rows,baseline)) fail('Settings baseline changed');
-        saved = {plan:plan,row:row,digest:digest,baseline:baseline,state:'pending',approval:approval};
+        saved = {plan:plan,row:row,digest:digest,baseline:baseline,state:'pending',approval:approval,appendAttemptedAt:io.now()};
         ledger.runs[c.year] = saved; io.save(ledger);
         // Journal acknowledged before external append. A timeout never repeats it.
         var latest = io.readSettings(); dataset(latest,c.year);
@@ -95,8 +98,8 @@ var AnnualSettingsDraftEngine = (function () {
       }
       var readback = io.readSettings(), actual = dataset(readback,c.year);
       if (!actual || !same(actual.row,row) || !same(readback.rows.filter(function(r){return r[0] !== c.year;}),baseline)) fail('Draft readback unavailable/different; preserve pending intent');
-      saved.state = 'verified'; saved.checkedAt = io.now(); io.save(ledger);
-      return {schema:1,year:c.year,status:'draft-readback-matched',digest:digest,row:actual.row.slice(),checkedAt:saved.checkedAt,activation:false,readiness:'Draft only; annual manual checks remain required'};
+      saved.state = 'verified'; saved.checkedAt = io.now(); if (!saved.firstConfirmedAt) saved.firstConfirmedAt = saved.checkedAt; io.save(ledger);
+      return {schema:1,year:c.year,status:'draft-readback-matched',digest:digest,row:actual.row.slice(),checkedAt:saved.checkedAt,firstConfirmedAt:saved.firstConfirmedAt,appendAttemptedAt:saved.appendAttemptedAt || null,draftTimestamp:c.draftTimestamp,activation:false,readiness:'Draft only; annual manual checks remain required'};
     });
   }
   return {run:run,headers:headers.slice()};
