@@ -110,3 +110,39 @@ test('result distinguishes formula/cell writes from compacted operations', () =>
   assert.equal(result.changedCells, 18); assert.equal(result.changedOperations, 14);
   assert.equal(result.responseInventory.formulaCells, 4);
 });
+
+test('reviewed inherited Review Queue basic filter and filter views reset through journaled readback',()=>{
+ const f=fixture();f.setup.reviewQueueFilterReset={reviewed:true,sheet:'Review Queue',reviewNote:'Fresh private template inherited a filter hiding OPEN exceptions'};f.destination();
+ let filters={basicFilter:{range:{sheetId:9},criteria:{'4':{hiddenValues:['OPEN']}}},filterViews:[{filterViewId:17,title:'Closed only',range:{sheetId:9}}],sheetId:9};
+ f.io.filters=()=>clone(filters);const read=f.io.read,write=f.io.write;let filterWrites=0;
+ f.io.read=patch=>patch.kind==='filters'?clone(filters):read(patch);
+ f.io.write=patch=>{if(patch.kind==='filters'){filterWrites++;filters=clone(patch.after);}else write(patch);};
+ const preview=engine.run(f.copy,f.setup,f.io,'workbooks');assert.equal(preview.changes[0].kind,'filters');assert.equal(preview.changes[0].before.filterViews.length,1);assert.equal(filterWrites,0);
+ const approval={year:f.copy.year,phase:'workbooks',digest:preview.digest};
+ const result=engine.run(f.copy,f.setup,f.io,'workbooks',approval);
+ assert.deepEqual(filters,{basicFilter:null,filterViews:[],sheetId:9});assert.equal(result.reviewQueueFilters,'reset-reviewed-filters');
+ engine.run(f.copy,f.setup,f.io,'workbooks',approval);assert.equal(filterWrites,1);
+});
+test('filter reset rejects absent review and concurrent criteria edits before mutation',()=>{
+ const f=fixture();f.setup.reviewQueueFilterReset={sheet:'Review Queue',reviewNote:'Reviewed'};f.destination();assert.throws(()=>f.approve('workbooks'),/filter review/);
+ const g=fixture();g.setup.reviewQueueFilterReset={reviewed:true,sheet:'Review Queue',reviewNote:'Reviewed'};g.destination();
+ let filters={basicFilter:{range:{sheetId:9}},filterViews:[],sheetId:9};g.io.filters=()=>clone(filters);
+ const approval=g.approve('workbooks');filters.basicFilter.criteria={'4':{hiddenValues:['OTHER']}};
+ assert.throws(()=>engine.run(g.copy,g.setup,g.io,'workbooks',approval),/Approval/);assert.equal(g.writes(),1);
+});
+test('setup inventory returns every observed export tab and exact import cell/source in receipt',()=>{
+ const f=fixture(),workbook=f.io.workbook;
+ f.io.workbook=(id,source)=>({...workbook(id,source),tabs:id===f.ids.pointsExport?['Public','Summary','Status','Metrics','Monthly','Semester','Read Me']:['Budget_Public','Read Me']});
+ f.workbooks();const result=engine.run(f.copy,f.setup,f.io,'workbooks',f.approve('workbooks'));
+ assert.equal(result.importInventory.pointsExport.tabs.length,7);
+ assert.deepEqual(clone(result.importInventory.pointsExport.cells.map(({sheet,a1,sourceId})=>({sheet,a1,sourceId}))),[{sheet:'Public',a1:'A1',sourceId:f.ids.pointsMaster}]);
+ assert.equal(result.importInventory.budgetExport.cells.length,2);assert.match(result.importInventory.budgetExport.cells[0].formula,/new_budget/);
+});
+
+test('legacy setup rejects proxy architecture before destination preview/apply, workbook resume and handoff',()=>{
+ const f=fixture(),approved=f.approve('destination');f.tabs().push({id:9,name:'_Raw_Ingest',formId:null,lastRow:1,headers:[]});
+ for(const operation of [()=>engine.run(f.copy,f.setup,f.io,'destination'),()=>engine.run(f.copy,f.setup,f.io,'destination',approved),()=>engine.run(f.copy,f.setup,f.io,'workbooks'),()=>engine.handoff(f.copy,f.setup,f.io)])assert.throws(operation,/retired.*AnnualProvisioner/);
+ assert.equal(f.writes(),0);assert.equal(f.saves(),0);
+ const resumed=fixture();resumed.destination();const workbookApproval=resumed.approve('workbooks'),writes=resumed.writes(),saves=resumed.saves();resumed.tabs().push({id:9,name:'_Raw_Ingest',formId:null,lastRow:1,headers:[]});
+ assert.throws(()=>engine.run(resumed.copy,resumed.setup,resumed.io,'workbooks',workbookApproval),/AnnualProvisioner/);assert.equal(resumed.writes(),writes);assert.equal(resumed.saves(),saves);
+});

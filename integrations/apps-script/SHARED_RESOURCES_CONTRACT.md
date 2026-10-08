@@ -1,6 +1,10 @@
 # Shared resource projection and migration
 
-Local implementation only. `sharedResources` starts with blank spreadsheet/tab/edit pointers. No resource tab, public projection, officer access or migration is certified. Until connected, edit the repository's `config.resources` for shared static links and authorized Google Year Settings for annual URLs. **Manage my links** remains personal browser storage.
+The Hub is wired to the chapter Control Center's `Shared_Resources_Public` tab (A:H). Authorized officers use **Edit shared resources**, save the row in Google, and choose **Refresh shared resources**. A successful read shows its checked timestamp. **Manage my links** remains personal browser storage. Deployment and an incoming officer's actual edit access are separate acceptance checks.
+
+The initial reviewed projection contains the private handoff folder/checklist references, Newsletter Builder, chapter website, WordPress editor and ordinary calendar editor. Restricted handoff reference IDs are intentionally listed to make the authorized officer route direct; their documents, contacts, evidence and permissions remain private. No passwords, personal contacts, transaction/account details or private note content were copied into this publicly readable workbook. The six annual action URLs remain in Year Settings. All other stable IDs keep their bundled fallback until individually migrated/reviewed.
+
+Owner: outgoing President or transition coordinator; request assistance through [asme@osu.edu](mailto:asme@osu.edu). The editor cannot grant access by clicking a resource link. Record actual successor access privately before launch.
 
 ## Proposed public read contract
 

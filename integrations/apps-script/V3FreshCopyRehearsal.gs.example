@@ -1,0 +1,41 @@
+/* Optional native editor helper. Uses separate private fixture configuration and
+ * real engine journals. Never changes production properties, rules or settings.
+ * Return values are private receipts: inspect in debugger; no data logging. */
+function v3FreshContext_() {
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  var ctx=annualSettingsWebContext_(),props=ctx.props;
+  var text=props.getProperty('V3_FRESH_REHEARSAL_REFERENCE');
+  if(!text)throw new Error('Provision separate private V3_FRESH_REHEARSAL_REFERENCE first.');
+  var reference=JSON.parse(text);
+  if(reference.intendedOwner!==ctx.actor)throw new Error('Fixture reference must belong to authenticated chapter account.');
+  // This established reader checks private ownership, editable JSON, identity,
+  // size and user-only permissions before reading any fixture configuration.
+  var c=readAnnualManualRules_(reference);
+  if(c.schema!==1 || c.type!=='asme-v3-fresh-copy-rehearsal' || !c.copy || !c.setup || c.copy.namespace!=='v3-remediation-fresh' || c.copy.year!=='2027-2028' || c.setup.year!==c.copy.year || c.copy.intendedOwner!==ctx.actor || !Array.isArray(c.excludedTargetIds) || c.excludedTargetIds.length<5)throw new Error('Explicit isolated V3 fresh-copy configuration required.');
+  var excluded=c.excludedTargetIds.concat([reference.rulesFileId,ctx.draft.controlCenterId,ctx.draft.ledgerId]);
+  if(ctx.manual)excluded.push(ctx.manual.annualRootId);
+  c.copy.items.forEach(function(item){if(item.source)excluded.push(item.source.id);if(item.name.indexOf('V3 Remediation Fresh Copy — 2027–2028')!==0)throw new Error('Every created fixture must have the exact private rehearsal name prefix.');});
+  if(excluded.indexOf(c.copy.parentId)>=0 || excluded.indexOf(c.copy.ledgerId)>=0)throw new Error('New fixture root/ledger cannot target originals, production or historical V3.');
+  if(!c.setup.reviewQueueFilterReset || c.setup.reviewQueueFilterReset.reviewed!==true)throw new Error('Fresh run must explicitly review Review Queue filter reset.');
+  return {props:props,c:c,copyIO:annualCopyIO_(c.copy),setupIO:annualSetupIO_(c.copy,c.setup)};
+}
+function v3PreviewFreshCopies() {
+  var f=v3FreshContext_();
+  return {schema:1,status:'copy-review-required',configDigest:f.setupIO.digest(JSON.stringify(f.c.copy)),preview:AnnualCopyEngine.execute(f.c.copy,f.copyIO,true)};
+}
+function v3CreateFreshCopies() {
+  var f=v3FreshContext_(),raw=f.props.getProperty('V3_FRESH_COPY_APPROVAL'),approval=raw?JSON.parse(raw):null;
+  if(!approval || approval.reviewed!==true || approval.configDigest!==f.setupIO.digest(JSON.stringify(f.c.copy)))throw new Error('Approve exact separate fresh copy preview first.');
+  return AnnualCopyEngine.execute(f.c.copy,f.copyIO,false);
+}
+function v3FreshSetup_(phase,configure) {
+  var f=v3FreshContext_(),approval=null;
+  if(configure){var raw=f.props.getProperty('V3_FRESH_SETUP_APPROVAL');if(!raw)throw new Error('Review exact fixture setup preview first.');approval=JSON.parse(raw);}
+  var result=AnnualSetupEngine.run(f.c.copy,f.c.setup,f.setupIO,phase,approval);
+  if(configure && phase==='workbooks')result.handoff=AnnualSetupEngine.handoff(f.c.copy,f.c.setup,f.setupIO);
+  return result;
+}
+function v3PreviewFreshDestination(){return v3FreshSetup_('destination',false);}
+function v3ConfigureFreshDestination(){return v3FreshSetup_('destination',true);}
+function v3PreviewFreshWorkbooks(){return v3FreshSetup_('workbooks',false);}
+function v3ConfigureFreshWorkbooks(){return v3FreshSetup_('workbooks',true);}

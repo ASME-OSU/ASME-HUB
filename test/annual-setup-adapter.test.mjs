@@ -50,3 +50,21 @@ test('authorization, service and similar destination errors are rethrown unchang
     }
   }
 });
+
+test('filter adapter inventories both Google filter types and deletes exact reviewed IDs only',()=>{
+ const requests=[],ctx=vm.createContext({SpreadsheetApp:{openById:()=>({getSheetByName:()=>null})},annualCopyIO_:()=>({lock:fn=>fn()}),Sheets:{Spreadsheets:{get:(id,options)=>{assert.equal(id,'copied-points');assert.match(options.fields,/basicFilter,filterViews/);return {sheets:[{properties:{title:'Review Queue',sheetId:9},basicFilter:{range:{sheetId:9}},filterViews:[{filterViewId:18},{filterViewId:17}]}]};},batchUpdate:(body,id)=>{requests.push({body,id});}}}});
+ vm.runInContext(sources[0],ctx);const io=ctx.annualSetupIO_({},{});io.assertLegacyArchitecture('copied-points');const before=io.filters('copied-points','Review Queue');
+ assert.deepEqual(JSON.parse(JSON.stringify(before)),{basicFilter:{range:{sheetId:9}},filterViews:[{filterViewId:17},{filterViewId:18}],sheetId:9});
+ io.write({kind:'filters',id:'copied-points',sheet:'Review Queue',before,after:{basicFilter:null,filterViews:[],sheetId:9}});
+ assert.deepEqual(JSON.parse(JSON.stringify(requests)),[{id:'copied-points',body:{requests:[{clearBasicFilter:{sheetId:9}},{deleteFilterView:{filterId:17}},{deleteFilterView:{filterId:18}}]}}]);
+});
+
+test('legacy native adapter refuses proxy masters before any destination, filter or cell writes',()=>{
+ let proxy=true,writes=0;const ctx=vm.createContext({annualCopyIO_:()=>({lock:fn=>fn()}),SpreadsheetApp:{openById:()=>({getSheetByName:name=>name==='_Raw_Ingest'&&proxy?{}:null})},FormApp:{openById:()=>({setDestination:()=>writes++}),DestinationType:{SPREADSHEET:'spreadsheet'}},Sheets:{Spreadsheets:{batchUpdate:()=>writes++}}});
+ vm.runInContext(sources[0],ctx);const io=ctx.annualSetupIO_({},{});
+ assert.throws(()=>io.assertLegacyArchitecture('copied-points'),/AnnualProvisioner/);
+ assert.throws(()=>io.write({kind:'destination',id:'form',after:'copied-points'}),/before any write/);assert.equal(writes,0);
+ proxy=false;io.assertLegacyArchitecture('copied-points');proxy=true;
+ for(const patch of [{kind:'destination',id:'form',after:'copied-points'},{kind:'filters',id:'copied-points',before:{basicFilter:{},filterViews:[]}},{kind:'cell',id:'copied-budget',sheet:'Config',a1:'B1',after:{value:'x'}}])assert.throws(()=>io.write(patch),/AnnualProvisioner/);
+ assert.equal(writes,0);
+});

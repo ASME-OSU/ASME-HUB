@@ -26,7 +26,8 @@ function annualSettingsWebContext_() {
 }
 function previewAnnualSettingsWeb(inputText) {
   var ctx = annualSettingsWebContext_();
-  // Clearing before parsing means a failed new import cannot save an older preview.
+  // Each browser keeps its own exact ticket. A new tab cannot replace another tab's review.
+  // Legacy single-slot tickets are never used to authorize a write.
   var user = PropertiesService.getUserProperties();
   user.deleteProperty('ANNUAL_WEB_PREVIEW');
   if (typeof inputText !== 'string' || inputText.length > 16000) throw new Error('Choose a Hub Google save file under 16 KB.');
@@ -57,18 +58,15 @@ function previewAnnualSettingsWeb(inputText) {
     io = annualSettingsDraftIO_(ctx.copy,ctx.setup,draft,ctx.props);
     preview = AnnualSettingsDraftEngine.run(input.handoff,draft,io,null);
   }
-  var ticket = Utilities.getUuid();
-  var prepared = JSON.stringify({actor:ctx.actor,ticket:ticket,createdAt:Date.now(),handoff:input.handoff,draft:draft,digest:preview.digest,manual:!!ctx.manual});
+  var ticket = Utilities.getUuid(), createdAt = Date.now();
+  var prepared = JSON.stringify({actor:ctx.actor,ticket:ticket,createdAt:createdAt,handoff:input.handoff,draft:draft,digest:preview.digest,manual:!!ctx.manual});
   if (Utilities.newBlob(prepared).getBytes().length > 8500) throw new Error('The reviewed settings are too large. Shorten the public notes and URLs.');
-  user.setProperty('ANNUAL_WEB_PREVIEW',prepared);
-  return {ticket:ticket,preview:preview};
+  storeAnnualWebTicket_('settings',ticket,prepared);
+  return {ticket:ticket,preview:preview,draftTimestamp:draft.draftTimestamp,verifiedAt:new Date(createdAt).toISOString(),expiresAt:new Date(createdAt+30*60*1000).toISOString()};
 }
 function saveAnnualSettingsWeb(ticket, publicLinkReview, reviewNote) {
   var ctx = annualSettingsWebContext_();
-  var raw = PropertiesService.getUserProperties().getProperty('ANNUAL_WEB_PREVIEW');
-  if (!raw) throw new Error('Import and verify the Hub save file first.');
-  var prepared = JSON.parse(raw);
-  if (typeof ticket !== 'string' || ticket !== prepared.ticket || prepared.actor !== ctx.actor || !Number.isFinite(prepared.createdAt) || Date.now() - prepared.createdAt < 0 || Date.now() - prepared.createdAt > 30*60*1000) throw new Error('This preview expired or changed. Import and verify the file again.');
+  var prepared = readAnnualWebTicket_('settings',ticket,ctx.actor);
   if (publicLinkReview !== true || typeof reviewNote !== 'string' || !reviewNote.trim() || reviewNote.length > 1000) throw new Error('Review the public row and record a short audience review before saving.');
   // An administrator's configuration changes invalidate the reviewed preview.
   var expected = Object.assign({},ctx.draft,{values:prepared.draft.values});
@@ -77,6 +75,35 @@ function saveAnnualSettingsWeb(ticket, publicLinkReview, reviewNote) {
   if (JSON.stringify(expected) !== JSON.stringify(prepared.draft)) throw new Error('Private annual configuration changed. Import and verify again.');
   var io = ctx.manual?manualAnnualDraftIO_(Object.assign({},ctx.manual,{handoff:prepared.handoff,draft:prepared.draft}),ctx.props,prepared.draft.manualVerificationDigest,prepared.draft):annualSettingsDraftIO_(ctx.copy,ctx.setup,prepared.draft,ctx.props);
   return AnnualSettingsDraftEngine.run(prepared.handoff,prepared.draft,io,{year:prepared.draft.year,digest:prepared.digest,publicLinkReview:true,reviewNote:reviewNote.trim()});
+}
+
+
+// Five independent reviews per actor/kind, 30-minute TTL, 8.5 KB per property.
+// The user lock only guards ticket storage; engine writes use their project lock.
+function storeAnnualWebTicket_(kind,ticket,prepared) {
+  if (Utilities.newBlob(prepared).getBytes().length>8500) throw new Error('The reviewed ticket exceeds 8.5 KB. Shorten public notes and URLs.');
+  var lock=LockService.getUserLock();lock.waitLock(30000);
+  try {
+    var user=PropertiesService.getUserProperties(),prefix='ANNUAL_WEB_'+kind+'_',now=Date.now();
+    var all=user.getProperties(),entries=[];
+    Object.keys(all).filter(function(key){return key.indexOf(prefix)===0;}).forEach(function(key){
+      var value;try{value=JSON.parse(all[key]);}catch(error){user.deleteProperty(key);return;}
+      if (!Number.isFinite(value.createdAt) || now-value.createdAt<0 || now-value.createdAt>30*60*1000) user.deleteProperty(key);
+      else entries.push({key:key,createdAt:value.createdAt});
+    });
+    entries.sort(function(a,b){return a.createdAt-b.createdAt || a.key.localeCompare(b.key);});
+    while(entries.length>=5) user.deleteProperty(entries.shift().key);
+    user.setProperty(prefix+ticket,prepared);
+  } finally {lock.releaseLock();}
+}
+function readAnnualWebTicket_(kind,ticket,actor) {
+  if (typeof ticket!=='string' || !/^[A-Za-z0-9_-]{1,100}$/.test(ticket)) throw new Error('Import and verify the file first. Verification ticket is missing or changed.');
+  var raw=PropertiesService.getUserProperties().getProperty('ANNUAL_WEB_'+kind+'_'+ticket);
+  if (!raw) throw new Error('This verification ticket expired or was replaced after five newer reviews. Import and verify the same file again first.');
+  var value=JSON.parse(raw),age=Date.now()-value.createdAt;
+  if (value.ticket!==ticket || value.actor!==actor) throw new Error('Verification account or ticket changed. Use the configured chapter account and verify again.');
+  if (!Number.isFinite(value.createdAt) || age<0 || age>30*60*1000) throw new Error('This verification expired after 30 minutes. Import and verify the same file again.');
+  return value;
 }
 
 // Formula inventories can exceed the 9 KB Script Property value limit.
@@ -93,4 +120,29 @@ function readAnnualManualRules_(reference) {
   var rules=JSON.parse(file.getBlob().getDataAsString('UTF-8'));
   if (String(rules.intendedOwner).trim().toLowerCase()!==owner || rules.draft && [rules.draft.ledgerId,rules.draft.controlCenterId,rules.annualRootId].indexOf(reference.rulesFileId)>=0 || rules.excludedSourceIds && rules.excludedSourceIds.indexOf(reference.rulesFileId)>=0) throw new Error('Manual rules owner/target identity conflict.');
   return Object.assign({},rules,{rulesFileId:reference.rulesFileId});
+}
+
+// Officer action for a separately reviewed copy-journal run. Manual rules never
+// become a fabricated copy ledger: a maintainer must provision the fresh run.
+function annualSetupWebContext_() {
+  var ctx=annualSettingsWebContext_(),rawCopy=ctx.props.getProperty('ANNUAL_COPY_CONFIG'),rawSetup=ctx.props.getProperty('ANNUAL_SETUP_CONFIG');
+  if (!rawCopy || !rawSetup) throw new Error('Fresh-copy setup needs a reviewed maintainer handoff. Contact the outgoing President/transition coordinator at asme@osu.edu to provision the private copy/setup run and return its completion receipt.');
+  var copy=JSON.parse(rawCopy),setup=JSON.parse(rawSetup);
+  if (String(copy.intendedOwner).trim().toLowerCase()!==ctx.actor || copy.year!==ctx.draft.year || setup.year!==ctx.draft.year) throw new Error('The private setup run belongs to a different account/year. Contact the transition coordinator at asme@osu.edu to prepare this year; preserve the existing journal.');
+  return {copy:copy,setup:setup,actor:ctx.actor,io:annualSetupIO_(copy,setup)};
+}
+function previewAnnualSetupWeb(phase) {
+  if (phase!=='destination' && phase!=='workbooks') throw new Error('Choose destination or workbooks setup.');
+  var ctx=annualSetupWebContext_(),preview=AnnualSetupEngine.run(ctx.copy,ctx.setup,ctx.io,phase,null),ticket=Utilities.getUuid(),now=Date.now();
+  var prepared=JSON.stringify({ticket:ticket,actor:ctx.actor,createdAt:now,phase:phase,year:ctx.copy.year,digest:preview.digest,configDigest:ctx.io.digest(JSON.stringify({copy:ctx.copy,setup:ctx.setup}))});
+  storeAnnualWebTicket_('setup',ticket,prepared);
+  return {ticket:ticket,preview:preview,verifiedAt:new Date(now).toISOString(),expiresAt:new Date(now+30*60*1000).toISOString()};
+}
+function configureAnnualSetupWeb(ticket,reviewed) {
+  var ctx=annualSetupWebContext_(),prepared=readAnnualWebTicket_('setup',ticket,ctx.actor);
+  if (reviewed!==true) throw new Error('Review the exact setup changes before configuring.');
+  if (prepared.configDigest!==ctx.io.digest(JSON.stringify({copy:ctx.copy,setup:ctx.setup}))) throw new Error('Private setup configuration changed. Preview setup again.');
+  var result=AnnualSetupEngine.run(ctx.copy,ctx.setup,ctx.io,prepared.phase,{year:prepared.year,phase:prepared.phase,digest:prepared.digest});
+  if(prepared.phase==='workbooks')result.handoff=AnnualSetupEngine.handoff(ctx.copy,ctx.setup,ctx.io);
+  return result;
 }

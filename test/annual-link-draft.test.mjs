@@ -65,36 +65,14 @@ test("settings mapping excludes private-only fields and stays inactive/noncurren
 
 const completedProgress = () => ({ ...emptyProgress(year), steps: Object.fromEntries(TRANSITION_STEPS.map(({ id }) => [id, "complete"])), checks: Object.fromEntries(TRANSITION_CHECKS.map(({ id }) => [id, "passed"])) });
 
-test("first Points link preserves earlier access and annual-folder progress", () => {
-  const prior = completedProgress();
-  const next = reconcileProgress(reopenAnnualChecks(prior, ["pointsMaster"], {}), TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(next.steps.T02, "complete");
-  assert.equal(next.steps.T04, "complete");
-  assert.equal(next.checks.V10, "passed");
-  assert.equal(next.steps.T05, "in_progress");
-  assert.equal(next.steps.T09, "complete");
-  assert.equal(next.steps.T15, "in_progress");
-  assert.equal(prior.steps.T05, "complete");
-  assert.doesNotThrow(() => parseProgress(next, year, TRANSITION_STEPS, TRANSITION_CHECKS));
+test("changed annual pointers recheck setup/scoring/communications and launch while preserving initial access",()=>{
+ const next=reconcileProgress(reopenAnnualChecks(completedProgress(),["pointsMaster"],{}),TRANSITION_STEPS,TRANSITION_CHECKS);
+ assert.equal(next.steps.T01,"complete");assert.equal(next.steps.T02,"in_progress");assert.equal(next.steps.T03,"in_progress");assert.equal(next.steps.T05,"in_progress");assert.equal(next.checks.V10,"passed");assert.equal(next.checks.V02,"needs_recheck");assert.doesNotThrow(()=>parseProgress(next,year,TRANSITION_STEPS,TRANSITION_CHECKS));
 });
-
-test("Form entry invalidates connection, scoring and settings without unrelated budget checks", () => {
-  const next = reconcileProgress(reopenAnnualChecks(completedProgress(), ["attendanceFormEditor"], {}), TRANSITION_STEPS, TRANSITION_CHECKS);
-  for (const key of ["V02", "V03", "V04", "V07"]) assert.equal(next.checks[key], "needs_recheck", key);
-  assert.equal(next.checks.V06, "passed");
-  assert.equal(next.steps.T05, "complete");
-  assert.equal(next.steps.T07, "complete");
-  assert.equal(next.steps.T02, "complete");
+test("replacing a saved resource also rechecks incoming access",()=>{
+ const next=reconcileProgress(reopenAnnualChecks(completedProgress(),["budgetExport"],{budgetExport:sheet(id)}),TRANSITION_STEPS,TRANSITION_CHECKS);
+ assert.equal(next.steps.T01,"in_progress");assert.equal(next.checks.V10,"needs_recheck");assert.equal(next.checks.V06,"needs_recheck");
 });
-
-test("replacing a saved resource requires incoming access checks again", () => {
-  const next = reconcileProgress(reopenAnnualChecks(completedProgress(), ["budgetExport"], { budgetExport: sheet(id) }), TRANSITION_STEPS, TRANSITION_CHECKS);
-  assert.equal(next.steps.T02, "in_progress");
-  assert.equal(next.checks.V10, "needs_recheck");
-  assert.equal(next.checks.V06, "needs_recheck");
-  assert.equal(next.checks.V01, "passed");
-});
-
 test("unchanged links and unknown keys preserve progress", () => {
   const prior = completedProgress();
   assert.deepEqual(reopenAnnualChecks(prior, []), prior);

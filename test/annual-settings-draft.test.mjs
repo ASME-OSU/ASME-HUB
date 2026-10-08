@@ -87,3 +87,24 @@ test('a changed unused checkbox row invalidates repeated readback without anothe
  assert.throws(()=>engine.run(f.handoff,f.config,f.io,approval),/rows changed|baseline/i);
  assert.equal(f.appends,1);
 });
+
+test('configured draft, append intent, first confirmation and later readback times remain distinct',()=>{
+ const f=fixture(),a=approve(f);let now='2026-10-07T10:00:00Z';f.io.now=()=>now;
+ const first=engine.run(f.handoff,f.config,f.io,a);
+ assert.equal(first.draftTimestamp,'2026-09-30T00:00:00Z');assert.equal(first.appendAttemptedAt,now);assert.equal(first.firstConfirmedAt,now);
+ now='2026-10-07T10:05:00Z';const repeated=engine.run(f.handoff,f.config,f.io,a);
+ assert.equal(repeated.firstConfirmedAt,first.firstConfirmedAt);assert.equal(repeated.checkedAt,now);assert.equal(f.appends,1);
+});
+
+
+test('corrupt saved row, digest, baseline or state rejects without modifying the journal or appending',()=>{
+ for(const corrupt of [record=>record.row[1]='Changed label',record=>record.digest='corrupted',record=>record.baseline[0][1]='Changed baseline',record=>record.baseline='wrong shape',record=>record.state='unknown']){
+  const f=fixture(),a=approve(f);engine.run(f.handoff,f.config,f.io,a);const ledger=f.ledger;corrupt(ledger.runs[f.config.year]);f.io.load=()=>clone(ledger);
+  const before=clone(ledger),writes=f.appends;assert.throws(()=>engine.run(f.handoff,f.config,f.io),/corrupt|Malformed|Exactly/);assert.deepEqual(ledger,before);assert.equal(f.appends,writes);
+ }
+});
+test('legitimate historical completed journal without new receipt timestamps keeps original digest',()=>{
+ const f=fixture(),a=approve(f);engine.run(f.handoff,f.config,f.io,a);const record=f.ledger.runs[f.config.year];
+ delete record.appendAttemptedAt;delete record.firstConfirmedAt;const oldDigest=record.digest,preview=engine.run(f.handoff,f.config,f.io);
+ assert.equal(preview.digest,oldDigest);assert.equal(engine.run(f.handoff,f.config,f.io,a).status,'draft-readback-matched');assert.equal(f.appends,1);
+});

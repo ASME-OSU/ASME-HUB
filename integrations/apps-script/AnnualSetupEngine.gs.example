@@ -43,7 +43,12 @@ var AnnualSetupEngine = (function () {
       ids[name] = operation.id;
     });
     if (Object.keys(ids).map(function (k) { return ids[k]; }).some(function (id, index, all) { return all.indexOf(id) !== index; })) fail('Resource identity collision');
+    assertLegacyArchitecture(ids, io);
     return ids;
+  }
+  function assertLegacyArchitecture(ids, io) {
+    if (io.assertLegacyArchitecture) io.assertLegacyArchitecture(ids.pointsMaster);
+    else if (io.tabs(ids.pointsMaster).some(function (tab) { return tab.name === '_Raw_Ingest'; })) fail('Legacy annual setup is retired for _Raw_Ingest proxy masters. Use AnnualProvisioner: run provision2027_2028() for 2027-2028, or provisionReviewedAnnualYear(year). No legacy changes were applied.');
   }
   // Selected annual convention: August–July, Fall August–December, Spring January–May.
   function dates(year) {
@@ -82,7 +87,7 @@ var AnnualSetupEngine = (function () {
     // never enter a write range. Thousands of formulas become a few range writes.
     var constants = [], rows = {};
     patches.forEach(function (patch) {
-      if (!patch.before.formula || !patch.after.formula) { constants.push(patch); return; }
+      if (patch.kind==='filters' || !patch.before.formula || !patch.after.formula) { constants.push(patch); return; }
       var match = patch.a1.match(/^([A-Z]+)([1-9][0-9]*)$/), column = 0;
       if (!match) fail('Formula inventory must use single-cell A1');
       match[1].split('').forEach(function (letter) { column = column * 26 + letter.charCodeAt(0) - 64; });
@@ -112,7 +117,7 @@ var AnnualSetupEngine = (function () {
   function changes(ids, setup, phase, io) {
     var form = io.form(ids.attendanceFormEditor);
     if (form.id !== ids.attendanceFormEditor || form.acceptingResponses !== false) fail('Copied Form identity/closed response review required');
-    var patches = [];
+    var patches = [], importInventory = {};
     function add(resource, tab, a1, before, after) {
       if (!same(before, after)) patches.push({ kind: 'cell', id: ids[resource], sheet: tab, a1: a1, before: before, after: after });
     }
@@ -128,6 +133,12 @@ var AnnualSetupEngine = (function () {
     var responseTab = tabs[0].name;
     var oldToken = "'" + setup.points.oldResponseTab.replace(/'/g, "''") + "'!";
     var newToken = "'" + responseTab.replace(/'/g, "''") + "'!";
+    if (setup.reviewQueueFilterReset) {
+      var reset=setup.reviewQueueFilterReset;
+      if (reset.reviewed!==true || reset.sheet!=='Review Queue' || typeof reset.reviewNote!=='string' || !reset.reviewNote.trim() || !io.filters) fail('Explicit Review Queue filter review and supported adapter required');
+      var filters=io.filters(ids.pointsMaster,reset.sheet);
+      if (filters.basicFilter || filters.filterViews.length) patches.push({kind:'filters',id:ids.pointsMaster,sheet:reset.sheet,before:filters,after:{basicFilter:null,filterViews:[],sheetId:filters.sheetId}});
+    }
     var points = io.workbook(ids.pointsMaster, setup.exports.pointsExport.sourceId);
     var matchCount = 0, responseInventory = { formulaCells: 0, occurrences: 0, sheets: {} };
     points.formulas.forEach(function (cell) {
@@ -151,10 +162,10 @@ var AnnualSetupEngine = (function () {
     ['pointsExport', 'budgetExport'].forEach(function (name) {
       var spec = setup.exports[name], destination = ids[name === 'pointsExport' ? 'pointsMaster' : 'budgetTracker'];
       var workbook = io.workbook(ids[name], spec.sourceId);
-      var importCells = 0;
+      var importCells = 0; importInventory[name]={tabs:workbook.tabs || [],cells:[]};
       workbook.formulas.forEach(function (cell) {
         if (/IMPORTRANGE\s*\(/i.test(cell.formula)) {
-          importCells++;
+          importCells++; importInventory[name].cells.push({sheet:cell.sheet,a1:cell.a1,sourceId:destination,formula:retargetImport(cell.formula,spec.sourceId,destination)});
           add(name, cell.sheet, cell.a1, { formula: cell.formula }, { formula: retargetImport(cell.formula, spec.sourceId, destination) });
         } else if (cell.formula.indexOf(spec.sourceId) >= 0) fail('Export source ID in unsupported formula');
       });
@@ -164,7 +175,7 @@ var AnnualSetupEngine = (function () {
         add(name, cell.sheet, cell.a1, { value: cell.value }, { value: cell.value.split(spec.sourceId).join(destination) });
       });
     });
-    return { patches: compact(patches), form: form, responseTab: responseTab, responseSheetId: tabs[0].id, responseInventory: responseInventory, datePolicy: setup.datePolicy };
+    return { patches: compact(patches), form: form, responseTab: responseTab, responseSheetId: tabs[0].id, responseInventory: responseInventory, datePolicy: setup.datePolicy,importInventory:importInventory,reviewQueueFilters:setup.reviewQueueFilterReset?'reset-reviewed-filters':'human-inspection-required' };
   }
   function run(copy, setup, io, phase, approval) {
     // Identity engine owns its own lock. Re-check inside the same outer project lock
@@ -176,7 +187,7 @@ var AnnualSetupEngine = (function () {
       var saved = run.setup && run.setup.phases[phase];
       var planned = saved ? saved.preview : changes(ids, setup, phase, io);
       var digest = io.digest(JSON.stringify({ copy: copy, setup: setup, phase: phase, ids: ids, preview: planned }));
-      var preview = { schema: 1, year: copy.year, phase: phase, digest: digest, resources: ids, changes: planned.patches, responseTab: planned.responseTab || null, responseSheetId: planned.responseSheetId === undefined ? null : planned.responseSheetId, status: 'review-required', responseInventory: planned.responseInventory || null, datePolicy: planned.datePolicy || null };
+      var preview = { schema: 1, year: copy.year, phase: phase, digest: digest, resources: ids, changes: planned.patches, responseTab: planned.responseTab || null, responseSheetId: planned.responseSheetId === undefined ? null : planned.responseSheetId, status: 'review-required', responseInventory: planned.responseInventory || null, datePolicy: planned.datePolicy || null,importInventory:planned.importInventory || null,reviewQueueFilters:planned.reviewQueueFilters || null };
       if (!approval) return preview;
       if (approval.digest !== digest || approval.phase !== phase || approval.year !== copy.year) fail('Approval must match this exact private preview');
       if (!run.setup) run.setup = { plan: setupPlan, phases: {} };
@@ -200,7 +211,7 @@ var AnnualSetupEngine = (function () {
       var verified = changes(ids, setup, phase, io);
       if (verified.patches.length) fail('Final annual configuration still has unapplied changes');
       saved.state = 'configured'; saved.checkedAt = io.now(); io.copy.save(ledger);
-      return { schema: 1, year: copy.year, phase: phase, digest: digest, status: 'configured', checkedAt: saved.checkedAt, changedOperations: planned.patches.length, changedCells: planned.patches.reduce(function (count, patch) { return count + (patch.kind === 'range' ? patch.after.reduce(function (sum, row) { return sum + row.length; }, 0) : patch.kind === 'cell' ? 1 : 0); }, 0), responseInventory: verified.responseInventory || null, responseTab: verified.responseTab || null };
+      return { schema: 1, year: copy.year, phase: phase, digest: digest, status: 'configured', checkedAt: saved.checkedAt, changedOperations: planned.patches.length, changedCells: planned.patches.reduce(function (count, patch) { return count + (patch.kind === 'range' ? patch.after.reduce(function (sum, row) { return sum + row.length; }, 0) : patch.kind === 'cell' ? 1 : 0); }, 0), responseInventory: verified.responseInventory || null, responseTab: verified.responseTab || null,importInventory:verified.importInventory || null,reviewQueueFilters:verified.reviewQueueFilters || null };
     });
   }
   function handoff(copy, setup, io) {

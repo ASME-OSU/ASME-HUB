@@ -83,8 +83,13 @@ window.ASME_HUB_CONFIG = {
       engagementGoal: 250,
     },
   },
-  // Connect only after public projection/schema and officer edit access are verified.
-  sharedResources: { spreadsheetUrl: "", sheetTab: "", editUrl: "" },
+  // Reviewed references only. Restricted handoff links grant no access; their
+  // contents remain private. Annual resource URLs stay in Year Settings.
+  sharedResources: {
+    spreadsheetUrl: "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit",
+    sheetTab: "Shared_Resources_Public",
+    editUrl: "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1454334940",
+  },
   resources: [
     {
       id: "executive-board",
@@ -187,7 +192,7 @@ window.ASME_HUB_CONFIG = {
     },
     {
       id: "budget-tracker",
-      title: "2026–2027 Budget Tracker",
+      title: "Budget Tracker",
       description: "Open the shared workbook for chapter budget planning and financial tracking.",
       label: "Open budget tracker",
       url: "https://docs.google.com/spreadsheets/d/14TiHKfV1T4M4QnrBmoALBwYhlrsY6ydcqmueF-U3pqo/edit",
@@ -196,7 +201,7 @@ window.ASME_HUB_CONFIG = {
       icon: "wallet",
       quickAction: {
         label: "Budget tracker",
-        detail: "2026–2027 workbook",
+        detail: "Selected-year workbook",
         icon: "wallet",
       },
     },

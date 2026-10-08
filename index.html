@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261003d">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261008b">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -63,6 +63,7 @@
       <p class="eyebrow">ASME at Ohio State</p>
       <h1 id="access-title">Officer Hub</h1>
       <p class="gate-intro">One place to understand chapter activity and open the tools that keep ASME moving.</p>
+      <p class="access-help">Need access? Contact the outgoing President or transition coordinator through <a href="mailto:asme@osu.edu">asme@osu.edu</a>.</p>
       <form id="access-form" class="access-form" novalidate>
         <label for="hub-password">Dashboard password</label>
         <div class="password-field">
@@ -770,13 +771,25 @@
             </header>
             <div class="transition-dialog-body">
               <section id="transition-year-setup" hidden>
-                <p id="transition-dialog-description">This browser saves your progress. Perform each check in the actual tools before continuing. Marking steps complete does not make the new year live.</p>
+                <p id="transition-dialog-description">This browser saves your progress. Name an isolated run and perform each check in the actual tools. You can read and record later observations with incomplete prerequisites. Marking steps complete does not make the new year live.</p>
                 <div class="transition-controls">
                   <form id="transition-year-form"><label>Transition starting year <input id="transition-year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" list="transition-year-options" required placeholder="2027" aria-describedby="transition-year-help"></label><datalist id="transition-year-options"></datalist><button class="secondary-button" type="submit">Use year</button></form>
                 </div>
                 <p id="transition-year-help">Enter a starting year from 2000 through 2199, such as 2030 for 2030–2031. Available years include configured years and progress saved on this device. This guide does not create dashboard data or a Google settings row.</p>
                 <p class="transition-banner" role="note">Preparing a transition leaves the current Hub year unchanged. Check results in the real systems and keep evidence in the private officer workspace.</p>
               </section>
+              <section class="transition-run-controls" aria-label="Isolated transition runs">
+                <label>Saved run <select id="transition-run"></select></label>
+                <button class="secondary-button" id="transition-run-reload" type="button">Reload saved run</button>
+                <form id="transition-run-form">
+                  <label>New run name <input id="transition-run-name" maxlength="120" required placeholder="Fall rehearsal · team name"></label>
+                  <label>Mode <select id="transition-run-mode"><option value="rehearsal">Rehearsal</option><option value="production">Production</option></select></label>
+                  <button class="secondary-button" type="submit">Create isolated run</button>
+                </form>
+                <p id="transition-run-context" class="transition-summary"></p>
+                <label>Read any step <select id="transition-step-picker" aria-label="Read any transition step"></select></label>
+              </section>
+              <p id="transition-readiness" class="transition-banner" role="status"></p>
               <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
               <progress id="transition-progress" value="0" max="16" aria-label="Transition steps completed"></progress>
               <p id="transition-summary" class="transition-summary"></p>
@@ -856,9 +869,9 @@
           <small>The year name officers see in the dashboard selector.</small>
         </label>
         <label>
-          <span>Engagement goal</span>
-          <input id="settings-engagement-goal" name="engagementGoal" type="number" min="1" step="1" placeholder="250">
-          <small>Target number of unique participating members shown in the goal ring.</small>
+          <span>Engagement goal (required)</span>
+          <input id="settings-engagement-goal" name="engagementGoal" type="number" min="1" step="1" placeholder="250" required aria-describedby="settings-engagement-goal-help">
+          <small id="settings-engagement-goal-help">Enter a positive goal before preview or save. This is the target number of unique participating members in the goal ring.</small>
         </label>
       </div>
       <div class="settings-toggle-row">
@@ -1065,11 +1078,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261003a"></script>
+  <script src="assets/js/config.js?v=20261008b"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261003b"></script>
-  <script type="module" src="assets/js/transition.js?v=20261004a"></script>
+  <script src="assets/js/app.js?v=20261008b"></script>
+  <script type="module" src="assets/js/transition.js?v=20261008b"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

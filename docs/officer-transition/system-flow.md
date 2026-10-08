@@ -5,33 +5,29 @@ annual resources and writes an inactive settings row to Google Sheets. The Hub
 reads shared settings from that sheet. The attendance Form is a separate system;
 the annual save does not submit a Hub Settings Google Form.
 
+The current guide7 has five steps. The new helpers have native saved/reopened source readback: three standalone files and EventSync/SanityCheck in the canonical master’s bound project, with normalized hashes matching reviewed source. This verifies installed editor source, not annual execution or web deployment. No canonical trigger was created; the existing web deployment remains version3. Bound-menu pre-flight, chapter configuration/authorization, copied-file inheritance, automatic trigger and full provisioner/Form/import acceptance remain pending. Desktop Allow access/resolved-output and ordinary-browser acceptance remain pending. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. Native proxy calculations and centralized pointer inheritance are narrower verified subchecks.
+
 ```mermaid
 flowchart TD
-    A[Step 1: select transition year] --> B[Make and configure annual copies]
-    B --> C[Paste seven links in their guide steps]
-    C --> D[Step 10: review inactive Year Settings draft]
-    D --> E[Chapter Google account: verify resources]
-    E --> F[Review public row and save inactive year]
-    F --> G[Google appends and reads back the row]
-    G --> H[Hub: Compare with Google]
-    H --> I[Finish manual checks and incoming access]
-    I --> J[Separate authorized activation]
+ A[T01: year/run and actual access] --> B[T02: installed annual provisioner and private receipt]
+ B --> C[Actual Form tab to Config B7 / protected raw proxy]
+ B --> D[Export Config B1 to annual working master]
+ B --> E[Read back inactive/noncurrent twenty-column row]
+ C --> F[T03: Allow access / actual test check-in / manual acceptance]
+ D --> F
+ E --> F
+ B --> G[T04: communications and calendar]
+ F --> H[T05: coordinator GO/NO-GO and cleanup/handoff]
+ G --> H
 ```
 
-The seven links identify the annual folder, Points Master, Form editor, Form
-respondent, Points Export, Budget Tracker and Budget Export. The guide stores
-them on the officer's device and checks their format, duplicates and known
-template identities. Those browser checks do not prove Google access or save
-shared settings. Changing a link can reopen dependent checks.
+Once installed, the chapter-admin operator calls `provisionReviewedAnnualYear(year)`; `provision2027_2028` is the editor entry for 2027–2028. The fall term is derived. The maintainer configures chapter root, Control Center, approved positive goal and calendar source once. AnnualProvisioner creates/resumes five private copies, observes Google's actual Form response tab, writes pointers/dates and reads back the inactive row. It performs initial event sync only. In the copied Points Master's bound **ASME Tools** menu, the chapter operator runs **Sync Events to Google Form**, then **Enable automatic event sync** once and verifies that bound project's edit trigger. Do not add a second standalone trigger.
 
-At Step 10, **Open authorized annual save** transfers the reviewed draft to the
-Google page. Download/import of the save JSON is a fallback. Loading either input
-only fills the page. The officer chooses **Verify with Google**, reviews the exact
-twenty-cell public row and its audience, then chooses **Save inactive year and
-confirm**. Google repeats its checks, journals intent, appends once and checks
-readback. An unchanged repeat reads the existing row rather than duplicating it.
-Return to the Hub for **Compare with Google**, which performs an independent
-fresh read. Neither action activates the year.
+Protected `_Raw_Ingest` reads Config B7; Roster/Point Log use stable proxy references. Both exports centralize import source IDs at Config B1 (six Points/35 Budget formula cells). One-time canonical migration belongs to the maintainer; annual copies do not require bulk formula replacement.
+
+The guide stores seven actual copied-file links by named run on the officer's device. Format/duplicate/template checks do not certify Google access. Old sixteen-step originals remain preserved during migration; passed checks reopen. A rehearsal or imported completion never authorizes production T05. Cleanup/handoff remains available after NO-GO.
+
+The older authenticated annual-save service is a separate fallback/reconciliation route: **Open authorized annual save**, **Verify with Google**, review the public twenty-cell row/audience, **Save inactive year and confirm**, then independent **Compare with Google**. Its installation receipt does not certify the new helpers. Neither route activates the year, opens intake, grants sharing or approves a send.
 
 ## Hosting and storage
 
@@ -51,7 +47,7 @@ additional personal hosting server. A developer's Git author name is different
 from ownership of the Google files. The Hub access phrase and role selector do
 not grant Google or Microsoft authorization.
 
-## What is checked
+## Existing authenticated annual-save verification scope
 
 Google verification checks file identity, type, chapter ownership, editability,
 folder ancestry, allowed permissions and excluded templates/originals/fixtures.
@@ -75,5 +71,4 @@ hidden tabs do not protect anything in a publicly readable workbook.
 
 For current-year gear-panel edits, **Preview and refresh** affects that browser
 tab. **Edit shared settings** opens Google Sheets for an authorized shared edit;
-**Compare with Google** checks the intended saved values. The authenticated
-annual save handles the new inactive row.
+**Compare with Google** checks the intended saved values. The reviewed provisioner or existing authenticated fallback handles an inactive row; keep their installation/acceptance receipts distinct.

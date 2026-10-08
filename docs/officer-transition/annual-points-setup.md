@@ -1,62 +1,46 @@
 # Annual Points, attendance and export setup
 
-Use this guide beside T05–T09 in **Transition to New Year**. Ask the coordinator to name a Points maintainer and record their contact in the private handoff checklist. The Secretary/Points officer copies the files, enters reviewed settings, manages the Form and checks results. The maintainer changes response formulas, import sources and date formulas, then supplies the completed checks. There is no installed one-click annual setup button.
+Use this guide beside **T02 — One-Click Annual Setup** and **T03 — Export Access & Test Check-in**. Choose the year and establish actual access in T01; communications belongs in T04 and the separate launch/cleanup decision in T05. Ask the outgoing President or transition coordinator through [asme@osu.edu](mailto:asme@osu.edu) for the current private checklist, installation receipt and named Points maintainer.
+
+The new helpers have native saved/reopened source readback: three standalone files and EventSync/SanityCheck in the canonical master’s bound project, with normalized hashes matching reviewed source. This verifies installed editor source, not annual execution or web deployment. No canonical trigger was created; the existing web deployment remains version3. Bound-menu pre-flight, chapter configuration/authorization, copied-file inheritance, automatic trigger and full provisioner/Form/import acceptance remain pending. The canonical proxy and centralized export architecture has been applied natively; fresh native copies passed proxy calculation/suppression/cleanup and six/35 import-pointer checks below. Keep T02 Blocked until the maintainer supplies current chapter configuration, authorization and the completed actual annual setup receipt. Existing historical copy/setup/save services have separate installation evidence and do not prove this new provisioner is available.
 
 ## Normal officer setup
 
-1. In the [Officer Hub](https://asme-osu.github.io/ASME-HUB/), open T05–T07 and make copies from **01 Points Master**, **02 Attendance Form** and **03 Points Export**. Rename the annual files and save their links in the private checklist. A retained `TEMPLATE — MAKE A COPY` sheet heading describes their origin; identify your copy by its annual filename, folder and file link. Keep the original templates unchanged.
-2. In the copied Points Master, open the **Config** tab. Set B2 to your fall term and B3 to your academic year (`Fall 2027` / `2027-28` for 2027–2028). Set B5 to **TESTING** during setup. **PAUSED** also hides public member output and is used when operations are stopped for review.
-3. In the copied Form, open **Responses** and turn **Accepting responses** off. Update only its year and helper text; preserve question titles, stored choice labels and the twelve-column response order. Link it to the copied private Points Master, then use **View in Sheets** to record the actual response tab name.
-4. Give the maintainer both file links and that exact tab name. Have them finish [response wiring](#1-maintainer-procedure-link-the-actual-response-tab), [date checks](#4-use-the-aligned-augustjuly-year-n06) and [export connections](#5-maintainer-procedure-connect-the-export-to-this-years-working-file). Ask them to record the named backup version, expected/actual replacement counts, final formula sources and observed output. If no maintainer is assigned, mark wiring blocked and ask the coordinator to assign one.
-5. Review Events inputs and maintain the Form dropdown [manually](#3-events-and-the-form-run-in-manual-mode-n05). Run the approved fictional [delivery, scoring, recovery and privacy tests](#6-delivery-scoring-recovery-and-privacy-evidence) with the Points officer. Check private Member Totals and Review Queue while testing; public names remain hidden in TESTING/PAUSED. Close the Form afterward and use the maintainer-led [cleanup checklist](finance-settings-launch.md#test-cleanup-checklist-for-the-points-maintainer).
+1. In **T01**, select the consecutive August–July academic year, create a named Rehearsal or Production run, verify the private handoff and actual account access, and inspect existing annual folders/copies before creating anything. Rehearsal evidence never authorizes production launch.
+2. In **T02**, once the chapter-admin helper is installed and configured, have its authorized operator run `provisionReviewedAnnualYear(targetYear)` for the exact academic year, such as `2027-2028`; it derives `Fall 2027`. For 2027–2028 the editor entry point is `provision2027_2028`, with no annual target JSON needed. The maintainer configures the approved folder, Control Center, positive engagement goal and calendar source first. No goal has been invented for this chapter.
+3. Review the returned receipt: annual folder and five copied files, actual Form destination/tab, Points Config term/year/TESTING state, both export Config B1 source IDs, August–July finance dates and the exact twenty-column inactive/noncurrent Google row. Keep the Form closed. Save the actual seven links for this guide run; use the Form's real editor and respondent URLs. The provisioner is designed to resume its own matching interrupted run; keep its receipt and retry the same configuration after a failure. A pre-existing year, changed config or conflicting file requires maintainer review, not another copy run.
+4. In **T03**, open each private export. Review the copied working-file identity before choosing **Allow access** at Google's import prompt. Compare resolved headers and values with the working master; an error hidden as zero is not a valid empty year.
+5. Open the copied Points Master and use **ASME Tools → Sync Events to Google Form** after reviewing Events. Confirm automatic edit-sync installation separately; a copied bound script or successful manual sync does not prove its trigger exists. Run **ASME Tools → Run Pre-Flight Sanity Check** with intake closed and Points TESTING. It checks destination, twelve response headers, protected proxy, stable response references, suppression and event configuration. It explicitly leaves export authorization, actual scoring and sharing/privacy acceptance to officers.
+6. Perform the approved fictional [delivery/scoring/privacy tests](#6-delivery-scoring-recovery-and-privacy-evidence) in the isolated files, including duplicate and skipped-profile recovery. Check private Member Totals and visible OPEN Review Queue exceptions. Close intake afterward and follow the [cleanup checklist](finance-settings-launch.md#test-cleanup-checklist-for-the-points-maintainer). Preserve test receipts and historical responses under the approved retention decision.
 
-Keep all annual copies private until their audience review and release checks pass. Do not edit thousands of formulas as a routine officer setup step. The following detailed procedures are for the named maintainer and retain the exact contracts needed for review.
+### The three script responsibilities
+
+| Script | Installed location and purpose | Required acceptance |
+|---|---|---|
+| [AnnualProvisioner.gs](../../integrations/apps-script/transition-simple/AnnualProvisioner.gs) | Standalone chapter-admin project, with the shared helper files available; creates/resumes the annual copies, observes Google’s actual response tab, writes configuration pointers and an inactive row | Chapter configuration, authorization, exact installed source, safe retry and fresh copied-file readback |
+| [EventSync.gs](../../integrations/apps-script/transition-simple/EventSync.gs) | Bound Points Master menu; synchronizes the existing Event ID dropdown and supports an authorized installable Events edit trigger | Real copy menu, destination match, readable exact event IDs, closed-choice removal, trigger owner and successful edit/manual retry |
+| [SanityCheck.gs](../../integrations/apps-script/transition-simple/SanityCheck.gs) | Bound read-only pre-flight checks; shared helper definitions are also used by the provisioner | Genuine observed results plus the explicitly manual export/scoring/privacy checks; no blanket PASS |
+
+The provisioner preserves private copies, closed intake, TESTING and inactive/noncurrent flags. It does not publish files, approve funding, open intake, send communications or activate the year. Review the native saved-source receipt and perform execution acceptance on the intended copied projects. Direct editor runSanityCheck reached a getUi error; open the copied spreadsheet and use its ASME Tools menu for actual pre-flight. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version.
+
+### Current V3 evidence and fresh-copy requirement
+
+The October 7 V3 rehearsal later exercised the five cases as **5/0/8/0/8**, with annual totals **13/8**, reviewed duplicate/missing-profile items, and verified cleanup. Those observations supersede earlier pending V3 checks; they do not alter the dated October 3/4 evidence below. A later fresh native proxy fixture, using explicitly inserted fictional raw rows rather than new Form submissions, passed 5/0/8/0/8 scoring, annual 13/8 and Spring 8/8 totals, visible OPEN duplicate/missing-profile exceptions, TESTING and PAUSED suppression, and exact body-empty cleanup. Fresh Points/Budget Export copies passed all six/35 Config B1 formula-pointer checks. These receipts establish the repaired native architecture; the separate new saved-source receipt establishes installation only, not a complete provisioner run, export Allow access/public acceptance or actual new Form delivery/linking or incoming-officer operation. Keep those checks pending.
+
+Before judging Review Queue empty, inspect **Data → Remove filter** and **Data → Filter views**. Reset inherited filtering so all **OPEN** exceptions are visible; close a filter view rather than deleting review records. Confirm duplicate and missing-profile rows appear after the corresponding tests. A later complete profile does not silently award credit to an earlier unmatched response; preserve its review decision separately.
 
 ### Dated rehearsal results
 
 The **October 3, 2026** rehearsal checked native linking and saved formulas/import values; it submitted no attendance. Those delivery/scoring/populated-privacy cases were **NOT RUN on October 3**. A separate **October 4 round-2** test delivered five actual Form submissions: first profile, duplicate, second event and missing-profile handling worked, but the first complete profile after a skipped profile failed before repair. The October 4 repair recalculated those same five preserved responses as 5, 0, 8, 0 and 5 points; the recovered profile became ACTIVE with initials display, while its earlier unmatched event stayed zero/review. This is saved-formula recalculation on the retained browser submissions, not five new submissions after repair. TESTING/PAUSED suppression passed on that private populated mock pair; signed-out output, live Hub rendering and LIVE monthly/semester contribution were not tested there. Consult the coordinator's dated round-2 results and repair verification in the private handoff. These records do not pass checks on your real annual copies; repeat them on the intended files.
 
-## 1. Maintainer procedure: link the actual response tab
+## 1. Maintainer review: the actual response tab and stable proxy
 
-1. Open the **copied** attendance Form in edit mode. Select **Responses → Link to Sheets → Select existing spreadsheet** and choose this year's **copied Points Master**. Use **View in Sheets** to open the destination. Compare its `/spreadsheets/d/…` file ID with the annual Points link, not only its title.
-2. Copy the exact generated tab name. Google chose `Form Responses 3` in the rehearsal; your copy may differ. The approved template’s old, unlinked response tab is named `Form Responses 2`; confirm its name and contents in this copy. Keep it until you have checked the new connection and reviewed every test submission. Do not rename or delete tabs to make the setup appear correct.
-3. Verify A:L contains this order, without extra questions inserted between columns:
+1. In the copied Form, **Responses → View in Sheets** must open this year's copied private Points Master. Compare the file ID, then record Google's actual generated tab name; never guess `Form Responses 1` or rename/delete a tab to force a match. Config **B7** records that observed name; **B16** identifies the copied Form editor ID.
+2. Verify its A:L header order: Timestamp; Email Address; OSU name.number; Is this your first submission this academic year?; Preferred first name; Last name; Year in school; Major; Public leaderboard display; Public alias; Event ID; Optional note. Preserve the existing Form questions and column order.
+3. The reviewed canonical master uses protected **`_Raw_Ingest`**. Its A1 query reads A:L from the tab named in Config B7. Roster and Point Log refer to this stable proxy, so changing the actual response tab requires a Config pointer update rather than thousands of annual formula replacements. The maintainer verifies the exact reviewed proxy formula, sheet protection, sufficient rows and absence of direct old Form Responses references.
+4. Keep Config B5 TESTING, inspect term/year B2/B3 and verify delivery through the real copied Form. A matching Config value alone does not prove the destination or scoring.
 
-   | Column | Header |
-   |---|---|
-   | A | Timestamp |
-   | B | Email Address |
-   | C | OSU name.number |
-   | D | Is this your first submission this academic year? |
-   | E | Preferred first name |
-   | F | Last name |
-   | G | Year in school |
-   | H | Major |
-   | I | Public leaderboard display |
-   | J | Public alias |
-   | K | Event ID |
-   | L | Optional note |
-
-4. In Points `Config`, set **B7** to the observed response tab and **B16** to the copied Form's editor ID (the ID in `/forms/d/ID/edit`). Keep B5 `TESTING`; review B2 term and B3 year separately.
-5. Before changing formulas, record this copy’s expected counts: search all sheets within formulas for the exact old quoted tab fragment, and inventory its occurrences and distinct formula cells. Save those counts privately with the file/version; if the UI cannot provide both, have the maintainer collect a formula inventory before replacement. Save a named version through **File → Version history → Name current version**, such as `Before annual response wiring — 2027–2028`. In **Edit → Find and replace**, enter these exact fragments for the rehearsal example:
-
-   ```text
-   Find:         'Form Responses 2'!
-   Replace with: 'Form Responses 3'!
-   Search:       All sheets
-   Check:        Also search within formulas
-   Uncheck:      Match entire cell contents
-   Uncheck:      Search using regular expressions
-   ```
-
-   Substitute your actual tab name in Replace with; retain the single quotes and `!`. Select **Find** and inspect examples in **Roster** and **Point Log** before using **Replace all**. If the name itself contains an apostrophe, ask the maintainer to review its formula quoting.
-6. Record both counts. This inspected copy changed **12,988 formula cells in Roster and Point Log**, containing **16,984 occurrences**. Sheets may report replacements/occurrences instead of distinct formula cells. Those quantities are different. If the replacement count differs from the count recorded for this copy before the change, stop and review with the Points maintainer. These example counts are not required for every copy; do not repeat replacement to force them. A previously configured or revised copy needs its own before/after inventory.
-7. Search all sheets within formulas again: the old fragment must have **zero** remaining references. Inspect formula bars in `Roster!A2`, `Roster!B2` and `Point Log!D2`: they must reference the actual linked tab. Independently reopen the Form's View in Sheets and compare it to Config B7/B16. A green Config cell alone does not establish this connection.
-8. Perform the authorized isolated delivery/scoring cases in section 6. Do not type test rows directly into calculated tabs to simulate a successful Form delivery.
-
-If the replacement affected the wrong annual file or fragment, close intake and restore the named pre-change version in that copy after reviewing what changed since it was named. Preserve the evidence and correct links before trying again; never roll back the production workbook to repair a mock copy.
-
-The optional private [setup runner](../../integrations/apps-script/ANNUAL_SETUP_AUTOMATION.md) performs exact fragment replacement and count checks, with an observed Form tab and independent readback. It is a maintainer route requiring private configuration, not an installed feature inferred from a copy dialog.
+The one-time canonical migration is maintainer work with a named backup, exact before/after formula inventory and regression evidence. Older copies may still use direct response references. They require a separately reviewed compatibility migration; **do not run the historical bulk Find and replace procedure against a proxy-based copy**. The former bounded [setup runner](../../integrations/apps-script/ANNUAL_SETUP_AUTOMATION.md) and its preview/configure UI are separate legacy maintainer tools; their installation does not certify this new proxy architecture.
 
 ## 2. Roster comes from member submissions (N04)
 
@@ -75,9 +59,11 @@ If a member accidentally skipped the profile, preserve their original attendance
 
 An adjustment corrects approved points; it does not create a missing member profile. Do not invent an adjustment amount to hide an unmatched or duplicate record. If a copied version's Adjustments headers or approval rules are unclear, retain the issue for the Points reviewer before scoring it.
 
-## 3. Events and the Form run in manual mode (N05)
+## 3. Events and the Form: verified sync or manual fallback
 
-**Current operating mode: manual Events-to-Form choices.** A Google copy dialog can say attached Apps Script functionality copies. That message does not prove triggers, properties or event synchronization were installed. The manual workflow has no installed event sync, and the setup runner does not install one. Config B16 (Form ID) and B18 (sync status/time), when present, are compatibility fields for optional maintainer automation; they do not update the dropdown. The Points maintainer must separately install and test any automation before describing it as available.
+After installation is verified, **ASME Tools → Sync Events to Google Form** updates the existing Event ID dropdown from Events rows whose **scoring_active H** and **form_open I** are both TRUE. It keeps generated ID plus ` - ` plus event name, rejects conflicting open IDs, checks the Form destination and leaves intake state unchanged. Verify choice removal and a safe no-open-events result. The provisioner performs initial sync only. In the copied master’s bound menu, use **Enable automatic event sync** once with the authorized chapter account; inspect its actual trigger owner/project and test a reviewed Events edit. Do not install a second trigger in the standalone project. Copied bound code alone does not install the trigger.
+
+Until installation and behavior are verified, the Points officer uses the manual fallback below, clearly records **manual operation**, and keeps automation acceptance Blocked. Config B16/B17 identifies the copied Form/exact dropdown title; B18/B19 records sync time/status when the new helper runs. These values alone do not certify a successful dropdown update or installed trigger.
 
 In **Events**, edit the reviewed input columns: **B event_name, C event_date, F event_type, H scoring_active, I form_open, J approved_by**. Preserve formulas in **A event_id, D term, E academic_year, G points**. Select the category from Point Values and inspect the calculated result. Record actual approval separately; a mock reviewer is never real chapter approval.
 
@@ -97,7 +83,7 @@ The Point Log formula reads the characters before ` - ` as the event key. Use th
 | Draft or unapproved event | FALSE | FALSE | Keep it out of choices |
 | Voided scoring event | FALSE | FALSE | Remove its choice and have the reviewer reconcile affected history |
 
-`form_open=FALSE` does **not** remove a manually entered Form choice. The Form's global **Accepting responses** switch is independent of both flags. Set it OFF during setup and closeout. Changing `scoring_active` can affect existing scoring, so do not set it FALSE merely because attendance closed. Review choice removal and scoring separately.
+In manual fallback, `form_open=FALSE` does **not** remove a manually entered Form choice; with verified sync, run sync and inspect the removed choice. The Form's global **Accepting responses** switch is independent of both flags. Set it OFF during setup and closeout. Changing `scoring_active` can affect existing scoring, so do not set it FALSE merely because attendance closed. Review choice removal and scoring separately.
 
 Suggested accurate Form description during manual operation: `Attendance choices are maintained manually by chapter officers from the reviewed Events list. Choose your event by its name in the list; you do not need to enter or remember its code. Officers update this dropdown manually using the Events sheet. Contact the Points officer if the event is missing.` Remove a claim that choices update automatically unless a maintainer separately installs and tests sync, including closed events and rollback.
 
@@ -142,20 +128,24 @@ A monthly row being present does not prove that a boundary event contributes to 
 
 For new automation runs, `datePolicy` explicitly supplies the six Budget dates and a review note confirming the selected convention. The engine rejects dates outside this convention. It does not rewrite Points Events or Monthly Dashboard formulas or certify their live behavior; those require the separate readback and boundary tests.
 
-## 5. Maintainer procedure: connect the export to this year’s working file
+## 5. Central export pointers and import acceptance
 
 The **Points Master** is the private working spreadsheet; **Points Export** is the separate spreadsheet used for public results. **Budget Tracker** and **Budget Export** have the same working-file/public-results relationship. Each export must read from this year’s matching working copy, not the template or an earlier year’s file. A spreadsheet ID is the characters between `/spreadsheets/d/` and `/edit`. Preserve the surrounding formula, range, query and local calculations. Review a named pre-change version first.
+
+Points Export has **seven inspected tabs and six import formula cells**. The six A1 imports are mapped below. The seventh, **Hub_Settings_Public**, contains legacy headers only and has no import formula; the chapter Google Control Center is the authoritative year-settings source. Do not fill that legacy export tab with private handoff data or invent a seventh import.
 
 Exact inspected Points Export map — **six formula cells**:
 
 | Tab/cell | Source range in annual Points Master |
 |---|---|
 | `Leaderboard_Public!A1` | `Website Staging!A:O` |
-| `Point_Values_Public!A1` | `Point Values!A:G` (existing QUERY retained) |
+| `Point_Values_Public!A1` | `Point Values!A:G` (retain enabled-values QUERY and selected columns 1,2,3,5,6,7) |
 | `System_Status!A1` | `Website Status!A:B` |
 | `Event_Metrics_Public!A1` | `'Dashboard Staging'!A1:L120` |
 | `Monthly_Metrics_Public!A1` | `'Monthly Dashboard Staging'!A1:O13` |
 | `Semester_Metrics_Public!A1` | `'Semester Dashboard Staging'!A1:O3` |
+
+Inspect every Points Export tab after authorizing each connection with **Allow access** where requested. `Leaderboard_Public` contains approved display names/points only when LIVE and no member rows while TESTING/PAUSED; raw emails, name.number, response records and review notes remain private. `Point_Values_Public` holds approved enabled scoring rules. `System_Status` must show the actual term, state and notice. Event/month/semester tabs contain approved aggregates with expected headers and zero values for an empty year. Review the headers-only legacy tab as well. Publishing the entire export workbook exposes every tab; never publish the private Points Master. Empty output alone does not pass a populated privacy check.
 
 Exact inspected Budget Export map — **35 formula cells**, all in `Budget_Public`:
 
@@ -166,14 +156,13 @@ Exact inspected Budget Export map — **35 formula cells**, all in `Budget_Publi
 | `C38` | 1 | `'Funding Setup'!B12` confirmation state |
 | `F2` | 1 | `Dashboard!K5` |
 
-Also update the plain source link at **`Read Me!B3`** in Budget Export. That is a literal link, not a 36th import-formula cell. Some cells contain two IMPORTRANGE calls; count formula **cells** separately from calls.
+Both repaired exports use **Config B1** as their only working-master source pointer. Points Export B1 must contain this year's Points Master ID; Budget Export B1 must contain this year's Budget Tracker ID. Every IMPORTRANGE first argument refers to **`Config!$B$1`**, preserving its existing range/query/local calculations. The provisioner updates those two cells. The repaired Budget **Read Me B3** source link derives its URL from Config B1; verify that result as a separate documentation check; it is not a 36th import formula cell. Some cells contain two import calls, so count cells and calls separately.
 
-1. Search all sheets within formulas for `IMPORTRANGE`. Inspect the map above and every first argument. All calls in one annual export must reference its reviewed master ID, whether written as a bare ID or full Sheets URL. Unknown sources or a changed map require maintainer review.
-2. Use Find and replace on the exact reviewed old master ID, all sheets, within formulas, regex and whole-cell matching OFF. Review examples before Replace all. Replace only the intended source ID. If that same text occurs elsewhere within a formula, edit the first-argument source explicitly so unrelated strings stay intact. Do the plain Read Me link separately.
-3. Search again for the old ID: no old import source may remain. Reopen each listed cell's formula bar and compare every source argument with the correct copied master. Do not change local formulas in between these import cells.
-4. In each private export, review Google's `#REF!` prompt and select **Allow access** only after confirming that the two copied files are the intended pair. Access authorization is separate from formula replacement. `Loading`, `#REF!`, or an error suppressed to zero is not a verified financial result.
-5. Read effective values after imports resolve: Points System_Status should show `TESTING` and the correct term/year notice; compare point values and metric headers with the master staging tabs. For Budget, compare year dates, confirmation state, income, approved expenses, pending requests, category plan and remaining balance directly with the tracker. Keep links and timestamps with the comparison.
-6. Run populated privacy checks and signed-out/public checks only through the approved isolated release route. Empty member output establishes an empty baseline, not successful suppression of populated private records.
+1. Inspect Config B1 in each copied export and compare it with the actual annual master ID. The maintainer inventories all six/35 import formula cells above and verifies their centralized first arguments; unknown maps, literal old source IDs or missing Config tabs are Blocked for maintenance.
+2. Do not run annual bulk ID replacements against centralized exports. The one-time canonical rewrite belongs to the maintainer, preserving surrounding formulas and recording before/after source inventory and effective output. Legacy direct-source copies need separately reviewed repair.
+3. Review Google's `#REF!` prompt and choose **Allow access** only after confirming the intended private copied pair. Authorization is separate from the Config pointer. Loading, unresolved errors and an error suppressed to zero do not verify financial results.
+4. Read resolved values: Points System_Status shows TESTING and the expected term/year notice; point rules and aggregate headers agree with staging. Budget year dates, confirmation, income, approved expenses, pending requests and category plan agree with its tracker. Record exact files and observation time.
+5. Perform populated suppression and signed-out/public checks through the approved isolated release route. Review every tab, including the headers-only legacy Hub_Settings_Public. Empty member output is an empty baseline, not proof of populated privacy or publication permission.
 
 ## 6. Delivery, scoring, recovery and privacy evidence
 

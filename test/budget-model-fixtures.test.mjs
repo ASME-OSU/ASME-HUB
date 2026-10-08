@@ -143,7 +143,7 @@ function createHubRuntime(rows) {
     appendChild(script) {
       const tqx = new URL(script.src).searchParams.get("tqx");
       const callback = tqx.match(/responseHandler:([^;]+)/)?.[1];
-      queueMicrotask(() => window[callback]?.({ table: { rows } }));
+      queueMicrotask(() => window[callback]?.({ table: { cols: Array.from({ length: 6 }, () => ({ label: "" })), rows } }));
       return script;
     },
   };
@@ -299,6 +299,8 @@ test("an export timestamp without a ledger timestamp stays visible without flagg
     metricRow("budget_used_rate", { value: 0, format: "percent" }),
     metricRow("updated_at", { value: "Date(2026,8,19,21,24,0)", format: "datetime" }),
     metricRow("funding_model_status", { value: "Confirmed", format: "text" }),
+    metricRow("category_actual_food"),
+    metricRow("category_planned_food"),
   ]);
   const parsed = await runtime.api.loadBudgetSummary({
     budgetExportSheetUrl: "https://docs.google.com/spreadsheets/d/test-sheet-id-1234567890/edit",

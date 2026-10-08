@@ -1,7 +1,7 @@
 {
   "timeZone": "America/New_York",
   "runtimeVersion": "V8",
-  "dependencies": {"enabledAdvancedServices": [{"userSymbol":"Drive","serviceId":"drive","version":"v3"}]},
+  "dependencies": {"enabledAdvancedServices": [{"userSymbol":"Drive","serviceId":"drive","version":"v3"},{"userSymbol":"Sheets","serviceId":"sheets","version":"v4"}]},
   "oauthScopes": [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/userinfo.email",

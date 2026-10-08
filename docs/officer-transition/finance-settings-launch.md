@@ -1,6 +1,6 @@
 # Finance, settings, acceptance and launch
 
-Use this worked companion for steps T09, T10 and T14–T16. It addresses rehearsal
+Use this worked companion for T02 setup/settings, T03 finance/export acceptance and T05 activation, cleanup and handoff. It addresses rehearsal
 questions N08–N10 and C10–C12. The figures below are fictional values observed in
 the October 3, 2026 mock run. They explain the workflow; they do not approve real
 funding, event bookings, public fields, activation or retention.
@@ -17,7 +17,23 @@ Fall B11/B12 are 2027-08-01 and 2027-12-31; Spring B13/B14 are 2028-01-01 and
 June/July belong to that year's Summer; August starts the next year. This is a
 reporting rule, not confirmation of the fictional event dates or room bookings.
 
-## T09: distinguish the funding plan from transactions and legacy totals
+## Current run records and NO-GO
+
+In **Transition to New Year**, choose an academic year and create a distinct named **Rehearsal** or **Production** run. Runs isolate progress and local annual-link drafts. Read any step using the step selector; Next remains available while a prerequisite is incomplete. Record independent later observations with the dependency warning, without marking the earlier dependency passed. Save a reason before choosing **Skipped**; record **Failed**, **Blocked**, and **Not checked** truthfully. Keep detailed evidence in the private tracker and use references in guide notes, because exports and printing include those notes.
+
+A finished rehearsal means all five steps have a truthful disposition; complete, skipped, failed and blocked counts remain separate from check results. It always reports **NO-GO** for production. T05 can be marked complete only in a production run with all T01–T04 complete and all required manual checks passed; the coordinator still reviews current private evidence and authorizes launch. A skipped T01 never becomes real officer access. T05 cleanup/handoff remains available after NO-GO; record rehearsal T05 as Skipped with its reason and retain the cleanup receipt in the private tracker. There is no cleanup mark that authorizes launch.
+
+The schema/guide versions travel with the run’s ID/name/year/mode. Legacy year-only progress is retained as a legacy rehearsal. Old sixteen-step versions 2–6 migrate to guide 7: step dispositions are summarized in notes, passed checks need recheck, and the complete raw original is backed up before any save. Named-run identity/mode survives migration; no old completion authorizes the revised launch. An import creates a separate run; imported production completions require fresh confirmation. Unknown/corrupt state is preserved, not overwritten. Create a new run to continue if recovery is needed. Exporting progress excludes annual private links; transfer those through the approved private handoff and review the destinations in the receiving browser.
+
+## T03: calculated account ledgers and dated bank reconciliation
+
+Use the reviewed repaired template for fresh annual copies. **Setup & Lists B6/B7** remain the opening OSU/Huntington cash inputs. **Dashboard A5/C5** calculate each account ledger from its opening cash plus in-year Approved/Cleared income minus Approved/Cleared expenses plus net transfers. **E5** combines those two ledgers. **G5** projects combined cash including pending income/expense; pending transfers between these accounts stay combined-neutral. Annual dates and the workbook timezone govern inclusion.
+
+Manual bank snapshots are separate: **Dashboard B27/B28** for OSU/Huntington, **C27/C28** for their as-of dates, and **D27/D28** for ledger differences. Both a snapshot and date are required for a reconciliation difference. The former Huntington C5 snapshot is preserved at B28. A ledger is not evidence that the bank is reconciled; the Treasurer records statement/outstanding-item evidence privately. Keep opening inputs and snapshots, and do not publish cash balances, payees or transactions in the sanitized export.
+
+For an isolated fixture, opening OSU $1,000/Huntington $500 and an approved Huntington expense $40 must produce $1,000/$460/$1,460 ledgers; a pending $25 expense affects projected combined cash to $1,435 only. Test income, transfer directions, Approved/Cleared/blank/Pending/Canceled states, July 31/August 1 and Fall/Spring/June–July. Funding/category-plan approval is a separate check. The remediation private copy passed sixteen native formula cases. Canonical ledger promotion and a fresh Budget copy’s matching C5 formula and zero baseline were subsequently confirmed by native readback; the full fresh-copy tracker/export/Hub operating loop still requires separate acceptance. If C5 remains a literal manual snapshot, ask the maintainer for the reviewed repair instead of overwriting it during routine setup.
+
+## T03: distinguish the funding plan from transactions and legacy totals
 
 Open the private Budget Tracker, then **Funding Setup**. **Funding authority** means the amount the chapter is approved to spend; it is separate from the account balance. The funding approval
 status is `B12`; the confirmed allocation and remaining allocation are `B14` and
@@ -94,7 +110,7 @@ to check the import source, authorization and errors and record the unresolved
 check. Verify the Hub only after the export agrees. A private import authorization or spreadsheet readback does not establish
 a successful public Hub display. See the [funding workflow](../../README.md#funding-authority-confirmation-workflow).
 
-## T10: four states with different effects
+## T02: separate preparation, save and operating states
 
 | State | Action | What persists / becomes visible | Evidence needed |
 |---|---|---|---|
@@ -103,24 +119,29 @@ a successful public Hub display. See the [funding workflow](../../README.md#fund
 | 3. Visible year | Authorized editor sets `is_active=TRUE` after approved review | Eligible for normal year selection; `is_current=FALSE` keeps existing default | Fresh source read and fresh Hub selector check; independent consumers remain separate |
 | 4. Current year | Authorized activation sets target `is_current=TRUE`, with `is_active=TRUE`, and outgoing `is_current=FALSE` | Target becomes default; exactly one current active row | Reopen both Google rows: exactly one active year must be current. Reopen the Hub, website and other tools using these settings and check each result |
 
+A tab-only Preview is another browser-only state; it changes neither the Google row nor the other consumers. **Points LIVE** and **Form Accepting responses** are separate operating switches after the approved launch checks. Enter a positive numeric engagement goal before preview/save; blank and zero are rejected.
+
 The transition guide can select a target for preparation even when the normal
 year selector hides its inactive row. Importing a Google save file, opening a
 preview, verifying resources and saving Google are separate actions. Verification
 does not save. A saved draft does not activate Points or open the attendance Form.
+
+The local [AnnualProvisioner source](../../integrations/apps-script/transition-simple/AnnualProvisioner.gs) creates/resumes its own annual run and reads back the exact twenty columns with inactive/noncurrent flags. Its three standalone/two canonical bound files now have saved/reopened source hashes matched to reviewed code. Actual execution, configuration/authorization, bound-menu trigger and complete provisioner acceptance remain pending; source installation does not certify Google setup/access/activation or update the existing version3 web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. Budget and Points Export Config B1 identify the corresponding private annual working master; T03 reviews Allow access and effective output separately.
 
 After an uncertain save, preserve the journal and verify the **same** draft to
 reconcile what Google already contains. Do not create another year row or change
 current flags as a diagnostic step. See the [annual-save contract](../../integrations/apps-script/ANNUAL_SETTINGS_DRAFT.md)
 and [readback/recovery rules](../../integrations/apps-script/SETTINGS_WRITE_CONTRACT.md).
 
-### Normal save and the direct Google editor route
+### Provisioner readback and existing annual-save fallback
 
-The coordinator names **one settings editor** in the private handoff. That editor
-normally uses **Year Settings → Open authorized annual save**, signs in with the
-chapter Google account, chooses **Verify with Google**, reviews the full public
+The coordinator names **one settings editor** in the private handoff. After the new provisioner is installed and accepted, T02 reviews its exact inactive-row receipt and independently uses **Compare with Google**. The older authenticated annual-save service remains a separate fallback/reconciliation route for a reviewed draft; it is not proof that the new provisioner is installed. That editor uses **Year Settings → Open authorized annual save**, signs in with the
+chapter Google account in its browser profile, chooses **Verify with Google**, reviews the full public
 row, then chooses **Save inactive year and confirm**. After saving, use **Compare
 with Google** and reopen the Control Center to compare all twenty columns A
 through T with the intended values. Record the observation privately.
+
+Preserve a downloaded draft before changing account/profile or retrying. An unable-to-open Google page may be account/profile routing: open the configured chapter profile and sign in there; do not guess `/u/1` or treat it as a global outage. A rejected expired/changed verification means reimport the same draft, choose Verify with Google again, review its verification time/expiry, then save immediately. A configured draft timestamp, verification time and actual save/readback receipt time have different meanings. If the network response is uncertain, inspect the row and reconcile the same journal before retrying. Never remove actor, expiry or concurrent-edit protections to force a save.
 
 If that page is unavailable or an existing row needs reconciliation, the named
 settings editor uses **Year Settings → Edit shared settings** to open the chapter
@@ -169,12 +190,12 @@ publicly readable.
 
 The mock connector independently read the complete row. Production A1:T5
 remained unchanged in the comparison evidence. The production annual save page
-was not successfully exercised by this mock run. Neither observation proves
+was not successfully exercised by the October 3 mock run. The October 7 V3 same-draft re-verification/retry later saved and matched readback at 2026-10-07T21:11:21.514Z; retain its earlier rejected preview as recovery evidence, not an unresolved inability to save. Neither observation proves
 target-year public audience acceptance or activation readiness. Compare with
 Google checks form fields; inspect M/N/O directly as well and retain all twenty
 cells in the private snapshot.
 
-## T14: a completed evidence entry is not an automatic gate PASS
+## T05: a completed evidence entry is not an automatic gate PASS
 
 Use one row per check in the shared private acceptance tracker. A check needs the
 owner/named holder, exact resource/version, expected and observed result, time,
@@ -208,7 +229,7 @@ In that **October 3** mock, Form delivery/scoring/duplicate/unmatched cases were
 their PASS cells using the finance record. A record can be complete while its
 gate remains open.
 
-Before T15, use the mapping below to match every required guide check with the coordinator’s launch gates and private tracker row. If an automation is optional, record the manual verified route and reason;
+Before T05, use the mapping below to match every required guide check with the coordinator’s launch gates and private tracker row. If an automation is optional, record the manual verified route and reason;
 required FAILED, stale, conflicting or unverified checks block activation.
 
 ### Guide checks and the coordinator's launch checklist
@@ -234,11 +255,11 @@ evidence from the actual annual files and tools, not only a Hub progress mark.
 
 Before changing the current year, the coordinator also records the actual
 handoff/intake decision and captures a fresh production snapshot and rollback
-record. Use the [ordered launch](#t15-ordered-launch-and-intake-example) and
+record. Use the [ordered launch](#t05-ordered-launch-and-intake-example) and
 [rollback inventory](#rollback-inventory) below; these are launch prerequisites,
 not extra checkboxes that activate the year automatically.
 
-## T15: ordered launch and intake example
+## T05: ordered launch and intake example
 
 No real handoff/intake date has been approved. The following is an ordered
 execution example, to schedule only after all required target-year gates pass.
@@ -299,7 +320,7 @@ restored results. Keep new annual files non-live for repair. Do not delete copie
 responses or entire rows as a default rollback. Restoring Google flags alone does
 not restore external calendars, CMS content or browser newsletter drafts.
 
-## T16: retain, clean, archive and hand off
+## T05: retain, clean, archive and hand off
 
 Record each item below in the private inventory with exact resource/version,
 current owner, incoming owner, audience, approved retention rule or **decision
@@ -337,7 +358,7 @@ repair; do not interpret “cleanup” as permission to erase them.
    check the linked sheet rather than assuming one removed the other.
 3. In the actual linked response tab, match the same test marker/timestamp/event
    and clear only that raw response's A:L data cells, preserving row 1 headers,
-   the response-tab structure and every calculated-sheet formula. Do not delete
+   the response-tab structure and every calculated-sheet formula. With the proxy architecture, source_row indexes the filtered proxy; blank/deleted raw rows can make it differ from the actual response-sheet row. Locate the original by timestamp, exact fictional identity and event before clearing it; never use source_row alone as a raw-sheet deletion address. Do not delete
    Roster, Point Log, Member Totals or Review Queue formula rows. Confirm the
    Form remains linked and compare the remaining raw responses with the Form.
 4. Review separately any approved test Adjustments and test Events inputs;

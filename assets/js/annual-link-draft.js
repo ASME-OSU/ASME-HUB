@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20261001a";
+import { validTransitionYear } from "./transition-state.js?v=20261008b";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
@@ -85,13 +85,13 @@ export function annualSettingsDraft(draft, config) {
 }
 
 const ANNUAL_DEPENDENCIES = {
-  pointsMaster: { steps: ["T05", "T06", "T07", "T08"], checks: ["V02", "V03", "V04", "V05"] },
-  attendanceFormEditor: { steps: ["T06", "T08"], checks: ["V02", "V03", "V04"] },
-  attendanceFormRespondent: { steps: ["T06", "T08"], checks: ["V02", "V03", "V04"] },
-  pointsExport: { steps: ["T07", "T08"], checks: ["V03", "V04", "V05"] },
-  budgetTracker: { steps: ["T09"], checks: ["V06"] },
-  budgetExport: { steps: ["T09"], checks: ["V06"] },
-  annualFolder: { steps: ["T04", "T05", "T06", "T07", "T08", "T09", "T12"], checks: ["V02", "V03", "V04", "V05", "V06", "V08"] }
+  pointsMaster: {steps:['T02','T03'],checks:['V02','V03','V04','V05']},
+  attendanceFormEditor: {steps:['T02','T03'],checks:['V02','V03','V04']},
+  attendanceFormRespondent: {steps:['T02','T03'],checks:['V02','V03','V04']},
+  pointsExport: {steps:['T02','T03'],checks:['V03','V04','V05']},
+  budgetTracker: {steps:['T02','T03'],checks:['V06']},
+  budgetExport: {steps:['T02','T03'],checks:['V06']},
+  annualFolder: {steps:['T02','T03','T04'],checks:['V02','V03','V04','V05','V06','V08']}
 };
 
 export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {}) {
@@ -102,10 +102,10 @@ export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {
   for (const key of changedKeys) {
     const dependency = ANNUAL_DEPENDENCIES[key];
     if (!dependency) continue;
-    [...dependency.steps, "T10", "T11", "T13", "T14", "T15", "T16"].forEach((id) => affectedSteps.add(id));
+    [...dependency.steps, "T04", "T05"].forEach((id) => affectedSteps.add(id));
     [...dependency.checks, "V07", "V09"].forEach((id) => affectedChecks.add(id));
     // Initial entry does not undo earlier access checks. Replacing a saved file does.
-    if (previousLinks[key]) { affectedSteps.add("T02"); affectedChecks.add("V10"); }
+    if (previousLinks[key]) { affectedSteps.add("T01"); affectedChecks.add("V10"); }
   }
   for (const key of affectedChecks) if (checks[key] === "passed") checks[key] = "needs_recheck";
   for (const key of affectedSteps) if (steps[key] === "complete") steps[key] = "in_progress";

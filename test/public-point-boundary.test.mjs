@@ -24,6 +24,8 @@ function fixture(status, { failStatus = false } = {}) {
     normalizeEventType: value => value,
     formatNumber: String,
     settingsProvenance: 'fixture',
+    metricNumber: value => value === null || value === undefined || value === "" ? null : Number.isFinite(Number(value)) ? Number(value) : null,
+    Date, Intl,
     queryPublicSheet: async (_id, sheet) => {
       calls.push(sheet);
       if (sheet === 'System_Status') {
@@ -97,13 +99,14 @@ test('clearing a previous dashboard removes member-derived display and state', (
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, {
       textContent: 'old member total', hidden: true, children: ['old row'],
-      style: { width: '88%', setProperty() {} },
+      style: { width: '88%', setProperty() {} }, classList: { add() {}, remove() {} },
       replaceChildren(...children) { this.children = children; },
       setAttribute() {},
     });
     return nodes.get(id);
   };
   const context = {
+    attendanceChartItems: [{}], attendanceChartPeriodLabel: "old year", selectedPeriod: "fall",
     activeDashboardData: { kpis: { uniqueAttendees: 10 } },
     activeUpcomingEvents: [{ title: 'Old event' }], activeOperations: [{}], activeBudget: {}, activeHealth: [{}],
     elements: {
@@ -122,7 +125,7 @@ test('clearing a previous dashboard removes member-derived display and state', (
   clear('Loading next year…');
   assert.equal(context.activeDashboardData, null);
   assert.equal(node('kpi-unique-attendees').textContent, '—');
-  assert.equal(node('hero-briefing-title').textContent, 'Attendance data unavailable');
+  assert.equal(node('hero-briefing-title').textContent, 'Dashboard loading');
   assert.deepEqual(node('operations-list').children, []);
   assert.deepEqual(node('health-grid').children, []);
   assert.deepEqual(node('briefing-role-metrics').children, []);

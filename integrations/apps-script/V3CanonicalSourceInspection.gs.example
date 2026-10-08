@@ -1,0 +1,39 @@
+/* Optional bounded native canonical inspection; no source/config/property write.
+ * Creates one PRIVATE integrity-stamped receipt in the approved isolated root.
+ * Output log contains only receipt ID/bytes/hash, never private report contents. */
+function v3NativeReceipt_(phase,result) {
+  var root='1wJyK2QH03mPoK61UMt0N9LmGj9e5cL5H',owner='asmeohiostate@gmail.com';
+  var io=annualCopyIO_({}),meta=io.metadata(root);
+  if(String(Session.getActiveUser().getEmail()).trim().toLowerCase()!==owner || String(io.actor()).trim().toLowerCase()!==owner || meta.id!==root || meta.mimeType!=='application/vnd.google-apps.folder' || meta.trashed || meta.driveId || !meta.owners || meta.owners.length!==1 || String(meta.owners[0].emailAddress).trim().toLowerCase()!==owner || !Array.isArray(meta.permissions) || meta.permissions.some(function(p){return p.type!=='user' || !p.emailAddress;}) || !meta.capabilities.canAddChildren)throw new Error('Private exact isolated receipt root and chapter owner required.');
+  var source=JSON.stringify({schema:1,type:'asme-v3-private-native-receipt',phase:phase,observedAt:new Date().toISOString(),result:result});
+  var blob=Utilities.newBlob(source,'application/json');if(blob.getBytes().length>10*1024*1024)throw new Error('Receipt exceeds reviewed 10 MB bound. No receipt was created.');
+  var sha=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,source,Utilities.Charset.UTF_8).map(function(byte){return ('0'+((byte+256)%256).toString(16)).slice(-2);}).join('');
+  var name='V3 Remediation Fresh Copy — 2027–2028 — '+phase+' — '+Utilities.getUuid()+'.json';
+  var file=Drive.Files.create({name:name,mimeType:'application/json',parents:[root]},blob,{fields:'id',ignoreDefaultVisibility:true});
+  var observed=DriveApp.getFileById(file.id).getBlob().getDataAsString('UTF-8');if(observed!==source)throw new Error('Native receipt readback differs. Preserve created file and inspect.');
+  var confirmed=io.metadata(file.id);if(confirmed.parents.length!==1 || confirmed.parents[0]!==root || confirmed.permissions.some(function(p){return p.type!=='user'||!p.emailAddress;}))throw new Error('Native receipt privacy/parent readback differs.');
+  var receipt={schema:1,phase:phase,id:file.id,bytes:blob.getBytes().length,sha256:sha};console.log('ASME_V3_PRIVATE_RECEIPT '+JSON.stringify(receipt));return receipt;
+}
+function v3InspectCanonicalSources() {
+  ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);annualSettingsWebContext_();
+  var io=annualCopyIO_({}),setup=annualSetupIO_({},{});
+  var ids={pointsMaster:'1UXprLAnzUjlzaojb7BDYTN9Om25xPFRYGQZIyHQRG2M',attendanceFormEditor:'1ofRiLS_WtQpH_poxU4blyKn7pZVriUWL8dsvfCJLLYA',pointsExport:'1CESQs6sY_WC9u0wonYq_CFraFFymtTJkh9SSv2DTXuY',budgetTracker:'1KMIkxLjNMRFilpicXIqePvy6XvZxgmJrRO3VT7DiCW8',budgetExport:'1vDHoouuaWX3NvdrflUiulesHU9z1JZ383_Tnu3Wqz-s'};
+  var sources={};Object.keys(ids).forEach(function(key){var m=io.metadata(ids[key]);if(m.trashed || m.driveId || !m.owners || m.owners.length!==1 || String(m.owners[0].emailAddress).trim().toLowerCase()!=='asmeohiostate@gmail.com' || m.permissions.some(function(p){return p.type!=='user'||!p.emailAddress;}) || !m.capabilities.canCopy)throw new Error('Canonical source owner/privacy/copy capability changed: '+key);sources[key]={id:m.id,name:m.name,mimeType:m.mimeType,owner:m.owners[0].emailAddress,version:String(m.version),canCopy:m.capabilities.canCopy,privateUserOnly:true,cleanReviewed:false,reviewNote:'PENDING owner content/bound-script review; native identity and bounded formula inventory observed only.'};});
+  var form=FormApp.openById(ids.attendanceFormEditor),state=setup.form(ids.attendanceFormEditor);
+  var responseCount=form.getResponses().length;
+  if(state.acceptingResponses!==false || state.destinationId!==null || responseCount!==0)throw new Error('Canonical Form must be closed, unlinked and empty before fresh copy.');
+  var points=setup.workbook(ids.pointsMaster,''),response={formulaCells:0,occurrences:0,sheets:{}};
+  points.formulas.forEach(function(cell){var n=cell.formula.split("'Form Responses 2'!").length-1;if(n){response.formulaCells++;response.occurrences+=n;response.sheets[cell.sheet]=(response.sheets[cell.sheet]||0)+1;}});
+  if(!response.formulaCells)throw new Error('Canonical response references missing.');
+  var imports={};['pointsExport','budgetExport'].forEach(function(key){var book=setup.workbook(ids[key],''),target=ids[key==='pointsExport'?'pointsMaster':'budgetTracker'];imports[key]={tabs:book.tabs,cells:[]};book.formulas.forEach(function(cell){if(!/IMPORTRANGE\s*\(/i.test(cell.formula))return;var calls=cell.formula.match(/IMPORTRANGE\s*\(/ig)||[],pattern=/IMPORTRANGE\s*\(\s*"(?:https:\/\/docs\.google\.com\/spreadsheets\/d\/)?([A-Za-z0-9_-]+)(?:\/edit)?"\s*[,;]/ig,match,args=[];while((match=pattern.exec(cell.formula)))args.push(match[1]);if(args.length!==calls.length || args.some(function(id){return id!==target;}))throw new Error('Canonical export import source is unexpected: '+key+'/'+cell.sheet+'/'+cell.a1);imports[key].cells.push({sheet:cell.sheet,a1:cell.a1,sourceId:target,formula:cell.formula});});imports[key].formulaCells=imports[key].cells.length;});
+  var book=SpreadsheetApp.openById(ids.pointsMaster),responseTab=book.getSheetByName('Form Responses 2');
+  var headers=responseTab.getRange(1,1,1,12).getValues()[0];if(responseTab.getLastRow()>1)throw new Error('Canonical response sheet body must be empty.');
+  var report={sources:sources,form:{id:state.id,acceptingResponses:state.acceptingResponses,destinationId:state.destinationId,responseCount:responseCount},response:{tab:'Form Responses 2',headers:headers,inventory:response},reviewQueueFilters:setup.filters(ids.pointsMaster,'Review Queue'),pointsStatus:setup.cell(ids.pointsMaster,'Config','B5'),imports:imports,readiness:'Source observation only; cleanReviewed and copied bound-script/property/trigger reviews require owner evidence. No source/configuration mutation.'};
+  return v3NativeReceipt_('canonical-source-inspection',report);
+}
+function v3PreviewFreshCopiesReceipt(){return v3NativeReceipt_('copy-preview',v3PreviewFreshCopies());}
+function v3CreateFreshCopiesReceipt(){return v3NativeReceipt_('copy-result',v3CreateFreshCopies());}
+function v3PreviewFreshDestinationReceipt(){return v3NativeReceipt_('destination-preview',v3PreviewFreshDestination());}
+function v3ConfigureFreshDestinationReceipt(){return v3NativeReceipt_('destination-result',v3ConfigureFreshDestination());}
+function v3PreviewFreshWorkbooksReceipt(){return v3NativeReceipt_('workbooks-preview',v3PreviewFreshWorkbooks());}
+function v3ConfigureFreshWorkbooksReceipt(){return v3NativeReceipt_('workbooks-result',v3ConfigureFreshWorkbooks());}

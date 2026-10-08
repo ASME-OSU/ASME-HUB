@@ -31,8 +31,12 @@ function runAnnualSetup_(phase, configure) {
 function annualSetupIO_(copy, setup) {
   var copyIO = annualCopyIO_(copy), lock = copyIO.lock;
   copyIO.lock = function (fn) { return fn(); };
-  var books = {}, forms = {};
+  var books = {}, forms = {}, legacyPointsId = null;
   function book(id) { if (!books[id]) books[id] = SpreadsheetApp.openById(id); return books[id]; }
+  function assertLegacyArchitecture(id) {
+    if (book(id).getSheetByName('_Raw_Ingest')) throw new Error('Legacy annual setup is retired for _Raw_Ingest proxy masters. Use AnnualProvisioner: run provision2027_2028() for 2027-2028, or provisionReviewedAnnualYear(year). No legacy changes were applied.');
+    legacyPointsId = id;
+  }
   function form(id) { if (!forms[id]) forms[id] = FormApp.openById(id); return forms[id]; }
   function range(id, sheet, a1) {
     var tab = book(id).getSheetByName(sheet);
@@ -51,7 +55,17 @@ function annualSetupIO_(copy, setup) {
     while (number) { var digit = (number - 1) % 26; result = String.fromCharCode(65 + digit) + result; number = Math.floor((number - 1) / 26); }
     return result;
   }
+  function filters(id,name) {
+    if (typeof Sheets==='undefined') throw new Error('Enable the reviewed Advanced Sheets v4 service for filter inspection.');
+    var result=Sheets.Spreadsheets.get(id,{fields:'sheets(properties(sheetId,title),basicFilter,filterViews)'});
+    var tabs=result.sheets.filter(function(tab){return tab.properties.title===name;});
+    if(tabs.length!==1) throw new Error('Reviewed filter worksheet missing');
+    function canonical(value){if(Array.isArray(value))return value.map(canonical);if(value&&typeof value==='object'){var out={};Object.keys(value).sort().forEach(function(key){out[key]=canonical(value[key]);});return out;}return value;}
+    return canonical({sheetId:tabs[0].properties.sheetId,basicFilter:tabs[0].basicFilter || null,filterViews:(tabs[0].filterViews || []).sort(function(a,b){return a.filterViewId-b.filterViewId;})});
+  }
   return {
+    assertLegacyArchitecture:assertLegacyArchitecture,
+    filters:filters,
     copy: copyIO, lock: lock, now: copyIO.now,
     digest: function (text) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8).map(function (byte) { return ('0' + ((byte + 256) % 256).toString(16)).slice(-2); }).join(''); },
     cell: cell,
@@ -83,14 +97,22 @@ function annualSetupIO_(copy, setup) {
           }); });
         }
       });
-      return { formulas: formulas, sourceURLCells: sourceURLCells };
+      return { formulas: formulas, sourceURLCells: sourceURLCells,tabs:book(id).getSheets().map(function(sheet){return sheet.getName();}) };
     },
     read: function (patch) {
+      if (patch.kind === 'filters') return filters(patch.id,patch.sheet);
       if (patch.kind === 'destination') return annualSetupFormDestinationId_(form(patch.id));
       if (patch.kind === 'range') return range(patch.id, patch.sheet, patch.a1).getFormulas();
       return cell(patch.id, patch.sheet, patch.a1);
     },
     write: function (patch) {
+      if (!legacyPointsId) throw new Error('Legacy setup must validate its Points Master architecture before any write. Use AnnualProvisioner for proxy masters.');
+      assertLegacyArchitecture(legacyPointsId);
+      if (patch.kind === 'filters') {
+        var requests=[];if(patch.before.basicFilter)requests.push({clearBasicFilter:{sheetId:patch.before.sheetId}});
+        patch.before.filterViews.forEach(function(view){requests.push({deleteFilterView:{filterId:view.filterViewId}});});
+        if(requests.length)Sheets.Spreadsheets.batchUpdate({requests:requests},patch.id);return;
+      }
       if (patch.kind === 'destination') { form(patch.id).setDestination(FormApp.DestinationType.SPREADSHEET, patch.after); return; }
       var target = range(patch.id, patch.sheet, patch.a1);
       if (patch.kind === 'range') target.setFormulas(patch.after);

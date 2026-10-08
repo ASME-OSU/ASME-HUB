@@ -88,7 +88,7 @@ but does not turn the static access screen into secure authentication.
 
 For annual rollover and future maintainers, start with the
 [officer transition documentation](docs/officer-transition/README.md). It maps
-the officer flow, script responsibilities, hosting/ownership, shared saves and
+the five-step officer flow, three-script responsibilities, hosting/ownership, shared saves and
 private handoff records, with maintenance and recovery instructions.
 
 | File | Purpose |
@@ -103,8 +103,7 @@ private handoff records, with maintenance and recovery instructions.
 
 ## Current tool connections
 
-The `resources` array in `assets/js/config.js` is the single source of truth for
-the launcher. It currently includes:
+The launcher combines reviewed Control Center Shared_Resources_Public overrides with bundled `resources` fallbacks and selected-year settings. Its source/native schema is connected; deployed ordinary-browser edit/refresh/restore remains pending. It includes:
 
 - Executive Board SharePoint and shared document library
 - Event Operations and Officer Task Tracker SharePoint lists
@@ -465,33 +464,17 @@ Optional arrays may be empty. KPI values should be numbers, and
 
 ## Start a new academic year
 
-The annual rollover does not require changing the dashboard code.
+Use **Transition to New Year** and the [officer guide](docs/officer-transition/README.md). Guide 7 has five steps:
 
-1. Open **Year Settings** and choose **Add next year**.
-2. Use the preview to confirm the generated key, label, and links.
-3. Open **Edit shared settings** and add the row under Google authorization.
-   Use **Compare with Google** to check the intended values after Google saves.
-4. Paste the new public Website Export Sheet, attendance form, Points Master,
-   calendar page, iCal feed, and optional full aggregate JSON feed.
-5. Keep the draft `is_current` FALSE until annual activation checks pass. Preserve
-   the current year and historical rows; set `event_metrics_tab` to the new public aggregate tab.
-6. Create the new private `Dashboard Staging`,
-   `Monthly Dashboard Staging`, and `Semester Dashboard Staging` tabs plus the
-   public `Event_Metrics_Public`, `Monthly_Metrics_Public`, and
-   `Semester_Metrics_Public` tabs with the same column contracts.
-7. Confirm the new private monthly tab starts in August of the correct academic
-   year and ends in July of the next calendar year. Check May is Spring and
-   June/July are Summer; the semester rows cover August–December and January–May.
-8. When the draft is ready for public visibility, set `is_active` TRUE while
-   keeping it noncurrent. Reload the Hub and check that year, Fall/Spring
-   presets, and every expected month. Activation remains a separate decision.
-9. Run **Sync calendar and deploy Pages**, or wait for the next hourly run, and
-   confirm the new calendar reports **LIVE**.
-10. Confirm the year selector can still load
-   any prior years that should remain available.
+1. **T01 — Year Selection & Access:** choose an August–July academic year and named Rehearsal/Production run; verify actual incoming access and private handoff.
+2. **T02 — One-Click Annual Setup:** once installed, run `provisionReviewedAnnualYear(year)` in the chapter-admin helper (editor `provision2027_2028` for that year). Review the five private copies, actual Google-created response tab/Config B7, protected raw proxy, both export Config B1 master pointers, dates and exact inactive/noncurrent twenty-column row. Preserve the receipt and reconcile the same interrupted run. The new helpers have native saved/reopened source readback: three standalone files and EventSync/SanityCheck in the canonical master’s bound project, with normalized hashes matching reviewed source. This verifies installed editor source, not annual execution or web deployment. No canonical trigger was created; the existing web deployment remains version3. Bound-menu pre-flight, chapter configuration/authorization, copied-file inheritance, automatic trigger and full provisioner/Form/import acceptance remain pending. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version.
+3. **T03 — Export Access & Test Check-in:** use desktop Google **Allow access** for the intended copied export/master pairs. In the copied Points Master's bound **ASME Tools** menu run **Sync Events to Google Form**; **Enable automatic event sync** once and verify its chapter-owned edit trigger. The standalone provisioner performs initial sync only. Run **Run Pre-Flight Sanity Check**, then actual Form delivery/scoring/privacy/finance acceptance and marked cleanup; the report leaves real scoring/export/privacy checks manual.
+4. **T04 — Communications & Calendar:** verify approved facts, exact Newsletter/defaults transfer, target-year calendar sources and normal website/CMS desktop/phone results. Local fictional preview creates no Google events or publication approval.
+5. **T05 — Activation & Go-Live:** require production mode, T01–T04 and all checks passed plus coordinator approval/current private evidence. Rehearsals/imported completion remain NO-GO. Cleanup/handoff stays available after NO-GO; it never activates the year.
 
-The academic years shown in the selector come from the shared settings rows.
-Set `is_active` FALSE to hide a year while preserving its historical row.
+Native fresh proxy synthetic-row calculations/suppression/cleanup and six Points/35 Budget centralized import formula cells passed. Actual new Form linking/submission, desktop Allow access/resolved output, complete helper authorization/provisioner retry/bound-menu trigger execution and deployed ordinary-browser acceptance remain pending until exact installation/acceptance receipts are recorded. Production stays 2026–2027; target setup remains TESTING, closed intake and inactive/noncurrent.
+
+The selected year changes browser preparation, not the current Hub year. Old sixteen-step progress raw originals remain preserved and confirmations require recheck. The older authenticated annual-save route is a separately verified fallback; local new script source does not inherit its installation receipt. Preserve historical rows; activate only through the approved separate decision.
 
 ## Change the dashboard password
 
@@ -561,6 +544,6 @@ After the dashboard branch is reviewed and merged:
 
 ## Shared chapter resource maintenance
 
-**Tools and resources → Maintain shared chapter links** provides authorized direct Google editing and a fresh read-only resource refresh once a reviewed projection is configured. The default is **not connected**; the current shared launcher still uses bundled config plus annual Google settings. No resource tab or live migration has been verified. **Manage my links** remains visibly personal browser storage.
+**Tools and resources → Maintain shared chapter links** provides authorized direct Google editing and a fresh read-only resource refresh once a reviewed projection is configured. The local source is connected to the reviewed Control Center **Shared_Resources_Public** A:H projection, with native saved/readback/schema evidence. Final deployment and ordinary-browser edit→refresh→fresh browser→restore remain pending. **Manage my links** remains visibly personal browser storage.
 
-See [shared resource contract and migration map](integrations/apps-script/SHARED_RESOURCES_CONTRACT.md) for all 17 stable IDs, exact proposed A:H schema, public/private review gates, connection and recovery steps. Six annual actions keep their URL authority in Year Settings. Disable shared entries with explicit FALSE tombstones; deleting rows restores defaults. Failed reads show stale successful data or unconfirmed bundled defaults. A refresh checks the public response only; direct officer edit access and clean-browser live propagation require separate rehearsal. Roles influence presentation and never grant access.
+See [shared resource contract and migration map](integrations/apps-script/SHARED_RESOURCES_CONTRACT.md) for all 17 stable IDs, exact reviewed A:H schema, public/private review gates, connection and recovery steps. Six annual actions keep their URL authority in Year Settings. Disable shared entries with explicit FALSE tombstones; deleting rows restores defaults. Failed reads show stale successful data or unconfirmed bundled defaults. A refresh checks the public response only; direct officer edit access and clean-browser live propagation require separate rehearsal. Roles influence presentation and never grant access.
