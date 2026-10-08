@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20261008b";
+import { validTransitionYear } from "./transition-state.js?v=20261008c";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
@@ -9,6 +9,10 @@ export const ANNUAL_LINK_FIELDS = [
   ["budgetTracker", "Budget tracker", "Opens the new year’s officer budget workbook."],
   ["budgetExport", "Sanitized Budget Export", "Provides approved finance summaries to the Hub."],
   ["annualFolder", "Annual Drive folder", "The folder holding this year’s copied files."],
+];
+export const MOCK_ANNUAL_FIELDS = [
+  ["controlCenterUrl", "Private mock Control Center", "Use the copied Control Center from the provisioner receipt; keep its permissions private."],
+  ["scriptProjectUrl", "Mock provisioner Apps Script project (optional)", "Open the maintainer-reviewed project; running a function still requires its configured private target."],
 ];
 const fieldKeys = new Set(ANNUAL_LINK_FIELDS.map(([key]) => key));
 const idPattern = /^[A-Za-z0-9_-]{20,200}$/;
@@ -44,6 +48,30 @@ export function googleAnnualLink(key, value) {
 
 function googleId(url) { return String(url).match(/\/(?:d\/(?:e\/)?|folders\/)([A-Za-z0-9_-]{20,200})(?:\/|$|[?#])/)?.[1]; }
 
+function mockContext(value, links, config) {
+  if (value === undefined) return undefined;
+  if (!record(value) || Object.keys(value).some(key => !MOCK_ANNUAL_FIELDS.some(([field]) => field === key))) throw new Error("Unknown or malformed private mock context.");
+  const result = {};
+  for (const [key] of MOCK_ANNUAL_FIELDS) {
+    const input = value[key] ?? "";
+    if (typeof input !== "string") throw new Error("Private mock references must be text links.");
+    if (!input.trim()) continue;
+    if (key === "controlCenterUrl") {
+      const url = googleAnnualLink("pointsMaster", input);
+      const id = googleId(url);
+      const excluded = [config.sharedSettings?.spreadsheetUrl, config.sharedSettings?.editUrl, config.templates?.editUrl, ...Object.values(config.templates?.sources || {}).map(source => source.editUrl), ...Object.values(links)].map(googleId).filter(Boolean);
+      if (excluded.includes(id)) throw new Error("Use a separate copied Control Center for this private mock; the chapter source, templates and annual files are excluded.");
+      result[key] = url;
+    } else {
+      let url;
+      try { url = new URL(input.trim()); } catch { throw new Error("Use the full Apps Script project editor link."); }
+      if (url.protocol !== "https:" || url.hostname !== "script.google.com" || url.username || url.password || url.port || !/^\/(?:u\/\d+\/)?home\/projects\/[A-Za-z0-9_-]{20,200}\/edit\/?$/.test(url.pathname)) throw new Error("Use the Apps Script project editor link, not a deployed web app.");
+      result[key] = `${url.origin}${url.pathname.replace(/\/$/, "")}`;
+    }
+  }
+  return Object.keys(result).length ? result : undefined;
+}
+
 export function validateAnnualLinkDraft(value, year, config = {}) {
   annualLinkStorageKey(year);
   if (!record(value) || value.schema !== 1 || value.type !== ANNUAL_HANDOFF_TYPE || value.year !== year || !record(value.links)) {
@@ -64,7 +92,8 @@ export function validateAnnualLinkDraft(value, year, config = {}) {
     used.set(id, key);
     links[key] = url;
   }
-  return { schema: 1, type: ANNUAL_HANDOFF_TYPE, year, links };
+  const mock = mockContext(value.mock, links, config);
+  return { schema: 1, type: ANNUAL_HANDOFF_TYPE, year, links, ...(mock ? { mock } : {}) };
 }
 
 export function importAnnualLinkDraft(text, year, config) {
@@ -76,6 +105,7 @@ export function importAnnualLinkDraft(text, year, config) {
 
 export function annualSettingsDraft(draft, config) {
   const checked = validateAnnualLinkDraft(draft, draft?.year, config);
+  if (checked.mock) throw new Error("Private mock settings use the copied Control Center and provisioner receipt; they cannot enter the legacy annual save workflow.");
   if (checked.year === config?.currentAcademicYear || config?.dataSources?.[checked.year]?.isCurrent === true) throw new Error("Choose a future or inactive transition year. Annual setup cannot prepare changes for the current Hub year.");
   return { yearKey: checked.year, label: checked.year.replace("-", "–"),
     attendanceSheetUrl: checked.links.pointsExport || "", attendanceSheetTab: "Leaderboard_Public",
@@ -85,6 +115,8 @@ export function annualSettingsDraft(draft, config) {
 }
 
 const ANNUAL_DEPENDENCIES = {
+  controlCenterUrl: {steps:['T02','T03','T04'],checks:['V07','V10']},
+  scriptProjectUrl: {steps:['T02','T03'],checks:['V01','V02','V07','V10']},
   pointsMaster: {steps:['T02','T03'],checks:['V02','V03','V04','V05']},
   attendanceFormEditor: {steps:['T02','T03'],checks:['V02','V03','V04']},
   attendanceFormRespondent: {steps:['T02','T03'],checks:['V02','V03','V04']},

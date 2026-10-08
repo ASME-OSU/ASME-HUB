@@ -1,8 +1,9 @@
-import { validateAnnualLinkDraft } from "./annual-link-draft.js?v=20261002a";
+import { validateAnnualLinkDraft } from "./annual-link-draft.js?v=20261008c";
 
 // A reviewable transfer file, never authorization or evidence of Google access.
 export function annualSettingsInput(handoff, settings, config = {}, extra = {}) {
   const checked = validateAnnualLinkDraft(handoff, settings.yearKey, config);
+  if (checked.mock) throw new Error("Private mock settings are reviewed directly in the copied Control Center; do not send them to the legacy annual save service.");
   if (settings.isActive || settings.isCurrent || checked.year === config.currentAcademicYear) throw new Error("Keep the new year inactive and noncurrent before preparing its Google save.");
   const linked = { pointsExport: "attendanceSheetUrl", attendanceFormRespondent: "attendanceFormUrl", pointsMaster: "pointsMasterUrl", budgetTracker: "budgetTrackerUrl", budgetExport: "budgetExportSheetUrl" };
   for (const [key, field] of Object.entries(linked)) {

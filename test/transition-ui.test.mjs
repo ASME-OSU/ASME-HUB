@@ -37,9 +37,10 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   $("transition-run-mode").value = "rehearsal";
   const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
-  const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { documentListeners.get(event.type)?.(event); } };
+  const dispatched = [];
+  const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
   const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener() {}, print() {} };
-  const context = { ...state, ...definitions, ...links, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function() {} };
+  const context = { ...state, ...definitions, ...links, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
   const control = id => $("transition-steps").querySelector(`[data-transition-control="${id}"]`);
   const go = async id => { $("transition-step-picker").value = id; await $("transition-step-picker").emit("change"); };
@@ -49,8 +50,48 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
     assert.ok(form, `Evidence form ${id}`); form.find(node => node.tagName === "textarea").value = text; await form.emit("submit");
   };
   const saved = () => { const id = $("transition-run").value; return JSON.parse(existing.get(state.storageKey("2027-2028", id))); };
-  return { $, go, choose, reason, saved, existing, document };
+  return { $, go, choose, reason, saved, existing, document, window, dispatched };
 }
+
+const mockHandoff = () => ({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:"2027-2028",links:{pointsMaster:"annual_points_1234567890123456",pointsExport:"annual_export_1234567890123456",budgetTracker:"annual_budget_1234567890123456",budgetExport:"budget_export_1234567890123456",annualFolder:"https://drive.google.com/drive/folders/annual_folder_1234567890123456",attendanceFormEditor:"https://docs.google.com/forms/d/annual_form_123456789012345678/edit",attendanceFormRespondent:"https://docs.google.com/forms/d/e/annual_respondent_1234567890123456/viewform"},mock:{controlCenterUrl:"https://docs.google.com/spreadsheets/d/private_mock_center_1234567890/edit",scriptProjectUrl:"https://script.google.com/home/projects/private_mock_script_1234567890/edit"}});
+async function importMock(ui, value=mockHandoff()) {
+ await ui.go("T02"); const input=ui.$("transition-dialog").find(node=>node.tagName==="input"&&node.type==="file");
+ const text=JSON.stringify(value);input.files=[{size:text.length,text:async()=>text}];await input.emit("change");
+}
+const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Review private mock settings").click();
+
+test("rehearsal review opens only its private provisioner-owned source and never transfers to legacy save",async()=>{
+ const ui=browser();ui.$("transition-run-name").value="Private fixture";await ui.$("transition-run-form").emit("submit");await importMock(ui);await reviewMock(ui);
+ const key=links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id;
+ const draft=JSON.parse(ui.existing.get(key));assert.equal(draft.mock.controlCenterUrl,mockHandoff().mock.controlCenterUrl);
+ assert.equal(ui.dispatched.filter(event=>event.type==="transition:annual-settings-draft").length,0);
+ assert.equal(ui.$("transition-steps").find(node=>node.href===draft.mock.controlCenterUrl)?.target,"_blank");
+ assert.match(ui.$("transition-steps").textContent,/does not save a Google row or run the provisioner/);
+ const exported=state.exportProgress(ui.saved(),definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS);
+ assert.doesNotMatch(exported,/private_mock_center|private_mock_script|annual_points/);
+ await ui.$("transition-print").click();assert.doesNotMatch(ui.$("transition-print-sheet").textContent,/private_mock_center|private_mock_script|annual_points/);
+ const reload=browser(ui.existing);await reload.go("T02");assert.ok(reload.$("transition-steps").find(node=>node.href===draft.mock.controlCenterUrl));
+ reload.$("transition-run-name").value="Other fixture";await reload.$("transition-run-form").emit("submit");await reload.go("T02");
+ assert.equal(reload.$("transition-steps").find(node=>node.href===draft.mock.controlCenterUrl),null);
+ assert.equal(JSON.parse(ui.existing.get(key)).mock.controlCenterUrl,draft.mock.controlCenterUrl);
+});
+
+test("mock review requires seven links and a separate center; stale context cannot overwrite newer run evidence",async()=>{
+ const a=browser();a.$("transition-run-name").value="Mock context";await a.$("transition-run-form").emit("submit");await a.go("T02");await reviewMock(a);assert.match(a.$("transition-steps").textContent,/Enter all seven/);
+ await importMock(a);await reviewMock(a);const b=browser(a.existing);await b.go("T02");
+ const centerInput=ui=>ui.$("transition-steps").find(node=>node.tagName==="label"&&node.textContent.startsWith("Private mock Control Center")).find(node=>node.tagName==="input");
+ centerInput(a).value="https://docs.google.com/spreadsheets/d/new_private_mock_center_1234567890/edit";await reviewMock(a);
+ const key=links.annualLinkStorageKey("2027-2028")+":"+a.saved().run.id,newer=a.existing.get(key);await reviewMock(b);
+ assert.equal(a.existing.get(key),newer);assert.match(b.$("transition-steps").textContent,/changed in another tab/);
+});
+
+test("production retains its separate transfer action and rejects private mock context",async()=>{
+ const ui=browser();ui.$("transition-run-name").value="Production review";ui.$("transition-run-mode").value="production";await ui.$("transition-run-form").emit("submit");
+ await importMock(ui);const action=()=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Review new-year settings");await action().click();
+ assert.match(ui.$("transition-steps").textContent,/Production settings cannot use the mock context/);assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
+ const value=mockHandoff();delete value.mock;await importMock(ui,value);await action().click();
+ assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,1);
+});
 
 test("five-step mock UI permits skips and later checks but denies activation", async()=>{
  const ui=browser();ui.$("transition-run-name").value="Five-step rehearsal";await ui.$("transition-run-form").emit("submit");
