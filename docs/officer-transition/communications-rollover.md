@@ -37,6 +37,8 @@ The exact Spring JSON was imported into a fresh builder with matching content an
 
 The official physical mailing address remains **PENDING owner confirmation**. Keep the builder’s missing-address warning, obtain the approved address from the responsible officer, enter it under Design, save approved defaults and inspect the exported HTML footer. The chapter email is not a postal address. Public membership/event/partner figures remain **PENDING approved facts**: source review found Join 466+/25+ and Sponsor 466+/25+/20+, while the dated V3 CMS observation showed Sponsor 126+/6+/5+. Reconcile the actual published surfaces, periods and definitions, or label their distinct approved bases beside each claim. Do not infer an approved replacement from these observations.
 
+For T04, the coordinator must supply an approved facts record with each statistic's value, period, definition, source, as-of date and approver. Record the full postal address, approved sender and reply-to with approver and date in the private run checklist. The sending-service settings click path and account owner are **UNVERIFIED** in the available local evidence; the communications owner must open the actual chapter sending account, record the exact route and verify sender/reply-to there before the Hub publishes that instruction. Until then, mark T04-D Blocked. Builder preview and local fixtures do not verify sending-service identity, delivery or live calendar propagation. No address, current statistic or route is inferred from an older page or template.
+
 ## Dated evidence and current responsibilities
 
 The source map below was reviewed October 3, 2026. Production was 2026–2027;

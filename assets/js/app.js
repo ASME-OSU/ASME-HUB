@@ -3728,7 +3728,7 @@
       const empty = document.createElement("p");
       empty.className = "budget-empty-state";
       empty.textContent = unavailableMessage || (hasIncompleteCategory
-        ? "Category data is incomplete. Check the category rows in the public export."
+        ? "Category data is incomplete. A dash means unavailable, not zero; check the category rows in the public export."
         : fundingIsConfirmed
           ? "Zero category allocations reviewed. Add allocations to see pacing."
           : "Treasurer review required. Category allocations are zero; confirm the funding plan.");
@@ -3762,13 +3762,13 @@
         label.textContent = category.label;
         const value = document.createElement("span");
         value.textContent = category.planned > 0
-          ? `${currencyFormatter.format(category.actual)} of ${currencyFormatter.format(category.planned)}`
-          : `${currencyFormatter.format(category.actual)} · plan needed`;
+          ? `${currencyFormatter.format(category.actual)} of ${currencyFormatter.format(category.planned)} category plan`
+          : `${currencyFormatter.format(category.actual)} · no reported category allocation`;
         heading.append(label, value);
         const track = document.createElement("div");
         track.className = "budget-category-track";
         track.setAttribute("role", "progressbar");
-        track.setAttribute("aria-label", `${category.label} budget used`);
+        track.setAttribute("aria-label", `${category.label} category plan pacing; ${fundingIsConfirmed ? "confirmed category plan" : "legacy/reference category plan"}`);
         track.setAttribute("aria-valuemin", "0");
         track.setAttribute("aria-valuemax", "100");
         track.setAttribute(
@@ -4923,8 +4923,8 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261008c");
-      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261008c");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261008f");
+      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261008f");
       buildAnnualSettingsInput = annualSettingsInput;
       buildAnnualTransferUrl = annualSettingsTransferUrl;
       const draft = annualSettingsDraft(event.detail?.draft, config);

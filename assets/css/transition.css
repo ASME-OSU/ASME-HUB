@@ -176,3 +176,14 @@ body[data-theme="dark"] .transition-dialog {
 .transition-evidence textarea { min-height: 68px; resize: vertical; }
 .transition-evidence small { color: var(--flow-secondary); line-height: 1.5; }
 .transition-evidence button { justify-self: start; }
+
+.transition-test-cases { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 18px 0; font-size: 13px; }
+.transition-test-cases caption { text-align: left; font-weight: 700; margin-bottom: 8px; }
+.transition-test-cases th, .transition-test-cases td { padding: 8px; border: 1px solid #aab3c0; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.transition-test-cases th { font-weight: 700; }
+@media print {
+  .transition-test-cases { font-size: 10pt; }
+  .transition-test-cases tr { break-inside: avoid; }
+  .transition-test-cases thead { display: table-header-group; }
+  .transition-print-step { break-inside: auto; }
+}

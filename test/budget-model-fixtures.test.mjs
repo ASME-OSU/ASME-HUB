@@ -95,7 +95,8 @@ function createHubRuntime(rows) {
     append(...children) { this.children.push(...children); },
     appendChild(child) { this.children.push(child); return child; },
     replaceChildren(...children) { this.children = children; },
-    setAttribute() {},
+    attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; },
     removeAttribute() {},
     addEventListener() {},
     removeEventListener() {},
@@ -375,4 +376,27 @@ test("production renderer keeps a legacy plan unconfirmed until the public statu
   assert.equal(runtime.byId.get("budget-remaining-label").textContent, "Legacy plan remaining");
   assert.equal(runtime.byId.get("budget-used-label").textContent, "Funding confirmation");
   assert.equal(runtime.byId.get("budget-progress-fill").parentElement.hidden, true);
+});
+
+test("category pacing identifies confirmed versus legacy plans and distinguishes zero from unavailable", () => {
+  const runtime = createHubRuntime([]);
+  runtime.api.renderBudget({
+    available: true,
+    fundingModelStatus: "Confirmed",
+    plannedBudget: 100,
+    budgetUsedPercent: 20,
+    approvedExpenses: 20,
+    categories: [
+      { label: "General Meetings", actual: 20, planned: 0 },
+      { label: "Outreach", actual: 5, planned: 100 },
+    ],
+  });
+  const rows = runtime.byId.get("budget-category-bars").children;
+  assert.match(rows[0].children[0].children[1].textContent, /no reported category allocation/);
+  assert.match(rows[1].children[0].children[1].textContent, /category plan/);
+  assert.match(rows[0].children[1].attributes?.["aria-label"] || "", /confirmed category plan/);
+  const legacyRuntime = createHubRuntime([]);
+  legacyRuntime.api.renderBudget({ available: true, fundingModelStatus: "Needs confirmation", categories: [{ label: "General Meetings", actual: 20, planned: 100 }] });
+  assert.match(legacyRuntime.byId.get("budget-category-bars").children[1].children[1].attributes?.["aria-label"] || "", /legacy\/reference category plan/);
+  assert.match(readFileSync(resolve(import.meta.dirname, "../index.html"), "utf8"), /A dash in this Hub means the amount is unavailable, not zero/);
 });

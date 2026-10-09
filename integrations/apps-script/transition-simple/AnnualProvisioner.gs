@@ -16,6 +16,72 @@ function asmeAnnualDraftRow_(year,goal,links,ical,stamp){
   if(!Number.isInteger(goal)||goal<=0)throw new Error('Approved positive engagement goal required.');
   return [year,'ASME '+year,goal,links.pointsExport,'Leaderboard_Public','',links.formRespondent,links.pointsMaster,'https://org.osu.edu/asme/calendar/',ical||'',false,false,stamp,'Inactive draft initialized via AnnualProvisioner','Event_Metrics_Public',links.budgetTracker,links.budgetExport,'Budget_Public','',''];
 }
+// Pure, copyable private handoff text. This formats the saved run and does not
+// create a Google Doc, grant access, authorize imports or install a trigger.
+function asmeReadableAnnualReceipt_(state,settingsRowNumber){
+  if(!state||state.phase!=='draft_ready'||!state.plan||!state.ids||!state.links||!state.responseTab||!state.formEditUrl||!state.folderUrl||!Number.isInteger(settingsRowNumber)||settingsRowNumber<2)throw new Error('A complete draft-ready receipt and settings row are required.');
+  var y=asmeAnnualYear_(state.year,state.plan.fallTerm),p=state.plan,l=state.links;
+  var required=['pointsMaster','pointsExport','budgetTracker','budgetExport','formRespondent'];
+  if(required.some(function(k){return !l[k];})||!state.ids.attendanceForm||!state.ids.pointsMaster||!state.ids.budgetTracker||!p.controlCenterId)throw new Error('Saved annual links or Form/Control Center identity are incomplete.');
+  var lines=[
+    '# Private ASME annual setup receipt — '+state.year,
+    '',
+    'Provisioner run key: ASME_SIMPLE_ANNUAL_'+state.year,
+    'Hub run name: [coordinator records the matching private Hub run]',
+    'Technical maintainer/contact: [coordinator names a maintainer and private contact route]',
+    'Bundle generated: '+(state.completedAt||'[not recorded]'),
+    'Provisioner copy/draft verification: '+(state.checkedAt||'[not recorded]')+' (officer Google UI comparison remains open)',
+    '',
+    '## Seven annual links (private)',
+    '1. Annual folder: '+state.folderUrl,
+    '2. Points Master: '+l.pointsMaster,
+    '3. Check-in Form editor: '+state.formEditUrl,
+    '4. Check-in Form respondent: '+l.formRespondent,
+    '5. Budget Tracker: '+l.budgetTracker,
+    '6. Points Export: '+l.pointsExport,
+    '7. Budget Export: '+l.budgetExport,
+    '',
+    '## Compare in Google UI',
+    'Form ID: '+state.ids.attendanceForm,
+    'Form response destination: Points Master '+state.ids.pointsMaster,
+    'Actual response tab: '+state.responseTab,
+    'Points Master → Config!B2 fall term: '+p.fallTerm,
+    'Points Master → Config!B3 short year: '+y.short,
+    'Points Master → Config!B5 mode: TESTING',
+    'Points Master → Config!B7 response tab: '+state.responseTab,
+    'Points Master → Config!B16 Form ID: '+state.ids.attendanceForm,
+    'Points Export → Config!B1 source ID: '+state.ids.pointsMaster,
+    'Budget Export → Config!B1 source ID: '+state.ids.budgetTracker,
+    'Control Center: https://docs.google.com/spreadsheets/d/'+p.controlCenterId+'/edit',
+    'Control Center → Hub_Settings_Public!A'+settingsRowNumber+':T'+settingsRowNumber+' (academic_year A'+settingsRowNumber+' = '+state.year+')',
+    'Control Center engagement_goal C'+settingsRowNumber+': '+p.engagementGoal,
+    'Control Center calendar_ical_url J'+settingsRowNumber+': '+(p.calendarIcalUrl||'[blank; no annual feed configured]'),
+    'Control Center is_active K'+settingsRowNumber+': FALSE; is_current L'+settingsRowNumber+': FALSE',
+    'Calendar decision/owner: [coordinator records approved source or explicit no-feed decision; provisioner configuration alone is not approval]',
+    '',
+    '## Expected August–July dates — compare the copied Budget Tracker',
+    'Setup & Lists!B4 year start: '+y.start+'-08-01',
+    'Setup & Lists!B5 year end: '+y.end+'-07-31',
+    'Setup & Lists!B11 Fall start: '+y.start+'-08-01',
+    'Setup & Lists!B12 Fall end: '+y.start+'-12-31',
+    'Setup & Lists!B13 Spring start: '+y.end+'-01-01',
+    'Setup & Lists!B14 Spring end: '+y.end+'-05-31',
+    'These dates are in the Budget Tracker; they are not columns in the 20-column settings row.',
+    '',
+    '## Separate human confirmations — UNVERIFIED until recorded with owner, time and evidence',
+    '- Clean-source verification for each canonical master: UNVERIFIED.',
+    '- Each incoming holder’s role-appropriate access using their own account: UNVERIFIED.',
+    '- Points Export private import authorization and resolved output: UNVERIFIED.',
+    '- Budget Export private import authorization and resolved output: UNVERIFIED.',
+    '- Initial Form event-sync result: provisioner invoked sync; officer observation UNVERIFIED.',
+    '- Automatic event-sync trigger installation and a later observed edit: UNVERIFIED.',
+    '- Real engagement goal/calendar approval, funding approval, bank reconciliation, public-field approval and launch approval: UNVERIFIED.',
+    '- Incoming officer acceptance: UNVERIFIED.',
+    '',
+    'Keep this receipt with the named private Hub run; progress export does not carry the annual link draft. Intake remains closed and this row is inactive/noncurrent.'
+  ];
+  return lines.join('\n');
+}
 function provisionReviewedAnnualYear(year){
   var match=/^(20\d{2}|21\d{2})-(20\d{2}|21\d{2}|2200)$/.exec(String(year));
   if(!match)throw new Error('Use a consecutive academic year such as 2027-2028.');
@@ -87,7 +153,8 @@ function provisionAnnualYear(targetYear,fallTerm){
     if(existing.length && state.phase==='draft_ready'){
       var verifiedLinks={pointsMaster:'https://docs.google.com/spreadsheets/d/'+master.getId()+'/edit',pointsExport:'https://docs.google.com/spreadsheets/d/'+state.ids.pointsExport+'/edit',budgetTracker:'https://docs.google.com/spreadsheets/d/'+state.ids.budgetTracker+'/edit',budgetExport:'https://docs.google.com/spreadsheets/d/'+state.ids.budgetExport+'/edit',formRespondent:form.getPublishedUrl()};
       if(JSON.stringify(state.links)!==JSON.stringify(verifiedLinks))throw new Error('Saved links do not match the copied files.');
-      return {success:true,targetYear:targetYear,receipt:state,next:'Existing draft and copies verified. This retry changed no files.'};
+      var existingRowNumber=rows.findIndex(function(r){return r[0]===targetYear;})+2;
+      return {success:true,targetYear:targetYear,receipt:state,readableReceipt:asmeReadableAnnualReceipt_(state,existingRowNumber),next:'Existing draft and copies verified. This retry changed no files.'};
     }
     // A resumed run with responses is never reset by this setup function.
     if(!config||!master.getSheetByName('_Raw_Ingest')||master.getSheetByName('_Raw_Ingest').getRange('A1').getFormula()!==ASME_RAW_INGEST_FORMULA)throw new Error('Canonical raw proxy architecture is missing.');
@@ -117,6 +184,6 @@ function provisionAnnualYear(targetYear,fallTerm){
     else settings.getRange(rowNumber,1,1,20).setValues([row]);
     SpreadsheetApp.flush();if(JSON.stringify(settings.getRange(rowNumber,1,1,20).getValues()[0])!==JSON.stringify(row))throw new Error('Draft readback failed; retry the same run to reconcile.');
     state.phase='draft_ready';state.responseTab=linked[0].getName();state.links=links;state.formEditUrl=form.getEditUrl();state.folderUrl=annual.getUrl();state.completedAt=state.completedAt||new Date().toISOString();state.checkedAt=new Date().toISOString();delete state.lastError;save();
-    return {success:true,targetYear:targetYear,receipt:state,next:'Enable automatic event sync from the copied master menu, authorize both private imports, run pre-flight and actual scoring tests. Intake remains closed, TESTING, inactive and noncurrent.'};
+    return {success:true,targetYear:targetYear,receipt:state,readableReceipt:asmeReadableAnnualReceipt_(state,rowNumber),next:'Enable automatic event sync from the copied master menu, authorize both private imports, run pre-flight and actual scoring tests. Intake remains closed, TESTING, inactive and noncurrent.'};
   }catch(e){if(state){state.lastError=String(e.message||e);try{properties.setProperty(key,JSON.stringify(state));}catch(ignore){/* Preserve the original failure; pending intent was saved first. */}}throw e;}finally{lock.releaseLock();}
 }

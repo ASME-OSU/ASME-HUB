@@ -6,6 +6,8 @@ The Secretary/Points officer reviews the annual provisioner receipt, manages app
 
 This folder contains public documentation. Keep private configuration, exact operational file inventories, test/member records and evidence in the chapter-controlled private handoff folder. If you cannot find it, ask the outgoing President for its location; do not assume a dated example folder is the current handoff.
 
+For a new run, copy the [T01–T05 private checklist template](private-run-checklist-template.md) and [selective mock cleanup template](selective-mock-cleanup-template.md) into that private folder. The maintainer attaches the provisioner's `readableReceipt` text and the coordinator fills the named run, contacts, access evidence, owners and decisions. These repository templates contain no current private links or approvals.
+
 | Reference | What to read it for |
 |---|---|
 | [Annual Points setup](annual-points-setup.md) | T02–T03 provisioner/proxy/central-pointer workflow, conditional sync/manual fallback, profiles and actual recovery tests |
