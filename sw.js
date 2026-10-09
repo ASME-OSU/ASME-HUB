@@ -1,4 +1,4 @@
-const SHELL_CACHE = "asme-hub-shell-v83";
+const SHELL_CACHE = "asme-hub-shell-v84";
 const SHELL_ASSETS = [
   "./assets/css/transition.css?v=20261009b",
   "./",
