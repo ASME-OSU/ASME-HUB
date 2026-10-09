@@ -4923,8 +4923,8 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261009a");
-      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261009a");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261009b");
+      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261009b");
       buildAnnualSettingsInput = annualSettingsInput;
       buildAnnualTransferUrl = annualSettingsTransferUrl;
       const draft = annualSettingsDraft(event.detail?.draft, config);

@@ -1,4 +1,4 @@
-import { validateAnnualLinkDraft } from "./annual-link-draft.js?v=20261009a";
+import { validateAnnualLinkDraft } from "./annual-link-draft.js?v=20261009b";
 
 // A reviewable transfer file, never authorization or evidence of Google access.
 export function annualSettingsInput(handoff, settings, config = {}, extra = {}) {
