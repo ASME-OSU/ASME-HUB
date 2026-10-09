@@ -2,6 +2,8 @@
 
 Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**. The year choice stays at the top on every step: enter the starting year (for example, **2027** for 2027–2028) and choose **Use year**. Choose **Practice** or **Real handoff**, then **Start checklist**, or choose a saved checklist for that year and **Continue checklist**. A checklist is one attempt, with its own notes and private links. Naming is optional. The identifier, reload and step-jump controls stay collapsed under **Checklist details and advanced controls**.
 
+Use **Choose checklist** at the top to select the attempt. In the middle, follow the current step's tasks and choose your observations under **Record results**. At the bottom, **Saved links and backup tools** belongs to that same checklist: open **Saved links** for tool and document URLs, or **Progress backup and print** for results and notes. Step 2's **Edit saved links** button opens the bottom editor; it is the same list on every step.
+
 Ask the President through [asme@osu.edu](mailto:asme@osu.edu) for the filled current five-step checklist, private handoff folder, named technical maintainer, setup receipt and private link-bundle JSON for your year and attempt. Include your role, year and checklist purpose. For example: “I am the incoming Secretary, preparing 2027–2028 in Practice. Please send the current checklist, copied-tool links and setup receipt, and name the maintainer and reviewer.” If these are missing, mark Blocked; you can still read later steps and do local calendar practice. A shared start page or dated example folder does not supply your current materials.
 
 The President leads, with the team contributing checks. Record the supplied folder/checklist links, technical/recovery contact and one settings editor in the private checklist. Practice uses the approved test account and named reviewer; Real handoff needs each incoming holder's actual account access. Check existing annual folders and copies with the maintainer before creating more.
@@ -30,7 +32,7 @@ Use **Add a note or evidence** for a sentence such as “I opened the folder, bu
 
 Start an actual transition in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/)
 under **Transition to New Year**. Select the year above the checklist controls and work through the
-five steps: T01 Choose your year and confirm access; T02 Get the annual tool bundle and check it; T03 Run check-in and budget tests; T04 Check calendars and prepare communications; T05 Close the rehearsal or launch an approved year (including cleanup/handoff after NO-GO). A saved inactive settings row is one milestone; it does not mean
+five steps: T01 Confirm access and materials; T02 Get the annual tool bundle and check it; T03 Run check-in and budget tests; T04 Check calendars and prepare communications; T05 Close the rehearsal or launch an approved year (including cleanup/handoff after NO-GO). A saved inactive settings row is one milestone; it does not mean
 the new year is activated or every handoff check passed.
 
 ## Current implementation and dated evidence

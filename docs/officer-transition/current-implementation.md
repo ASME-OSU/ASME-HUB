@@ -4,11 +4,13 @@ Reviewed October 9, 2026 against the repository source. This describes the curre
 
 The year choice stays first, above the checklist controls on every step. Choose **Practice** or **Real handoff** and **Start checklist**, or choose a saved checklist for that year and **Continue checklist**. A saved checklist is one attempt for a year, with separate notes and private links. Naming is optional; **Checklist details and advanced controls** keeps the identifier, reload and step-jump controls collapsed. Exported mode values remain `rehearsal` and `production` for compatibility.
 
+**Choose checklist** is the top section. The middle shows the current step's **Follow these tasks** and **Record results**. The bottom **Saved links and backup tools** uses that same selected checklist; it is not another attempt. Its **Saved links** editor stays at the bottom on every step, and Step 2's **Edit saved links** button opens it. **Progress backup and print** handles results/notes; **Current Hub reference** is a separate reference to the current chapter settings.
+
 ## Five steps
 
 | Step | Current screen title | Purpose |
 |---|---|---|
-| T01 | Choose your year and confirm access | Choose year and Practice/Real handoff checklist; identify lead, account access, current checklist and recovery contact |
+| T01 | Confirm access and materials | Choose year and Practice/Real handoff checklist; identify lead, account access, current checklist and recovery contact |
 | T02 | Get the annual tool bundle and check it | Review the actual copied tools, receipt, destination/tab, imports, automatic sync and inactive settings |
 | T03 | Run check-in and budget tests | Check fictional response/scoring cases, suppression, closed intake and mock budget output; production also needs real authority/reconciliation |
 | T04 | Check calendars and prepare communications | Check local fictional previews and downloaded recovery files; production also needs live propagation and approved sending/public facts |
@@ -38,7 +40,7 @@ Production-only checks are displayed in a separate collapsed section during Prac
 
 Progress and link drafts belong to the selected year and checklist attempt on that device. Save the seven actual annual links with **Save private link list on this device**. Optional copied Control Center/project references and private checklist/receipt/cleanup/recovery/acceptance URLs can be saved with that checklist. Record fields take full HTTPS document or folder links supplied by the President or technical maintainer, with supplier instructions beside each field. They do not take names or email addresses. A saved URL checks format; it does not prove access or approval.
 
-Expand **Private mock run links** in Practice or **New-year draft links** in Real handoff to review the complete list. These sections include the chosen year and **saved on this device** in their headings.
+At the bottom, **Saved links and backup tools** belongs to the same checklist selected at the top. Expand **Saved links** to review tool and record URLs, or **Progress backup and print** to export/import results and notes. The separate **Current Hub reference** opens the chapter’s current shared settings.
 
 Practice uses **Reviewer sign-off record link** and **Recovery notes document link**. **Approved communications record link** and **Coordinator launch approval record link** are hidden in Practice and available in Real handoff. Hiding a field preserves any saved data; it does not turn it into a passed check. **Import automation links** fills the private link list from the maintainer's annual link-handoff JSON for this year and attempt; it does not run setup or alter Google. The readable receipt is a separate document.
 
@@ -62,7 +64,7 @@ Guide versions 2–6 (sixteen steps) and 7–8 (five steps) migrate to Guide 9. 
 
 The retained rehearsal's fictional responses/raw rows, closed events, OPEN exceptions, transactions and allocation inputs were approved for private retention. Formula tabs, exports and proxy wiring were preserved. No newsletter was sent, no production year activated, and no new site or native script deployment was performed as part of that closeout.
 
-The October 8–9 student walkthrough of 2027–2028 remained operationally incomplete because its current private checklist, receipt and bundle were not supplied. Today's source improvements do not certify that attempt or install a new native provisioner. The retained 2031–2032 GO remains limited to its dated private evidence.
+The October 8–9 student walkthrough was blocked by missing current 2027–2028 materials. On October 9, a new isolated private 2027–2028 bundle was created through the reviewed provisioner, with a current five-step checklist, readable receipt and importable link bundle. Its actual Form destination/tab, TESTING status, and inactive/noncurrent settings were checked. Fictional budget arithmetic and both private export connections were also checked. This fresh run still requires its own attendance, automatic-sync, recovery, cleanup and reviewer acceptance evidence before Practice GO. Private file IDs and test rows remain outside this public repository. The retained 2031–2032 GO remains limited to its dated private evidence.
 
 GitHub Pages builds from `main` via [pages.yml](../../.github/workflows/pages.yml), also on its hourly schedule or manual dispatch. It packages `index.html`, the manifest, service worker, assets and data; these Markdown references are read on GitHub. Google editor saves, Apps Script web deployments and GitHub Pages deployment are distinct. Before execution, compare the installed Google source/configuration with its private receipt. Do not run retired bulk formula-rewrite helpers on proxy-based templates.
 

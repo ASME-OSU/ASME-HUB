@@ -6,6 +6,8 @@ private handoff checklist. A role listed here does not appoint a new officer. Co
 
 ## Officer route: start here
 
+In the Hub, **Choose checklist** selects the attempt at the top. Follow Step 4's tasks and **Record results** in the middle. The bottom **Saved links and backup tools** uses the same checklist: **Saved links** holds its private URLs and link-bundle backup; **Progress backup and print** handles results and notes.
+
 1. **T04 — shared tool links:** first choose your year at the top of the Hub checklist. Choose **Practice** or **Real handoff** and **Start checklist**, or **Continue checklist** for a saved attempt. Open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/) and the [Public Events Calendar](https://org.osu.edu/asme/calendar/) from Step 4; the career guide and chapter website are also available in Resources. If a shared destination needs changing,
    choose Resources → Maintain shared chapter links → Edit shared resources in Google. The named authorized editor updates the reviewed stable row, waits for Google save, then chooses Refresh shared resources and checks the destination/read timestamp. Give missing-source or feed failures to the Webmaster using [the source instructions below](#webmaster-t04-shared-tool-links).
    Year-specific links are handled in T02; personal links change only your browser.

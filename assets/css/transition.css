@@ -145,6 +145,9 @@ body[data-theme="dark"] .transition-dialog {
 .transition-tools { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--flow-border); font-size: 13px; }
 .transition-tools summary { min-height: 44px; color: var(--flow-text); font-weight: 600; cursor: pointer; }
 .transition-tools p { color: var(--flow-secondary); line-height: 1.6; }
+.transition-area-title { margin: 0 0 10px; font-size: 18px; color: var(--flow-text); }
+.transition-saved-tools { margin-top: 24px; padding: 20px; border: 1px solid var(--flow-border); border-radius: 12px; background: var(--flow-surface); }
+.transition-saved-tools > .transition-summary { margin-bottom: 0; }
 .transition-toolbar, .transition-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 16px 0; }
 .transition-controls > *, .transition-toolbar > label { display: grid; gap: 6px; }
 .transition-banner { padding: 12px 16px; border-radius: 10px; background: var(--flow-info-bg); color: var(--flow-info-copy); font-size: 13px; line-height: 1.5; }
