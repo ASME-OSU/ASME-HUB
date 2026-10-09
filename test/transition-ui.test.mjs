@@ -46,7 +46,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const go = async id => { $("transition-step-picker").value = id; await $("transition-step-picker").emit("change"); };
   const choose = async (id, value) => { const element = control(id); assert.ok(element, `Rendered control ${id}`); element.value = value; await element.emit("change"); };
   const reason = async (id, text) => {
-    const form = $("transition-steps").find(node => node.className === "transition-evidence" && node.textContent.startsWith(`${id} disposition`));
+    const form = $("transition-steps").find(node => node.className === "transition-evidence" && node.dataset.evidenceId === id);
     assert.ok(form, `Evidence form ${id}`); form.find(node => node.tagName === "textarea").value = text; await form.emit("submit");
   };
   const saved = () => { const id = $("transition-run").value; return JSON.parse(existing.get(state.storageKey("2027-2028", id))); };
@@ -58,7 +58,7 @@ async function importMock(ui, value=mockHandoff()) {
  await ui.go("T02"); const input=ui.$("transition-dialog").find(node=>node.tagName==="input"&&node.type==="file");
  const text=JSON.stringify(value);input.files=[{size:text.length,text:async()=>text}];await input.emit("change");
 }
-const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Review private mock settings").click();
+const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt").click();
 
 test("rehearsal review opens only its private provisioner-owned source and never transfers to legacy save",async()=>{
  const ui=browser();ui.$("transition-run-name").value="Private fixture";await ui.$("transition-run-form").emit("submit");await importMock(ui);await reviewMock(ui);
@@ -98,7 +98,7 @@ test("five-step mock UI permits skips and later checks but denies activation", a
  await ui.go("T02");await ui.choose("T02","skipped");assert.equal(ui.saved().steps.T02,undefined);
  await ui.reason("T02","Mock setup skipped");await ui.choose("T02","skipped");assert.equal(ui.$("transition-next").disabled,false);assert.equal(ui.$("transition-dialog").dataset.mockMode,"true");
  await ui.$("transition-next").click();assert.equal(ui.$("transition-step-picker").value,"T03");
- await ui.go("T04");await ui.choose("V08","passed");await ui.choose("V09","passed");await ui.choose("T04","complete");
+ await ui.go("T04");for (const check of definitions.TRANSITION_CHECKS.filter(c => c.step === "T04" && state.checkApplies(c, "rehearsal"))) await ui.choose(check.id,"passed");await ui.choose("T04","complete");
  await ui.go("T05");await ui.choose("T05","complete");assert.equal(ui.saved().steps.T05,undefined);assert.match(ui.$("transition-status").textContent,/NO-GO/);
  await ui.reason("T05","NO-GO; cleanup recorded privately");await ui.choose("T05","skipped");
  const reload=browser(ui.existing);assert.equal(reload.saved().steps.T02,"skipped");assert.equal(reload.saved().steps.T04,"complete");
@@ -225,7 +225,7 @@ test("clearing a legacy annual draft masks it for the migrated run and preserves
 
 
 test('named sixteen-step production migration preserves raw original and cannot authorize launch', async()=>{
- const old={version:2,guideVersion:'officer-transition-guide-6',year:'2027-2028',run:state.createTransitionRun('Historical production','production','older'),savedAt:null,steps:Object.fromEntries(Array.from({length:16},(_,i)=>['T'+String(i+1).padStart(2,'0'),'complete'])),checks:Object.fromEntries(definitions.TRANSITION_CHECKS.map(c=>[c.id,'passed'])),reasons:{},notes:{T16:'Historical cleanup receipt'}};
+ const old={version:2,guideVersion:'officer-transition-guide-6',year:'2027-2028',run:state.createTransitionRun('Historical production','production','older'),savedAt:null,steps:Object.fromEntries(Array.from({length:16},(_,i)=>['T'+String(i+1).padStart(2,'0'),'complete'])),checks:Object.fromEntries(definitions.TRANSITION_CHECKS.filter(c=>Number(c.id.slice(1))<=10).map(c=>[c.id,'passed'])),reasons:{},notes:{T16:'Historical cleanup receipt'}};
  const raw=JSON.stringify(old),key=state.storageKey(old.year,'older');
  const existing=new Map([[key,raw]]),ui=browser(existing);
  assert.equal(existing.get(key),raw);await ui.go('T05');await ui.choose('T05','complete');assert.equal(existing.get(key),raw);
@@ -250,4 +250,53 @@ test('empty-string annual corruption is protected and backed up by explicit clea
  const clear=ui.$('transition-dialog').find(node=>node.tagName==='button'&&node.textContent==='Clear saved links for this run');await clear.click();
  assert.ok([...existing].some(([k,v])=>k.startsWith(key+':corrupt-backup-')&&v===''));
  assert.equal(existing.has(key),false);
+});
+
+test('new instructions render the five-case table in guide and print without cross-run links', async()=>{
+ const ui=browser(); ui.$('transition-run-name').value='MOCK copy review'; await ui.$('transition-run-form').emit('submit');
+ await importMock(ui); await reviewMock(ui); await ui.go('T03');
+ const table=ui.$('transition-steps').find(node=>node.tagName==='table'); assert.ok(table);
+ assert.match(table.textContent,/missing-profile exception OPEN/);
+ assert.ok(ui.$('transition-steps').find(node=>node.href?.includes('annual_points_1234567890123456')));
+ await ui.$('transition-print').click(); assert.match(ui.$('transition-print-sheet').textContent,/Five fictional check-in submissions/);
+ assert.match(ui.$('transition-print-sheet').textContent,/cleanup: Not checked/);
+ ui.$('transition-run-name').value='Other MOCK'; await ui.$('transition-run-form').emit('submit'); await ui.go('T03');
+ assert.equal(ui.$('transition-steps').find(node=>node.href?.includes('annual_points_1234567890123456')),null);
+});
+
+test('private checklist and receipt links survive reload but stay out of progress and print',async()=>{
+ const ui=browser(); ui.$('transition-run-name').value='Private records'; await ui.$('transition-run-form').emit('submit');
+ const bundle=mockHandoff();bundle.records={checklistUrl:'https://docs.google.com/document/d/private_checklist/edit',receiptUrl:'https://docs.google.com/document/d/private_receipt/edit'};
+ await importMock(ui,bundle);await reviewMock(ui);await ui.go('T01');
+ assert.ok(ui.$('transition-steps').find(node=>node.href===bundle.records.checklistUrl));
+ const reload=browser(ui.existing);await reload.go('T02');assert.ok(reload.$('transition-steps').find(node=>node.href===bundle.records.receiptUrl));
+ assert.doesNotMatch(state.exportProgress(reload.saved(),definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS),/private_receipt|private_checklist/);
+ await reload.$('transition-print').click();assert.doesNotMatch(reload.$('transition-print-sheet').textContent,/private_receipt|private_checklist/);
+});
+
+test('disposed blockers and skipped activation visibly retain missing rehearsal closeout',async()=>{
+ const ui=browser();ui.$('transition-run-name').value='Blocked MOCK';await ui.$('transition-run-form').emit('submit');
+ for(const step of definitions.TRANSITION_STEPS){await ui.go(step.id);if(step.id==='T05'){await ui.reason('T05','Rehearsal only');await ui.choose('T05','skipped');}else await ui.choose(step.id,'blocked');}
+ assert.match(ui.$('transition-summary').textContent,/Open the unfinished steps to resolve their blockers/);
+ assert.equal(ui.saved().steps.T05,'skipped');
+ assert.match(ui.$('transition-summary').textContent,/Cleanup: Not checked. Reviewer acceptance: Not checked/);
+ assert.match(ui.$('transition-readiness').textContent,/Private rehearsal not complete/);
+});
+
+test('rehearsal UI shows scoped GO without production approvals and keeps optional notes collapsed',async()=>{
+ const p={...state.emptyProgress('2027-2028',state.createTransitionRun('Completed MOCK','rehearsal','finished')),steps:Object.fromEntries(definitions.TRANSITION_STEPS.map(s=>[s.id,s.launch?'skipped':'complete'])),checks:Object.fromEntries(definitions.TRANSITION_CHECKS.filter(c=>state.checkApplies(c,'rehearsal')).map(c=>[c.id,'passed'])),reasons:{T05:'Rehearsal only'}};
+ const existing=new Map([[state.storageKey(p.year,p.run.id),JSON.stringify(p)],['asmeHubTransitionSelectedRunV2:2027-2028',p.run.id]]);
+ const ui=browser(existing);assert.match(ui.$('transition-readiness').textContent,/GO — private rehearsal complete/);assert.match(ui.$('transition-launch-summary').textContent,/production activation excluded/);
+ await ui.go('T03');assert.equal(ui.$('transition-steps').find(n=>n.dataset.transitionControl==='V12'),null);
+ assert.match(ui.$('transition-steps').textContent,/Production checks — not part of this rehearsal/);
+ assert.doesNotMatch(ui.$('transition-steps').textContent,/V20 disposition|disposition reason/);
+ const optional=ui.$('transition-steps').find(n=>n.className==='transition-evidence-details');assert.equal(optional.open,false);
+ await ui.$('transition-print').click();assert.match(ui.$('transition-print-sheet').textContent,/GO — private rehearsal complete/);assert.match(ui.$('transition-print-sheet').textContent,/not required for this rehearsal/);
+ assert.equal(ui.saved().checks.V12,undefined);
+});
+
+test('choosing skip opens one plain-language reason and saving it records the skip',async()=>{
+ const ui=browser();ui.$('transition-run-name').value='Skip flow MOCK';await ui.$('transition-run-form').emit('submit');await ui.go('T02');await ui.choose('T02','skipped');assert.notEqual(ui.saved().steps.T02,'skipped');
+ const opened=ui.$('transition-steps').find(n=>n.className==='transition-evidence-details'&&n.open);assert.ok(opened);assert.match(opened.textContent,/Why are you skipping this/);
+ await ui.reason('T02','Retained prepared bundle');assert.equal(ui.saved().steps.T02,'skipped');assert.equal(ui.saved().reasons.T02,'Retained prepared bundle');
 });

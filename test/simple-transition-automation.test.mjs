@@ -51,12 +51,13 @@ function harness(){
 test('actual provisioner creates five private copies, observed pointer, six dates and exact inactive row',()=>{
   const h=harness(),r=h.run(),s=r.receipt;
   assert.equal(r.success,true);assert.equal(h.writes.filter(x=>x==='copy').length,5);assert.equal(h.writes.filter(x=>x==='create folder').length,6);
+  assert.match(r.readableReceipt,/Hub_Settings_Public!A2:T2/);assert.match(r.readableReceipt,/Actual response tab: Observed response 8/);
   const master=h.books.get(s.ids.pointsMaster),form=h.forms.get(s.ids.attendanceForm);
   assert.equal(form.accepting,false);assert.equal(master.getSheetByName('Config').getRange('B7').getValue(),'Observed response 8');assert.equal(master.getSheetByName('Config').getRange('B16').getValue(),form.id);
   assert.equal(h.books.get(s.ids.pointsExport).getSheetByName('Config').getRange('B1').getValue(),master.id);assert.equal(h.books.get(s.ids.budgetExport).getSheetByName('Config').getRange('B1').getValue(),s.ids.budgetTracker);
   const setup=h.books.get(s.ids.budgetTracker).getSheetByName('Setup & Lists');assert.deepEqual(['B4','B5','B11','B12','B13','B14'].map(a=>setup.getRange(a).getValue()),['2027-08-01','2028-07-31','2027-08-01','2027-12-31','2028-01-01','2028-05-31']);
   assert.equal(h.settings.values[1].length,20);assert.equal(h.settings.values[1][10],false);assert.equal(h.settings.values[1][11],false);assert.equal(h.triggers.length,0);assert.equal(form.choices[0],'20270826-001 - Welcome');
-  const before=h.writes.length,stamp=h.settings.values[1][12];h.run();assert.equal(h.writes.length,before);assert.equal(h.settings.values[1][12],stamp);assert.equal(h.settings.values.length,2);
+  const before=h.writes.length,stamp=h.settings.values[1][12],retry=h.run();assert.equal(h.writes.length,before);assert.equal(h.settings.values[1][12],stamp);assert.equal(h.settings.values.length,2);assert.equal(retry.readableReceipt,r.readableReceipt);
 });
 test('committed copy with lost acknowledgement resumes without duplicate copies',()=>{const h=harness();h.loseCopy();assert.throws(h.run,/acknowledgement/);assert.equal(h.state().pending.key,'pointsMaster');h.run();assert.equal(h.writes.filter(x=>x==='copy').length,5);assert.equal(h.settings.values.length,2);});
 test('committed append with lost acknowledgement reconciles exact draft without duplicate row',()=>{const h=harness();h.loseAppend();assert.throws(h.run,/acknowledgement/);const stamp=h.settings.values[1][12];h.run();assert.equal(h.settings.values.length,2);assert.equal(h.settings.values[1][12],stamp);assert.equal(h.triggers.length,0);});

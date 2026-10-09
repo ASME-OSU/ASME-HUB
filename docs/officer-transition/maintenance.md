@@ -1,13 +1,13 @@
 # Maintenance, records and recovery
 
-## Each annual handoff: five-step guide 7
+## Each annual handoff: five-step Guide 9
 
-1. Name a coordinator and incoming maintainer. Confirm their real access to
+1. The President leads; name the technical/recovery contact and participating team. For production, confirm incoming holders’ real access to
    chapter Google, ASME-OSU GitHub and each separate officer service. Record
    recovery ownership in the private tracker; keep credentials in the authorized
-   credential system.
+   credential system. For rehearsal, record the approved test account and reviewer rather than treating access as real incoming-officer acceptance.
 2. Review canonical templates, chosen year, annual folder and exact source
-   schemas/formulas. For the new reviewed helper, the maintainer installs/read backs the three scripts, canonical protected proxy/export pointers and one-time private chapter config. The three standalone helper files and canonical bound EventSync/SanityCheck sources are installed, saved and reopened with matching reviewed hashes. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. The older fallback retains its separate verification rules/exclusions/ledger. Pasted Hub
+   schemas/formulas. For the new reviewed helper, the maintainer installs/read backs the three scripts, canonical protected proxy/export pointers and one-time private chapter config. The earlier private baseline recorded installed, saved and reopened standalone helper files and canonical bound EventSync/SanityCheck sources with matching reviewed hashes. That dated receipt does not certify installation of later repository revisions, including the new readable-receipt formatter. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. The older fallback retains its separate verification rules/exclusions/ledger. Pasted Hub
    links cannot choose those trusted targets. Never connect rehearsal resources
    as the production route.
 3. Rehearse with isolated copies, closed Form and TESTING/PAUSED Points status.
@@ -96,7 +96,11 @@ then check Points status, exports and each independent consumer. Restore only
 affected cells from the reviewed before-change snapshot/version history after
 reconciling other edits. Re-run fresh readback and consumer checks.
 
-## Acceptance still required
+## Rehearsal closeout and remaining production acceptance
+
+The retained 2031–2032 private rehearsal completed on October 8, 2026 with 16 applicable checks passed, reviewer acceptance and approved private evidence retention. The local guide displayed rehearsal GO; activation stayed skipped. This did not deploy Pages, install the latest native receipt formatter or approve production. See [current status](current-implementation.md).
+
+## Dated evidence and acceptance still required
 
 Native private 2030–2031 provisioning and unchanged retry, actual Form delivery/5-point scoring, one idempotent bound edit trigger, copied-menu pre-flight 8/8 and both resolved exports passed. The released mock UI route, full financial/public-sharing checks and actual incoming-officer acceptance remain separate. Source_row indexes the filtered proxy: raw cleanup must locate timestamp/fictional identity/event independently. Official postal address and approved statistic year/definitions are still owner decisions; production remains NO-GO.
 

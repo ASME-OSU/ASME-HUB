@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20261008c";
+import { validTransitionYear } from "./transition-state.js?v=20261008f";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
@@ -14,6 +14,32 @@ export const MOCK_ANNUAL_FIELDS = [
   ["controlCenterUrl", "Private mock Control Center", "Use the copied Control Center from the provisioner receipt; keep its permissions private."],
   ["scriptProjectUrl", "Mock provisioner Apps Script project (optional)", "Open the maintainer-reviewed project; running a function still requires its configured private target."],
 ];
+// Optional private records belong to the selected local run, never public config.
+export const PRIVATE_RECORD_FIELDS = [
+  ["checklistUrl", "Current officer checklist · T01–T05", "T01"],
+  ["handoffUrl", "Private handoff", "T01"],
+  ["accessOwnerUrl", "Access request owner and fallback", "T01"],
+  ["receiptUrl", "Setup receipt", "T02"],
+  ["communicationsUrl", "Approved communications facts and verified sending-service route", "T04"],
+  ["cleanupUrl", "Selective mock cleanup checklist", "T05"],
+  ["rollbackUrl", "Rollback record", "T05"],
+  ["acceptanceUrl", "Incoming acceptance", "T05"],
+  ["approvalUrl", "Coordinator launch approval", "T05"]
+];
+function privateRecords(value) {
+  if (value === undefined) return undefined;
+  if (!record(value) || Object.keys(value).some(key => !PRIVATE_RECORD_FIELDS.some(([id]) => id === key))) throw new Error("Unknown private record field.");
+  const result = {};
+  for (const [key] of PRIVATE_RECORD_FIELDS) {
+    const text = value[key] ?? "";
+    if (typeof text !== "string") throw new Error("Private record links must be text.");
+    if (!text.trim()) continue;
+    let url; try { url = new URL(text.trim()); } catch { throw new Error("Use a full HTTPS private record link."); }
+    if (url.protocol !== "https:" || url.username || url.password || url.port || url.href.length > 2000) throw new Error("Use an HTTPS private record link without credentials or a port.");
+    result[key] = url.href;
+  }
+  return Object.keys(result).length ? result : undefined;
+}
 const fieldKeys = new Set(ANNUAL_LINK_FIELDS.map(([key]) => key));
 const idPattern = /^[A-Za-z0-9_-]{20,200}$/;
 const record = (value) => value && typeof value === "object" && !Array.isArray(value);
@@ -93,7 +119,8 @@ export function validateAnnualLinkDraft(value, year, config = {}) {
     links[key] = url;
   }
   const mock = mockContext(value.mock, links, config);
-  return { schema: 1, type: ANNUAL_HANDOFF_TYPE, year, links, ...(mock ? { mock } : {}) };
+  const records = privateRecords(value.records);
+  return { schema: 1, type: ANNUAL_HANDOFF_TYPE, year, links, ...(mock ? { mock } : {}), ...(records ? { records } : {}) };
 }
 
 export function importAnnualLinkDraft(text, year, config) {
@@ -133,7 +160,14 @@ export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {
   const affectedChecks = new Set();
   for (const key of changedKeys) {
     const dependency = ANNUAL_DEPENDENCIES[key];
-    if (!dependency) continue;
+    if (!dependency && !PRIVATE_RECORD_FIELDS.some(([id]) => id === key)) continue;
+    // Revised approvals and closeout evidence are tied to the exact saved bundle.
+    for (let i = 11; i <= 26; i++) if (i !== 20 || previousLinks[key]) affectedChecks.add(`V${i}`);
+    if (!dependency) {
+      ["T01", "T02", "T03", "T04", "T05"].forEach(id => affectedSteps.add(id));
+      ["V01", "V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09", "V10"].forEach(id => affectedChecks.add(id));
+      continue;
+    }
     [...dependency.steps, "T04", "T05"].forEach((id) => affectedSteps.add(id));
     [...dependency.checks, "V07", "V09"].forEach((id) => affectedChecks.add(id));
     // Initial entry does not undo earlier access checks. Replacing a saved file does.
