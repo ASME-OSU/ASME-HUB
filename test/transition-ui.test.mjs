@@ -60,6 +60,59 @@ async function importMock(ui, value=mockHandoff()) {
 }
 const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt").click();
 
+test("start and continue checklist keep internal modes and identities while simplifying visible setup", async () => {
+ const ui = browser();
+ assert.ok(html.indexOf('id="transition-year-setup"') < html.indexOf('id="transition-run-form"'));
+ assert.match(html, /<option value="rehearsal">Practice<\/option><option value="production">Real handoff<\/option>/);
+ assert.match(html, /<details class="transition-run-advanced"><summary>Checklist details and advanced controls<\/summary>[\s\S]*?id="transition-run-id"/);
+ await ui.$("transition-run-form").emit("submit");
+ const practice = ui.saved();
+ assert.equal(practice.run.mode, "rehearsal");
+ assert.match(practice.run.name, /^Practice 2027-2028/);
+ assert.doesNotMatch(ui.$("transition-run-context").textContent, new RegExp(practice.run.id));
+ assert.match(ui.$("transition-run-id").textContent, new RegExp(practice.run.id));
+ await ui.go("T04");
+ assert.equal(ui.$("transition-year-setup").hidden, false);
+ await ui.$("transition-run-continue").click();
+ assert.equal(ui.$("transition-step-picker").value, "T01");
+ ui.$("transition-run-mode").value = "production";
+ await ui.$("transition-run-form").emit("submit");
+ assert.equal(ui.saved().run.mode, "production");
+ assert.notEqual(ui.saved().run.id, practice.run.id);
+ assert.match(ui.$("transition-run-context").textContent, /Real handoff/);
+ ui.$("transition-run").value = practice.run.id;
+ await ui.$("transition-run").emit("change");
+ assert.equal(ui.saved().run.id, practice.run.id);
+ assert.equal(ui.$("transition-run-mode").value, "rehearsal");
+});
+
+test("private record URL controls hide production records in practice and retain saved private data", async () => {
+ const ui = browser();
+ await ui.$("transition-run-form").emit("submit");
+ const field = (label) => ui.$("transition-dialog").find(node => node.tagName === "label" && node.textContent.startsWith(label));
+ assert.equal(field("Approved communications record link").hidden, true);
+ assert.equal(field("Coordinator launch approval record link").hidden, true);
+ assert.equal(field("Reviewer sign-off record link").hidden, false);
+ assert.equal(field("Recovery notes document link").hidden, false);
+ const access = field("Access contact record link");
+ assert.equal(access.find(node => node.tagName === "input").type, "url");
+ assert.match(access.textContent, /President[\s\S]*Paste its link, not a name or email/);
+ assert.match(ui.$("transition-dialog").textContent, /Ask the technical maintainer for the annual link handoff JSON/);
+ const handoff = mockHandoff();
+ handoff.records = { acceptanceUrl: "https://example.org/private-review", rollbackUrl: "https://example.org/private-recovery", approvalUrl: "https://example.org/private-production-approval" };
+ await importMock(ui, handoff);
+ const form = ui.$("transition-dialog").find(node => node.id === "transition-annual-links-form");
+ await form.emit("submit");
+ const draft = JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${ui.saved().run.id}`));
+ assert.equal(draft.records.approvalUrl, handoff.records.approvalUrl);
+ ui.$("transition-run-mode").value = "production";
+ await ui.$("transition-run-form").emit("submit");
+ assert.equal(field("Approved communications record link").hidden, false);
+ assert.equal(field("Coordinator launch approval record link").hidden, false);
+ assert.equal(field("Incoming officer acceptance record link").hidden, false);
+ assert.equal(field("Rollback record link").hidden, false);
+});
+
 test("rehearsal review opens only its private provisioner-owned source and never transfers to legacy save",async()=>{
  const ui=browser();ui.$("transition-run-name").value="Private fixture";await ui.$("transition-run-form").emit("submit");await importMock(ui);await reviewMock(ui);
  const key=links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id;

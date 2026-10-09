@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261008f">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261009a">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -771,24 +771,29 @@
               <button type="button" class="transition-close icon-button" id="transition-close" aria-label="Close transition guide">×</button>
             </header>
             <div class="transition-dialog-body">
-              <section id="transition-year-setup" hidden>
-                <p id="transition-dialog-description">This browser saves your progress. Name an isolated run and perform each check in the actual tools. You can read and record later observations with incomplete prerequisites. Marking steps complete does not make the new year live.</p>
+              <section id="transition-year-setup" class="transition-checklist-setup">
+                <p id="transition-dialog-description">A saved checklist is one attempt at the handoff for a chosen year. Choose the year, then start a Practice or Real handoff checklist, or continue one saved on this device. Check results in the actual tools; this browser saves your progress.</p>
                 <div class="transition-controls">
-                  <form id="transition-year-form"><label>Transition starting year <input id="transition-year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" list="transition-year-options" required placeholder="2027" aria-describedby="transition-year-help"></label><datalist id="transition-year-options"></datalist><button class="secondary-button" type="submit">Use year</button></form>
+                  <form id="transition-year-form"><label>1. Handoff starting year <input id="transition-year" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" list="transition-year-options" required placeholder="2027" aria-describedby="transition-year-help"></label><datalist id="transition-year-options"></datalist><button class="secondary-button" type="submit">Use year</button></form>
                 </div>
                 <p id="transition-year-help">Enter a starting year from 2000 through 2199, such as 2030 for 2030–2031. Available years include configured years and progress saved on this device. This guide does not create dashboard data or a Google settings row.</p>
                 <p class="transition-banner" role="note">Preparing a transition leaves the current Hub year unchanged. Check results in the real systems and keep evidence in the private officer workspace.</p>
               </section>
-              <section class="transition-run-controls" aria-label="Isolated transition runs">
-                <label>Saved run <select id="transition-run"></select></label>
-                <button class="secondary-button" id="transition-run-reload" type="button">Reload saved run</button>
+              <section class="transition-run-controls" aria-label="Start or continue a checklist">
                 <form id="transition-run-form">
-                  <label>New run name <input id="transition-run-name" maxlength="120" required placeholder="Fall rehearsal · team name"></label>
-                  <label>Mode <select id="transition-run-mode"><option value="rehearsal">Rehearsal</option><option value="production">Production</option></select></label>
-                  <button class="secondary-button" type="submit">Create isolated run</button>
+                  <label>2. Checklist purpose <select id="transition-run-mode" aria-describedby="transition-mode-help"><option value="rehearsal">Practice</option><option value="production">Real handoff</option></select></label>
+                  <button class="primary-button" type="submit">Start checklist</button>
+                  <p id="transition-mode-help" class="transition-control-help">Practice uses private test copies and skips activation. A Real handoff requires all production checks and coordinator approval. Each new checklist keeps its own notes and links.</p>
+                  <details class="transition-run-name-options"><summary>Give this checklist a name (optional)</summary><label>Checklist name <input id="transition-run-name" maxlength="120" placeholder="Fall practice · team name"></label></details>
                 </form>
+                <div class="transition-continue-controls"><label>Saved checklist for this year <select id="transition-run"></select></label><button class="secondary-button" id="transition-run-continue" type="button">Continue checklist</button></div>
                 <p id="transition-run-context" class="transition-summary"></p>
-                <label>Read any step <select id="transition-step-picker" aria-label="Read any transition step"></select></label>
+                <details class="transition-run-advanced"><summary>Checklist details and advanced controls</summary>
+                  <p id="transition-run-id" class="transition-summary"></p>
+                  <button class="secondary-button" id="transition-run-reload" type="button">Reload saved checklist</button>
+                  <p class="transition-control-help">Reload after another tab changes this checklist. You can also jump to any step to read it or record a result.</p>
+                  <label>Jump to a step <select id="transition-step-picker" aria-label="Jump to a checklist step"></select></label>
+                </details>
               </section>
               <p id="transition-readiness" class="transition-banner" role="status"></p>
               <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
@@ -1079,11 +1084,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261008f"></script>
+  <script src="assets/js/config.js?v=20261009a"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261008f"></script>
-  <script type="module" src="assets/js/transition.js?v=20261008f"></script>
+  <script src="assets/js/app.js?v=20261009a"></script>
+  <script type="module" src="assets/js/transition.js?v=20261009a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

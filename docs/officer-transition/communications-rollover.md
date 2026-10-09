@@ -2,29 +2,25 @@
 
 Use this with **T04 — Check calendars and prepare communications**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
 actual people responsible for communications, the calendar and website in the
-private handoff checklist. A role listed here does not appoint a new officer. Contact the outgoing President or transition coordinator through [asme@osu.edu](mailto:asme@osu.edu) to obtain the private checklist and owner contacts.
+private handoff checklist. A role listed here does not appoint a new officer. Contact the President through [asme@osu.edu](mailto:asme@osu.edu) with your role, target year and Practice/Real handoff purpose to obtain the filled current checklist, maintainer's name, readable setup receipt and private link-bundle JSON. A receipt is the maintainer's list of copied files and verified settings; retain the record links supplied for this attempt. Missing materials stay Blocked.
 
 ## Officer route: start here
 
-1. **T04 — shared tool links:** open the Hub and click the Newsletter Builder,
-   career guide and chapter website cards. If a destination needs changing,
+1. **T04 — shared tool links:** first choose your year at the top of the Hub checklist. Choose **Practice** or **Real handoff** and **Start checklist**, or **Continue checklist** for a saved attempt. Open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/) and the [Public Events Calendar](https://org.osu.edu/asme/calendar/) from Step 4; the career guide and chapter website are also available in Resources. If a shared destination needs changing,
    choose Resources → Maintain shared chapter links → Edit shared resources in Google. The named authorized editor updates the reviewed stable row, waits for Google save, then chooses Refresh shared resources and checks the destination/read timestamp. Give missing-source or feed failures to the Webmaster using [the source instructions below](#webmaster-t04-shared-tool-links).
    Year-specific links are handled in T02; personal links change only your browser.
-2. **T04 — calendar:** ask the calendar owner to confirm reuse of the existing
-   calendar. Reuse keeps members' subscriptions. Have the event owner confirm
+2. **T04 — calendar practice:** enter the full year, such as **2027-2028**, in each tool's **Academic year (August–July)** field and choose **Load fictional Fall/Spring**. Check both semesters and desktop/phone layout. Choose **Remove fictional events**, then **Upcoming** in Newsletter Builder and **Upcoming dates** in the public page's generated list. Confirm the fictional label disappears and chapter snapshot status returns. If loading fails, choose **Refresh chapter snapshot** and record the error. The embedded Google calendar is a separate live view; local practice creates no Google events or invitations. For a Real handoff, ask the calendar owner to confirm reuse of the existing calendar. Reuse keeps members' subscriptions. Have the event owner confirm
    each date, Eastern time, room and description before adding it through the normal Google Calendar event editor. For an approved isolated rehearsal select the training calendar explicitly, keep guests empty and check the Calendar field again before Save. Ask the
    Points officer to set attendance rules separately; an academic date on the
    calendar earns no automatic attendance credit.
 3. **T04 — newsletter:** open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/)
    and follow [the editable handoff checklist](#t04-transfer-the-editable-newsletter-correctly).
-   Export and verify an untouched backup before editing. A new tab shares this
-   browser's saved draft, templates and defaults; use a separate browser profile
-   for the incoming officer's transfer and New Issue check.
+   Export and verify an untouched backup before editing. Follow [Practice restoring your three backups](recovery-practice.md) for the exact separate-profile recovery steps: **Export progress**, **Download private link bundle**, and **Templates → Export Draft .json**. Inspect the actual downloads with TextEdit, restore all three into a separate Chrome profile, compare year/notes/tool links and newsletter content, and confirm the original profile remains intact. A new tab shares the working profile's storage; a download success message does not verify restoration. Keep the practice newsletter unsent.
 4. **T04 — public pages:** collect the approved board, event and sponsor facts
    in the private handoff. Give them to the Webmaster for a private page preview,
    then follow the approved publication decision. Record missing facts as PENDING.
    Keep the currently accurate public content until its replacement is approved.
-5. **Before launch:** each tool's owner records what they checked, the actual
+5. **Record results:** use **Add a note or evidence** for a sentence such as “The two fictional semesters appeared; after removal the chapter snapshot returned.” Keep a screenshot or private record link when a setting, output or approval needs later comparison. Private record fields take full HTTPS document/folder links supplied by the President or maintainer. Practice uses **Reviewer sign-off record link** and **Recovery notes document link**; approved communications and coordinator launch-approval fields appear only in Real handoff. **Before launch**, each tool's owner records what they checked, the actual
    result, time, evidence and recovery copy. The coordinator reviews these checks
    using [Finance, settings and launch](finance-settings-launch.md). Saving a
    draft, a readiness percentage or a Hub checkmark does not approve a send or launch.
@@ -55,7 +51,7 @@ two recoverable rehearsal revision snapshots remained. These dated rehearsals
 do not complete the actual incoming officer's acceptance or authorize a send.
 Keep the exact exports and findings in the private handoff.
 
-The October 8 retained rehearsal subsequently confirmed the local fictional Fall/Spring previews in both tools on desktop/phone and downloaded editable-draft recovery. Fictional previews were removed and Upcoming restored. Those observations do not prove live Google propagation, remote email delivery or approved production facts. See [current implementation and verification status](current-implementation.md).
+The October 8 retained 2031–2032 rehearsal confirmed local fictional Fall/Spring previews in both tools on desktop/phone and downloaded editable-draft recovery. Its accepted GO remains scoped to those retained copies. The separate October 8–9 student walkthrough of 2027–2028 observed fictional-preview removal remaining empty until **Refresh chapter snapshot**; it did not complete an isolated restoration or an operational rehearsal. October 9 source changes restore the normal chapter snapshot on removal and show loading/result feedback; verify the deployed behavior independently. None of these observations establishes live Google propagation, remote email delivery or approved production facts. See [current implementation and verification status](current-implementation.md).
 
 ## Webmaster T04: shared tool links
 
@@ -104,7 +100,9 @@ Keep the calendar's time zone and each timed event in **America/New_York**.
 
 ### Target-year preview and isolated rehearsal
 
-The repaired Newsletter Calendar UI adds **Academic year (August–July)** with a `YYYY-YYYY` value, **Preview year**, **Upcoming**, **Load fictional Fall/Spring**, **Remove fictional events**, **Refresh chapter snapshot**, **Open Calendar** and **Open event editor**. Year preview changes this browser’s calendar view only. Fictional Fall/Spring records are local fixtures, create no Google events, and are marked TEST ONLY—DO NOT SEND if imported into an issue. They do not overwrite defaults/templates; use revision recovery after an intentional draft import. Remove fictional events, then Refresh chapter snapshot to return to official published JSON while retaining the selected year. Website’s matching controls are **Academic year (August–July)**, **Preview year**, **Upcoming dates**, **Refresh chapter snapshot**, **Load fictional Fall/Spring**, and **Remove fictional events**. Fictional mode hides the live embedded Google iframe; official year preview adjusts the iframe display dates while preserving the same calendar source. These controls require the reviewed release; source edits alone do not prove live behavior.
+The Newsletter Calendar UI exposes **Academic year (August–July)** with a full year such as **2027-2028**, **Preview year**, **Upcoming**, **Load fictional Fall/Spring**, **Remove fictional events**, **Refresh chapter snapshot**, **Open Calendar** and **Open event editor**. Year preview changes this browser's calendar view only. Fictional Fall/Spring records create no Google events and are marked TEST ONLY—DO NOT SEND if imported into an issue. They do not overwrite defaults/templates; use revision recovery after an intentional draft import. **Remove fictional events** restores the chapter snapshot while retaining the selected year. Wait for loading feedback, select **Upcoming**, and verify the fictional label is gone and normal chapter status returns. If the load fails, retry with **Refresh chapter snapshot** and retain the error.
+
+The public [Calendar page](https://org.osu.edu/asme/calendar/) has matching generated-list controls: **Academic year (August–July)**, **Preview year**, **Upcoming dates**, **Refresh chapter snapshot**, **Load fictional Fall/Spring**, and **Remove fictional events**. Use **Upcoming dates** for the generated list. The **Upcoming** control inside the embedded Google calendar belongs to its separate live view. Current source hides that iframe during fictional mode; official year preview adjusts its display dates while preserving the same calendar source. These October 9 source behaviors require independent deployment verification.
 
 For actual rehearsal event creation, use an approved private training calendar in the Google editor, verify its Calendar field before every Save, and keep guests empty. Record one Fall and one Spring event’s title/date/time/timezone, inspect the intended preview consumers, delete only those events and verify removal. The regular production source remains the approved chapter calendar; a local fixture preview does not establish actual Google-to-JSON propagation. Ask the Webmaster for a receipt naming each consumer’s source ID, timezone, generation job, last generation/read time, changed event result and cleanup result. An annual Hub row change does not reconfigure Website or Newsletter.
 

@@ -171,6 +171,14 @@ body[data-theme="dark"] .transition-dialog {
 .transition-run-controls label { display: grid; gap: 6px; color: var(--flow-text); font-size: 13px; }
 .transition-run-controls form { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
 .transition-run-controls form > label { flex: 1 1 180px; }
+.transition-checklist-setup { margin-top: 4px; }
+.transition-control-help { margin: 0; color: var(--flow-secondary); font-size: 13px; line-height: 1.5; }
+.transition-run-controls form > :is(p, details) { flex: 1 1 100%; }
+.transition-run-controls :is(.transition-run-name-options, .transition-run-advanced) > summary { cursor: pointer; color: var(--flow-text); font-size: 13px; font-weight: 600; }
+.transition-run-controls details > :is(label, p, button) { margin-top: 10px; }
+.transition-continue-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding-top: 12px; border-top: 1px solid var(--flow-border); }
+.transition-continue-controls > label { flex: 1 1 220px; min-width: 0; }
+.transition-run-controls .transition-summary { margin: 0; overflow-wrap: anywhere; }
 .transition-step-state[data-state="skipped"] { background: var(--flow-idle-bg); color: var(--flow-secondary); }
 .transition-evidence { display: grid; gap: 8px; padding-bottom: 16px; }
 .transition-evidence textarea { min-height: 68px; resize: vertical; }
