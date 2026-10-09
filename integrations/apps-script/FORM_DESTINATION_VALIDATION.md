@@ -1,6 +1,6 @@
 # V02 — Private actual Form destination check
 
-This standalone Apps Script runs manually under each officer's Google authorization. All officers remain eligible through their own Google access. The Hub phrase, roles, public URLs, and local checkmarks grant no access. This source is implemented and tested locally; it has **not been installed or run against the annual Google Form**. V02 remains unverified until the live check is performed.
+This standalone Apps Script runs manually under each officer's Google authorization. All officers remain eligible through their own Google access. The Hub phrase, roles, public URLs, and local checkmarks grant no access. This source is implemented and tested locally; it has **not been installed or run against the annual Google Form**. This optional checker’s installation is separate from V02: an actual Google Forms linked-workbook/tab inspection can supply V02 evidence. Such inspection passed on private rehearsal copies; repeat it on each intended annual Form. No optional-checker deployment is implied.
 
 The script reads the actual Form `linkedSheetId` using the Google Forms API, then reads only the intended workbook's `spreadsheetId` using the Sheets API. It makes two fixed-host GET requests at most. It does not read responses, questions, roster, names, emails, or cell data; it does not copy files, submit data, link destinations, change settings, or activate a year. No endpoint or trigger is needed. Do not deploy it as a web app or add it to the public Hub bundle.
 

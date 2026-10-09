@@ -1,12 +1,12 @@
 # Officer transition: start here
 
-Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**, choose the year in T01, and ask the outgoing President for the private handoff folder and checklist. Record the folder/checklist links and name the coordinator, Points maintainer and one settings editor in that private checklist. Check existing annual folders and copies before creating more.
+Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**, choose the year in T01, and ask the outgoing President for the private handoff folder and checklist. The President leads, with the team contributing checks. Record the folder/checklist links, technical/recovery contact and one settings editor in that private checklist. For rehearsal, record the approved test account and reviewer; production needs each incoming holder’s actual account access. Check existing annual folders and copies before creating more.
 
-The Secretary/Points officer reviews the annual provisioner receipt, manages approved inputs/Form choices, and tests results. The Points maintainer installs and verifies the three new helpers, protected raw proxy and centralized export pointers, then records native checks. The Treasurer reviews actual funding evidence. The Webmaster maintains shared tool links, calendars and published pages. The three standalone helper files and canonical bound EventSync/SanityCheck sources are installed, saved and reopened with matching reviewed hashes. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. Native fresh-copy proxy scoring and six/35 central export-pointer checks passed. These observations do not approve production launch.
+The Secretary/Points officer reviews the annual tool bundle, manages approved inputs/Form choices and tests results. The technical maintainer verifies installed helpers, raw proxy, export pointers and recovery. The Treasurer checks mock arithmetic in rehearsal and real funding/bank evidence in production. The Webmaster checks calendars, backups and approved public communications. Use the [current implementation and verification status](current-implementation.md) for the exact scope and dated native observations; a historical installation receipt does not certify the latest Google source or a new production run.
 
 This folder contains public documentation. Keep private configuration, exact operational file inventories, test/member records and evidence in the chapter-controlled private handoff folder. If you cannot find it, ask the outgoing President for its location; do not assume a dated example folder is the current handoff.
 
-For a new run, copy the [T01–T05 private checklist template](private-run-checklist-template.md) and [selective mock cleanup template](selective-mock-cleanup-template.md) into that private folder. The maintainer attaches the provisioner's `readableReceipt` text and the coordinator fills the named run, contacts, access evidence, owners and decisions. These repository templates contain no current private links or approvals.
+For a new run, copy the [T01–T05 private checklist template](private-run-checklist-template.md) and [selective mock cleanup template](selective-mock-cleanup-template.md) into that private folder. The maintainer attaches a current observed setup receipt (or `readableReceipt` after that formatter is installed and verified) and the coordinator fills the named run, contacts, access evidence, owners and decisions. These repository templates contain no current private links or approvals.
 
 | Reference | What to read it for |
 |---|---|
@@ -23,8 +23,12 @@ For a new run, copy the [T01–T05 private checklist template](private-run-check
 
 Start an actual transition in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/)
 under **Transition to New Year**. Select the year in Step 1 and work through the
-five steps: T01 Year Selection & Access; T02 Annual Provisioner & Settings Review; T03 Export Access & Test Check-in; T04 Communications & Calendar; T05 Activation & Go-Live (including cleanup/handoff after NO-GO). A saved inactive settings row is one milestone; it does not mean
+five steps: T01 Choose your run and confirm access; T02 Get the annual tool bundle and check it; T03 Run check-in and budget tests; T04 Check calendars and prepare communications; T05 Close the rehearsal or launch an approved year (including cleanup/handoff after NO-GO). A saved inactive settings row is one milestone; it does not mean
 the new year is activated or every handoff check passed.
+
+## Current implementation and dated evidence
+
+[Current implementation and verification status](current-implementation.md) is the concise Guide 9 reference. The retained 2031–2032 private rehearsal closed with reviewer acceptance and approved private retention on October 8, 2026. That GO covers the retained rehearsal only; it does not authorize production or certify a new unaided setup. Older dated observations below remain historical evidence.
 
 ## Dated baseline and annual acceptance
 

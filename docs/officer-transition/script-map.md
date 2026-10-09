@@ -7,9 +7,9 @@
 | `assets/js/config.js` | Default years, public resource/template links, settings source and authenticated save URL; no Google write credential |
 | `assets/js/app.js` | Dashboard, shared settings/data loading, settings previews and annual save transfer |
 | `assets/js/transition.js` | Guide display/navigation, year header, Step 1 selector and copied-link controls |
-| `assets/js/transition-state.js` | Named year/run progress, strict corruption checks, preserved old 16-step migration and production-only T05 |
-| `assets/js/transition-steps.js` | Five guide 7 steps, roles, prerequisites and manual checks |
-| `assets/js/annual-link-draft.js` | Seven-link validation and device storage; reopens checks affected by link changes |
+| `assets/js/transition-state.js` | Named year/run progress, strict corruption checks, preserved Guide 2–8 migration, scoped rehearsal completion and strict production-only T05 completion |
+| `assets/js/transition-steps.js` | Five Guide 9 steps, roles, prerequisites and manual checks |
+| `assets/js/annual-link-draft.js` | Seven-link, optional mock-reference and private-record validation/device storage; reopens checks affected by link changes |
 | `assets/js/annual-settings-input.js` | Builds the reviewed inactive save input and transfer URL; does not grant Google authority |
 | `assets/js/settings-readback.js` | Fresh shared-row comparison, including inactive rows and schema/duplicate errors |
 | `assets/js/shared-resources.js` | Reviewed A:H resource projection validation/merge; native source connected, deployed edit/refresh acceptance pending |
@@ -19,7 +19,9 @@
 | `.github/workflows/pages.yml` | Checks/tests, calendar synchronization and static Pages deployment on main or hourly schedule |
 | `.github/workflows/quality.yml` | Checks/tests on pull requests and main pushes |
 
-## New annual architecture — installed and private native rehearsal verified
+## Annual architecture — dated installation and native rehearsal evidence
+
+The [current status](current-implementation.md) distinguishes reviewed source from native installation. In particular, the repository’s `readableReceipt` formatter has local tests but was not installed in the native provisioner during the October 8 closeout.
 
 | Source | Intended installed location / responsibility |
 |---|---|
@@ -27,7 +29,7 @@
 | [EventSync.gs](../../integrations/apps-script/transition-simple/EventSync.gs) | Copied Points Master's bound menu: manual dropdown sync and **Enable automatic event sync** installs its chapter-authorized Events edit trigger once |
 | [SanityCheck.gs](../../integrations/apps-script/transition-simple/SanityCheck.gs) | Bound read-only **Run Pre-Flight Sanity Check**; shared helpers also included with standalone provisioner; actual scoring/export/privacy checks explicitly manual |
 
-The standalone provisioner performs initial sync only. Automatic trigger ownership stays in the copied master's bound project; do not install duplicate standalone triggers. A bound source copy is not trigger installation. The three standalone helper files and canonical bound EventSync/SanityCheck sources are installed, saved and reopened with matching reviewed hashes. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Run SanityCheck from the copied spreadsheet’s ASME Tools menu; the native menu report passed 8/8. A direct standalone editor execution lacks the spreadsheet UI context. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version.
+The standalone provisioner performs initial sync only. Automatic trigger ownership stays in the copied master's bound project; do not install duplicate standalone triggers. A bound source copy is not trigger installation. The earlier private baseline recorded installed, saved and reopened standalone helper files and canonical bound EventSync/SanityCheck sources with matching reviewed hashes. That dated receipt does not certify installation of later repository revisions, including the new readable-receipt formatter. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Run SanityCheck from the copied spreadsheet’s ASME Tools menu; the native menu report passed 8/8. A direct standalone editor execution lacks the spreadsheet UI context. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version.
 
 Native canonical protected proxy and export Config B1 rewrites have fresh-copy evidence. The private synthetic-row proxy fixture proves calculations/suppression/cleanup, not actual Form delivery. The private 2030 copies also passed desktop Allow access and bounded all-tab resolved-output checks; production/public sharing and its consumers remain separate.
 

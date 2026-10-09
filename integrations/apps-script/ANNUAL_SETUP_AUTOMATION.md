@@ -1,12 +1,12 @@
 # Retired legacy annual setup and link handoff
 
-The protected `_Raw_Ingest` proxy supersedes this bulk formula-rewrite route. Do not install or execute the legacy copy/setup rehearsal helpers against the current templates. `AnnualSetupEngine` and its native adapter now reject proxy masters before configuration writes, and the legacy private page disables its fresh-copy controls. Use [AnnualProvisioner](transition-simple/AnnualProvisioner.gs): after the chapter maintainer sets its one-time configuration and installs the three simple scripts, run `provision2027_2028()` in the private editor. The copied master owns automatic event sync through its **Enable automatic event sync** menu action. Native installation and a full operating rehearsal remain required.
+The protected `_Raw_Ingest` proxy supersedes this bulk formula-rewrite route. Do not install or execute the legacy copy/setup rehearsal helpers against the current templates. `AnnualSetupEngine` and its native adapter now reject proxy masters before configuration writes, and the legacy private page disables its fresh-copy controls. Use [AnnualProvisioner](transition-simple/AnnualProvisioner.gs): after the chapter maintainer sets its one-time configuration and installs the three simple scripts, run `provision2027_2028()` in the private editor. The copied master owns automatic event sync through its **Enable automatic event sync** menu action. Earlier private native provisioner rehearsals have dated evidence; each intended annual run still requires fresh setup/access checks. The latest repository readable-receipt formatter has not been established as installed. See [current status](../../docs/officer-transition/current-implementation.md).
 
 The remaining instructions document the former non-proxy architecture and its historical tests; they are not current template setup instructions. Annual settings verification/save is a separate workflow.
 
 Implementation for owner-editor execution in the same private Apps Script project as the copy runner. Local tests do not certify live Google behavior. Complete the isolated rehearsal before configuring real annual resources.
 
-## What officers can do
+## Historical officer controls (retired setup route)
 
 In the guide, open **Annual links and automation handoff**, or choose **Enter annual links** on a copy/setup step. Paste the copied-file links or import the private runner's JSON. **Check and save links on this device** validates file URL types, the selected year, known master identities and duplicate file IDs. It does not check Google permissions or a Form connection. **Prepare Year Settings draft** fills the Hub form inactive/noncurrent. Google is still authoritative; this browser action does not write Google.
 
@@ -34,7 +34,7 @@ Existing deployed runners and saved setup ledgers are not automatically upgraded
 
 For the detailed manual wiring, generated roster, event choices, exact six/35-cell import map and display-policy checks, read [annual Points setup](../../docs/officer-transition/annual-points-setup.md).
 
-The prepared Points template has no installed event synchronization script. Enter/review event options manually until that separate integration is implemented and tested. The annual Form's visible title, description, events and publication still need officer review.
+At the time of this historical non-proxy procedure, the Points template had no installed event synchronization script. The current proxy route uses bound EventSync and SanityCheck; do not apply this historical manual-only statement to current copies. For the retired procedure, manual event review was required; current copies must follow the bound sync instructions in the current Points guide. The annual Form's visible title, description, events and publication still need officer review.
 
 ## Optional Google settings draft
 

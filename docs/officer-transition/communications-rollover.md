@@ -1,6 +1,6 @@
 # Calendar, newsletter and public-page rollover
 
-Use this with **T04 — Communications & Calendar**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
+Use this with **T04 — Check calendars and prepare communications**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
 actual people responsible for communications, the calendar and website in the
 private handoff checklist. A role listed here does not appoint a new officer. Contact the outgoing President or transition coordinator through [asme@osu.edu](mailto:asme@osu.edu) to obtain the private checklist and owner contacts.
 
@@ -54,6 +54,8 @@ The original draft was restored; defaults and the template library were unchange
 two recoverable rehearsal revision snapshots remained. These dated rehearsals
 do not complete the actual incoming officer's acceptance or authorize a send.
 Keep the exact exports and findings in the private handoff.
+
+The October 8 retained rehearsal subsequently confirmed the local fictional Fall/Spring previews in both tools on desktop/phone and downloaded editable-draft recovery. Fictional previews were removed and Upcoming restored. Those observations do not prove live Google propagation, remote email delivery or approved production facts. See [current implementation and verification status](current-implementation.md).
 
 ## Webmaster T04: shared tool links
 
