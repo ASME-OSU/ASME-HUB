@@ -44,7 +44,7 @@ function harness(){
   const eventHeaders=['event_id','event_name','event_date','term','academic_year','event_type','points','scoring_active','form_open'];
   const events=new Sheet('Events',[eventHeaders,['20270826-001','Welcome',45000,'Fall 2027','2027-28','General Body Meeting',5,true,true],['closed','Closed',45000,'Fall 2027','2027-28','General Body Meeting',5,true,false]]);
   const sourceSheets=[cfg,new Sheet('_Raw_Ingest',[],[[ctx.ASME_RAW_INGEST_FORMULA]]),events,new Sheet('Roster',[],[["=INDEX('_Raw_Ingest'!C:C,ROW())"]]),new Sheet('Point Log',[],[['=INDEX(_Raw_Ingest!K:K,ROW())']]),new Sheet('Website Staging')];
-  for(const [k,id]of Object.entries(ctx.ASME_ANNUAL_TEMPLATES)){new File(id,k,null,false,k==='attendanceForm'?'form':'sheet');if(k==='pointsMaster')book(id,sourceSheets);else if(k==='attendanceForm')form(id);else if(k==='budgetTracker')book(id,[new Sheet('Setup & Lists')]);else book(id,[new Sheet('Config')]);}
+  for(const [k,id]of Object.entries(ctx.ASME_ANNUAL_TEMPLATES)){new File(id,k,null,false,k==='attendanceForm'?'form':'sheet');if(k==='pointsMaster')book(id,sourceSheets);else if(k==='attendanceForm')form(id);else if(k==='budgetTracker')book(id,[new Sheet('Setup & Lists'),new Sheet('Start Here',[['ASME Budget Tracker — TEMPLATE — MAKE A COPY']]),new Sheet('Dashboard',[['ASME Budget Tracker — TEMPLATE — COPY BEFORE SETUP']])]);else book(id,[new Sheet('Config')]);}
   props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({rootFolderId:'root',controlCenterId:'center',engagementGoal:25,calendarIcalUrl:'https://example.org/calendar.ics'}));writes.length=0;
   return {ctx,files,books,forms,props,triggers,writes,settings,Sheet,File,book,form,events,eventHeaders,setActor:v=>{actor=v;},setActiveActor:v=>{activeActor=v;},loseCopy:()=>{failCopy=true;},loseAppend:()=>{failAppend=true;},run:()=>ctx.provisionAnnualYear('2027-2028','Fall 2027'),state:()=>JSON.parse(props.get('ASME_SIMPLE_ANNUAL_2027-2028'))};
 }
@@ -55,6 +55,11 @@ test('actual provisioner creates five private copies, observed pointer, six date
   const master=h.books.get(s.ids.pointsMaster),form=h.forms.get(s.ids.attendanceForm);
   assert.equal(form.accepting,false);assert.equal(master.getSheetByName('Config').getRange('B7').getValue(),'Observed response 8');assert.equal(master.getSheetByName('Config').getRange('B16').getValue(),form.id);
   assert.equal(h.books.get(s.ids.pointsExport).getSheetByName('Config').getRange('B1').getValue(),master.id);assert.equal(h.books.get(s.ids.budgetExport).getSheetByName('Config').getRange('B1').getValue(),s.ids.budgetTracker);
+  const budget=h.books.get(s.ids.budgetTracker);
+  assert.equal(budget.getSheetByName('Start Here').getRange('A1').getValue(),'ASME Budget Tracker 2027-2028 | Private annual copy');
+  assert.equal(budget.getSheetByName('Dashboard').getRange('A1').getValue(),'ASME Budget Tracker 2027-2028 | Private annual copy');
+  assert.match(master.getSheetByName('Config').getRange('B8').getValue(),/2027-2028.*TESTING.*review required/);
+  assert.equal(h.books.get(h.ctx.ASME_ANNUAL_TEMPLATES.budgetTracker).getSheetByName('Start Here').getRange('A1').getValue(),'ASME Budget Tracker — TEMPLATE — MAKE A COPY');
   const setup=h.books.get(s.ids.budgetTracker).getSheetByName('Setup & Lists');assert.deepEqual(['B4','B5','B11','B12','B13','B14'].map(a=>setup.getRange(a).getValue()),['2027-08-01','2028-07-31','2027-08-01','2027-12-31','2028-01-01','2028-05-31']);
   assert.equal(h.settings.values[1].length,20);assert.equal(h.settings.values[1][10],false);assert.equal(h.settings.values[1][11],false);assert.equal(h.triggers.length,0);assert.equal(form.choices[0],'20270826-001 - Welcome');
   const before=h.writes.length,stamp=h.settings.values[1][12],retry=h.run();assert.equal(h.writes.length,before);assert.equal(h.settings.values[1][12],stamp);assert.equal(h.settings.values.length,2);assert.equal(retry.readableReceipt,r.readableReceipt);

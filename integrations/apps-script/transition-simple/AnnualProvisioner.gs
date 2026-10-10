@@ -82,6 +82,18 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
   ];
   return lines.join('\n');
 }
+// Annual-copy labels are scoped to the copies after identity checks. Source
+// masters retain their make-a-copy instructions. Labels do not approve LIVE.
+function asmeAnnualCopyLabels_(master,budget,targetYear){
+  master.getSheetByName('Config').getRange('B8').setValue(targetYear+' private annual copy. TESTING; review required before LIVE.');
+  var start=budget.getSheetByName('Start Here'),dash=budget.getSheetByName('Dashboard');
+  if(!start||!dash)throw new Error('Budget copy is missing Start Here or Dashboard.');
+  var label='ASME Budget Tracker '+targetYear+' | Private annual copy';
+  start.getRange('A1').setValue(label);
+  start.getRange('A3').setValue('Annual copy already created. Review year settings, opening balances and funding. Only enter approved inputs; retain practice evidence until review.');
+  dash.getRange('A1').setValue(label);
+  dash.getRange('A3').setValue('Private annual copy. Review funding and transactions. Practice Confirmed status is fictional only until actual Treasurer review; bank reconciliation remains separate.');
+}
 function provisionReviewedAnnualYear(year){
   var match=/^(20\d{2}|21\d{2})-(20\d{2}|21\d{2}|2200)$/.exec(String(year));
   if(!match)throw new Error('Use a consecutive academic year such as 2027-2028.');
@@ -174,6 +186,7 @@ function provisionAnnualYear(targetYear,fallTerm){
     SpreadsheetApp.openById(state.ids.pointsExport).getSheetByName('Config').getRange('B1').setValue(master.getId());
     var budget=SpreadsheetApp.openById(state.ids.budgetTracker);SpreadsheetApp.openById(state.ids.budgetExport).getSheetByName('Config').getRange('B1').setValue(budget.getId());
     var setup=budget.getSheetByName('Setup & Lists');['B4','B5','B11','B12','B13','B14'].forEach(function(a,i){var dates=[year.start+'-08-01',year.end+'-07-31',year.start+'-08-01',year.start+'-12-31',year.end+'-01-01',year.end+'-05-31'];setup.getRange(a).setValue(Utilities.parseDate(dates[i],budget.getSpreadsheetTimeZone(),'yyyy-MM-dd'));});
+    asmeAnnualCopyLabels_(master,budget,targetYear);
     SpreadsheetApp.flush();asmeSyncEvents_(master);
     var url=function(id){return 'https://docs.google.com/spreadsheets/d/'+id+'/edit';};
     var links={pointsMaster:url(master.getId()),pointsExport:url(state.ids.pointsExport),budgetTracker:url(budget.getId()),budgetExport:url(state.ids.budgetExport),formRespondent:form.getPublishedUrl()};
