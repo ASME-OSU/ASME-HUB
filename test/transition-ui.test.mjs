@@ -32,8 +32,8 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const $ = id => { assert.ok(ids.has(id), `Production HTML must provide ${id}`); return ids.get(id); };
   const dialog = $("transition-dialog");
   const body = new Element(); body.className = "transition-dialog-body";
-  const tools = new Element(); tools.className = "transition-tools";
-  dialog.append(body); body.append(tools);
+  const tools = $("transition-progress-tools"); tools.className = "transition-tools";
+  dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
   $("transition-run-mode").value = "rehearsal";
   const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
@@ -60,6 +60,59 @@ async function importMock(ui, value=mockHandoff()) {
 }
 const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt").click();
 
+test("start and continue checklist keep internal modes and identities while simplifying visible setup", async () => {
+ const ui = browser();
+ assert.ok(html.indexOf('id="transition-year-setup"') < html.indexOf('id="transition-run-form"'));
+ assert.match(html, /<option value="rehearsal">Practice<\/option><option value="production">Real handoff<\/option>/);
+ assert.match(html, /<details class="transition-run-advanced"><summary>Checklist details and advanced controls<\/summary>[\s\S]*?id="transition-run-id"/);
+ await ui.$("transition-run-form").emit("submit");
+ const practice = ui.saved();
+ assert.equal(practice.run.mode, "rehearsal");
+ assert.match(practice.run.name, /^Practice 2027-2028/);
+ assert.doesNotMatch(ui.$("transition-run-context").textContent, new RegExp(practice.run.id));
+ assert.match(ui.$("transition-run-id").textContent, new RegExp(practice.run.id));
+ await ui.go("T04");
+ assert.equal(ui.$("transition-year-setup").hidden, false);
+ await ui.$("transition-run-continue").click();
+ assert.equal(ui.$("transition-step-picker").value, "T01");
+ ui.$("transition-run-mode").value = "production";
+ await ui.$("transition-run-form").emit("submit");
+ assert.equal(ui.saved().run.mode, "production");
+ assert.notEqual(ui.saved().run.id, practice.run.id);
+ assert.match(ui.$("transition-run-context").textContent, /Real handoff/);
+ ui.$("transition-run").value = practice.run.id;
+ await ui.$("transition-run").emit("change");
+ assert.equal(ui.saved().run.id, practice.run.id);
+ assert.equal(ui.$("transition-run-mode").value, "rehearsal");
+});
+
+test("private record URL controls hide production records in practice and retain saved private data", async () => {
+ const ui = browser();
+ await ui.$("transition-run-form").emit("submit");
+ const field = (label) => ui.$("transition-dialog").find(node => node.tagName === "label" && node.textContent.startsWith(label));
+ assert.equal(field("Approved communications record link").hidden, true);
+ assert.equal(field("Coordinator launch approval record link").hidden, true);
+ assert.equal(field("Reviewer sign-off record link").hidden, false);
+ assert.equal(field("Recovery notes document link").hidden, false);
+ const access = field("Access contact record link");
+ assert.equal(access.find(node => node.tagName === "input").type, "url");
+ assert.match(access.textContent, /President[\s\S]*Paste its link, not a name or email/);
+ assert.match(ui.$("transition-dialog").textContent, /Ask the technical maintainer for the annual link handoff JSON/);
+ const handoff = mockHandoff();
+ handoff.records = { acceptanceUrl: "https://example.org/private-review", rollbackUrl: "https://example.org/private-recovery", approvalUrl: "https://example.org/private-production-approval" };
+ await importMock(ui, handoff);
+ const form = ui.$("transition-dialog").find(node => node.id === "transition-annual-links-form");
+ await form.emit("submit");
+ const draft = JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${ui.saved().run.id}`));
+ assert.equal(draft.records.approvalUrl, handoff.records.approvalUrl);
+ ui.$("transition-run-mode").value = "production";
+ await ui.$("transition-run-form").emit("submit");
+ assert.equal(field("Approved communications record link").hidden, false);
+ assert.equal(field("Coordinator launch approval record link").hidden, false);
+ assert.equal(field("Incoming officer acceptance record link").hidden, false);
+ assert.equal(field("Rollback record link").hidden, false);
+});
+
 test("rehearsal review opens only its private provisioner-owned source and never transfers to legacy save",async()=>{
  const ui=browser();ui.$("transition-run-name").value="Private fixture";await ui.$("transition-run-form").emit("submit");await importMock(ui);await reviewMock(ui);
  const key=links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id;
@@ -79,7 +132,7 @@ test("rehearsal review opens only its private provisioner-owned source and never
 test("mock review requires seven links and a separate center; stale context cannot overwrite newer run evidence",async()=>{
  const a=browser();a.$("transition-run-name").value="Mock context";await a.$("transition-run-form").emit("submit");await a.go("T02");await reviewMock(a);assert.match(a.$("transition-steps").textContent,/Enter all seven/);
  await importMock(a);await reviewMock(a);const b=browser(a.existing);await b.go("T02");
- const centerInput=ui=>ui.$("transition-steps").find(node=>node.tagName==="label"&&node.textContent.startsWith("Private mock Control Center")).find(node=>node.tagName==="input");
+ const centerInput=ui=>ui.$("transition-saved-tools").find(node=>node.tagName==="label"&&node.textContent.startsWith("Private mock Control Center")).find(node=>node.tagName==="input");
  centerInput(a).value="https://docs.google.com/spreadsheets/d/new_private_mock_center_1234567890/edit";await reviewMock(a);
  const key=links.annualLinkStorageKey("2027-2028")+":"+a.saved().run.id,newer=a.existing.get(key);await reviewMock(b);
  assert.equal(a.existing.get(key),newer);assert.match(b.$("transition-steps").textContent,/changed in another tab/);
@@ -152,16 +205,31 @@ test("annual-link drafts stay isolated between same-year runs", async () => {
   ui.$("transition-run-name").value = "Copy set A"; await ui.$("transition-run-form").emit("submit");
   const a = ui.saved().run.id;
   await ui.go("T02");
-  const label = ui.$("transition-steps").find(node => node.tagName === "label" && node.textContent.startsWith("Points Master (officer edit link)"));
+  const label = ui.$("transition-saved-tools").find(node => node.tagName === "label" && node.textContent.startsWith("Points Master (officer edit link)"));
+  assert.equal(ui.$("transition-steps").find(node => node === label), null);
+  const editor = label.parent;
+  const details = editor.parent;
+  assert.equal(editor.id, "transition-annual-links-form");
+  assert.equal(details.parent, ui.$("transition-saved-tools"));
+  const edit = ui.$("transition-steps").find(node => node.tagName === "button" && node.textContent === "Edit saved links");
+  await edit.click();
+  assert.equal(details.open, true);
+  assert.match(ui.$("transition-saved-tools-context").textContent, /Copy set A.*2027–2028.*Practice/);
   label.find(node => node.tagName === "input").value = "https://docs.google.com/spreadsheets/d/abcdefghijklmnopqrstuvwxyz123456789/edit";
   const form = ui.$("transition-dialog").find(node => node.id === "transition-annual-links-form");
   await form.emit("submit");
   const key = `${links.annualLinkStorageKey("2027-2028")}:${a}`;
   assert.match(ui.existing.get(key), /abcdefghijklmnopqrstuvwxyz/);
+  await ui.go("T04");
+  assert.equal(label.parent, editor);
+  assert.equal(details.parent, ui.$("transition-saved-tools"));
+  assert.match(ui.$("transition-steps").textContent, /Follow these tasks.*Record results/);
   ui.$("transition-run-name").value = "Copy set B"; await ui.$("transition-run-form").emit("submit");
   await ui.go("T02");
-  const bLabel = ui.$("transition-steps").find(node => node.tagName === "label" && node.textContent.startsWith("Points Master (officer edit link)"));
+  const bLabel = ui.$("transition-saved-tools").find(node => node.tagName === "label" && node.textContent.startsWith("Points Master (officer edit link)"));
   assert.equal(bLabel.find(node => node.tagName === "input").value, "");
+  assert.equal(bLabel, label);
+  assert.match(ui.$("transition-saved-tools-context").textContent, /Copy set B.*2027–2028.*Practice/);
   assert.match(ui.existing.get(key), /abcdefghijklmnopqrstuvwxyz/);
 });
 
@@ -201,7 +269,7 @@ test("guide resolves shared handoff references for its target year independently
 test("a stale same-run annual link form cannot replace a newer draft even when its own fields were unchanged", async () => {
  const a=browser();a.$("transition-run-name").value="Concurrent links";await a.$("transition-run-form").emit("submit");
  const b=browser(a.existing);await a.go("T02");await b.go("T02");
- const findInput=ui=>ui.$("transition-steps").find(node=>node.tagName==="label"&&node.textContent.startsWith("Points Master (officer edit link)")).find(node=>node.tagName==="input");
+ const findInput=ui=>ui.$("transition-saved-tools").find(node=>node.tagName==="label"&&node.textContent.startsWith("Points Master (officer edit link)")).find(node=>node.tagName==="input");
  const submit=ui=>ui.$("transition-dialog").find(node=>node.id==="transition-annual-links-form").emit("submit");
  findInput(a).value="https://docs.google.com/spreadsheets/d/newestAnnualPointsMaster1234567890/edit";await submit(a);
  const key=`${links.annualLinkStorageKey("2027-2028")}:${a.saved().run.id}`,newest=a.existing.get(key);
@@ -219,7 +287,7 @@ test("clearing a legacy annual draft masks it for the migrated run and preserves
  const clear=ui.$("transition-dialog").find(node=>node.tagName==="button"&&node.textContent==="Clear saved links for this run");await clear.click();
  assert.equal(existing.get(links.annualLinkStorageKey(year)),original);
  const reload=browser(existing);await reload.go("T02");
- const label=reload.$("transition-steps").find(node=>node.tagName==="label"&&node.textContent.startsWith("Points Master (officer edit link)"));
+ const label=reload.$("transition-saved-tools").find(node=>node.tagName==="label"&&node.textContent.startsWith("Points Master (officer edit link)"));
  assert.equal(label.find(node=>node.tagName==="input").value,"");
 });
 
