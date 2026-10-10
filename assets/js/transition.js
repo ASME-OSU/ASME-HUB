@@ -1,6 +1,6 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261009c";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261009c";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks } from "./annual-link-draft.js?v=20261009c";
+import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261010a";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261010a";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261010a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -271,11 +271,11 @@ if (section) {
     const importedRunId = selectedRunId;
     try {
       if (file.size > 100_000) throw new Error("Annual link files must be under 100 KB.");
-      const draft = importAnnualLinkDraft(await file.text(), importedYear, window.ASME_HUB_CONFIG);
+      const draft = reviewAnnualLinkImport(importAnnualLinkDraft(await file.text(), importedYear, window.ASME_HUB_CONFIG));
       if (selectedYear !== importedYear || selectedRunId !== importedRunId) throw new Error("The selected year or run changed while reading this file. Import again for the intended run.");
       fillAnnualLinks(draft);
       unreadableAnnualLinks = false;
-      annualSay("Imported link draft for review. Choose Save private link list on this device to retain it on this device. Creation results do not certify ownership, privacy or readiness; Form respondent links must come from the actual Form.");
+      annualSay("Imported draft replaces the displayed tool and record fields, including the private handoff folder. Review every replacement before saving; the JSON file is the importable link bundle, and the handoff folder is the folder containing your private records. Choose Save private link list on this device to retain it on this device. Creation results do not certify ownership, privacy or readiness; Form respondent links must come from the actual Form.");
     } catch (error) { annualSay(`Import failed: ${error.message} Existing fields and saved links were not changed.`, true); }
   });
   function prepareAnnualSettings() {
@@ -326,7 +326,7 @@ if (section) {
   function titleFor(check) { return progress.run.mode === "rehearsal" ? check.rehearsalTitle || check.title : check.title; }
   function instructionsFor(step) {
     if (step.id === "T05" && progress.run.mode === "rehearsal") return ["Keep the Form and mock events closed, Points in TESTING, and the copied year inactive. Open this run’s private checklist to review the fictional items and recovery record.", "Record the reviewer’s decision to retain or remove the listed test items. Preserve formula tabs and exception evidence, then confirm the safe settings again.", "The President or named practice reviewer records sign-off in the private checklist. Example: “Keep the five fictional responses and two closed MOCK events privately; recovery files opened correctly; practice accepted on [date].” Skip activation with the reason Rehearsal only. This sign-off does not approve a real launch."];
-    if (step.id === "T01" && progress.run.mode === "rehearsal") return ["Use the Practice checklist selected under Choose checklist above. The President leads, and the team records their checks.", "Use your approved test account to open every copied tool. In the private checklist document, record the account, practice lead and who helps restore access or backups.", "Ask the President through asme@osu.edu for a filled checklist for this year, the technical maintainer’s name and the private link-bundle JSON. Say your role, target year and whether this is Practice or Real handoff. Save the supplied URLs under Saved links at the bottom. Until they arrive, mark Blocked; you can still read later steps and do local calendar practice. The shared start page is guidance, not this year’s completed checklist."];
+    if (step.id === "T01" && progress.run.mode === "rehearsal") return ["Use the Practice checklist selected under Choose checklist above. The President leads, and the team records their checks.", "Use your approved test account to open every copied tool. In the private checklist document, record the account, practice lead and who helps restore access or backups.", "Ask the President through asme@osu.edu for a filled checklist for this year, the setup receipt and the private link-bundle JSON. The contact can be recorded as the President; a personal name is not required. Say your role, target year and whether this is Practice or Real handoff. Save the supplied URLs under Saved links at the bottom. Until they arrive, mark Blocked; you can still read later steps and do local calendar practice. The shared start page is guidance, not this year’s completed checklist."];
     return (step.instructions || [step.action]).filter((text, index) => progress.run.mode !== "rehearsal" || !(step.id === "T04" && [2,4,5,6].includes(index)) && !text.startsWith("Production launch:"));
   }
   function checksFor(step) { return TRANSITION_CHECKS.filter((check) => check.step === step.id); }

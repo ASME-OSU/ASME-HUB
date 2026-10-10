@@ -17,8 +17,8 @@ export const MOCK_ANNUAL_FIELDS = [
 // Optional private records belong to the selected local run, never public config.
 export const PRIVATE_RECORD_FIELDS = [
   ["checklistUrl", "Current officer checklist link · Steps 1–5", "T01", "Ask the President for this year's checklist. Example: a private Google Doc listing these five steps."],
-  ["handoffUrl", "Private handoff folder or document link", "T01", "Ask the President for this year's handoff folder or document, including the named contacts."],
-  ["accessOwnerUrl", "Access contact record link", "T01", "Ask the President for a document naming who restores access and the backup contact. Paste its link, not a name or email."],
+  ["handoffUrl", "Private handoff folder link", "T01", "Ask the President for this year's private handoff folder containing the checklist and contact instructions. Paste the folder URL, not the JSON link-bundle file URL."],
+  ["accessOwnerUrl", "Access contact record link", "T01", "Ask the President for a document explaining how the President arranges access and recovery. Paste its link, not a name or email."],
   ["receiptUrl", "Setup receipt document link", "T02", "Ask the technical maintainer for the list of copied files and verified settings for this checklist's year."],
   ["communicationsUrl", "Approved communications record link", "T04", "Ask the President for the approved facts and the maintainer's verified sending-service route."],
   ["cleanupUrl", "Practice cleanup checklist link", "T05", "Ask the technical maintainer for the checklist naming only this attempt's test files and responses to remove."],
@@ -176,4 +176,14 @@ export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {
   for (const key of affectedChecks) if (checks[key] === "passed") checks[key] = "needs_recheck";
   for (const key of affectedSteps) if (steps[key] === "complete") steps[key] = "in_progress";
   return { ...progress, steps, checks };
+}
+
+// Apply this review only to a newly imported packet. Historical backups still load
+// unchanged so the officer can correct an old ambiguous record without data loss.
+export function reviewAnnualLinkImport(draft) {
+  const url = draft.records?.handoffUrl ? new URL(draft.records.handoffUrl) : null;
+  if (url?.hostname === "drive.google.com" && !/^\/drive\/(?:u\/\d+\/)?folders\//.test(url.pathname)) {
+    throw new Error("Private handoff folder must be a folder URL. Ask the President for the corrected packet; the JSON link-bundle file belongs in Import automation links, not the handoff folder field.");
+  }
+  return draft;
 }

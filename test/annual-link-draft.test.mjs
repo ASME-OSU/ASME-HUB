@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ANNUAL_HANDOFF_TYPE, annualLinkStorageKey, googleAnnualLink, validateAnnualLinkDraft, importAnnualLinkDraft, annualSettingsDraft, reopenAnnualChecks } from "../assets/js/annual-link-draft.js";
+import { ANNUAL_HANDOFF_TYPE, annualLinkStorageKey, googleAnnualLink, validateAnnualLinkDraft, importAnnualLinkDraft, annualSettingsDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "../assets/js/annual-link-draft.js";
 import { reconcileProgress, emptyProgress, parseProgress } from "../assets/js/transition-state.js";
 import { TRANSITION_STEPS, TRANSITION_CHECKS } from "../assets/js/transition-steps.js";
 
@@ -94,4 +94,14 @@ test("optional private mock context validates editor types and excludes canonica
 test("private mock context changes invalidate registry/access readiness",()=>{
  const prior=completedProgress(),next=reconcileProgress(reopenAnnualChecks(prior,["controlCenterUrl"],{controlCenterUrl:sheet(id)}),TRANSITION_STEPS,TRANSITION_CHECKS);
  assert.equal(next.steps.T01,"in_progress");assert.equal(next.steps.T02,"in_progress");assert.equal(next.steps.T05,"in_progress");assert.equal(next.checks.V07,"needs_recheck");assert.equal(next.checks.V10,"needs_recheck");
+});
+
+test("new packet import rejects bundle files as handoff folders while historical data remains readable", () => {
+ const historical = {...handoff(), records:{handoffUrl:`https://drive.google.com/file/d/${id}/view`}};
+ const loaded = importAnnualLinkDraft(JSON.stringify(historical), year);
+ assert.equal(loaded.records.handoffUrl, historical.records.handoffUrl);
+ assert.throws(() => reviewAnnualLinkImport(loaded), /folder URL/);
+ const corrected = {...handoff(), records:{handoffUrl:`https://drive.google.com/drive/folders/${id}`}};
+ assert.deepEqual(reviewAnnualLinkImport(importAnnualLinkDraft(JSON.stringify(corrected), year)), corrected);
+ assert.deepEqual(reviewAnnualLinkImport(handoff()), handoff());
 });
