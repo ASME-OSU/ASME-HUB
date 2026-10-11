@@ -1,6 +1,6 @@
 # Maintenance, records and recovery
 
-## Each annual handoff: five-step Guide 9
+## Each annual handoff: five-step Guide 10
 
 1. The President leads; name the technical/recovery contact and participating team. For production, confirm incoming holders’ real access to
    chapter Google, ASME-OSU GitHub and each separate officer service. Record
@@ -10,7 +10,7 @@
    schemas/formulas. For the new reviewed helper, the maintainer installs/read backs the three scripts, canonical protected proxy/export pointers and one-time private chapter config. The earlier private baseline recorded installed, saved and reopened standalone helper files and canonical bound EventSync/SanityCheck sources with matching reviewed hashes. That dated receipt does not certify installation of later repository revisions, including the new readable-receipt formatter. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. The older fallback retains its separate verification rules/exclusions/ledger. Pasted Hub
    links cannot choose those trusted targets. Never connect rehearsal resources
    as the production route.
-3. Rehearse with isolated copies, closed Form and TESTING/PAUSED Points status.
+3. Review the current maintainer readiness evidence. If a controlled practice is needed, agree its scope and use isolated copies, a closed Form and TESTING/PAUSED Points status. Fictional submissions and budget inputs are not mandatory for every incoming officer.
    Check actual submissions/scoring, imports, export contents and finance totals
    in addition to automated structure verification.
 4. Save and independently compare an inactive/noncurrent row. Run acceptance

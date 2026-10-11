@@ -8,6 +8,7 @@ import * as links from "../assets/js/annual-link-draft.js";
 import "../assets/js/shared-resources.js";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const source = readFileSync(new URL("../assets/js/transition.js", import.meta.url), "utf8").replace(/^import .*;\n/gm, "");
+
 class Element {
   constructor(tag = "div") { this.tagName = tag; this.children = []; this.listeners = {}; this.dataset = {}; this.attrs = {}; this.value = ""; this._text = ""; this.className = ""; this.classList = { toggle() {}, add() {}, remove() {} }; this.isConnected = true; }
   get childElementCount() { return this.children.length; }
@@ -34,7 +35,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const body = new Element(); body.className = "transition-dialog-body";
   const tools = $("transition-progress-tools"); tools.className = "transition-tools";
   dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
-  $("transition-run-mode").value = "rehearsal";
+  $("transition-run-mode").value = "production";
   const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
   const dispatched = [];
@@ -61,9 +62,9 @@ async function importMock(ui, value=mockHandoff()) {
 const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt").click();
 
 test("start and continue checklist keep internal modes and identities while simplifying visible setup", async () => {
- const ui = browser();
+ const ui = browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");
  assert.ok(html.indexOf('id="transition-year-setup"') < html.indexOf('id="transition-run-form"'));
- assert.match(html, /<option value="rehearsal">Practice<\/option><option value="production">Real handoff<\/option>/);
+ assert.match(html, /<option value="production">Real handoff<\/option><option value="rehearsal">Practice \(maintainer review\)<\/option>/);
  assert.match(html, /<details class="transition-run-advanced"><summary>Checklist details and advanced controls<\/summary>[\s\S]*?id="transition-run-id"/);
  await ui.$("transition-run-form").emit("submit");
  const practice = ui.saved();
@@ -87,7 +88,7 @@ test("start and continue checklist keep internal modes and identities while simp
 });
 
 test("private record URL controls hide production records in practice and retain saved private data", async () => {
- const ui = browser();
+ const ui = browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");
  await ui.$("transition-run-form").emit("submit");
  const field = (label) => ui.$("transition-dialog").find(node => node.tagName === "label" && node.textContent.startsWith(label));
  assert.equal(field("Approved communications record link").hidden, true);
@@ -114,7 +115,7 @@ test("private record URL controls hide production records in practice and retain
 });
 
 test("rehearsal review opens only its private provisioner-owned source and never transfers to legacy save",async()=>{
- const ui=browser();ui.$("transition-run-name").value="Private fixture";await ui.$("transition-run-form").emit("submit");await importMock(ui);await reviewMock(ui);
+ const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");ui.$("transition-run-name").value="Private fixture";await ui.$("transition-run-form").emit("submit");await importMock(ui);await reviewMock(ui);
  const key=links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id;
  const draft=JSON.parse(ui.existing.get(key));assert.equal(draft.mock.controlCenterUrl,mockHandoff().mock.controlCenterUrl);
  assert.equal(ui.dispatched.filter(event=>event.type==="transition:annual-settings-draft").length,0);
@@ -130,7 +131,7 @@ test("rehearsal review opens only its private provisioner-owned source and never
 });
 
 test("mock review requires seven links and a separate center; stale context cannot overwrite newer run evidence",async()=>{
- const a=browser();a.$("transition-run-name").value="Mock context";await a.$("transition-run-form").emit("submit");await a.go("T02");await reviewMock(a);assert.match(a.$("transition-steps").textContent,/Enter all seven/);
+ const a=browser();a.$("transition-run-mode").value="rehearsal";a.$("transition-run-name").value="Mock context";await a.$("transition-run-form").emit("submit");await a.go("T02");await reviewMock(a);assert.match(a.$("transition-steps").textContent,/Enter all seven/);
  await importMock(a);await reviewMock(a);const b=browser(a.existing);await b.go("T02");
  const centerInput=ui=>ui.$("transition-saved-tools").find(node=>node.tagName==="label"&&node.textContent.startsWith("Private mock Control Center")).find(node=>node.tagName==="input");
  centerInput(a).value="https://docs.google.com/spreadsheets/d/new_private_mock_center_1234567890/edit";await reviewMock(a);
@@ -139,7 +140,7 @@ test("mock review requires seven links and a separate center; stale context cann
 });
 
 test("production retains its separate transfer action and rejects private mock context",async()=>{
- const ui=browser();ui.$("transition-run-name").value="Production review";ui.$("transition-run-mode").value="production";await ui.$("transition-run-form").emit("submit");
+ const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");ui.$("transition-run-name").value="Production review";ui.$("transition-run-mode").value="production";await ui.$("transition-run-form").emit("submit");
  await importMock(ui);const action=()=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Review new-year settings");await action().click();
  assert.match(ui.$("transition-steps").textContent,/Production settings cannot use the mock context/);assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
  const value=mockHandoff();delete value.mock;await importMock(ui,value);await action().click();
@@ -147,7 +148,7 @@ test("production retains its separate transfer action and rejects private mock c
 });
 
 test("five-step mock UI permits skips and later checks but denies activation", async()=>{
- const ui=browser();ui.$("transition-run-name").value="Five-step rehearsal";await ui.$("transition-run-form").emit("submit");
+ const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");ui.$("transition-run-name").value="Five-step rehearsal";await ui.$("transition-run-form").emit("submit");
  await ui.go("T02");await ui.choose("T02","skipped");assert.equal(ui.saved().steps.T02,undefined);
  await ui.reason("T02","Mock setup skipped");await ui.choose("T02","skipped");assert.equal(ui.$("transition-next").disabled,false);assert.equal(ui.$("transition-dialog").dataset.mockMode,"true");
  await ui.$("transition-next").click();assert.equal(ui.$("transition-step-picker").value,"T03");
@@ -201,7 +202,7 @@ test("guide uses reviewed shared-resource references and updates ordinary editor
 });
 
 test("annual-link drafts stay isolated between same-year runs", async () => {
-  const ui = browser();
+  const ui = browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");
   ui.$("transition-run-name").value = "Copy set A"; await ui.$("transition-run-form").emit("submit");
   const a = ui.saved().run.id;
   await ui.go("T02");
@@ -321,7 +322,7 @@ test('empty-string annual corruption is protected and backed up by explicit clea
 });
 
 test('new instructions render the five-case table in guide and print without cross-run links', async()=>{
- const ui=browser(); ui.$('transition-run-name').value='MOCK copy review'; await ui.$('transition-run-form').emit('submit');
+ const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit"); ui.$('transition-run-name').value='MOCK copy review'; await ui.$('transition-run-form').emit('submit');
  await importMock(ui); await reviewMock(ui); await ui.go('T03');
  const table=ui.$('transition-steps').find(node=>node.tagName==='table'); assert.ok(table);
  assert.match(table.textContent,/missing-profile exception OPEN/);
@@ -333,7 +334,7 @@ test('new instructions render the five-case table in guide and print without cro
 });
 
 test('private checklist and receipt links survive reload but stay out of progress and print',async()=>{
- const ui=browser(); ui.$('transition-run-name').value='Private records'; await ui.$('transition-run-form').emit('submit');
+ const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit"); ui.$('transition-run-name').value='Private records'; await ui.$('transition-run-form').emit('submit');
  const bundle=mockHandoff();bundle.records={checklistUrl:'https://docs.google.com/document/d/private_checklist/edit',receiptUrl:'https://docs.google.com/document/d/private_receipt/edit'};
  await importMock(ui,bundle);await reviewMock(ui);await ui.go('T01');
  assert.ok(ui.$('transition-steps').find(node=>node.href===bundle.records.checklistUrl));
@@ -343,7 +344,7 @@ test('private checklist and receipt links survive reload but stay out of progres
 });
 
 test('disposed blockers and skipped activation visibly retain missing rehearsal closeout',async()=>{
- const ui=browser();ui.$('transition-run-name').value='Blocked MOCK';await ui.$('transition-run-form').emit('submit');
+ const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");ui.$('transition-run-name').value='Blocked MOCK';await ui.$('transition-run-form').emit('submit');
  for(const step of definitions.TRANSITION_STEPS){await ui.go(step.id);if(step.id==='T05'){await ui.reason('T05','Rehearsal only');await ui.choose('T05','skipped');}else await ui.choose(step.id,'blocked');}
  assert.match(ui.$('transition-summary').textContent,/Open the unfinished steps to resolve their blockers/);
  assert.equal(ui.saved().steps.T05,'skipped');
@@ -367,4 +368,36 @@ test('choosing skip opens one plain-language reason and saving it records the sk
  const ui=browser();ui.$('transition-run-name').value='Skip flow MOCK';await ui.$('transition-run-form').emit('submit');await ui.go('T02');await ui.choose('T02','skipped');assert.notEqual(ui.saved().steps.T02,'skipped');
  const opened=ui.$('transition-steps').find(n=>n.className==='transition-evidence-details'&&n.open);assert.ok(opened);assert.match(opened.textContent,/Why are you skipping this/);
  await ui.reason('T02','Retained prepared bundle');assert.equal(ui.saved().steps.T02,'skipped');assert.equal(ui.saved().reasons.T02,'Retained prepared bundle');
+});
+
+test("new officer checklists default to real handoff without fictional exercise gates", async () => {
+  const ui = browser();
+  assert.equal(ui.$("transition-run-mode").value, "production");
+  await ui.$("transition-run-form").emit("submit");
+  assert.equal(ui.saved().run.mode, "production");
+  assert.equal(ui.$("transition-checklist-options").open, false);
+  await ui.go("T03");
+  assert.equal(ui.$("transition-steps").find(node => node.className === "transition-test-cases"), null);
+  for (const id of ["V03", "V04", "V23", "V24", "V25", "V26"]) {
+    assert.equal(state.checkApplies(definitions.TRANSITION_CHECKS.find(check => check.id === id), "production"), false);
+  }
+  assert.doesNotMatch(ui.$("transition-readiness").textContent, /NO-GO|V\d\d/);
+});
+
+test("Guide 9 migration keeps practice mode and evidence while reopening changed real handoff reviews", () => {
+  for (const mode of ["production", "rehearsal"]) {
+    const old = state.emptyProgress("2027-2028", state.createTransitionRun("Existing checklist", mode, "saved-run"));
+    old.guideVersion = "officer-transition-guide-9";
+    for (const check of definitions.TRANSITION_CHECKS) old.checks[check.id] = "passed";
+    for (const step of definitions.TRANSITION_STEPS) old.steps[step.id] = "complete";
+    if (mode === "rehearsal") { old.steps.T05 = "skipped"; old.reasons.T05 = "Rehearsal only"; }
+    old.notes.T01 = "Existing access evidence";
+    const upgraded = state.migrateProgress(old, old.year, definitions.TRANSITION_STEPS, definitions.TRANSITION_CHECKS);
+    assert.equal(upgraded.run.mode, mode);
+    assert.equal(upgraded.notes.T01, old.notes.T01);
+    assert.equal(upgraded.checks.V16, mode === "production" ? "needs_recheck" : "passed");
+    assert.equal(upgraded.steps.T05, mode === "production" ? "in_progress" : "skipped");
+    assert.equal(old.guideVersion, "officer-transition-guide-9");
+    assert.equal(old.checks.V16, "passed");
+  }
 });

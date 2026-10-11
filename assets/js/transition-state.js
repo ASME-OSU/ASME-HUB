@@ -1,7 +1,7 @@
 export const TRANSITION_STATE_VERSION = 2;
 // Changed meaning always reopens earlier confirmations.
-export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-9";
-export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8].map(version => `officer-transition-guide-${version}`);
+export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-10";
+export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9].map(version => `officer-transition-guide-${version}`);
 export const TRANSITION_LEGACY_STORAGE_PREFIX = "asmeHubTransitionProgressV1:";
 export const TRANSITION_STORAGE_PREFIX = "asmeHubTransitionProgressV2:";
 export const TRANSITION_STATUSES = ["not_started", "in_progress", "blocked", "failed", "skipped", "complete"];
@@ -29,7 +29,7 @@ export function storageKey(year, runId = "legacy") {
   if (typeof runId !== "string" || !runIdPattern.test(runId)) throw new Error("Invalid run identity.");
   return `${TRANSITION_STORAGE_PREFIX}${year}:${runId}`;
 }
-export function createTransitionRun(name, mode = "rehearsal", id = globalThis.crypto?.randomUUID?.() || `run-${Date.now()}-${Math.random().toString(36).slice(2)}`) {
+export function createTransitionRun(name, mode = "production", id = globalThis.crypto?.randomUUID?.() || `run-${Date.now()}-${Math.random().toString(36).slice(2)}`) {
   if (typeof name !== "string" || !name.trim() || name.trim().length > 120 || !["rehearsal", "production"].includes(mode) || typeof id !== "string" || !runIdPattern.test(id)) throw new Error("Give the run a name (up to 120 characters) and choose rehearsal or production.");
   return { id, name: name.trim(), mode };
 }
@@ -49,13 +49,13 @@ export function rehearsalEligibility(progress, steps, checks) {
 }
 export function launchEligibility(progress, steps, checks) {
   const missing = steps.filter(step => !step.launch && progress.steps[step.id] !== "complete").map(step => step.id);
-  const unchecked = checks.filter(check => progress.checks[check.id] !== "passed").map(check => check.id);
+  const unchecked = checks.filter(check => checkApplies(check, "production") && progress.checks[check.id] !== "passed").map(check => check.id);
   const eligible = progress.run?.mode === "production" && !missing.length && !unchecked.length;
   return { eligible, missing, unchecked, reason: eligible ? "Required production checks are reported passed. Coordinator approval and current private evidence are still required before launch." : progress.run?.mode !== "production" ? "NO-GO: rehearsal evidence never authorizes a production launch. Create a separate production run and perform the real checks." : `NO-GO: production prerequisites need completion${missing.length ? ` (${missing.join(", ")})` : ""}${unchecked.length ? `; manual checks need to pass (${unchecked.join(", ")})` : ""}.` };
 }
 export function progressSummary(progress, steps, checks) {
   const stepCounts = Object.fromEntries(TRANSITION_STATUSES.map(status => [status, steps.filter(step => (progress.steps[step.id] || "not_started") === status).length]));
-  const checkCounts = Object.fromEntries(TRANSITION_CHECK_STATUSES.map(status => [status, checks.filter(check => (progress.checks[check.id] || "not_checked") === status).length]));
+  const checkCounts = Object.fromEntries(TRANSITION_CHECK_STATUSES.map(status => [status, checks.filter(check => checkApplies(check, progress.run?.mode) && (progress.checks[check.id] || "not_checked") === status).length]));
   const disposed = stepCounts.complete + stepCounts.skipped + stepCounts.failed + stepCounts.blocked;
   // A disposition is a recorded decision, not evidence that closeout succeeded.
   // Rehearsals may skip activation, but cleanup and incoming acceptance still need
@@ -98,6 +98,16 @@ export function parseProgress(value, year, steps, checks) {
 }
 export function migrateProgress(value, year, steps, checks) {
   if (value?.guideVersion === TRANSITION_GUIDE_VERSION) return parseProgress(value, year, steps, checks);
+  if (value?.guideVersion === "officer-transition-guide-9") {
+    // Keep historical observations and mode; changed production criteria need
+    // fresh review. Practice criteria and private evidence are unchanged.
+    const candidate = { ...value, guideVersion: TRANSITION_GUIDE_VERSION, steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
+    if (value.run?.mode === "production") {
+      for (const id of ["V16", "V22"]) if (candidate.checks[id] === "passed") candidate.checks[id] = "needs_recheck";
+      for (const id of ["T04", "T05"]) if (candidate.steps[id] === "complete") candidate.steps[id] = "in_progress";
+    }
+    return parseProgress(candidate, year, steps, checks);
+  }
   if (![1, TRANSITION_STATE_VERSION].includes(value?.version) || !TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(value?.guideVersion)) throw new Error("This progress file uses an unsupported version or guide.");
   if(value.year!==year)throw new Error('This file belongs to a different transition year.');
   const isFiveStepGuide = ['officer-transition-guide-7','officer-transition-guide-8'].includes(value.guideVersion);
