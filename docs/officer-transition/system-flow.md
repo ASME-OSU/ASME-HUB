@@ -1,16 +1,16 @@
 # System flow and ownership
 
-The Hub guides the transition. The reviewed AnnualProvisioner creates the annual copies and inactive settings row. Officers compare that row with its private receipt. The Hub reads the chapter’s shared settings; a rehearsal uses its own private copied Control Center. The older authenticated annual-save service remains a separate workflow with its own supported template contract and journal.
+The Hub guides the real officer handoff by default. Incoming officers get access, review their annual tools, confirm Points and finance readiness, prepare communications and agree acceptance. Optional private practice is a separate maintainer exercise; ordinary handoff does not require five fictional submissions. The reviewed AnnualProvisioner creates the annual copies and inactive settings row. Officers compare that row with its private receipt. The Hub reads the chapter’s shared settings; a rehearsal uses its own private copied Control Center. The older authenticated annual-save service remains a separate workflow with its own supported template contract and journal.
 
 The current Guide 9 has five steps. The earlier private baseline recorded installed, saved and reopened standalone helper files and canonical bound EventSync/SanityCheck sources with matching reviewed hashes. That dated receipt does not certify installation of later repository revisions, including the new readable-receipt formatter. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Released-route and incoming-officer acceptance remain separate from the completed private native rehearsal. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. Native proxy calculations and centralized pointer inheritance are narrower verified subchecks.
 
 ```mermaid
 flowchart TD
- A[T01: year/run and actual access] --> B[T02: installed annual provisioner and private receipt]
+ A[T01: year and incoming access] --> B[T02: annual tools and maintainer setup receipt]
  B --> C[Actual Form tab to Config B7 / protected raw proxy]
  B --> D[Export Config B1 to annual working master]
  B --> E[Read back inactive/noncurrent twenty-column row]
- C --> F[T03: Allow access / actual test check-in / manual acceptance]
+ C --> F[T03: Points and finance readiness evidence]
  D --> F
  E --> F
  B --> G[T04: communications and calendar]

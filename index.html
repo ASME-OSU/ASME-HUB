@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261010a">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261011a">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -771,6 +771,8 @@
               <button type="button" class="transition-close icon-button" id="transition-close" aria-label="Close transition guide">×</button>
             </header>
             <div class="transition-dialog-body">
+              <details id="transition-checklist-options" class="transition-checklist-options" open>
+                <summary>Choose or change checklist</summary>
               <section id="transition-year-setup" class="transition-checklist-setup">
                 <h3 class="transition-area-title">Choose checklist</h3>
                 <p id="transition-dialog-description">Choose a year and purpose to start a checklist, or continue a saved attempt. Each checklist has its own results, notes and private links.</p>
@@ -781,9 +783,9 @@
               </section>
               <section class="transition-run-controls" aria-label="Start or continue a checklist">
                 <form id="transition-run-form">
-                  <label>2. Checklist purpose <select id="transition-run-mode" aria-describedby="transition-mode-help"><option value="rehearsal">Practice</option><option value="production">Real handoff</option></select></label>
+                  <label>2. Checklist purpose <select id="transition-run-mode" aria-describedby="transition-mode-help"><option value="production">Real handoff</option><option value="rehearsal">Practice (maintainer review)</option></select></label>
                   <button class="primary-button" type="submit">Start checklist</button>
-                  <p id="transition-mode-help" class="transition-control-help">Practice uses private test copies and skips activation. Real handoff requires all production checks and coordinator approval.</p>
+                  <p id="transition-mode-help" class="transition-control-help">Real handoff prepares the actual officer transition. Practice is optional maintainer review using private copies; it never activates a year.</p>
                   <details class="transition-run-name-options"><summary>Give this checklist a name (optional)</summary><label>Checklist name <input id="transition-run-name" maxlength="120" placeholder="Fall practice · team name"></label></details>
                 </form>
                 <div class="transition-continue-controls"><label>Saved checklist for this year <select id="transition-run"></select></label><button class="secondary-button" id="transition-run-continue" type="button">Continue checklist</button></div>
@@ -795,6 +797,7 @@
                   <label>Jump to a step <select id="transition-step-picker" aria-label="Jump to a checklist step"></select></label>
                 </details>
               </section>
+              </details>
               <p id="transition-readiness" class="transition-banner" role="status"></p>
               <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
               <progress id="transition-progress" value="0" max="16" aria-label="Transition steps completed"></progress>
@@ -1089,11 +1092,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261010a"></script>
+  <script src="assets/js/config.js?v=20261011a"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261010a"></script>
-  <script type="module" src="assets/js/transition.js?v=20261010a"></script>
+  <script src="assets/js/app.js?v=20261011a"></script>
+  <script type="module" src="assets/js/transition.js?v=20261011a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>
