@@ -1,6 +1,11 @@
 # Maintenance, records and recovery
 
-## Each annual handoff: five-step Guide 10
+Incoming officers follow [Start here](README.md). This page is for the maintainer and record owners. Real handoff uses supplied readiness evidence; optional practice stays in separate copies. The shared private checklist records team decisions; Hub observations stay on the officer's device until transferred.
+
+<details>
+<summary>Maintainer annual procedure and dated technical reference</summary>
+
+## Each annual handoff: five-step Guide 11
 
 1. The President leads; name the technical/recovery contact and participating team. For production, confirm incoming holders’ real access to
    chapter Google, ASME-OSU GitHub and each separate officer service. Record
@@ -111,3 +116,5 @@ authority, finance, newsletter/service transfer, incoming access, mobile/install
 Hub, successor independence and consumer rollback. Record actual results with
 dates and evidence; do not convert fixture or repository test results into
 production PASS claims.
+
+</details>

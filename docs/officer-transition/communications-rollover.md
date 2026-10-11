@@ -1,31 +1,22 @@
 # Calendar, newsletter and public-page rollover
 
-Use this with **T04 — Check calendars and prepare communications**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
+Use this with **T04 — Update calendars and communications**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
 actual people responsible for communications, the calendar and website in the
 private handoff checklist. A role listed here does not appoint a new officer. Contact the President through [asme@osu.edu](mailto:asme@osu.edu) with your role, target year and Practice/Real handoff purpose to obtain the filled current checklist, maintainer's name, readable setup receipt and private link-bundle JSON. A receipt is the maintainer's list of copied files and verified settings; retain the record links supplied for this attempt. Missing materials stay Blocked.
 
-## Officer route: start here
+## Officer route: review real dates and editable communications
 
-In the Hub, **Choose checklist** selects the attempt at the top. Follow Step 4's tasks and **Record results** in the middle. The bottom **Saved links and backup tools** uses the same checklist: **Saved links** holds its private URLs and link-bundle backup; **Progress backup and print** handles results and notes.
+1. Open the current calendar and Newsletter Builder from Step 4 in the Hub. Use the annual links supplied for your checklist.
+2. Ask the calendar owner to confirm upcoming dates, Eastern times, rooms and descriptions. Reuse the existing chapter calendar unless its owner approves a change.
+3. In Newsletter Builder, choose **Templates → Export Draft .json** before editing. Keep this untouched editable backup in the private handoff folder.
+4. Update the draft with approved dates, facts, sender and reply-to. Record missing facts as Blocked and assign the communications owner. Obtain approval before sending or publishing.
+5. Keep **Export progress**, **Download private link bundle** and the editable Newsletter Draft as three separate files. Reference the maintainer's dated recovery record; ask the maintainer to resolve missing restoration evidence.
+6. Save the observation locally in **Record results**, then give the note or exported progress to the President for the shared private checklist. Teammates do not see local checkmarks automatically.
 
-1. **T04 — shared tool links:** first choose your year at the top of the Hub checklist. Choose **Practice** or **Real handoff** and **Start checklist**, or **Continue checklist** for a saved attempt. Open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/) and the [Public Events Calendar](https://org.osu.edu/asme/calendar/) from Step 4; the career guide and chapter website are also available in Resources. If a shared destination needs changing,
-   choose Resources → Maintain shared chapter links → Edit shared resources in Google. The named authorized editor updates the reviewed stable row, waits for Google save, then chooses Refresh shared resources and checks the destination/read timestamp. Give missing-source or feed failures to the Webmaster using [the source instructions below](#webmaster-t04-shared-tool-links).
-   Year-specific links are handled in T02; personal links change only your browser.
-2. **T04 — calendar practice:** enter the full year, such as **2027-2028**, in each tool's **Academic year (August–July)** field and choose **Load fictional Fall/Spring**. Check both semesters and desktop/phone layout. Choose **Remove fictional events**, then **Upcoming** in Newsletter Builder and **Upcoming dates** in the public page's generated list. Confirm the fictional label disappears and chapter snapshot status returns. If loading fails, choose **Refresh chapter snapshot** and record the error. The embedded Google calendar is a separate live view; local practice creates no Google events or invitations. For a Real handoff, ask the calendar owner to confirm reuse of the existing calendar. Reuse keeps members' subscriptions. Have the event owner confirm
-   each date, Eastern time, room and description before adding it through the normal Google Calendar event editor. For an approved isolated rehearsal select the training calendar explicitly, keep guests empty and check the Calendar field again before Save. Ask the
-   Points officer to set attendance rules separately; an academic date on the
-   calendar earns no automatic attendance credit.
-3. **T04 — newsletter:** open [Newsletter Builder](https://asme-osu.github.io/ASME-Newsletter-Builder/)
-   and follow [the editable handoff checklist](#t04-transfer-the-editable-newsletter-correctly).
-   Export and verify an untouched backup before editing. Follow [Practice restoring your three backups](recovery-practice.md) for the exact separate-profile recovery steps: **Export progress**, **Download private link bundle**, and **Templates → Export Draft .json**. Inspect the actual downloads with TextEdit, restore all three into a separate Chrome profile, compare year/notes/tool links and newsletter content, and confirm the original profile remains intact. A new tab shares the working profile's storage; a download success message does not verify restoration. Keep the practice newsletter unsent.
-4. **T04 — public pages:** collect the approved board, event and sponsor facts
-   in the private handoff. Give them to the Webmaster for a private page preview,
-   then follow the approved publication decision. Record missing facts as PENDING.
-   Keep the currently accurate public content until its replacement is approved.
-5. **Record results:** use **Add a note or evidence** for a sentence such as “The two fictional semesters appeared; after removal the chapter snapshot returned.” Keep a screenshot or private record link when a setting, output or approval needs later comparison. Private record fields take full HTTPS document/folder links supplied by the President or maintainer. Practice uses **Reviewer sign-off record link** and **Recovery notes document link**; approved communications and coordinator launch-approval fields appear only in Real handoff. **Before launch**, each tool's owner records what they checked, the actual
-   result, time, evidence and recovery copy. The coordinator reviews these checks
-   using [Finance, settings and launch](finance-settings-launch.md). Saving a
-   draft, a readiness percentage or a Hub checkmark does not approve a send or launch.
+Fictional calendar previews and a separate-profile restore are optional assigned practice. They are not prerequisites for updating the real draft. The [recovery procedure](recovery-practice.md) is for the person assigned to test restoration.
+
+<details>
+<summary>Communications owner and Webmaster reference, optional practice and dated evidence</summary>
 
 ## Current V3 results and owner inputs
 
@@ -376,3 +367,5 @@ WordPress editor and deployment before a real rollover. The actual incoming offi
 decisions, publication and send remain unverified until officers perform and
 record them. Public docs contain no private roster, funding evidence or handoff
 resource inventory.
+
+</details>

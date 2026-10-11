@@ -1,5 +1,20 @@
 # Finance, settings, acceptance and launch
 
+## Officer route: review real finances and separate decisions
+
+1. Get the actual funding approval, Treasurer's dated reconciliation and readiness record from the President or Treasurer.
+2. Compare Budget Tracker **Setup & Lists B4/B5** with the receipt's annual start/end dates. For 2027–2028 these are August 1, 2027 and July 31, 2028. Record observed values; do not edit formula cells.
+3. Ask the Treasurer to show source and export values for approved expenses, confirmed plan, remaining plan, pending expenses and funding status. The record must identify the exact source/export cells and observation time. An export opening without an error is insufficient; zero needs an explanation.
+4. Record incoming handoff acceptance and assigned open work in the shared checklist. Acceptance can occur while launch is blocked.
+5. Follow the separate private launch record only after the President approves activation. That record names the settings operator, approved switch time, required readback and rollback owner. An incoming officer's local checkmark or an inactive saved row does not activate the year.
+
+The fictional arithmetic and old check-ID mapping below are historical maintainer examples, not tasks for normal officer handoff. Current Real handoff has 20 applicable reviews; optional Practice has 16. Use the current Hub labels and shared checklist for the actual review.
+
+<details>
+<summary>Treasurer/settings operator reference and dated practice evidence</summary>
+
+
+
 Use this worked companion for T02 setup/settings, T03 finance/export acceptance and T05 activation, cleanup and handoff. It addresses rehearsal
 questions N08–N10 and C10–C12. The figures below are fictional values observed in
 the October 3, 2026 mock run. They explain the workflow; they do not approve real
@@ -25,7 +40,7 @@ In **Transition to New Year**, choose an academic year and create a distinct nam
 
 Every step having a disposition means the record can be reviewed; it does not imply finished closeout. V16 cleanup and V17 reviewer acceptance (incoming acceptance in production) remain independent of skipped activation; complete, skipped, failed and blocked counts remain separate from check results. A rehearsal reaches **GO — private rehearsal complete** only when T01–T04 are complete, all 16 applicable checks are passed, and T05 is skipped with a reason. Production-only checks appear separately as not applicable to rehearsal. The rehearsal remains **NO-GO for production**. T05 can be marked complete only in a production run with all T01–T04 complete and all required manual checks passed; the coordinator still reviews current private evidence and authorizes launch. A skipped T01 never becomes real officer access. T05 cleanup/handoff remains available after NO-GO; record rehearsal T05 as Skipped with its reason and retain the cleanup receipt in the private tracker. There is no cleanup mark that authorizes launch.
 
-The schema/guide versions travel with the run’s ID/name/year/mode. Legacy year-only progress is retained as a legacy rehearsal. Old sixteen-step guide versions 2–6 and five-step guides 7–8 migrate to Guide 9, preserving the appropriate step mapping: step dispositions are summarized in notes, passed checks need recheck, and the complete raw original is backed up before any save. Named-run identity/mode survives migration; no old completion authorizes the revised launch. An import creates a separate run; imported production completions require fresh confirmation. Unknown/corrupt state is preserved, not overwritten. Create a new run to continue if recovery is needed. Exporting progress excludes annual private links; transfer those through the approved private handoff and review the destinations in the receiving browser.
+The schema/guide versions travel with the run’s ID/name/year/mode. Legacy year-only progress is retained as a legacy rehearsal. Old sixteen-step guide versions 2–6 and five-step guides 7–8 migrate to Guide 11, preserving the appropriate step mapping: step dispositions are summarized in notes, passed checks need recheck, and the complete raw original is backed up before any save. Named-run identity/mode survives migration; no old completion authorizes the revised launch. An import creates a separate run; imported production completions require fresh confirmation. Unknown/corrupt state is preserved, not overwritten. Create a new run to continue if recovery is needed. Exporting progress excludes annual private links; transfer those through the approved private handoff and review the destinations in the receiving browser.
 
 ## T03: calculated account ledgers and dated bank reconciliation
 
@@ -137,9 +152,9 @@ reconcile what Google already contains. Do not create another year row or change
 current flags as a diagnostic step. See the [annual-save contract](../../integrations/apps-script/ANNUAL_SETTINGS_DRAFT.md)
 and [readback/recovery rules](../../integrations/apps-script/SETTINGS_WRITE_CONTRACT.md).
 
-### Provisioner readback and existing annual-save fallback
+### Provisioner readback and separate legacy annual-save route
 
-The coordinator names **one settings editor** in the private handoff. After the new provisioner is installed and accepted, T02 reviews its exact inactive-row receipt and independently uses **Compare with Google**. The older authenticated annual-save service remains a separate fallback/reconciliation route for a reviewed draft; it is not proof that the new provisioner is installed. That editor uses **Year Settings → Open authorized annual save**, signs in with the
+The coordinator names **one settings editor** in the private handoff. For a provisioner-created year, T02 compares the actual inactive row directly in the supplied Control Center with its receipt. The normal **Compare with Google** reads the chapter production Center and cannot verify a private copied Center. The older authenticated annual-save service is a separate legacy workflow: it does not adopt provisioner-created rows or validate proxy/Config B1 templates. Do not use it to save or reconcile those years. Only when the maintainer confirms a draft belongs to the supported legacy contract does the authorized editor use **Year Settings → Open authorized annual save**, sign in with the
 chapter Google account in its browser profile, chooses **Verify with Google**, reviews the full public
 row, then chooses **Save inactive year and confirm**. After saving, use **Compare
 with Google** and reopen the Control Center to compare all twenty columns A
@@ -236,9 +251,9 @@ gate remains open.
 Before T05, use the mapping below to match every required guide check with the coordinator’s launch gates and private tracker row. If an automation is optional, record the manual verified route and reason;
 required FAILED, stale, conflicting or unverified checks block activation.
 
-### Guide checks and the coordinator's launch checklist
+### Historical guide checks and the coordinator's launch checklist
 
-Officers use the Hub's **V01–V10** checks. The coordinator uses the broader
+The October 3 historical guide used **V01–V10** checks; this table is not the current checklist. The coordinator uses the broader
 **V01–V11** launch checklist in the private handoff/readiness record. The first
 ten IDs refer to the corresponding topics below, but launch requires current
 evidence from the actual annual files and tools, not only a Hub progress mark.
@@ -384,3 +399,5 @@ and no real campaign or website update occurred. This describes rehearsal
 closeout, not successor acceptance. Actual archive/cleanup/retention approval,
 incoming access, launch, intake and consumer recovery remain
 to be performed and recorded.
+
+</details>

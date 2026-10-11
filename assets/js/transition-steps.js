@@ -57,31 +57,37 @@ const operational = {
  T01: ["Confirm access and materials", [
   "Choose your handoff year and Start checklist. Use Real handoff for the actual officer transition. Continue checklist opens an existing attempt.",
   "Ask the President for this year’s private handoff folder, filled checklist and tool links. Save those URLs under Saved links. The President is your contact; no personal name is required.",
-  "Open the folder and each tool your role needs using your approved account. Confirm you can edit the required inputs. If Request access appears, give the President that tool’s URL and record Blocked until access is restored.",
-  "Keep the outgoing officers’ access until the incoming team accepts the handoff. Record your access date and any unresolved item in the private checklist." ]],
+  "Use the role table in the private checklist: it names each tool, exact link, approved account and required permission. Open each listed tool using that account. Confirm you can edit the required inputs. If Request access appears, give the President that tool’s URL and record Blocked until access is restored.",
+  "Keep the outgoing officers’ access until the incoming team accepts the handoff. Record your access date and any unresolved item in the shared private checklist. Hub checkmarks and notes stay in this browser; download them for the President’s review." ]],
  T02: ["Get this year’s tools", [
   "Open the setup receipt supplied by the President. It lists this year’s annual folder, Points Master, Form editor and respondent links, Budget Tracker, exports and Control Center. Missing receipt or copies: ask the President to arrange technical setup and record Blocked.",
-  "Open each supplied link and confirm the file year. Do not copy last year’s working files or run Apps Script yourself. A source helper in the repository does not prove that helper is installed or authorized in Google.",
+  "Open each supplied link and confirm the file year. Do not copy last year’s working files or run Apps Script yourself.",
   "In the Form editor choose Responses → View in Sheets. Confirm this year’s Points Master and the response tab match the receipt. Preserve existing responses; ask the maintainer to explain any unexpected destination or data.",
   "Open Points Master → Config. Compare the year, Form ID and response-tab name with the setup receipt. Ask the maintainer to correct any mismatch.",
   "Open Budget Tracker and compare the annual start and end dates with the receipt.",
   "Open the supplied Control Center and find your year’s row. Confirm the row matches the receipt and stays inactive until Step 5 approval.",
-  "Get the maintainer’s dated readiness record confirming the annual tools, imports and automatic event updates are ready." ]],
+  "Get the maintainer’s dated readiness record for the annual tools and imports. It must name the event-update method: verified automatic updates, or a responsible manual owner who syncs approved event changes before intake opens." ]],
  T03: ["Prepare attendance and finances", [
-  "Open Points Master → README. Add this year’s actual events using the approved input cells. Confirm event dates, categories and points. Ask the maintainer to resolve formula errors or missing automatic Form choices; do not edit formula tabs.",
-  "In the Form editor verify the approved event choices and respondent access settings. Keep intake closed until the President approves opening it. Use the receipt and maintainer’s readiness record to verify connections; officers are not required to submit fictional member cases.",
-  "Open Budget Tracker → Start Here. Enter approved opening balances, funding and category plans in the indicated input cells. Record real approvals and reconcile the ledger to the dated bank evidence with the Treasurer. Do not enter fictional 100/20/10 transactions.",
+  "Open Points Master → README. Add this year’s actual events using the approved input cells. Confirm event dates, categories and points.",
+  "Follow the event-update method in the readiness record. For manual updates, the named owner chooses ASME Tools → Sync Events to Google Form after approved event changes and before intake opens. Ask the maintainer to resolve errors; leave formula tabs alone.",
+  "In the Form editor verify the approved event choices and respondent access settings. Keep intake closed until the President approves opening it.",
+  "A deliberately staged unpublished Form is acceptable now; have the authorized operator verify publication and respondent access before approved collection. Use the receipt and maintainer’s readiness record to verify connections; officers are not required to submit fictional member cases.",
+  "Open Budget Tracker → Start Here. Enter approved opening balances, funding and category plans in the indicated input cells.",
+  "Record real approvals and reconcile the ledger to the dated bank evidence with the Treasurer. Do not enter fictional 100/20/10 transactions.",
   "Compare Points Export and Budget Export with the approved source data. Resolve import or calculation errors with the President before launch. Confirm approved public fields and private member-data boundaries from the maintainer’s record; never publish private sheets." ]],
  T04: ["Update calendars and communications", [
-  "Open the chapter calendar and confirm this year’s actual events: title, date, time, time zone and location. Compare the same events in the Hub, public Events Calendar and Newsletter Builder; refresh chapter data and record any mismatch.",
-  "Back up an existing newsletter with Templates → Export Draft .json before editing it. Update the subject, preheader, officer names, annual links and footer. Review Desktop and Mobile previews and save the draft for approval.",
-  "Ask the President for approved sender, reply-to, mailing address and dated public facts. Verify the sending-service route with its owner before sending. Update the website’s annual links and leadership using the approved facts.",
+  "Open the chapter calendar and confirm this year’s actual events: title, date, time, time zone and location.",
+  "Compare the same events in the Hub, public Events Calendar and Newsletter Builder; refresh chapter data and record any mismatch.",
+  "Back up an existing newsletter with Templates → Export Draft .json before editing it.",
+  "Update the subject, preheader, officer names, annual links and footer. Review Desktop and Mobile previews and save the draft for approval.",
+  "Ask the President for approved sender, reply-to, mailing address and dated public facts. Verify the sending-service route with its owner before sending.",
+  "Update the website’s annual links and leadership using the approved facts.",
   "Export Hub progress and Download private link bundle under Saved links and backup tools. Keep these and the newsletter draft private. Ask the maintainer for the dated recovery readiness record; a successful download alone does not prove restoration." ]],
  T05: ["Approve and switch to the new year", [
-  "Ask the President to review access, annual settings, attendance, finances and communications. Record unresolved items as Blocked. Preserve prior-year records and approved access; account for any inherited test data with the maintainer before launch.",
+  "Ask the President to review access, annual settings, attendance, finances and communications. Record unresolved items as Blocked. Preserve prior-year records and approved access; account for any inherited test data with the maintainer before launch. If any item is missing, assign its owner and deadline in the shared checklist.",
   "Obtain the coordinator’s dated launch approval and rollback plan, including who restores the previous settings if a consumer fails. The checklist records review; it does not change Google or activate the year.",
   "At the approved time, the authorized settings owner switches the verified year and approved live settings in the actual Control Center. Reopen the Hub, website, Form and newsletter and confirm each uses the correct year and approved public data.",
-  "Record incoming officer acceptance separately from activation. Keep outgoing access until acceptance is recorded, then have the President arrange the approved access changes." ]]
+  "Record incoming officer acceptance separately from activation. The team may accept custody with named open tasks and deadlines; that decision does not authorize launch while required reviews remain unfinished. Keep outgoing access until acceptance is recorded, then have the President arrange the approved access changes." ]]
 };
 for (const step of TRANSITION_STEPS) {
  [step.productionTitle, step.productionInstructions] = operational[step.id];
@@ -90,7 +96,8 @@ for (const step of TRANSITION_STEPS) {
 for (const check of TRANSITION_CHECKS) {
  if(check.id === 'V01') check.productionTitle = 'Has the maintainer confirmed this year’s tools are ready?';
  if(check.id === 'V07') check.productionTitle = 'Does this year’s inactive Control Center row match the setup receipt?';
- if(check.id === 'V19') check.productionTitle = 'Has the maintainer confirmed automatic event updates are ready?';
+ if(check.id === 'V20') check.productionTitle = 'Does the private five-step checklist name each holder, access evidence, coordinator and recovery contact?';
+ if(check.id === 'V19') check.productionTitle = 'Has the maintainer confirmed the event-update method and responsible owner?';
  if(check.id === 'V16') check.productionTitle = 'Have prior-year records, inherited test data and approved access changes been accounted for before launch?';
  if(check.id === 'V22') check.productionTitle = 'Has the maintainer supplied a dated recovery readiness record for the Hub, private links and newsletter?';
 }

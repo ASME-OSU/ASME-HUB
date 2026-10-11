@@ -2,7 +2,7 @@
 
 Officer-facing documentation revised October 11, 2026 for the real handoff route. New checklists default to Real handoff. Practice is an optional maintainer review and existing saved Practice records retain their purpose. Technical five-case scenarios and the dated completion gates below describe the earlier practice/verification workflow; they are not a requirement for every incoming officer. See [Start here](README.md) for the normal action list. The dated native observations remain historical evidence. GitHub Pages deployment and installed Google Apps Script source must be verified independently. The President leads the transition, with the team contributing checks. Keep actual accounts, copied-file IDs, receipts and completed acceptance records in the chapter-controlled private handoff.
 
-Guide 10 has 20 applicable real-handoff reviews; fictional submission, sample-budget and calendar exercises belong only to optional Practice. Earlier Guide 9 practice records retain their mode, notes and observations. Changed real-handoff records/access and recovery criteria reopen for review. The local source passes 264 tests and source/CSS checks; live publication is separate.
+Guide 11 has 20 applicable real-handoff reviews; fictional submission, sample-budget and calendar exercises belong only to optional Practice. Earlier Guide 9–10 records retain their mode, notes and observations. The changed real-handoff event-update review reopens; Guide 9 also reopens its changed records/access and recovery criteria. The October 11 remediation passes 270 tests and source/CSS checks; live publication is separate.
 
 The year choice stays first inside **Choose or change checklist**. The controls collapse after Start or Continue so the current tasks fit on screen. Use **Real handoff** by default; choose **Practice (maintainer review)** only for an agreed exercise. Choose **Start checklist**, or choose a saved checklist for that year and **Continue checklist**. A saved checklist is one attempt for a year, with separate notes and private links. Naming is optional; **Checklist details and advanced controls** keeps the identifier, reload and step-jump controls collapsed. Exported mode values remain `rehearsal` and `production` for compatibility.
 
@@ -22,21 +22,13 @@ Read any step without completing earlier steps. Recording an independent observa
 
 Ask the President through [asme@osu.edu](mailto:asme@osu.edu) for the filled current five-step checklist, maintainer readiness and recovery record, readable setup receipt and private link-bundle JSON for this year and attempt. Include your role, target year and Practice/Real handoff purpose. The setup receipt is the maintainer's list of copied files and verified settings. Annual creation and installed-helper inspection belong to that maintainer. Shared start pages explain how to obtain the materials; an empty public template is not a filled checklist. Missing materials remain Blocked.
 
-## Dated technical completion decisions from the earlier verification flow
+## Current review requirements
 
-**GO — private rehearsal complete** requires rehearsal mode, T01–T04 complete, all 16 applicable checks passed, and T05 skipped with a nonempty reason. Cleanup/approved retention and reviewer acceptance are separate required checks. This GO never activates a year or approves production.
+Real handoff has **20 applicable reviews**. The six fictional exercise checks V03, V04, V23, V24, V25 and V26 belong only to optional Practice. Real handoff uses current maintainer evidence for technical readiness and recovery; officers review actual access, records and approvals. Missing evidence stays Blocked.
 
-Production requires a separate production run, T01–T04 complete and all 26 checks passed before T05 can be marked complete. The coordinator must still review current private evidence and approve the actual launch. A progress percentage, copied receipt, imported completion or rehearsal GO does not supply that authority.
+Practice has 16 applicable reviews. Its separate completion decision requires its applicable checks, completed T01–T04, and T05 skipped with a saved reason, including practice retention and reviewer acceptance. This decision covers those practice copies only.
 
-| Step | Checks required in both modes | Additional production-only checks |
-|---|---|---|
-| T01 | V10 access; V20 current checklist, contacts and recovery | None; production requires actual incoming holders rather than the rehearsal test account |
-| T02 | V01 clean sources; V02 actual destination/tab; V07 settings readback; V19 automatic sync; V21 receipt | None |
-| T03 | V03 response location within the copied workbook; V04 scoring/exceptions; V23 TESTING/PAUSED suppression; V24 mock budget arithmetic; V26 response arrival | V05 public fields/suppression; V06 finance/funding; V11 public-field approval; V12 real funding authority; V13 dated bank reconciliation |
-| T04 | V22 downloaded recovery roundtrip; V25 local fictional calendar previews | V08 live calendars; V09 approved pages/links; V14 live propagation details; V15 sending identity and approved facts |
-| T05 | V16 cleanup/retention and safe settings; V17 reviewer acceptance in rehearsal or incoming acceptance in production | V18 coordinator launch/rollback approval |
-
-Production-only checks are displayed in a separate collapsed section during Practice. Their status is not silently changed to Passed. For V26, the officer checks that the five fictional submissions arrived in the response tab named by the receipt, matching timestamps and MOCK events. For V03, the technical maintainer inspects the other response tabs in that copied workbook and supplies a dated result. Both checks cover that workbook; they do not certify every possible external destination. Real handoff's current 26-check gate also retains the fictional practice checks; perform those privately and close them before launch.
+A completed local checklist never grants launch authority. Incoming officers may accept the transfer with named open work while launch remains blocked. The President records the separate launch decision, authorized operator and switch time in the private launch record.
 
 ## Local records and transfers
 
@@ -46,11 +38,16 @@ At the bottom, **Saved links and backup tools** belongs to the same checklist se
 
 Practice uses **Reviewer sign-off record link** and **Recovery notes document link**. **Approved communications record link** and **Coordinator launch approval record link** are hidden in Practice and available in Real handoff. Hiding a field preserves any saved data; it does not turn it into a passed check. **Import automation links** fills the private link list from the maintainer's annual link-handoff JSON for this year and attempt; it does not run setup or alter Google. The readable receipt is a separate document. **Private handoff folder link** means the folder containing the checklist and contact instructions; it is separate from the annual copied-files folder and the importable JSON file. Packet owners must set `records.handoffUrl` to that folder. Import replaces the displayed fields, so review them before Save; a Drive file URL in that folder field rejects a new import without changing existing fields or saved data. Historical backups remain readable so an old ambiguous record can be corrected.
 
-In rehearsal, **Check saved bundle against receipt** offers the private copied Center for direct comparison. It never calls the legacy annual writer or changes the production Hub source. Production's **Prepare Year Settings draft** is a separate preparation route.
+Both modes use **Check saved bundle against receipt** to save the supplied links locally and direct a fresh comparison of the inactive Control Center row with the receipt. All seven links are required; Practice also requires its private copied Center. This action never calls the legacy annual writer or changes Google.
 
-Follow [Practice restoring your three backups](recovery-practice.md) for the exact recovery procedure. **Export progress** includes checklist identity, mode, year, versions, statuses, reasons, notes and save time. **Download private link bundle** transfers tool and record links separately; progress excludes them. **Templates → Export Draft .json** in Newsletter Builder is the third file. Open all three actual downloads in a plain-text editor, then restore progress, links and editable newsletter content in a separate Chrome profile. Compare the returned data and confirm the original profile remains intact. Changed links intentionally reopen affected checks; a successful download or import message alone is not recovery evidence. Keep the files private.
+Officers keep three separate backups: **Export progress**, **Download private link bundle**, and Newsletter Builder **Templates → Export Draft .json**. The maintainer supplies dated restoration evidence and resolves any missing recovery check. A download alone does not prove restoration. The optional [three-file recovery procedure](recovery-practice.md) is for the person assigned to verify recovery, using a separate browser profile.
 
-Guide versions 2–6 (sixteen steps) and 7–8 (five steps) migrate to Guide 9. Original raw records are backed up, completed steps reopen and passed checks become Needs recheck. Imports create a new isolated run; production completions reopen for fresh confirmation. Unknown/corrupt records are preserved rather than overwritten.
+The shared private checklist is the team's record. Hub observations and links remain on this device until exported or copied to that shared record. The President names the person consolidating results. Example: “Secretary access blocked; President to grant edit access; observed October 11,” copied to the shared checklist with its evidence link.
+
+Guide versions 2–6 (sixteen steps) and 7–8 (five steps) migrate to Guide 11. Guide 9–10 preserve observations and reopen only changed real-handoff criteria and their affected steps. Original raw records are backed up, completed steps reopen and passed checks become Needs recheck. Imports create a new isolated run; production completions reopen for fresh confirmation. Unknown/corrupt records are preserved rather than overwritten.
+
+<details>
+<summary>Dated source, deployment and rehearsal evidence (reference only)</summary>
 
 ## Source, deployment and dated observations
 
@@ -71,3 +68,5 @@ The October 8–9 student walkthrough was blocked by missing current 2027–2028
 GitHub Pages builds from `main` via [pages.yml](../../.github/workflows/pages.yml), also on its hourly schedule or manual dispatch. It packages `index.html`, the manifest, service worker, assets and data; these Markdown references are read on GitHub. Google editor saves, Apps Script web deployments and GitHub Pages deployment are distinct. Before execution, compare the installed Google source/configuration with its private receipt. Do not run retired bulk formula-rewrite helpers on proxy-based templates.
 
 Use the [private checklist template](private-run-checklist-template.md) and [selective cleanup template](selective-mock-cleanup-template.md) for a new run. Prior mock acceptance does not fill their empty cells.
+
+</details>

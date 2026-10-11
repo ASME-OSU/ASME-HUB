@@ -3264,16 +3264,18 @@
       if (data.meta?.eventMetricsAvailable === false) renderEventMetricsUnavailable();
       const latestActive = [...months]
         .reverse()
-        .find((month) => month.totalCheckIns > 0);
+        .find((month) => !month.unavailable && month.totalCheckIns > 0);
       renderHealthInsight(
-        latestActive || null,
+        latestActive || data.kpis || {},
         latestActive ? priorPeriodFor(latestActive, months) : null,
         latestActive ? "month" : "year",
       );
       setText("period-summary", "All available activity");
       setText(
         "period-detail",
-        "Use a semester or month preset for a focused meeting review.",
+        [...months, ...(data.semesterMetrics || [])].some((item) => !item.unavailable)
+          ? "Use an available semester or month preset for a focused meeting review."
+          : "Showing year-to-date totals. Semester and month reporting are unavailable.",
       );
       return;
     }
@@ -4006,6 +4008,14 @@
     const previousRepeat = Math.round(
       Number(previous?.repeatAttendanceRate) || 0,
     );
+    if (kind === "year") {
+      container.classList.add(checkIns || participants || Number(period.eventsHeld) ? "is-positive" : "is-neutral");
+      status.textContent = checkIns || participants || Number(period.eventsHeld) ? "Year-to-date activity" : "No activity yet";
+      copy.textContent = checkIns || participants || Number(period.eventsHeld)
+        ? `${formatNumber(participants)} participants and ${formatNumber(checkIns)} check-ins this academic year${period.eventsHeld == null ? "; event totals are unavailable" : ` across ${formatNumber(period.eventsHeld)} events`}. Period comparisons require available month or semester reporting.`
+        : "No attendance activity is recorded for this academic year yet. Confirm upcoming events and attendance forms are ready.";
+      return;
+    }
     const comparison = previousCheckIns
       ? Math.round(((checkIns - previousCheckIns) / previousCheckIns) * 100)
       : null;
@@ -4923,8 +4933,8 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261011a");
-      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261011a");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261011b");
+      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261011b");
       buildAnnualSettingsInput = annualSettingsInput;
       buildAnnualTransferUrl = annualSettingsTransferUrl;
       const draft = annualSettingsDraft(event.detail?.draft, config);

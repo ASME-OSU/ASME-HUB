@@ -4,6 +4,19 @@ import {checkApplies,rehearsalEligibility,emptyProgress,createTransitionRun,pars
 const year='2027-2028',run=(mode='rehearsal',id='a')=>emptyProgress(year,createTransitionRun(id,mode,id));
 const read=v=>parseProgress(v,year,steps,checks);
 const ready=()=>({...run('production'),steps:Object.fromEntries(steps.filter(s=>!s.launch).map(s=>[s.id,'complete'])),checks:Object.fromEntries(checks.map(c=>[c.id,'passed']))});
+test('launch blockers use ordinary step and review names while keeping stable ids',()=>{
+ const pending=launchEligibility(run('production'),steps,checks);
+ assert.ok(pending.missing.includes('T02')); assert.ok(pending.unchecked.includes('V19'));
+ assert.match(pending.reason,/Get this year’s tools/); assert.match(pending.reason,/event-update method/);
+ assert.doesNotMatch(pending.reason,/\b(?:T|V)\d{2}\b/);
+});
+test('guide10 migration preserves evidence and reopens changed event-update review',()=>{
+ const old={...ready(),guideVersion:'officer-transition-guide-10',steps:{...ready().steps,T05:'complete'},notes:{V19:'Prior automatic observation'}};
+ const before=structuredClone(old),next=migrateProgress(old,year,steps,checks);
+ assert.deepEqual(old,before);assert.equal(next.checks.V19,'needs_recheck');assert.equal(next.checks.V22,'passed');
+ assert.equal(next.steps.T02,'in_progress');assert.equal(next.steps.T05,'in_progress');assert.equal(next.notes.V19,old.notes.V19);
+ assert.equal(launchEligibility(next,steps,checks).eligible,false);
+});
 test('rehearsal GO excludes production approvals but requires every practice observation and closeout',()=>{
  const p={...run(),steps:Object.fromEntries(steps.map(s=>[s.id,s.launch?'skipped':'complete'])),checks:Object.fromEntries(checks.filter(c=>checkApplies(c,'rehearsal')).map(c=>[c.id,'passed'])),reasons:{T05:'Rehearsal only'}};
  assert.equal(rehearsalEligibility(p,steps,checks).eligible,true);
