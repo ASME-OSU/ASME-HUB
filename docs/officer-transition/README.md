@@ -7,7 +7,7 @@ You do not need to run a fictional five-submission exercise to begin or complete
 ## Step 1 Get access and materials
 
 1. Ask the President through [asme@osu.edu](mailto:asme@osu.edu) for the current private handoff folder and checklist for your year.
-2. Open the files needed for your role using your own account. Confirm that you can view or edit them as required.
+2. Use the completed role access table in the private checklist: open each listed link with its approved account and confirm the listed view/edit permission. A missing table is a materials blocker for the President.
 3. Record any missing access, the file link and the next action. Ask the President to coordinate help.
 
 Example request: “I am the incoming Secretary for 2027–2028. Please send the current handoff folder and annual tool links, and arrange the access I need.” A personal name is not required for the President contact. A dated example folder does not establish the current handoff.
@@ -15,7 +15,7 @@ Example request: “I am the incoming Secretary for 2027–2028. Please send the
 ## Step 2 Get this year's tools
 
 1. Get the annual links and setup receipt from the President or maintainer.
-2. Open the existing annual copies. Confirm the year in each file and compare their identities with the receipt.
+2. Open the existing annual copies. Compare the expected values and exact tab/cell locations in the receipt with each supplied file. A matching title alone is insufficient.
 3. Ask the maintainer to resolve a wrong link, missing setup or duplicate copy before continuing that task. Do not create another annual bundle merely because a template instruction is visible.
 
 The maintainer creates or verifies annual copies, response wiring, import sources, dates and inactive settings. Installation evidence must match the actual native version. Repository source alone does not prove the helper is installed.
@@ -39,16 +39,19 @@ Use [the three-file recovery guide](recovery-practice.md) when verifying a resto
 ## Step 5 Approve and switch to the new year
 
 1. Record unfinished work and its owner.
-2. Ask the President and incoming holders to record what they accept and what remains open.
-3. Keep outgoing access until acceptance and planned access changes are agreed. A saved inactive settings row does not activate the year; launch needs separate authority.
+2. Ask the President and incoming holders to record handoff acceptance and assigned open work. They can accept the transfer while launch remains blocked.
+3. Use the separate launch record for approval, named operator, switch time and rollback. Keep outgoing access until the agreed access change. An inactive settings row does not activate the year.
 
 If practice copies were used, inventory and retain or remove their fictional inputs under a reviewed cleanup decision. Ordinary real handoff does not require fictional-data cleanup when no fictional data was created.
 
 ## Keep the records together
 
-**Choose or change checklist** opens the local checklist settings; they collapse after Start or Continue. **Record results** stores observations; **Add a note or evidence** records an explanation or private evidence link. **Saved links and backup tools** holds that checklist's links and separate backups. Private record fields take full HTTPS document or folder links, not a person's name or email. Review imported link fields before **Save**: the private handoff folder and the importable JSON file serve different purposes.
+**Choose or change checklist** opens the local checklist settings; they collapse after Start or Continue. **Record results** stores observations on this device; the President names who transfers notes or exported progress to the shared private checklist. For example, copy “Secretary edit access blocked; President to arrange access” to the shared record. **Add a note or evidence** records an explanation or private evidence link. **Saved links and backup tools** holds that checklist's links and separate backups. Private record fields take full HTTPS document or folder links, not a person's name or email. Review imported link fields before **Save**: the private handoff folder and the importable JSON file serve different purposes.
 
 The President supplies a completed copy of the [private handoff checklist](private-run-checklist-template.md). Use the [practice cleanup template](selective-mock-cleanup-template.md) only if practice data needs disposition. Keep exact file inventories, member/test data and approvals in the chapter-controlled private folder. Credentials and recovery codes belong in the authorized credential system.
+
+<details>
+<summary>Optional role and maintainer references</summary>
 
 | Reference | Purpose |
 |---|---|
@@ -59,9 +62,15 @@ The President supplies a completed copy of the [private handoff checklist](priva
 | [System flow](system-flow.md) | Officer responsibilities, local/shared records and technical boundaries |
 | [Maintenance](maintenance.md) / [Script map](script-map.md) | Installed-source checks and ongoing technical support |
 
+
+</details>
+
+<details>
+<summary>Dated implementation and rehearsal evidence (reference only)</summary>
+
 ## Current implementation and dated evidence
 
-[Current implementation and verification status](current-implementation.md) is the Guide 9 source reference reviewed October 9, 2026; 261 Hub tests and source checks passed. Pages deployment and installed Google source must be verified independently. The retained 2031–2032 private rehearsal closed with reviewer acceptance and approved private retention on October 8. That GO covers those retained copies only. The October 8–9 student walkthrough of 2027–2028 remained operationally incomplete without its current private checklist, receipt and bundle; these source changes do not certify that attempt or install a native provisioner. Older dated observations below remain historical evidence.
+[Current implementation and verification status](current-implementation.md) describes the current source and retains dated verification results. Pages deployment and installed Google source must be verified independently. The retained 2031–2032 private rehearsal closed with reviewer acceptance and approved private retention on October 8. That GO covers those retained copies only. The October 8–9 student walkthrough of 2027–2028 remained operationally incomplete without its current private checklist, receipt and bundle; these source changes do not certify that attempt or install a native provisioner. Older dated observations below remain historical evidence.
 
 ## Dated baseline and annual acceptance
 
@@ -72,3 +81,5 @@ checkpoint and coordinator tracker, activation/rollback instructions, installed
 source/deployment evidence, and a verified handoff ZIP. It must not be put in this
 public repository. Credentials and account recovery codes stay in the chapter's
 authorized credential system, separate from both the public docs and handoff ZIP.
+
+</details>

@@ -7,11 +7,35 @@ Copy this empty template into the chapter-controlled handoff folder for the inte
 | Academic year and checklist | [year] / [checklist] |
 | Purpose | Real handoff / optional Practice |
 | Coordinator and help route | President / [verified chapter route] |
-| Incoming roles and accounts | [role/account/access needed] |
+| Incoming access table | Complete the table below before giving this packet to officers |
+| Operational mode | [staged: Form closed/unpublished, Points TESTING/PAUSED, year inactive] or [approved operating state with decision link] |
+| Team record coordinator | [person who consolidates local observations/exports into this shared checklist] |
 | Maintainer readiness and recovery record | [private HTTPS document link] |
 | Annual tool links and setup receipt | [private links] |
 | Private handoff folder | [folder link, separate from importable JSON] |
 | Last review | [time] |
+
+## President: fill the access and receipt tables first
+
+Use one row per required tool and role. Missing entries remain Blocked; officers should not guess which account or permission to use.
+
+| Role | Exact tool/document HTTPS link | Approved account | Required view/edit permission | Access owner |
+|---|---|---|---|---|
+| [role] | [link] | [account] | [view/edit] | [owner] |
+
+The maintainer supplies observed file identities and these expected settings for the actual installed version.
+
+| File and setting | Exact tab/cell or control | Expected value | Observed value and time | Maintainer |
+|---|---|---|---|---|
+| Points response tab | Config B7 | [actual response-tab name] | [value/time] | [owner] |
+| Form editor identity | Points Config B16 | [full supplied ID] | [value/time] | [owner] |
+| Points year | [actual year location] | [year] | [value/time] | [owner] |
+| Budget annual bounds | Setup & Lists B4/B5 | [August 1 / July 31] | [values/time] | [owner] |
+| Control Center target row | [sheet and row; year A, flags K/L] | [year; intended flags] | [values/time] | [owner] |
+| Event update method | [maintainer readiness record] | [verified automatic, or manual owner and update-before-opening sequence] | [method/time] | [owner] |
+| Export comparisons | [exact Points/Budget source and export locations] | [approved metric values/status] | [paired values/time] | [owner] |
+
+A staged Form can be closed or unpublished as intended. Record that state honestly. Before collecting attendance, the authorized operator verifies the approved publication, respondent access and intake state; incoming officers do not publish ad hoc to remove a blocker.
 
 Use **Not checked**, **In progress**, **Blocked** or **Complete**, with the actual observer, time, evidence and next action. Historical practice results do not complete a real handoff observation. Missing technical evidence is a maintainer task; incoming officers do not need to generate fictional submissions or financial inputs to start this checklist.
 
@@ -25,7 +49,7 @@ Use **Not checked**, **In progress**, **Blocked** or **Complete**, with the actu
 
 - [ ] Open the existing annual bundle supplied by the President or maintainer.
 - [ ] Compare year and file identities with the actual setup receipt.
-- [ ] Record maintainer confirmation of response wiring, import sources, dates and intended inactive settings. Repository source does not prove native installation.
+- [ ] Record maintainer confirmation of response wiring, import sources, dates, intended inactive settings and event-update method/owner. Repository source does not prove native installation.
 
 ## T03 Prepare attendance and finances
 
@@ -51,7 +75,9 @@ Use **Not checked**, **In progress**, **Blocked** or **Complete**, with the actu
 |---|---|---|---|---|---|
 | [action] | [role] | [result] | Not checked | [time/link] | [action] |
 
-Final decision: [handoff accepted / incomplete / launch approved / launch blocked], made by [role], at [time], evidence [link], remaining work [items]. Do not record acceptance or approval until it actually occurs.
+Handoff decision: [accepted with assigned open work / incomplete], made by [role], at [time], evidence [link].
+
+Separate launch decision: [approved / blocked / not requested], made by [authorized role], at [time], evidence [link], operator [name], approved switch time [time], rollback owner [name]. Do not record acceptance or approval until it actually occurs.
 
 ## Optional maintainer practice
 

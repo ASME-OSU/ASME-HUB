@@ -239,6 +239,27 @@ test('wrong-year/missing period tables warn and retain disabled selected-year pr
   await run.api.loadDashboard('2027-2028');
   assert.equal(allOptions(run.node('period-filter')).slice(1).every(option => option.disabled), true);
   assert.equal(run.node('period-filter').disabled, true);
+  assert.match(run.node('period-detail').textContent, /Semester and month reporting are unavailable/);
+  assert.match(run.node('health-insight-copy').textContent, /No attendance activity is recorded for this academic year/);
+});
+
+test('annual activity remains visible when period exports fail, and period guidance recovers', async () => {
+  const feeds = pointFeeds('2027-2028', [{ id: 'event', name: 'Workshop', date: 'Date(2027,8,15)', attendance: 194 }]);
+  feeds.Leaderboard_Public.rows = Array.from({ length: 125 }, (_, index) => row([index < 69 ? 2 : 1, 'Date(2027,9,7)', 0, 0, 0, 0, 0, 0, 0]));
+  feeds.Monthly_Metrics_Public = new Error('unavailable');
+  feeds.Semester_Metrics_Public = new Error('unavailable');
+  const run = runtime({ '2027-2028': feeds });
+  run.node('academic-year').value = '2027-2028';
+  await run.api.loadDashboard('2027-2028');
+  assert.equal(run.node('period-filter').disabled, true);
+  assert.match(run.node('health-insight-copy').textContent, /125 participants and 194 check-ins/);
+  assert.equal(run.node('health-insight-status').textContent, 'Year-to-date activity');
+  assert.doesNotMatch(run.node('health-insight-copy').textContent, /first recorded event|first year baseline/);
+  assert.match(run.node('period-detail').textContent, /reporting are unavailable/);
+  feeds.Monthly_Metrics_Public = pointFeeds('2027-2028').Monthly_Metrics_Public;
+  await run.api.loadDashboard('2027-2028');
+  assert.equal(run.node('period-filter').disabled, false);
+  assert.match(run.node('period-detail').textContent, /available semester or month preset/);
 });
 
 test('annual URL and year labels survive global/year-specific shared overrides', () => {

@@ -120,7 +120,7 @@ test("rehearsal review opens only its private provisioner-owned source and never
  const draft=JSON.parse(ui.existing.get(key));assert.equal(draft.mock.controlCenterUrl,mockHandoff().mock.controlCenterUrl);
  assert.equal(ui.dispatched.filter(event=>event.type==="transition:annual-settings-draft").length,0);
  assert.equal(ui.$("transition-steps").find(node=>node.href===draft.mock.controlCenterUrl)?.target,"_blank");
- assert.match(ui.$("transition-steps").textContent,/does not save a Google row or run the provisioner/);
+ assert.match(ui.$("transition-steps").textContent,/only saves links in this browser/);
  const exported=state.exportProgress(ui.saved(),definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS);
  assert.doesNotMatch(exported,/private_mock_center|private_mock_script|annual_points/);
  await ui.$("transition-print").click();assert.doesNotMatch(ui.$("transition-print-sheet").textContent,/private_mock_center|private_mock_script|annual_points/);
@@ -139,12 +139,14 @@ test("mock review requires seven links and a separate center; stale context cann
  assert.equal(a.existing.get(key),newer);assert.match(b.$("transition-steps").textContent,/changed in another tab/);
 });
 
-test("production retains its separate transfer action and rejects private mock context",async()=>{
+test("real handoff compares supplied receipt locally and rejects private mock context",async()=>{
  const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");ui.$("transition-run-name").value="Production review";ui.$("transition-run-mode").value="production";await ui.$("transition-run-form").emit("submit");
- await importMock(ui);const action=()=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Review new-year settings");await action().click();
- assert.match(ui.$("transition-steps").textContent,/Production settings cannot use the mock context/);assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
+ await importMock(ui);const action=()=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt");await action().click();
+ assert.match(ui.$("transition-steps").textContent,/Real handoff cannot use the mock context/);assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
  const value=mockHandoff();delete value.mock;await importMock(ui,value);await action().click();
- assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,1);
+ assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
+ assert.match(ui.$("transition-steps").textContent,/Bundle saved on this device/);
+ assert.equal(Object.keys(JSON.parse(ui.existing.get(links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id)).links).length,7);
 });
 
 test("five-step mock UI permits skips and later checks but denies activation", async()=>{
@@ -400,4 +402,31 @@ test("Guide 9 migration keeps practice mode and evidence while reopening changed
     assert.equal(old.guideVersion, "officer-transition-guide-9");
     assert.equal(old.checks.V16, "passed");
   }
+});
+
+ test("empty real-handoff receipt action cannot dispatch or imply verified links", async()=>{
+ const ui=browser();await ui.go("T02");await reviewMock(ui);
+ assert.match(ui.$("transition-steps").textContent,/Enter all seven supplied annual links/);
+ assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
+ const form=ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form");await form.emit("submit");
+ assert.match(ui.$("transition-dialog").textContent,/Empty link list saved on this device. No links, access or readiness were verified/);
+ });
+
+test("officer action links stay direct while technical help collapses and missing links consolidate",async()=>{
+ const ui=browser();await ui.go("T02");
+ const step=ui.$("transition-steps");
+ const help=step.find(n=>n.tagName==="details"&&n.children.some(c=>c.tagName==="summary"&&c.textContent==="More help for this step"));
+ assert.ok(help);assert.equal(Boolean(help.open),false);
+ assert.ok(help.find(n=>n.tagName==="a"&&n.href.endsWith("annual-points-setup.md")));
+ const warnings=[];function walk(n){if(n.className==="transition-warning"&&n.textContent.startsWith("Missing for this checklist:"))warnings.push(n);for(const c of n.children)walk(c);}walk(step);
+ assert.equal(warnings.length,1);assert.match(warnings[0].textContent,/President/);
+});
+
+test("final review names pending reviews by step and jumps to the selected work",async()=>{
+ const ui=browser();await ui.go("T05");
+ const section=ui.$("transition-steps").find(n=>n.className==="transition-pending-reviews");
+ assert.ok(section);assert.match(section.textContent,/Reviews still needed/);
+ const first=definitions.TRANSITION_STEPS[0];
+ const jump=section.find(n=>n.tagName==="button"&&n.textContent.includes(first.productionTitle||first.title));
+ assert.ok(jump);await jump.click();assert.equal(ui.$("transition-step-picker").value,"T01");
 });
