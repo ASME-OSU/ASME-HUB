@@ -4,11 +4,12 @@
   <base target="_blank">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body{font:16px system-ui,sans-serif;margin:0;background:#f5f6f8;color:#17202a}main{max-width:680px;margin:32px auto;padding:24px;background:white;border-radius:12px}label{display:block;margin:16px 0}input,button{box-sizing:border-box;font:inherit;padding:10px;border:1px solid #7c8793;border-radius:6px}input{display:block;width:100%;margin-top:6px}button{background:#bb0000;color:white;cursor:pointer}button:disabled{opacity:.6;cursor:wait}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f8;padding:16px}a{color:#8b0000}small{display:block;margin-top:6px}#status{min-height:24px}#status[data-error="true"]{color:#a00000}@media(max-width:720px){main{margin:0;border-radius:0}}
+    body{font:16px system-ui,sans-serif;margin:0;background:#f5f6f8;color:#17202a}main{max-width:680px;margin:32px auto;padding:24px;background:white;border-radius:12px}label{display:block;margin:16px 0}input,button{box-sizing:border-box;font:inherit;padding:10px;border:1px solid #7c8793;border-radius:6px}input{display:block;width:100%;margin-top:6px}button{background:#bb0000;color:white;cursor:pointer}button:disabled{opacity:.6;cursor:wait}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f8;padding:16px}a{color:#8b0000}aside{border-left:5px solid #bb0000;background:#fff3dc;padding:16px;margin:20px 0}aside p:last-child{margin-bottom:0}small{display:block;margin-top:6px}#status{min-height:24px}#status[data-error="true"]{color:#a00000}@media(max-width:720px){main{margin:0;border-radius:0}}
   </style>
 </head>
 <body><main>
   <h1>ASME Annual Setup</h1>
+  <aside id="account-warning" role="note"><strong>Before you continue: use Chrome’s ASME profile.</strong><p>Open Chrome’s profile menu (top right) and choose <strong>ASME</strong>. In that profile, <strong>asmeohiostate@gmail.com must be the only Google account signed in</strong>. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile before continuing. Multiple signed-in accounts can stop this private setup page from opening.</p><p>This page cannot check your Chrome profile or count signed-in accounts. Confirm them yourself before creating files.</p></aside>
   <p>Sign in as the chapter account. Choose the year and create its five working files, linked attendance Form and inactive settings row.</p>
   <details id="configuration"><summary>Chapter setup — save once</summary>
     <form id="config-form">
@@ -21,10 +22,11 @@
   </details>
   <form id="annual-form">
     <label>Academic year<input id="year" placeholder="2027-2028" pattern="[0-9]{4}-[0-9]{4}" required><small>Use consecutive years. Fall term is set automatically.</small></label>
-    <button type="submit">Run Annual Provisioner</button>
+    <button type="submit">Create this year’s files</button>
   </form>
   <p id="status" role="status" aria-live="polite">Loading chapter setup…</p>
-  <section id="result" hidden><h2>Your annual files</h2><ul id="links"></ul><p id="next"></p><button id="download" type="button">Download setup receipt</button><pre id="receipt"></pre></section>
+  <p><strong>Setup summary:</strong> a downloadable text file listing this year’s seven links and the settings checked during setup. Keep it to reopen and verify the same files later.</p>
+  <section id="result" hidden><h2>Your annual files</h2><ul id="links"></ul><p id="next"></p><button id="download" type="button">Download setup summary</button><pre id="receipt"></pre></section>
   <script>
     const fields = ['rootFolderId','controlCenterId','engagementGoal','calendarIcalUrl'];
     let busy = false, receipt = '', receiptYear = '';

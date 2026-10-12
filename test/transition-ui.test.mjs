@@ -59,7 +59,7 @@ const mockHandoff = () => ({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:"2027-2
 test('annual setup step exposes installed chapter screen and concise five-step route',async()=>{
  const ui=browser();ui.window.ASME_HUB_CONFIG.annualProvisioner={url:'https://script.google.com/macros/s/chapter_setup/exec'};await ui.go('T02');
  assert.ok(ui.$('transition-steps').find(node=>node.href==='https://script.google.com/macros/s/chapter_setup/exec'));
- assert.match(ui.$('transition-steps').textContent,/One-Click Annual Setup/);assert.match(ui.$('transition-steps').textContent,/Download the receipt/);
+ assert.match(ui.$('transition-steps').textContent,/One-Click Annual Setup/);assert.match(ui.$('transition-steps').textContent,/Download the summary/);assert.match(ui.$('transition-steps').textContent,/asmeohiostate@gmail.com must be the only Google account signed in/);assert.match(ui.$('transition-steps').textContent,/setup summary is a text file downloaded/);
  await ui.go('T05');assert.match(ui.$('transition-steps').textContent,/Config!B5 to LIVE/);
  ui.window.ASME_HUB_CONFIG.annualProvisioner.url='https://evil.example/macros/s/chapter_setup/exec';await ui.go('T02');
  assert.equal(ui.$('transition-steps').find(node=>node.href==='https://evil.example/macros/s/chapter_setup/exec'),null);
@@ -68,7 +68,7 @@ async function importMock(ui, value=mockHandoff()) {
  await ui.go("T02"); const input=ui.$("transition-dialog").find(node=>node.tagName==="input"&&node.type==="file");
  const text=JSON.stringify(value);input.files=[{size:text.length,text:async()=>text}];await input.emit("change");
 }
-const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt").click();
+const reviewMock=ui=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Compare saved links with setup summary").click();
 
 test("start and continue checklist keep internal modes and identities while simplifying visible setup", async () => {
  const ui = browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");
@@ -150,11 +150,11 @@ test("mock review requires seven links and a separate center; stale context cann
 
 test("real handoff compares supplied receipt locally and rejects private mock context",async()=>{
  const ui=browser(); ui.$("transition-run-mode").value = "rehearsal"; await ui.$("transition-run-form").emit("submit");ui.$("transition-run-name").value="Production review";ui.$("transition-run-mode").value="production";await ui.$("transition-run-form").emit("submit");
- await importMock(ui);const action=()=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Check saved bundle against receipt");await action().click();
+ await importMock(ui);const action=()=>ui.$("transition-steps").find(node=>node.tagName==="button"&&node.textContent==="Compare saved links with setup summary");await action().click();
  assert.match(ui.$("transition-steps").textContent,/Real handoff cannot use the mock context/);assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
  const value=mockHandoff();delete value.mock;await importMock(ui,value);await action().click();
  assert.equal(ui.dispatched.filter(e=>e.type==="transition:annual-settings-draft").length,0);
- assert.match(ui.$("transition-steps").textContent,/Bundle saved on this device/);
+ assert.match(ui.$("transition-steps").textContent,/Links saved on this device/);
  assert.equal(Object.keys(JSON.parse(ui.existing.get(links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id)).links).length,7);
 });
 

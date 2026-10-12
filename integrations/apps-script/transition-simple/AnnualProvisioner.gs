@@ -24,12 +24,12 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
   var required=['pointsMaster','pointsExport','budgetTracker','budgetExport','formRespondent'];
   if(required.some(function(k){return !l[k];})||!state.ids.attendanceForm||!state.ids.pointsMaster||!state.ids.budgetTracker||!p.controlCenterId)throw new Error('Saved annual links or Form/Control Center identity are incomplete.');
   var lines=[
-    '# Private ASME annual setup receipt — '+state.year,
+    '# Private ASME annual setup summary — '+state.year,
     '',
     'Provisioner run key: '+(state.runKey||'ASME_SIMPLE_ANNUAL_'+state.year),
     'Hub run name: [coordinator records the matching private Hub run]',
     'Technical maintainer/contact: [coordinator names a maintainer and private contact route]',
-    'Bundle generated: '+(state.completedAt||'[not recorded]'),
+    'Files created: '+(state.completedAt||'[not recorded]'),
     'Provisioner copy/draft verification: '+(state.checkedAt||'[not recorded]')+' (officer Google UI comparison remains open)',
     '',
     '## Seven annual links (private)',

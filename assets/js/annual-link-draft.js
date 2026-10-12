@@ -11,15 +11,15 @@ export const ANNUAL_LINK_FIELDS = [
   ["annualFolder", "Annual Drive folder", "The folder holding this year’s copied files."],
 ];
 export const MOCK_ANNUAL_FIELDS = [
-  ["controlCenterUrl", "Private mock Control Center", "Use the copied Control Center from the provisioner receipt; keep its permissions private."],
+  ["controlCenterUrl", "Private mock Control Center", "Use the copied Control Center from the provisioner summary; keep its permissions private."],
   ["scriptProjectUrl", "Mock provisioner Apps Script project (optional)", "Open the maintainer-reviewed project; running a function still requires its configured private target."],
 ];
 // Optional private records belong to the selected local run, never public config.
 export const PRIVATE_RECORD_FIELDS = [
   ["checklistUrl", "Current officer checklist link · Steps 1–5", "T01", "Ask the President for this year's checklist. Example: a private Google Doc listing these five steps."],
-  ["handoffUrl", "Private handoff folder link", "T01", "Ask the President for this year's private handoff folder containing the checklist and contact instructions. Paste the folder URL, not the JSON link-bundle file URL."],
+  ["handoffUrl", "Private handoff folder link", "T01", "Ask the President for this year's private handoff folder containing the checklist and contact instructions. Paste the folder URL, not the JSON links backup file URL."],
   ["accessOwnerUrl", "Access contact record link", "T01", "Ask the President for a document explaining how the President arranges access and recovery. Paste its link, not a name or email."],
-  ["receiptUrl", "Setup receipt document link", "T02", "Ask the technical maintainer for the list of copied files and verified settings for this checklist's year."],
+  ["receiptUrl", "Setup summary document link", "T02", "Ask the technical maintainer for the list of copied files and verified settings for this checklist's year."],
   ["communicationsUrl", "Approved communications record link", "T04", "Ask the President for the approved facts and the maintainer's verified sending-service route."],
   ["cleanupUrl", "Practice cleanup checklist link", "T05", "Ask the technical maintainer for the checklist naming only this attempt's test files and responses to remove."],
   ["rollbackUrl", "Rollback record link", "T05", "Ask the technical maintainer for the recovery record: backups, what was restored, and any remaining problem."],
@@ -132,7 +132,7 @@ export function importAnnualLinkDraft(text, year, config) {
 
 export function annualSettingsDraft(draft, config) {
   const checked = validateAnnualLinkDraft(draft, draft?.year, config);
-  if (checked.mock) throw new Error("Private mock settings use the copied Control Center and provisioner receipt; they cannot enter the legacy annual save workflow.");
+  if (checked.mock) throw new Error("Private mock settings use the copied Control Center and provisioner summary; they cannot enter the legacy annual save workflow.");
   if (checked.year === config?.currentAcademicYear || config?.dataSources?.[checked.year]?.isCurrent === true) throw new Error("Choose a future or inactive transition year. Annual setup cannot prepare changes for the current Hub year.");
   return { yearKey: checked.year, label: checked.year.replace("-", "–"),
     attendanceSheetUrl: checked.links.pointsExport || "", attendanceSheetTab: "Leaderboard_Public",
@@ -161,7 +161,7 @@ export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {
   for (const key of changedKeys) {
     const dependency = ANNUAL_DEPENDENCIES[key];
     if (!dependency && !PRIVATE_RECORD_FIELDS.some(([id]) => id === key)) continue;
-    // Revised approvals and closeout evidence are tied to the exact saved bundle.
+    // Revised approvals and closeout evidence are tied to the exact saved files.
     for (let i = 11; i <= 26; i++) if (i !== 20 || previousLinks[key]) affectedChecks.add(`V${i}`);
     if (!dependency) {
       ["T01", "T02", "T03", "T04", "T05"].forEach(id => affectedSteps.add(id));
@@ -183,7 +183,7 @@ export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {
 export function reviewAnnualLinkImport(draft) {
   const url = draft.records?.handoffUrl ? new URL(draft.records.handoffUrl) : null;
   if (url?.hostname === "drive.google.com" && !/^\/drive\/(?:u\/\d+\/)?folders\//.test(url.pathname)) {
-    throw new Error("Private handoff folder must be a folder URL. Ask the President for the corrected packet; the JSON link-bundle file belongs in Import automation links, not the handoff folder field.");
+    throw new Error("Private handoff folder must be a folder URL. Ask the President for the corrected packet; the JSON links backup file belongs in Import automation links, not the handoff folder field.");
   }
   return draft;
 }
