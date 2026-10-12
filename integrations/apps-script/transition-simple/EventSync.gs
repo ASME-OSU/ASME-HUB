@@ -4,7 +4,8 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('ASME Tools')
     .addItem('Sync Events to Google Form', 'syncEventsToForm')
     .addItem('Enable automatic event sync', 'installEventSyncTrigger')
-    .addItem('Run Pre-Flight Sanity Check', 'runSanityCheck').addToUi();
+    .addItem('Run Pre-Flight Sanity Check', 'runSanityCheck')
+    .addItem('Clear Test Data', 'clearTestData').addToUi();
 }
 function asmeChapterActor_(){if(Session.getEffectiveUser().getEmail().toLowerCase()!=='asmeohiostate@gmail.com')throw new Error('Run as the chapter Google account.');}
 function asmeEventChoices_(rows) {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
-const scripts=['AnnualProvisioner','EventSync','SanityCheck'].map(n=>fs.readFileSync(new URL(`../integrations/apps-script/transition-simple/${n}.gs`,import.meta.url),'utf8')).join('\n');
+const scripts=['AnnualProvisioner','EventSync','SanityCheck','ProvisionerWeb','TestCleanup'].map(n=>fs.readFileSync(new URL(`../integrations/apps-script/transition-simple/${n}.gs`,import.meta.url),'utf8')).join('\n');
 const clone=x=>JSON.parse(JSON.stringify(x));
 function harness(){
   const files=new Map(),books=new Map(),forms=new Map(),props=new Map(),triggers=[],writes=[];
@@ -10,7 +10,7 @@ function harness(){
   const iter=a=>{let i=0;return {hasNext:()=>i<a.length,next:()=>a[i++]};};
   class Sheet{
     constructor(name,values=[],formulas=[],maxRows=1000){this.name=name;this.values=clone(values);this.formulas=clone(formulas);this.maxRows=maxRows;this.protected=true;this.formUrl=null;}
-    getName(){return this.name;} getLastRow(){return Math.max(1,this.values.length);} getMaxRows(){return this.maxRows;} getMaxColumns(){return 20;} getFormUrl(){return this.formUrl;}
+    getName(){return this.name;} getLastRow(){return Math.max(1,...[this.values,this.formulas].flatMap(grid=>grid.map((r,i)=>r.some(v=>v!==''&&v!==undefined)?i+1:0)));} getMaxRows(){return this.maxRows;} getMaxColumns(){return 20;} getFormUrl(){return this.formUrl;}
     insertRowsAfter(_,n){writes.push('resize');this.maxRows+=n;}
     getProtections(){return this.protected?[{isWarningOnly:()=>this.protected==='warning'}]:[];}
     getDataRange(){return this.getRange(1,1,Math.max(this.values.length,this.formulas.length,1),20);}
@@ -18,7 +18,7 @@ function harness(){
       if(typeof r==='string'){const v=/^([A-Z]+)(\d+)$/.exec(r);c=[...v[1]].reduce((a,x)=>a*26+x.charCodeAt(0)-64,0);r=+v[2];}
       const read=grid=>Array.from({length:n},(_,i)=>Array.from({length:m},(_,j)=>grid[r+i-1]?.[c+j-1]??''));
       const put=a=>{writes.push(`${this.name}!${r}:${c}`);a.forEach((row,i)=>row.forEach((v,j)=>{(this.values[r+i-1]??=[])[c+j-1]=v;}));if(this.name==='Hub_Settings_Public'&&r>1&&failAppend){failAppend=false;throw Error('append acknowledgement lost');}return range;};
-      const range={getValues:()=>read(this.values),getValue:()=>read(this.values)[0][0],getFormulas:()=>read(this.formulas),getFormula:()=>read(this.formulas)[0][0],setValues:put,setValue:v=>put([[v]])};return range;
+      const range={getValues:()=>read(this.values),getValue:()=>read(this.values)[0][0],getFormulas:()=>read(this.formulas),getFormula:()=>read(this.formulas)[0][0],setValues:put,setValue:v=>put([[v]]),clearContent:()=>put(Array.from({length:n},()=>Array(m).fill('')))};return range;
     }
   }
   class File{
@@ -34,9 +34,9 @@ function harness(){
       if(failCopy){failCopy=false;throw Error('copy acknowledgement lost');}return f;
     }
   }
-  function book(id,sheets){const b={id,sheets:new Map(sheets.map(s=>[s.name,s])),getId:()=>id,getSheetByName:n=>b.sheets.get(n),getSheets:()=>[...b.sheets.values()],getSpreadsheetTimeZone:()=> 'America/New_York',toast:()=>{}};books.set(id,b);return b;}
-  function form(id){const f={id,destination:null,accepting:false,responses:[],choices:[],choiceWrites:0,title:'template',getId:()=>id,getResponses:()=>f.responses,isAcceptingResponses:()=>f.accepting,setAcceptingResponses:v=>{writes.push('intake');f.accepting=v;},setTitle:v=>{writes.push('title');f.title=v;},getDestinationId:()=>{if(!f.destination)throw Error('Exception: The form currently has no response destination.');return f.destination;},setDestination:(_,dest)=>{writes.push('destination');f.destination=dest;const s=new Sheet('Observed response 8',[clone(ctx.ASME_RESPONSE_HEADERS)]);s.formUrl='form:'+id;books.get(dest).sheets.set(s.name,s);},getPublishedUrl:()=>`https://docs.google.com/forms/d/e/${id}/viewform`,getEditUrl:()=>`https://docs.google.com/forms/d/${id}/edit`,getItems:()=>[{getTitle:()=> 'Event ID',asListItem:()=>({getChoices:()=>f.choices.map(c=>({getValue:()=>c})),setChoiceValues:a=>{f.choiceWrites++;writes.push('choices');f.choices=clone(a);}})}]};forms.set(id,f);return f;}
-  const ctx=vm.createContext({console,PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k)||null,setProperty:(k,v)=>{props.set(k,v);}})},Session:{getEffectiveUser:()=>({getEmail:()=>actor}),getActiveUser:()=>({getEmail:()=>activeActor})},LockService:{getScriptLock:()=>({tryLock:()=>{if(locked)return false;locked=true;return true;},releaseLock:()=>{locked=false;}})},DriveApp:{Access:{PRIVATE:'private'},getFolderById:id=>{const f=files.get(id);if(!f?.folder)throw Error('folder missing');return f;},getFileById:id=>{const f=files.get(id);if(!f||f.folder)throw Error('file missing');return f;}},SpreadsheetApp:{ProtectionType:{SHEET:'sheet'},openById:id=>{if(!books.has(id))throw Error('book missing');return books.get(id);},getActiveSpreadsheet:()=>books.get('annual-master'),flush:()=>{}},FormApp:{DestinationType:{SPREADSHEET:'spreadsheet'},ItemType:{LIST:'list'},openById:id=>{if(!forms.has(id))throw Error('form missing');return forms.get(id);},openByUrl:url=>forms.get(url.slice(5))},Utilities:{sleep:()=>{},parseDate:(date,tz,pattern)=>{assert.equal(tz,'America/New_York');assert.equal(pattern,'yyyy-MM-dd');return date;}},ScriptApp:{EventType:{ON_EDIT:'onEdit'},getProjectTriggers:()=>triggers,newTrigger:handler=>{let id;const b={forSpreadsheet:ss=>{id=ss.getId();return b;},onEdit:()=>b,create:()=>{writes.push('trigger');const t={getHandlerFunction:()=>handler,getTriggerSourceId:()=>id,getEventType:()=> 'onEdit'};triggers.push(t);return t;}};return b;}}});
+  function book(id,sheets){const b={id,sheets:new Map(sheets.map(s=>[s.name,s])),getId:()=>id,getSheetByName:n=>b.sheets.get(n),getSheets:()=>[...b.sheets.values()],insertSheet:name=>{writes.push('archive');const s=new Sheet(name);b.sheets.set(name,s);return s;},getSpreadsheetTimeZone:()=> 'America/New_York',toast:()=>{}};books.set(id,b);return b;}
+  function form(id){const f={id,destination:null,accepting:false,responses:[],choices:[],choiceWrites:0,title:'template',getId:()=>id,getResponses:()=>f.responses,deleteAllResponses:()=>{throw Error('Bulk deletion must not be used');},deleteResponse:responseId=>{writes.push('delete form responses');f.responses=f.responses.filter(r=>r.getId()!==responseId);},isAcceptingResponses:()=>f.accepting,setAcceptingResponses:v=>{writes.push('intake');f.accepting=v;},setTitle:v=>{writes.push('title');f.title=v;},getDestinationId:()=>{if(!f.destination)throw Error('Exception: The form currently has no response destination.');return f.destination;},setDestination:(_,dest)=>{writes.push('destination');f.destination=dest;const s=new Sheet('Observed response 8',[clone(ctx.ASME_RESPONSE_HEADERS)]);s.formUrl='form:'+id;books.get(dest).sheets.set(s.name,s);},getPublishedUrl:()=>`https://docs.google.com/forms/d/e/${id}/viewform`,getEditUrl:()=>`https://docs.google.com/forms/d/${id}/edit`,getItems:()=>[{getTitle:()=> 'Event ID',asListItem:()=>({getChoices:()=>f.choices.map(c=>({getValue:()=>c})),setChoiceValues:a=>{f.choiceWrites++;writes.push('choices');f.choices=clone(a);}})}]};forms.set(id,f);return f;}
+  const ctx=vm.createContext({console,Date,PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k)||null,setProperty:(k,v)=>{props.set(k,v);}})},Session:{getEffectiveUser:()=>({getEmail:()=>actor}),getActiveUser:()=>({getEmail:()=>activeActor})},LockService:{getScriptLock:()=>({tryLock:()=>{if(locked)return false;locked=true;return true;},releaseLock:()=>{locked=false;}})},DriveApp:{Access:{PRIVATE:'private'},getFolderById:id=>{const f=files.get(id);if(!f?.folder)throw Error('folder missing');return f;},getFileById:id=>{const f=files.get(id);if(!f||f.folder)throw Error('file missing');return f;}},SpreadsheetApp:{ProtectionType:{SHEET:'sheet'},openById:id=>{if(!books.has(id))throw Error('book missing');return books.get(id);},getActiveSpreadsheet:()=>books.get('annual-master'),flush:()=>{}},FormApp:{DestinationType:{SPREADSHEET:'spreadsheet'},ItemType:{LIST:'list'},openById:id=>{if(!forms.has(id))throw Error('form missing');return forms.get(id);},openByUrl:url=>forms.get(url.slice(5))},Utilities:{sleep:()=>{},parseDate:(date,tz,pattern)=>{assert.equal(tz,'America/New_York');assert.equal(pattern,'yyyy-MM-dd');return date;}},ScriptApp:{EventType:{ON_EDIT:'onEdit'},getProjectTriggers:()=>triggers,newTrigger:handler=>{let id;const b={forSpreadsheet:ss=>{id=ss.getId();return b;},onEdit:()=>b,create:()=>{writes.push('trigger');const t={getHandlerFunction:()=>handler,getTriggerSourceId:()=>id,getEventType:()=> 'onEdit'};triggers.push(t);return t;}};return b;}}});
   vm.runInContext(scripts,ctx);
   new File('root','chapter root',null,true);new File('center','Control Center');
   const settings=new Sheet('Hub_Settings_Public',[clone(ctx.ASME_ANNUAL_HEADERS)]);book('center',[settings]);
@@ -46,7 +46,7 @@ function harness(){
   const sourceSheets=[cfg,new Sheet('_Raw_Ingest',[],[[ctx.ASME_RAW_INGEST_FORMULA]]),events,new Sheet('Roster',[],[["=INDEX('_Raw_Ingest'!C:C,ROW())"]]),new Sheet('Point Log',[],[['=INDEX(_Raw_Ingest!K:K,ROW())']]),new Sheet('Website Staging')];
   for(const [k,id]of Object.entries(ctx.ASME_ANNUAL_TEMPLATES)){new File(id,k,null,false,k==='attendanceForm'?'form':'sheet');if(k==='pointsMaster')book(id,sourceSheets);else if(k==='attendanceForm')form(id);else if(k==='budgetTracker')book(id,[new Sheet('Setup & Lists'),new Sheet('Start Here',[['ASME Budget Tracker — TEMPLATE — MAKE A COPY']]),new Sheet('Dashboard',[['ASME Budget Tracker — TEMPLATE — COPY BEFORE SETUP']])]);else book(id,[new Sheet('Config')]);}
   props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({rootFolderId:'root',controlCenterId:'center',engagementGoal:25,calendarIcalUrl:'https://example.org/calendar.ics'}));writes.length=0;
-  return {ctx,files,books,forms,props,triggers,writes,settings,Sheet,File,book,form,events,eventHeaders,setActor:v=>{actor=v;},setActiveActor:v=>{activeActor=v;},loseCopy:()=>{failCopy=true;},loseAppend:()=>{failAppend=true;},run:()=>ctx.provisionAnnualYear('2027-2028','Fall 2027'),state:()=>JSON.parse(props.get('ASME_SIMPLE_ANNUAL_2027-2028'))};
+  return {ctx,files,books,forms,props,triggers,writes,settings,Sheet,File,book,form,events,eventHeaders,setActor:v=>{actor=v;},setActiveActor:v=>{activeActor=v;},loseCopy:()=>{failCopy=true;},loseAppend:()=>{failAppend=true;},run:()=>ctx.provisionAnnualYear('2027-2028','Fall 2027'),runKey:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId);},state:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return JSON.parse(props.get(ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId)));}};
 }
 test('actual provisioner creates five private copies, observed pointer, six dates and exact inactive row',()=>{
   const h=harness(),r=h.run(),s=r.receipt;
@@ -68,7 +68,60 @@ test('committed copy with lost acknowledgement resumes without duplicate copies'
 test('committed append with lost acknowledgement reconciles exact draft without duplicate row',()=>{const h=harness();h.loseAppend();assert.throws(h.run,/acknowledgement/);const stamp=h.settings.values[1][12];h.run();assert.equal(h.settings.values.length,2);assert.equal(h.settings.values[1][12],stamp);assert.equal(h.triggers.length,0);});
 test('unrelated same-name folder cannot be silently adopted',()=>{const h=harness();new h.File('intruder','ASME 2027-2028','root',true);assert.throws(h.run,/not owned by this run/);assert.equal(h.writes.length,0);});
 test('configuration changes and changed inactive draft reject before file mutations',()=>{for(const kind of ['goal','row','active']){const h=harness();h.run();h.writes.length=0;if(kind==='goal'){const cfg=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG'));cfg.engagementGoal=30;h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify(cfg));}else h.settings.values[1][kind==='row'?6:10]=kind==='row'?'https://wrong.example':'TRUE';assert.throws(h.run,/configuration changed|no longer matches|active\/current/);assert.equal(h.writes.length,0);}});
-test('saved copy identity cannot point at a canonical source or moved copy',()=>{for(const kind of ['source','parent']){const h=harness();h.loseCopy();assert.throws(h.run);const s=h.state();if(kind==='source')s.ids.pointsMaster=h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster;else{const copied=[...h.files.values()].find(f=>f.name==='2027-2028 Points Master');s.ids.pointsMaster=copied.id;copied.parent='root';}h.props.set('ASME_SIMPLE_ANNUAL_2027-2028',JSON.stringify(s));h.writes.length=0;assert.throws(h.run,/source or control|identity changed/);assert.equal(h.writes.length,0);}});
+test('same-year practice and production workspaces keep independent resumable receipts',()=>{
+  const h=harness(),practice=h.run().receipt,practiceKey=h.runKey();
+  new h.File('production-root','production root',null,true);new h.File('production-center','production center');
+  h.book('production-center',[new h.Sheet('Hub_Settings_Public',[clone(h.ctx.ASME_ANNUAL_HEADERS)])]);
+  const config=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG'));
+  h.ctx.saveAnnualSetupConfig({...config,rootFolderId:'production-root',controlCenterId:'production-center'});
+  const production=h.run().receipt;
+  assert.notEqual(h.runKey(),practiceKey);assert.notEqual(production.ids.pointsMaster,practice.ids.pointsMaster);
+  assert.equal(h.settings.values.length,2);assert.equal(h.books.get('production-center').getSheetByName('Hub_Settings_Public').values.length,2);
+  const before=h.writes.length;h.run();assert.equal(h.writes.length,before);
+  h.ctx.saveAnnualSetupConfig(config);assert.equal(h.run().receipt.ids.pointsMaster,practice.ids.pointsMaster);
+});
+test('legacy year-only state migrates only when its full plan matches the chosen workspace',()=>{
+  for(const matching of [true,false]){
+    const h=harness(),receipt=h.run().receipt,key=h.runKey();
+    h.props.delete(key);const legacy=clone(receipt);delete legacy.runKey;
+    if(!matching)legacy.plan.rootFolderId='other-root';
+    h.props.set('ASME_SIMPLE_ANNUAL_2027-2028',JSON.stringify(legacy));h.writes.length=0;
+    if(matching){assert.equal(h.run().receipt.ids.pointsMaster,receipt.ids.pointsMaster);assert.equal(h.state().runKey,key);}
+    else assert.throws(h.run,/outside this resumable run/);
+    assert.equal(h.writes.length,0);assert.equal(h.props.get('ASME_SIMPLE_ANNUAL_2027-2028'),JSON.stringify(legacy));
+  }
+});
+test('completed retries refuse changed wiring, dates or live/intake state without file writes',()=>{
+  for(const kind of ['live','term','year','response','formId','intake','destination','responseLink','headers','proxy','pointsExport','budgetExport','budgetDate']){
+    const h=harness(),state=h.run().receipt,master=h.books.get(state.ids.pointsMaster),form=h.forms.get(state.ids.attendanceForm),config=master.getSheetByName('Config');
+    const changed={live:['B5','LIVE'],term:['B2','Fall 2028'],year:['B3','2028-29'],response:['B7','Wrong tab'],formId:['B16','wrong-form']}[kind];
+    if(changed)config.getRange(changed[0]).setValue(changed[1]);
+    if(kind==='intake')form.accepting=true;
+    if(kind==='destination')form.destination='another-workbook';
+    if(kind==='responseLink')master.getSheetByName(state.responseTab).formUrl=null;
+    if(kind==='headers')master.getSheetByName(state.responseTab).values[0][0]='Wrong timestamp';
+    if(kind==='proxy')master.getSheetByName('_Raw_Ingest').formulas[0][0]='=1';
+    if(kind==='pointsExport'||kind==='budgetExport')h.books.get(state.ids[kind]).getSheetByName('Config').getRange('B1').setValue('wrong-source');
+    if(kind==='budgetDate')h.books.get(state.ids.budgetTracker).getSheetByName('Setup & Lists').getRange('B4').setValue('2028-08-01');
+    h.writes.length=0;assert.throws(h.run,/Completed annual/,kind);assert.equal(h.writes.length,0,kind);
+    if(kind==='live')assert.equal(config.getRange('B5').getValue(),'LIVE');
+    if(kind==='intake')assert.equal(form.accepting,true);
+  }
+});
+test('a deleted completed settings row cannot reset a live copy or recreate its draft',()=>{
+  const h=harness(),state=h.run().receipt,config=h.books.get(state.ids.pointsMaster).getSheetByName('Config');
+  h.settings.values.length=1;config.getRange('B5').setValue('LIVE');h.writes.length=0;
+  assert.throws(h.run,/Completed annual draft row is missing/);assert.equal(h.writes.length,0);
+  assert.equal(config.getRange('B5').getValue(),'LIVE');assert.equal(h.settings.values.length,1);
+});
+test('completed retry compares native budget Date values without rewriting dates',()=>{
+  const h=harness();h.ctx.Utilities.parseDate=date=>new Date(date+'T04:00:00Z');
+  const state=h.run().receipt,budget=h.books.get(state.ids.budgetTracker),before=h.writes.length;
+  assert.equal(h.run().success,true);assert.equal(h.writes.length,before);
+  budget.getSheetByName('Setup & Lists').getRange('B4').setValue(new Date('2027-08-02T04:00:00Z'));h.writes.length=0;
+  assert.throws(h.run,/budget dates changed/);assert.equal(h.writes.length,0);
+});
+test('saved copy identity cannot point at a canonical source or moved copy',()=>{for(const kind of ['source','parent']){const h=harness();h.loseCopy();assert.throws(h.run);const s=h.state();if(kind==='source')s.ids.pointsMaster=h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster;else{const copied=[...h.files.values()].find(f=>f.name==='2027-2028 Points Master');s.ids.pointsMaster=copied.id;copied.parent='root';}h.props.set(h.runKey(),JSON.stringify(s));h.writes.length=0;assert.throws(h.run,/source or control|identity changed/);assert.equal(h.writes.length,0);}});
 test('chapter account binding and strict annual year/goal validation',()=>{const h=harness();h.setActor('personal@example.com');assert.throws(h.run,/chapter/);assert.equal(h.writes.length,0);assert.equal(h.ctx.asmeAnnualYear_('2100-2101','Fall 2100').short,'2100-01');assert.equal(h.ctx.asmeAnnualYear_('2199-2200','Fall 2199').end,2200);for(const [y,t]of [['2027-2029','Fall 2027'],['2027-2028','Fall 2028'],['2200-2201','Fall 2200']])assert.throws(()=>h.ctx.asmeAnnualYear_(y,t));assert.throws(()=>h.ctx.asmeAnnualDraftRow_('2027-2028',0,{},'', 'stamp'),/positive/);});
 test('events exact headers, eligibility, duplicate IDs and empty placeholders',()=>{const h=harness();assert.deepEqual(clone(h.ctx.asmeEventChoices_(h.events.values)),['20270826-001 - Welcome']);const duplicate=clone(h.events.values);duplicate.push(duplicate[1]);assert.throws(()=>h.ctx.asmeEventChoices_(duplicate),/Duplicate/);const bad=clone(h.events.values);bad[0][0]='wrong';assert.throws(()=>h.ctx.asmeEventChoices_(bad),/headers/);h.run();const master=h.books.get(h.state().ids.pointsMaster),form=h.forms.get(h.state().ids.attendanceForm);master.getSheetByName('Events').values=[h.eventHeaders];h.ctx.asmeSyncEvents_(master);assert.deepEqual(form.choices,['No events currently open for attendance']);const before=form.choiceWrites;h.ctx.asmeSyncEvents_(master);assert.equal(form.choiceWrites,before);assert.equal(form.accepting,false);});
 test('event sync refuses mismatched destinations, duplicate questions and source templates',()=>{const h=harness();h.run();const master=h.books.get(h.state().ids.pointsMaster),form=h.forms.get(h.state().ids.attendanceForm),before=form.choiceWrites;form.destination='other';assert.throws(()=>h.ctx.asmeSyncEvents_(master),/destination/);assert.equal(form.choiceWrites,before);form.destination=master.id;const original=form.getItems;form.getItems=()=>[...original(),...original()];assert.throws(()=>h.ctx.asmeSyncEvents_(master),/Exactly one/);assert.throws(()=>h.ctx.asmeSyncEvents_(h.books.get(h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster)),/canonical/);});
@@ -83,10 +136,84 @@ test('copied response schema failure prevents Config updates and settings append
 test('preflight cannot certify an unrelated lookalike response tab',()=>{const h=harness();h.run();const master=h.books.get(h.state().ids.pointsMaster);master.getSheetByName('Observed response 8').formUrl=null;const result=clone(h.ctx.asmeSanityReport_(master)).find(r=>r.test==='Response tab and exact twelve headers');assert.equal(result.pass,false);});
 test('failed event sync releases manual lock and leaves trigger uninstalled',()=>{const h=harness();const master=h.book('annual-master',[new h.Sheet('Config'),h.events]);master.getSheetByName('Config').getRange('B16').setValue('wrong');master.getSheetByName('Config').getRange('B17').setValue('Event ID');assert.throws(()=>h.ctx.installEventSyncTrigger(),/form missing/);assert.equal(h.triggers.length,0);const f=h.form('wrong');f.destination='annual-master';assert.equal(h.ctx.installEventSyncTrigger().events,1);assert.equal(h.triggers.length,1);h.ctx.installEventSyncTrigger();assert.equal(h.triggers.length,1);});
 
-test('malformed saved receipt rejects without creating copies',()=>{const h=harness();h.loseCopy();assert.throws(h.run);const s=h.state();s.ids='corrupt';h.props.set('ASME_SIMPLE_ANNUAL_2027-2028',JSON.stringify(s));h.writes.length=0;assert.throws(h.run,/saved receipt is invalid/);assert.equal(h.writes.length,0);});
+test('malformed saved receipt rejects without creating copies',()=>{const h=harness();h.loseCopy();assert.throws(h.run);const s=h.state();s.ids='corrupt';h.props.set(h.runKey(),JSON.stringify(s));h.writes.length=0;assert.throws(h.run,/saved receipt is invalid/);assert.equal(h.writes.length,0);});
 
 test('closed-row duplicate IDs and string checkbox values cannot silently corrupt dropdown eligibility',()=>{const h=harness(),rows=clone(h.events.values);rows.push([...rows[1].slice(0,7),false,false]);assert.throws(()=>h.ctx.asmeEventChoices_(rows),/Duplicate event ID/);const invalid=clone(h.events.values);invalid[1][7]='TRUE';assert.throws(()=>h.ctx.asmeEventChoices_(invalid),/boolean checkboxes/);});
 
 test('one-argument UI route and fixed editor entry require no per-year target property',()=>{const h=harness();assert.equal(h.props.has('ANNUAL_PROVISIONER_TARGET'),false);assert.equal(h.ctx.provision2027_2028().success,true);assert.equal(h.ctx.provisionReviewedAnnualYear('2027-2028').success,true);assert.throws(()=>h.ctx.provisionReviewedAnnualYear('2027-2029'),/consecutive/);assert.equal(h.settings.values.length,2);});
 
 test('execute-as-owner invocation still refuses another active account or unknown active identity',()=>{for(const account of ['personal@example.com','']){const h=harness();h.setActiveActor(account);assert.throws(()=>h.ctx.provisionReviewedAnnualYear('2027-2028'),/chapter/);assert.equal(h.writes.length,0);}});
+
+test('setup screen saves validated chapter links without editing properties manually',()=>{
+  const h=harness();
+  const cfg=h.ctx.saveAnnualSetupConfig({rootFolderId:'https://drive.google.com/drive/folders/root?usp=sharing',controlCenterId:'https://docs.google.com/spreadsheets/d/center/edit',engagementGoal:'25',calendarIcalUrl:'https://example.org/calendar.ics'});
+  assert.equal(cfg.rootFolderId,'root');assert.equal(cfg.controlCenterId,'center');assert.equal(cfg.engagementGoal,25);
+  assert.equal(h.ctx.getAnnualSetupConfig().rootFolderId,'root');
+  const r=h.ctx.runAnnualSetup('2027-2028');assert.equal(r.success,true);assert.equal(Object.keys(r.links).length,5);assert.match(r.readableReceipt,/inactive|FALSE/);
+  const before=h.writes.length;h.ctx.runAnnualSetup('2027-2028');assert.equal(h.writes.length,before);
+});
+test('setup screen rejects wrong account, invalid goal, resource links and headers before saving',()=>{
+  const h=harness(),valid={rootFolderId:'root',controlCenterId:'center',engagementGoal:25},before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
+  for(const delta of [{engagementGoal:0},{engagementGoal:1.5},{rootFolderId:'https://evil.example/root'},{calendarIcalUrl:'http://example.org/feed'},{rootFolderId:h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster}])assert.throws(()=>h.ctx.saveAnnualSetupConfig({...valid,...delta}));
+  h.settings.values[0][0]='wrong';assert.throws(()=>h.ctx.saveAnnualSetupConfig(valid),/headers/);
+  h.setActiveActor('someone@example.com');assert.throws(()=>h.ctx.getAnnualSetupConfig(),/chapter/);assert.throws(()=>h.ctx.runAnnualSetup('2027-2028'),/chapter/);
+  assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);assert.equal(h.writes.length,0);
+});
+function cleanupFixture(){
+  const h=harness();h.run();const ids=h.state().ids,master=h.books.get(ids.pointsMaster),form=h.forms.get(ids.attendanceForm),raw=master.getSheetByName('Observed response 8');
+  master.getSheetByName('Events').values=[h.eventHeaders,['MOCK-FALL','MOCK welcome',45000,'Fall 2027','2027-28','General Body Meeting',5,true,false]];
+  raw.values.push(['timestamp','fictional@example.com','test.9001','Yes','Test','Student','1','Engineering','Initials','', 'MOCK-FALL - MOCK welcome','']);
+  form.responses=[{getId:()=> 'response1',getTimestamp:()=>new Date('2027-08-26T12:00:00Z'),getRespondentEmail:()=> 'fictional@example.com',getItemResponses:()=>[{getItem:()=>({getId:()=>11,getTitle:()=> 'Event ID'}),getResponse:()=> 'MOCK-FALL - MOCK welcome'}]}];
+  function preview(){const p=h.ctx.asmeTestCleanupPlan_(master);return JSON.stringify({formId:p.formId,responseName:p.responseName,raw:p.raw,formRecords:p.formRecords});}
+  h.writes.length=0;return {...h,master,form,raw,preview};
+}
+test('Clear Test Data archives and verifies both stores, preserves formulas and is repeatable',()=>{
+  const h=cleanupFixture(),roster=clone(h.master.getSheetByName('Roster').formulas),result=h.ctx.asmeClearTestData_(h.master,h.preview());
+  assert.equal(result.rows,1);assert.equal(result.responses,1);assert.equal(h.form.responses.length,0);assert.equal(h.raw.getLastRow(),1);assert.deepEqual(h.raw.values[0],clone(h.ctx.ASME_RESPONSE_HEADERS));
+  assert.deepEqual(h.master.getSheetByName('Roster').formulas,roster);assert.equal(h.master.getSheetByName('Config').getRange('B5').getValue(),'TESTING');assert.equal(h.form.accepting,false);
+  const archive=h.master.getSheetByName(result.archive);assert.ok(archive.values.some(r=>r[0]==='form_response'&&JSON.parse(r[1]).id==='response1'));assert.ok(archive.values.some(r=>r[0]==='sheet_row'&&JSON.parse(r[1]).values[2]==='test.9001'));
+  assert.ok(h.writes.indexOf('archive')<h.writes.indexOf('delete form responses'));
+  h.writes.length=0;const again=h.ctx.asmeClearTestData_(h.master,h.preview());assert.equal(again.archive,null);assert.equal(h.writes.length,0);
+});
+test('cleanup refuses LIVE, open intake/events, unmarked attendance, formulas and stale preview',()=>{
+  for(const kind of ['live','intake','event','raw','form','formula','changed']){
+    const h=cleanupFixture(),preview=h.preview();
+    if(kind==='live')h.master.getSheetByName('Config').values[4][1]='LIVE';
+    if(kind==='intake')h.form.accepting=true;
+    if(kind==='event')h.master.getSheetByName('Events').values[1][8]=true;
+    if(kind==='raw')h.raw.values[1][10]='Real meeting';
+    if(kind==='form')h.form.responses[0].getItemResponses=()=>[{getItem:()=>({getId:()=>11,getTitle:()=> 'Event ID'}),getResponse:()=> 'Real meeting'}];
+    if(kind==='formula')h.raw.formulas[1]=['=1'];
+    if(kind==='changed')h.raw.values[1][11]='changed after preview';
+    assert.throws(()=>h.ctx.asmeClearTestData_(h.master,preview));assert.equal(h.form.responses.length,1);assert.equal(h.raw.getLastRow(),2);assert.equal(h.writes.length,0);
+  }
+});
+test('cleanup preserves originals if backup readback fails',()=>{
+  const h=cleanupFixture(),insert=h.master.insertSheet;h.master.insertSheet=name=>{const sheet=insert(name),range=sheet.getRange.bind(sheet);sheet.getRange=(...args)=>{const r=range(...args);r.getValues=()=>[['corrupt backup']];return r;};return sheet;};
+  assert.throws(()=>h.ctx.asmeClearTestData_(h.master,h.preview()),/Backup verification failed/);assert.equal(h.form.responses.length,1);assert.equal(h.raw.getLastRow(),2);assert.ok(!h.writes.includes('delete form responses'));
+});
+test('cleanup preserves an unseen Form response committed during reviewed ID deletion',()=>{
+  const h=cleanupFixture(),preview=h.preview(),original=h.form.responses[0],remove=h.form.deleteResponse,deleted=[];
+  h.form.deleteResponse=id=>{deleted.push(id);remove(id);h.form.responses.push({...original,getId:()=> 'late-response'});};
+  assert.throws(()=>h.ctx.asmeClearTestData_(h.master,preview),/Attendance changed during Form cleanup/);
+  assert.deepEqual(deleted,['response1']);assert.equal(h.form.responses[0].getId(),'late-response');
+  assert.equal(h.raw.getLastRow(),2);assert.equal(h.raw.values[1][2],'test.9001');
+});
+test('cleanup rechecks raw rows and safe bindings after Form deletion before clearing the sheet',()=>{
+  for(const kind of ['row','live','intake','destination']){
+    const h=cleanupFixture(),preview=h.preview(),remove=h.form.deleteResponse;
+    h.form.deleteResponse=id=>{remove(id);
+      if(kind==='row')h.raw.values[1][11]='changed during deletion';
+      if(kind==='live')h.master.getSheetByName('Config').getRange('B5').setValue('LIVE');
+      if(kind==='intake')h.form.accepting=true;
+      if(kind==='destination')h.form.destination='other-workbook';
+    };
+    assert.throws(()=>h.ctx.asmeClearTestData_(h.master,preview));
+    assert.equal(h.raw.getLastRow(),2,kind);assert.equal(h.raw.values[1][2],'test.9001',kind);
+    assert.ok([...h.master.sheets.keys()].some(name=>name.startsWith('_Test_Backup_')),kind);
+  }
+});
+test('canceling cleanup confirmation changes neither store',()=>{
+  const h=cleanupFixture();h.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>h.master;h.ctx.SpreadsheetApp.getUi=()=>({Button:{YES:'yes'},ButtonSet:{YES_NO:'yesno'},alert:()=> 'no'});
+  assert.equal(h.ctx.clearTestData().cleared,false);assert.equal(h.writes.length,0);assert.equal(h.form.responses.length,1);
+});

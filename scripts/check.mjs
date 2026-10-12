@@ -46,6 +46,8 @@ for (const path of [
   "integrations/apps-script/transition-simple/AnnualProvisioner.gs",
   "integrations/apps-script/transition-simple/EventSync.gs",
   "integrations/apps-script/transition-simple/SanityCheck.gs",
+  "integrations/apps-script/transition-simple/TestCleanup.gs",
+  "integrations/apps-script/transition-simple/ProvisionerWeb.gs",
   "integrations/apps-script/Code.gs.example",
   "integrations/apps-script/SettingsWriter.gs.example",
   "integrations/apps-script/FormDestinationValidator.gs.example",
@@ -64,6 +66,16 @@ for (const path of [
   });
   if (result.status !== 0) errors.push(`${path}: ${result.stderr.trim()}`);
 }
+
+const provisionerPage = read("integrations/apps-script/transition-simple/ProvisionerPage.html");
+const provisionerPageScript = provisionerPage.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+if (!provisionerPageScript) errors.push("Simple annual provisioner page script is missing.");
+else {
+  const result = spawnSync(process.execPath, ["--check", "-"], { input: provisionerPageScript, encoding: "utf8" });
+  if (result.status !== 0) errors.push(`Simple provisioner page: ${result.stderr.trim()}`);
+}
+const simpleManifest = JSON.parse(read("integrations/apps-script/transition-simple/appsscript.json.example"));
+if (simpleManifest.webapp?.executeAs !== "USER_ACCESSING" || simpleManifest.webapp?.access !== "MYSELF") errors.push("Simple provisioner must use chapter-self access and the accessing user's authority.");
 
 const annualPage = read("integrations/apps-script/AnnualSettingsPage.html.example");
 const annualPageScript = annualPage.match(/<script>([\s\S]*?)<\/script>/)?.[1];
