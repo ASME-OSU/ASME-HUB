@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <base target="_blank">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font:16px system-ui,sans-serif;margin:0;background:#f5f6f8;color:#17202a}main{max-width:680px;margin:32px auto;padding:24px;background:white;border-radius:12px}label{display:block;margin:16px 0}input,button{box-sizing:border-box;font:inherit;padding:10px;border:1px solid #7c8793;border-radius:6px}input{display:block;width:100%;margin-top:6px}button{background:#bb0000;color:white;cursor:pointer}button:disabled{opacity:.6;cursor:wait}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f8;padding:16px}a{color:#8b0000}small{display:block;margin-top:6px}#status{min-height:24px}#status[data-error="true"]{color:#a00000}@media(max-width:720px){main{margin:0;border-radius:0}}
+  </style>
+</head>
+<body><main>
+  <h1>ASME Annual Setup</h1>
+  <p>Sign in as the chapter account. Choose the year and create its five working files, linked attendance Form and inactive settings row.</p>
+  <details id="configuration"><summary>Chapter setup — save once</summary>
+    <form id="config-form">
+      <label>Annual workspace folder link<input id="rootFolderId" required></label>
+      <label>Control Center spreadsheet link<input id="controlCenterId" required></label>
+      <label>Approved engagement goal<input id="engagementGoal" type="number" min="1" step="1" required></label>
+      <label>Calendar iCal URL (optional)<input id="calendarIcalUrl" type="url"></label>
+      <button type="submit">Save chapter setup</button>
+    </form>
+  </details>
+  <form id="annual-form">
+    <label>Academic year<input id="year" placeholder="2027-2028" pattern="[0-9]{4}-[0-9]{4}" required><small>Use consecutive years. Fall term is set automatically.</small></label>
+    <button type="submit">Run Annual Provisioner</button>
+  </form>
+  <p id="status" role="status" aria-live="polite">Loading chapter setup…</p>
+  <section id="result" hidden><h2>Your annual files</h2><ul id="links"></ul><p id="next"></p><button id="download" type="button">Download setup receipt</button><pre id="receipt"></pre></section>
+  <script>
+    const fields = ['rootFolderId','controlCenterId','engagementGoal','calendarIcalUrl'];
+    let busy = false, receipt = '', receiptYear = '';
+    const status = document.getElementById('status');
+    function setBusy(value) { busy = value; document.querySelectorAll('button,input').forEach(el => el.disabled = value); }
+    function say(message, error = false) { status.textContent = message; status.dataset.error = String(error); }
+    function failed(error) { setBusy(false); say(error.message || String(error), true); }
+    setBusy(true);
+    google.script.run.withSuccessHandler(config => {
+      fields.forEach(key => document.getElementById(key).value = config[key]);
+      document.getElementById('configuration').open = !config.rootFolderId;
+      setBusy(false); say(config.rootFolderId ? 'Ready. Choose your academic year.' : 'Enter and save the chapter setup first.');
+    }).withFailureHandler(failed).getAnnualSetupConfig();
+    document.getElementById('config-form').addEventListener('submit', event => {
+      event.preventDefault(); if (busy) return;
+      document.getElementById('result').hidden = true; receipt = ''; receiptYear = '';
+      const config = Object.fromEntries(fields.map(key => [key, document.getElementById(key).value]));
+      setBusy(true); say('Checking and saving chapter setup…');
+      google.script.run.withSuccessHandler(() => { setBusy(false); document.getElementById('configuration').open = false; say('Chapter setup saved. Choose your academic year.'); }).withFailureHandler(failed).saveAnnualSetupConfig(config);
+    });
+    document.getElementById('annual-form').addEventListener('submit', event => {
+      event.preventDefault(); if (busy) return;
+      document.getElementById('result').hidden = true;
+      const year = document.getElementById('year').value.trim();
+      setBusy(true); say('Creating annual files. Keep this page open. If setup stops, run the same year again to resume.');
+      google.script.run.withSuccessHandler(result => {
+        setBusy(false); receipt = result.readableReceipt; receiptYear = result.targetYear;
+        const links = document.getElementById('links'); links.replaceChildren();
+        const targets = [['Annual folder', result.folderUrl], ['Points Master', result.links.pointsMaster], ['Attendance Form editor', result.formEditUrl], ['Attendance Form respondent', result.links.formRespondent], ['Points Export', result.links.pointsExport], ['Budget Tracker', result.links.budgetTracker], ['Budget Export', result.links.budgetExport]];
+        targets.forEach(([title, url]) => { const li = document.createElement('li'), a = document.createElement('a'); a.textContent = title; a.href = url; a.rel = 'noopener noreferrer'; li.append(a); links.append(li); });
+        document.getElementById('receipt').textContent = receipt; document.getElementById('next').textContent = result.next; document.getElementById('result').hidden = false;
+        say('Annual setup ready. Intake is closed, Points is TESTING and the year is inactive.');
+      }).withFailureHandler(failed).runAnnualSetup(year);
+    });
+    document.getElementById('download').addEventListener('click', () => {
+      const url = URL.createObjectURL(new Blob([receipt], {type:'text/plain;charset=utf-8'})), a = document.createElement('a');
+      a.href = url; a.download = 'ASME-' + receiptYear + '-setup-receipt.txt'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+  </script>
+</main></body></html>

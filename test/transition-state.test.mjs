@@ -7,7 +7,7 @@ const ready=()=>({...run('production'),steps:Object.fromEntries(steps.filter(s=>
 test('launch blockers use ordinary step and review names while keeping stable ids',()=>{
  const pending=launchEligibility(run('production'),steps,checks);
  assert.ok(pending.missing.includes('T02')); assert.ok(pending.unchecked.includes('V19'));
- assert.match(pending.reason,/Get this year’s tools/); assert.match(pending.reason,/event-update method/);
+ assert.match(pending.reason,/One-Click Annual Setup/); assert.match(pending.reason,/event-update method/);
  assert.doesNotMatch(pending.reason,/\b(?:T|V)\d{2}\b/);
 });
 test('guide10 migration preserves evidence and reopens changed event-update review',()=>{

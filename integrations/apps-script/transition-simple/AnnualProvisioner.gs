@@ -26,7 +26,7 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
   var lines=[
     '# Private ASME annual setup receipt — '+state.year,
     '',
-    'Provisioner run key: ASME_SIMPLE_ANNUAL_'+state.year,
+    'Provisioner run key: '+(state.runKey||'ASME_SIMPLE_ANNUAL_'+state.year),
     'Hub run name: [coordinator records the matching private Hub run]',
     'Technical maintainer/contact: [coordinator names a maintainer and private contact route]',
     'Bundle generated: '+(state.completedAt||'[not recorded]'),
@@ -109,6 +109,20 @@ function annualProvisionerConfiguredTarget(){
 }
 // Compatibility alias for previously named editor entry point; no prompt UI.
 function annualProvisionerPrompt(){return annualProvisionerConfiguredTarget();}
+function asmeAnnualRunKey_(year,rootFolderId,controlCenterId){
+  return 'ASME_SIMPLE_ANNUAL_'+JSON.stringify([year,rootFolderId,controlCenterId]);
+}
+// A completed receipt may be retrieved without rewriting working files. Drift
+// must fail read-only, including when somebody has already opened/live-enabled intake.
+function asmeVerifyCompletedAnnual_(state,master,form,year){
+  var config=master.getSheetByName('Config'),response=master.getSheetByName(state.responseTab),proxy=master.getSheetByName('_Raw_Ingest');
+  if(!config||[['B2',state.plan.fallTerm],['B3',year.short],['B5','TESTING'],['B7',state.responseTab],['B16',state.ids.attendanceForm]].some(function(pair){return config.getRange(pair[0]).getValue()!==pair[1];}))throw new Error('Completed annual Config changed; review it without rerunning setup.');
+  if(form.isAcceptingResponses()||form.getDestinationId()!==master.getId()||!response||!response.getFormUrl()||FormApp.openByUrl(response.getFormUrl()).getId()!==form.getId()||JSON.stringify(response.getRange(1,1,1,12).getValues()[0])!==JSON.stringify(ASME_RESPONSE_HEADERS))throw new Error('Completed annual Form binding or closed-intake state changed; no files were changed.');
+  if(!proxy||proxy.getRange('A1').getFormula()!==ASME_RAW_INGEST_FORMULA)throw new Error('Completed annual raw proxy changed; no files were changed.');
+  [['pointsExport','pointsMaster'],['budgetExport','budgetTracker']].forEach(function(pair){var exportConfig=SpreadsheetApp.openById(state.ids[pair[0]]).getSheetByName('Config');if(!exportConfig||exportConfig.getRange('B1').getValue()!==state.ids[pair[1]])throw new Error('Completed annual export pointer changed; no files were changed.');});
+  var budget=SpreadsheetApp.openById(state.ids.budgetTracker),setup=budget.getSheetByName('Setup & Lists'),dates=[year.start+'-08-01',year.end+'-07-31',year.start+'-08-01',year.start+'-12-31',year.end+'-01-01',year.end+'-05-31'];
+  if(!setup||['B4','B5','B11','B12','B13','B14'].some(function(a,i){var actual=setup.getRange(a).getValue(),expected=Utilities.parseDate(dates[i],budget.getSpreadsheetTimeZone(),'yyyy-MM-dd');return actual instanceof Date&&expected instanceof Date?actual.getTime()!==expected.getTime():actual!==expected;}))throw new Error('Completed annual budget dates changed; no files were changed.');
+}
 function provisionAnnualYear(targetYear,fallTerm){
   var year=asmeAnnualYear_(targetYear,fallTerm),owner='asmeohiostate@gmail.com';
   if(Session.getEffectiveUser().getEmail().toLowerCase()!==owner||Session.getActiveUser().getEmail().toLowerCase()!==owner)throw new Error('Run as the chapter Google account.');
@@ -116,14 +130,19 @@ function provisionAnnualYear(targetYear,fallTerm){
   if(!cfg.rootFolderId||!cfg.controlCenterId||cfg.rootFolderId===cfg.controlCenterId||cfg.rootFolderId==='125_HEyqM4T0lrSSuBfSzPT_o0B8kScHK'||Object.keys(ASME_ANNUAL_TEMPLATES).some(function(k){return [cfg.rootFolderId,cfg.controlCenterId].indexOf(ASME_ANNUAL_TEMPLATES[k])>=0;})||!Number.isInteger(cfg.engagementGoal)||cfg.engagementGoal<=0)throw new Error('Maintainer must configure chapter root, Control Center and approved positive goal once.');
   if(cfg.calendarIcalUrl && !/^https:\/\/[^\s]+$/.test(cfg.calendarIcalUrl))throw new Error('Calendar feed must be an HTTPS URL.');
   var lock=LockService.getScriptLock();if(!lock.tryLock(30000))throw new Error('Annual setup is already running.');
-  var key='ASME_SIMPLE_ANNUAL_'+targetYear,state;
+  var key=asmeAnnualRunKey_(targetYear,cfg.rootFolderId,cfg.controlCenterId),state;
   try{
     var center=SpreadsheetApp.openById(cfg.controlCenterId),settings=center.getSheetByName('Hub_Settings_Public');
     if(!settings||JSON.stringify(settings.getRange(1,1,1,20).getValues()[0])!==JSON.stringify(ASME_ANNUAL_HEADERS)||settings.getRange(1,1,1,20).getFormulas()[0].some(Boolean)||settings.getLastRow()>1000)throw new Error('Control Center A:T must match exact 20-column schema.');
     state=JSON.parse(properties.getProperty(key)||'{}');
     var plan={year:targetYear,fallTerm:fallTerm,rootFolderId:cfg.rootFolderId,controlCenterId:cfg.controlCenterId,engagementGoal:cfg.engagementGoal,calendarIcalUrl:cfg.calendarIcalUrl||''};
+    // Reuse an older year-only record only for its exact saved configuration.
+    // A different practice/production workspace keeps its own independent state.
+    var migrateLegacy=false;
+    if(!Object.keys(state).length){var legacy=JSON.parse(properties.getProperty('ASME_SIMPLE_ANNUAL_'+targetYear)||'{}');if(JSON.stringify(legacy.plan)===JSON.stringify(plan)){state=legacy;migrateLegacy=true;}}
     if(Object.keys(state).length && (JSON.stringify(state.plan)!==JSON.stringify(plan)||!state.ids||typeof state.ids!=='object'||Array.isArray(state.ids)||['new','draft_ready'].indexOf(state.phase)<0||typeof state.draftTimestamp!=='string'||isNaN(Date.parse(state.draftTimestamp))||new Date(state.draftTimestamp).toISOString()!==state.draftTimestamp))throw new Error('Existing run configuration changed or its saved receipt is invalid; maintainer must review it.');
     if(!Object.keys(state).length)state={year:targetYear,rootFolderId:cfg.rootFolderId,plan:plan,ids:{},phase:'new',draftTimestamp:new Date().toISOString()};
+    state.runKey=key;
     function save(){properties.setProperty(key,JSON.stringify(state));}
     function privateOwned(file){if(file.getOwner().getEmail().toLowerCase()!==owner||file.getSharingAccess()!==DriveApp.Access.PRIVATE||file.isTrashed()||file.getEditors().concat(file.getViewers()).some(function(user){return user.getEmail().toLowerCase()!==owner;}))throw new Error('Expected private chapter-owned file/folder: '+file.getName());}
     var centerFile=DriveApp.getFileById(cfg.controlCenterId);if(centerFile.isTrashed()||centerFile.getOwner().getEmail().toLowerCase()!==owner)throw new Error('Control Center must be chapter-owned.');
@@ -133,6 +152,7 @@ function provisionAnnualYear(targetYear,fallTerm){
     var existing=rows.filter(function(r){return r[0]===targetYear;});
     if(existing.length>1||existing.length&&!state.ids.pointsMaster)throw new Error('Year already exists outside this resumable run; inspect it before provisioning.');
     if(existing.some(function(r){return r[10]!==false||r[11]!==false;}))throw new Error('Target year is active/current. Provisioner will not modify it.');
+    if(state.phase==='draft_ready'&&existing.length!==1)throw new Error('Completed annual draft row is missing; review it without rerunning setup.');
     if(existing.length){
       if(!state.links||JSON.stringify(existing[0])!==JSON.stringify(asmeAnnualDraftRow_(targetYear,cfg.engagementGoal,state.links,cfg.calendarIcalUrl,state.draftTimestamp))||settings.getRange(rows.findIndex(function(r){return r[0]===targetYear;})+2,1,1,20).getFormulas()[0].some(Boolean))throw new Error('Existing draft no longer matches this run; no files were changed.');
     }
@@ -165,6 +185,8 @@ function provisionAnnualYear(targetYear,fallTerm){
     if(existing.length && state.phase==='draft_ready'){
       var verifiedLinks={pointsMaster:'https://docs.google.com/spreadsheets/d/'+master.getId()+'/edit',pointsExport:'https://docs.google.com/spreadsheets/d/'+state.ids.pointsExport+'/edit',budgetTracker:'https://docs.google.com/spreadsheets/d/'+state.ids.budgetTracker+'/edit',budgetExport:'https://docs.google.com/spreadsheets/d/'+state.ids.budgetExport+'/edit',formRespondent:form.getPublishedUrl()};
       if(JSON.stringify(state.links)!==JSON.stringify(verifiedLinks))throw new Error('Saved links do not match the copied files.');
+      asmeVerifyCompletedAnnual_(state,master,form,year);
+      if(migrateLegacy)save();
       var existingRowNumber=rows.findIndex(function(r){return r[0]===targetYear;})+2;
       return {success:true,targetYear:targetYear,receipt:state,readableReceipt:asmeReadableAnnualReceipt_(state,existingRowNumber),next:'Existing draft and copies verified. This retry changed no files.'};
     }

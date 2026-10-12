@@ -55,6 +55,15 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
 }
 
 const mockHandoff = () => ({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:"2027-2028",links:{pointsMaster:"annual_points_1234567890123456",pointsExport:"annual_export_1234567890123456",budgetTracker:"annual_budget_1234567890123456",budgetExport:"budget_export_1234567890123456",annualFolder:"https://drive.google.com/drive/folders/annual_folder_1234567890123456",attendanceFormEditor:"https://docs.google.com/forms/d/annual_form_123456789012345678/edit",attendanceFormRespondent:"https://docs.google.com/forms/d/e/annual_respondent_1234567890123456/viewform"},mock:{controlCenterUrl:"https://docs.google.com/spreadsheets/d/private_mock_center_1234567890/edit",scriptProjectUrl:"https://script.google.com/home/projects/private_mock_script_1234567890/edit"}});
+
+test('annual setup step exposes installed chapter screen and concise five-step route',async()=>{
+ const ui=browser();ui.window.ASME_HUB_CONFIG.annualProvisioner={url:'https://script.google.com/macros/s/chapter_setup/exec'};await ui.go('T02');
+ assert.ok(ui.$('transition-steps').find(node=>node.href==='https://script.google.com/macros/s/chapter_setup/exec'));
+ assert.match(ui.$('transition-steps').textContent,/One-Click Annual Setup/);assert.match(ui.$('transition-steps').textContent,/Download the receipt/);
+ await ui.go('T05');assert.match(ui.$('transition-steps').textContent,/Config!B5 to LIVE/);
+ ui.window.ASME_HUB_CONFIG.annualProvisioner.url='https://evil.example/macros/s/chapter_setup/exec';await ui.go('T02');
+ assert.equal(ui.$('transition-steps').find(node=>node.href==='https://evil.example/macros/s/chapter_setup/exec'),null);
+});
 async function importMock(ui, value=mockHandoff()) {
  await ui.go("T02"); const input=ui.$("transition-dialog").find(node=>node.tagName==="input"&&node.type==="file");
  const text=JSON.stringify(value);input.files=[{size:text.length,text:async()=>text}];await input.emit("change");
@@ -429,4 +438,23 @@ test("final review names pending reviews by step and jumps to the selected work"
  const first=definitions.TRANSITION_STEPS[0];
  const jump=section.find(n=>n.tagName==="button"&&n.textContent.includes(first.productionTitle||first.title));
  assert.ok(jump);await jump.click();assert.equal(ui.$("transition-step-picker").value,"T01");
+});
+
+// A mode-specific route must not hide the cleanup safeguards supplied by the guide.
+test('Real handoff activation is explicit in the screen and printout',async()=>{
+ const ui=browser();await ui.go('T05');
+ const screen=ui.$('transition-steps').textContent;
+ assert.match(screen,/Config!B5 to LIVE/);assert.doesNotMatch(screen,/skip activation with the reason Rehearsal only/);
+ await ui.$('transition-print').click();
+ for(const text of [screen,ui.$('transition-print-sheet').textContent]) {
+  assert.match(text,/is_active=TRUE and is_current=TRUE/);
+  assert.match(text,/retires the previous year’s is_current flag/);
+  assert.match(text,/approved Form intake state/);
+  assert.match(text,/rollback plan/);
+ }
+});
+
+test('Practice cleanup screen includes the closed-intake and formula-preservation procedure',async()=>{
+ const ui=browser();ui.$('transition-run-mode').value='rehearsal';await ui.$('transition-run-form').emit('submit');await ui.go('T05');
+ const text=ui.$('transition-steps').textContent;assert.match(text,/previews and backs up MOCK attendance/);assert.match(text,/every Events form_open checkbox FALSE/);assert.match(text,/Never clear formula tabs/);await ui.$('transition-print').click();assert.match(ui.$('transition-print-sheet').textContent,/previews and backs up MOCK attendance/);
 });
