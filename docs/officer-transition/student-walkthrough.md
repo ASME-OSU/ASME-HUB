@@ -22,7 +22,7 @@ Compare the Form’s **Responses → View in Sheets** destination with the summa
 
 ## 3. Export Access & Test Check-in
 
-**Real handoff:** review actual event settings, approved finances, bank reconciliation, both export imports and the maintainer’s dated readiness record. Use existing test evidence or commission a separate Practice files for the exercises below. Do not enter fictional attendance or transactions in real working files. Missing evidence is Blocked and assigned to the maintainer.
+**Real handoff:** review actual event settings, approved finances, bank reconciliation, both export imports and the maintainer’s dated readiness record. Use existing test evidence or create a separate set of Practice files for the exercises below. Do not enter fictional attendance or transactions in real working files. Missing evidence is Blocked and assigned to the maintainer.
 
 **Practice only:** the following mock events, five submissions, sample budget and status-switch exercise all take place in your isolated practice copies.
 
