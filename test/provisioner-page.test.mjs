@@ -41,3 +41,13 @@ test('changing chapter setup hides the earlier workspace receipt',()=>{
   assert.equal(p.get('result').hidden,true);
   p.calls[1].failure({message:'Invalid root'});assert.equal(p.get('result').hidden,true);
 });
+
+// The warning must be available before account/config loading or file creation.
+test('setup page explains the single-account Chrome requirement and summary',()=>{
+ assert.match(html,/id="account-warning" role="note"/);
+ assert.match(html,/Chrome’s ASME profile/);
+ assert.match(html,/asmeohiostate@gmail.com must be the only Google account signed in/);
+ assert.match(html,/cannot check your Chrome profile or count signed-in accounts/);
+ assert.match(html,/Setup summary:[\s\S]*seven links/);
+ assert.ok(html.indexOf('id="account-warning"')<html.indexOf('id="annual-form"'));
+});
