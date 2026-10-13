@@ -203,3 +203,5 @@ body[data-theme="dark"] .transition-dialog {
   .transition-test-cases thead { display: table-header-group; }
   .transition-print-step { break-inside: auto; }
 }
+
+.transition-setup-transfer textarea { display: block; width: 100%; min-height: 100px; margin: 8px 0; box-sizing: border-box; }

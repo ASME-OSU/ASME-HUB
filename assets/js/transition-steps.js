@@ -134,3 +134,31 @@ TRANSITION_STEPS.find(step => step.id === 'T05').instructions.unshift('Before cl
 const setupAccountWarning = 'Before opening Annual Setup, use Chrome’s profile menu (top right) to choose ASME. In that profile, asmeohiostate@gmail.com must be the only Google account signed in. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile first. Multiple signed-in accounts can prevent the private setup page from opening.';
 annualSetupStep.instructions.unshift(setupAccountWarning);
 annualSetupStep.productionInstructions.unshift(setupAccountWarning);
+
+// Keep the main officer path short; detailed procedures remain under More help.
+const plainTitles = ['Choose your year', 'Prepare this year’s files', 'Check attendance and finances', 'Check calendar and messages', 'Approve and start the year'];
+TRANSITION_STEPS.forEach((step,index) => { step.productionTitle = plainTitles[index]; if (!step.launch) step.title = plainTitles[index]; });
+const firstStep = TRANSITION_STEPS[0];
+firstStep.productionInstructions = [
+  'Answer the two questions above, then choose Start checklist. If you already started, choose your saved checklist and Continue checklist.',
+  'Ask the President who is leading the handoff, which chapter account to use, and who can help with access. Keep their instructions in the private officer checklist.',
+  'Confirm you can open the chapter’s setup page and shared officer workspace. Step 2 creates the annual files; Step 3 checks access to those new files.',
+  'Keep outgoing officers’ access until the incoming team accepts the handoff.'
+];
+firstStep.quickStart = 'Start the checklist here. Then confirm who can help you and which account to use.';
+annualSetupStep.productionInstructions = [setupAccountWarning,
+  'Choose Open Annual Setup below. Your year is filled in from Step 1. Check that the saved workspace says Real handoff; if it says Practice or needs confirmation, ask the President to correct it.',
+  'Answer the member-goal question. The previous goal is a suggestion for the President to approve. Continue to create or reopen this year’s files; the chapter folder and calendar are reused.',
+  'Choose Copy setup results on that page. Return here, paste them into the box and choose Save setup results. No downloaded package is needed.',
+  'Open the new files below. Check the year. In the Form, choose Responses → View in Sheets and confirm it opens this year’s Points Master. Compare the settings shown in the setup summary.',
+  'Keep intake closed and the year inactive until Step 5. Ask the maintainer to confirm event updates and the readiness checks.'
+];
+annualSetupStep.quickStart = 'Answer the questions in Annual Setup, then copy its results into the box below.';
+annualSetupStep.instructions = [setupAccountWarning,
+  'Choose Open Annual Setup. Confirm the workspace says Practice and uses a separate private folder and copied settings sheet.',
+  'Check the year and enter a fictional member goal. Continue to create or reopen the practice files.',
+  'Copy setup results, return here, paste them into the box and choose Save setup results. Open the links and compare the settings with the summary on the setup page.',
+  'Keep practice intake closed and settings inactive until the testing instructions in Step 3 tell you to open them.'
+];
+// Annual-copy access is checked after the copies exist, rather than before setup.
+TRANSITION_CHECKS.find(check => check.id === 'V10').step = 'T03';

@@ -1,24 +1,26 @@
-# Student walkthrough — annual officer transition
+# Officer handoff: start here
 
-Use one checklist for one academic year and one attempt. Practice uses private copied files; Real handoff uses the President’s approved chapter workspace. The President coordinates access, names one setup operator and provides the recovery contact. Each officer records their own checks. Never mark a review passed merely because setup says ready.
+Open the Officer Hub → **Transition to New Year → Open transition guide**. Work through the five steps in order. You can read later steps without marking them complete.
 
-## 1. Year Selection & Access
+## 1. Choose your year
 
-Choose the full year, for example `2027-2028`, and Practice or Real handoff. Start a checklist or continue the existing attempt. Obtain the current private checklist and contact route from the President. Open your required tools with your own approved account. A Request access page means Blocked: save its URL and assign the access request to the President.
+The questions are inside Step 1. Enter the first year, such as **2027** for 2027–2028, choose **Real handoff** or **Practice**, then **Start checklist**. To return to existing work, choose its entry under **Saved checklist for this year** and **Continue checklist**. Changing the year loads that year’s saved checklists.
 
-Before creating files, the setup operator needs three supplied values: the private parent folder where the annual folder will be created, the intended Control Center spreadsheet, and a positive approved engagement goal. The calendar iCal URL is optional; leave it blank if none was supplied. For Practice, create a private empty practice folder and copy the Control Center, retaining its twenty header columns and clearing only old data rows in the copy. Do not substitute a production Center. The setup app remembers its last workspace globally: inspect it before switching Practice/Real handoff.
+Ask the President which chapter account to use and who can help with access. Confirm that the setup page and shared officer workspace open. The annual attendance and budget files are created in Step 2 and their access is checked in Step 3.
 
-## 2. One-Click Annual Setup
+## 2. Prepare this year’s files
 
-The **annual files** are this year’s Points Master, attendance Form, Points Export, Budget Tracker and Budget Export. The **setup summary** is a downloadable text file containing their seven links and checked settings. A **private links backup** is the separate `.json` file downloaded from the Hub, used to restore your saved links.
+Before opening Annual Setup, use **Chrome’s ASME profile** with **asmeohiostate@gmail.com as its only signed-in Google account**. Ask the President for help if another account appears in the Google account menu.
 
-If the files and summary already exist, open and compare them. Do not have each officer create their own files. Otherwise the designated operator opens **Open Annual Setup** in Chrome’s ASME profile, signed in only as `asmeohiostate@gmail.com`. Open **Chapter setup — save once**, inspect/save the supplied values, then enter the same academic year as the Hub and run once. Google services may require the owner’s authorization.
+Choose **Open Annual Setup**. The year and purpose come from Step 1. The page remembers the chapter folder, settings sheet and calendar. Check the workspace purpose: **Real handoff** and **Practice only** must use separate folders and settings sheets. Old unconfirmed settings require the President’s review; do not relabel practice files as real.
 
-Keep the page open. If the response-tab message says retry, use the same year and unchanged workspace/Center; retry resumes the saved run. Do not rename/delete copies or change workspaces to overcome this message. A successful run shows seven links and **Download setup summary**. Download it. Setup creates six folders (annual parent plus five subfolders) and five working files; the Form editor and respondent URLs are two views of the same file.
+Answer **How many different members do you want to attend this year?** Each person counts once. Last year’s goal is an editable suggestion for a new year, subject to the President’s approval. For a year that already has files, the saved goal is shown and kept.
 
-Paste the seven summary links into the Hub’s saved links, also set **Private mock Control Center** to your copied Center in Practice, and save them on this device. The downloaded `.txt` summary is readable evidence; **Import automation links** expects a separate Hub private links backup (.json). Download the Hub private links backup after saving the links. Fill the summary’s Hub run/contact placeholders from the President’s instructions.
+Choose **Create or reopen this year’s files**. Keep the page open. If setup stops, return to the same year and workspace to resume. Setup creates new attendance and budget files, fills the dates, connects the exports, and saves an inactive year. Last year’s files remain records.
 
-Compare the Form’s **Responses → View in Sheets** destination with the summary and Points **Config B7**. Google chooses the response-tab name; an older empty response tab may remain from the template. Do not guess a tab by its number. Confirm Points **Config B5 = TESTING**, the Form is closed, and the copied Control Center row is inactive/noncurrent. A completed retry must return the same files and state; it should not reset files that are already LIVE.
+Choose **Copy setup results**, return to Step 2 in the Hub, paste into **Paste setup results**, then choose **Save setup results**. No handoff-file download or seven separate pastes are needed. If the browser cannot copy automatically, select the displayed result and press Command+C on Mac or Ctrl+C on Windows. Downloads remain optional backups.
+
+Open the seven links in the Hub and check their year. Compare the Form’s **Responses → View in Sheets** destination with the Points Master shown in the setup summary. The detailed summary is on the setup page under **Optional backup and detailed settings**. Saving links does not pass checks or activate the year.
 
 ## 3. Export Access & Test Check-in
 
@@ -70,4 +72,4 @@ Real activation requires recorded incoming acceptance, required reviews, actual 
 
 The progress bar counts passed reviews and completed steps. Choosing Next step only moves between instructions. A blocked or failed item does not advance the bar. In Practice, the final activation skip counts only after the required practice reviews pass.
 
-To start again, choose **Reset checklist progress**, read the named checklist and year, then choose **Start fresh checklist**. This starts with no results or notes and carries over only the links already saved. Your previous checklist remains under **Choose or change checklist → Saved checklist for this year**; select it and choose **Continue checklist** to return to it. Unsaved edits do not carry over. This does not create Google files, change the active year, or grant launch approval.
+To start again, choose **Reset checklist progress**, read the named checklist and year, then choose **Start fresh checklist**. This starts with no results or notes and carries over only the links already saved. Your previous checklist remains under **Step 1 → Saved checklist for this year**; select it and choose **Continue checklist** to return to it. Unsaved edits do not carry over. This does not create Google files, change the active year, or grant launch approval.

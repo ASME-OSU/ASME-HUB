@@ -6,7 +6,7 @@ The standalone provisioner creates six folders and five annual template copies, 
 
 1. Sign in as `asmeohiostate@gmail.com`. In a separate standalone Apps Script project, install `AnnualProvisioner.gs`, `EventSync.gs`, `SanityCheck.gs` and `ProvisionerWeb.gs`. Create an HTML file named **ProvisionerPage** with `ProvisionerPage.html`. Use the supplied `appsscript.json.example` manifest. Keep this project separate from the older settings service, which has another `doGet`.
 2. Deploy as a web app with **execute as the user accessing the app**, **access only myself**. Open it as the chapter account and authorize the Google services. Use a browser profile signed in only to the chapter account; Google documents that multiple simultaneous Google sign-ins are unsupported for Apps Script web apps (https://developers.google.com/apps-script/guides/support/troubleshooting).
-3. Open **Chapter setup — save once** and paste the private annual workspace folder, intended Control Center, approved positive engagement goal and optional HTTPS calendar feed. Save the setup. For rehearsal, use a private practice root and copied Control Center. No manually entered script properties are needed.
+3. Open **Change saved workspace — President or maintainer** and paste the private annual workspace folder, intended Control Center, approved positive engagement goal and optional HTTPS calendar feed. Explicitly choose Real handoff or Practice only and save the setup. Existing workspace purpose cannot be switched. For rehearsal, use a private practice root and copied Control Center. No manually entered script properties are needed.
 4. Put the app's verified `/exec` URL in `ASME_HUB_CONFIG.annualProvisioner.url`, separate from `annualSettingsSave.url`. Step 2 then displays **Open Annual Setup**.
 5. Install `EventSync.gs`, `SanityCheck.gs` and **TestCleanup.gs** in the Points template's bound project. Preserve existing scoring handlers and reconcile any existing `onOpen` into one menu handler. The bound project needs the supplied OAuth scopes; only the standalone project needs the `webapp` manifest entry. Annual copies inherit the bound files. Reload a copy to see **ASME Tools**.
 
@@ -14,8 +14,8 @@ The existing editor routes remain `provisionReviewedAnnualYear('2027-2028')` and
 
 ## Five officer steps
 
-1. **Year Selection & Access:** choose the year and confirm chapter/incoming officer access.
-2. **One-Click Annual Setup:** use the existing summary when resuming. Otherwise the President names one setup operator, supplies the folder, Control Center and goal, and that operator runs the provisioner for the consecutive year and downloads its summary. Everyone uses the same files. Open the five working files. Intake stays closed, Points TESTING and the settings row inactive/noncurrent.
+1. **Choose your year:** answer the year/purpose questions and confirm setup/account access.
+2. **Prepare this year’s files:** the saved chapter workspace and calendar are reused. Last year’s goal is a suggestion; the President approves the new goal. Existing years reopen with their original goal. Choose Copy setup results, paste them into Step 2, and save all seven links at once. A download is not required. Everyone uses the same files. Open the five working files. Intake stays closed, Points TESTING and the settings row inactive/noncurrent.
 3. **Export Access & Test Check-in:** allow matching Points/Budget imports. In an isolated set of private practice files, create events whose ID or name begins with `MOCK`, sync them and complete all five fictional cases in the guide (first profile, duplicate, returning member, missing profile, late profile). Verify five arrivals, A’s annual 13 points and B’s 8; Fall totals are 5 and 0. Close intake again and run **Pre-Flight Sanity Check**. Enable automatic event sync once per annual copy.
 4. **Communications & Calendar:** confirm the chapter calendar, website annual links, newsletter sender/reply-to and approved postal address.
 5. **Activation & Go-Live:** close intake and event `form_open` checkboxes. Use **Clear Test Data** in the test files, resolve required reviews, then have the authorized owner set Points LIVE and the verified Control Center year active/current at the approved time. Retire the former current-year flag. Practice stays TESTING and inactive.
@@ -37,3 +37,9 @@ Source delivery, Google installation and web deployment are separate. Verify ins
 ## Student rehearsal instructions
 
 Use [the student walkthrough](../../../docs/officer-transition/student-walkthrough.md) for the exact order, five cases, expected results and stop conditions. The text setup summary is readable evidence, not an importable Hub JSON file: manually paste its seven links into the Hub and save, then download the Hub private links backup. Google Form copies may need **Publish** before testing; restrict responders to approved testers first. Publishing and accepting responses are separate controls. After testing, close acceptance even if the Form remains published.
+
+## Saved workspace and annual questions
+
+The private setup app receives only year and purpose in its URL. It reads the previous-year goal from its configured settings sheet, or the saved setup for an existing year. The annual goal is used for that year without changing the chapter default. It checks the loaded configuration identity and revision before writes and again under its script lock; another tab’s changes require reloading.
+
+Older unclassified workspaces are not automatically trusted as Real handoff. The President confirms Practice explicitly or configures a separate reviewed Real workspace. New saved runs retain their purpose; Practice files cannot be relabeled as Real. These confirmations do not activate the year or approve funding, access or launch.
