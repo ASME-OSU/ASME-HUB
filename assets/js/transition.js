@@ -1,6 +1,6 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261012c";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261012c";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261012c";
+import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261012d";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261012d";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261012d";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -520,9 +520,11 @@ if (section) {
   function render() {
     stepAnnualMessage = null;
     $("transition-export").disabled = unreadableProgress;
+    $("transition-reset").disabled = unreadableProgress || unreadableAnnualLinks;
+    $("transition-reset-confirmation").hidden = true;
     const step = TRANSITION_STEPS[currentIndex];
     const summary = progressSummary(progress, TRANSITION_STEPS, TRANSITION_CHECKS);
-    const completed = summary.stepCounts.complete;
+    const completed = summary.completedSteps;
     populateRuns();
     $("transition-run-context").textContent = `Current checklist: ${progress.run.name} · ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}.`;
     $("transition-saved-tools-context").textContent = `These tools belong to ${progress.run.name} · ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}. They use the same checklist selected above.`;
@@ -540,13 +542,15 @@ if (section) {
     $("transition-change-year").hidden = currentIndex === 0;
     $("transition-saved-at").textContent = progress.savedAt ? new Date(progress.savedAt).toLocaleString() : "Never";
     $("transition-position").textContent = `Current step · ${currentIndex + 1} of ${TRANSITION_STEPS.length}`;
-    $("transition-completion").textContent = `${summary.disposed}/${TRANSITION_STEPS.length} steps have a recorded status`;
+    $("transition-completion").textContent = `${summary.completedItems}/${summary.totalItems} tasks complete · ${Math.round(summary.completedItems / summary.totalItems * 100)}%`;
     const meter = $("transition-progress");
-    meter.max = TRANSITION_STEPS.length;
-    meter.value = summary.disposed;
-    meter.setAttribute("aria-label", `${summary.disposed} steps have a recorded status; ${completed} passed; viewing step ${currentIndex + 1}`);
-    $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps complete. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Reviewer acceptance" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
-    $("transition-launch-summary").textContent = `${progress.run.name} · ${selectedYear.replace("-", "–")}: ${summary.disposed}/${TRANSITION_STEPS.length} steps recorded · ${progress.run.mode === "rehearsal" ? summary.rehearsal.eligible ? "GO — private rehearsal complete; production activation excluded" : "Private rehearsal not complete" : summary.launch.eligible ? "production prerequisites reported passed; coordinator approval required" : "Handoff reviews incomplete"}.`;
+    meter.max = summary.totalItems;
+    meter.value = summary.completedItems;
+    meter.setAttribute("aria-label", `Checklist progress: ${summary.completedItems} of ${summary.totalItems} tasks complete`);
+    meter.setAttribute("aria-valuetext", `${summary.checkCounts.passed} of ${summary.totalChecks} reviews passed; ${summary.completedSteps} of ${TRANSITION_STEPS.length} steps complete`);
+    $("transition-progress-help").textContent = `${summary.checkCounts.passed}/${summary.totalChecks} reviews passed · ${summary.completedSteps}/${TRANSITION_STEPS.length} steps complete. Passing a review or completing a step advances the bar. Next step only moves between instructions. Blocked, failed and skipped items do not count${progress.run.mode === "rehearsal" ? "; Practice’s activation skip counts after all practice reviews pass" : ""}.`;
+    $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps ${progress.run.mode === "rehearsal" ? "finished (including the activation skip when practice is complete)" : "complete"}. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Reviewer acceptance" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
+    $("transition-launch-summary").textContent = `${progress.run.name} · ${selectedYear.replace("-", "–")}: ${summary.completedItems}/${summary.totalItems} tasks complete · ${progress.run.mode === "rehearsal" ? summary.rehearsal.eligible ? "GO — private rehearsal complete; production activation excluded" : "Private rehearsal not complete" : summary.launch.eligible ? "production prerequisites reported passed; coordinator approval required" : "Handoff reviews incomplete"}.`;
     // One link editor stays at the bottom for the currently selected checklist.
     for (const label of annualLabels.values()) annualForm.append(label);
     for (const label of mockLabels.values()) { label.hidden = progress.run.mode !== "rehearsal"; annualForm.append(label); }
@@ -728,6 +732,33 @@ if (section) {
   $("transition-change-year").addEventListener("click", () => { $("transition-checklist-options").open = true; go(0); yearInput.focus(); });
   $("transition-step-picker").addEventListener("change", event => go(TRANSITION_STEPS.findIndex(step => step.id === event.target.value)));
   $("transition-run-reload").addEventListener("click", () => readYear(selectedRunId));
+  $("transition-reset").addEventListener("click", () => {
+    $("transition-reset-context").textContent = `Start ${progress.run.name} (${selectedYear.replace("-", "–")}, ${runModeLabel(progress.run.mode)}) again with no results or notes? Its saved links carry over. Your previous checklist stays available under Saved checklist for this year. Unsaved edits will not carry over. Google files and the active year are unchanged.`;
+    $("transition-reset-confirmation").hidden = false;
+    $("transition-reset-cancel").focus();
+  });
+  $("transition-reset-cancel").addEventListener("click", () => { $("transition-reset-confirmation").hidden = true; $("transition-reset").focus(); });
+  $("transition-reset-confirm").addEventListener("click", () => {
+    try {
+      if (unreadableProgress || unreadableAnnualLinks) throw new Error("Reload and resolve the unreadable saved checklist or links first.");
+      if (localStorage.getItem(storageKey(selectedYear, selectedRunId)) !== observedProgressRaw || (observedLegacyRaw !== null && localStorage.getItem(`${TRANSITION_LEGACY_STORAGE_PREFIX}${selectedYear}`) !== observedLegacyRaw)) throw new Error("This checklist changed in another tab. Reload saved checklist before resetting.");
+      assertAnnualDraftUnchanged();
+      // Older year-only records may exist only in memory after migration. Save
+      // them (and the historical backup) so the original remains selectable.
+      if (observedProgressRaw === null && !save(progress)) throw new Error("Could not preserve the previous checklist before restarting.");
+      const candidate = emptyProgress(selectedYear, createTransitionRun(`${progress.run.name.slice(0, 100)} (restart)`, progress.run.mode));
+      candidate.savedAt = new Date().toISOString();
+      const linksRaw = observedAnnualRaw ?? observedLegacyAnnualRaw;
+      // Copy only saved references; preserve the original checklist and its links.
+      if (linksRaw !== null) localStorage.setItem(`${annualLinkStorageKey(selectedYear)}:${candidate.run.id}`, linksRaw);
+      localStorage.setItem(storageKey(selectedYear, candidate.run.id), JSON.stringify(candidate));
+      try { localStorage.setItem(runSelectionKey(selectedYear), candidate.run.id); } catch { /* New checklist is already saved and discoverable. */ }
+      pendingSkipId = null;
+      readYear(candidate.run.id);
+      go(0);
+      say("Progress reset to zero in a fresh checklist. Your previous results and notes remain under Saved checklist for this year. Saved links were copied; recheck them before recording results.");
+    } catch (error) { say(`Could not reset progress: ${error.message} Your previous checklist is preserved.`, true); }
+  });
   $("transition-run-continue").addEventListener("click", () => {
     // Selection already loads the record; continue focuses its first unfinished step.
     $("transition-checklist-options").open = false;
