@@ -65,7 +65,12 @@ export function progressSummary(progress, steps, checks) {
   const rehearsal = rehearsalEligibility(progress, steps, checks);
   const launch = launchEligibility(progress, steps, checks);
   const finished = progress.run?.mode === "rehearsal" ? rehearsal.eligible : progress.steps.T05 === "complete" && launch.eligible;
-  return { stepCounts, checkCounts, disposed, finished, rehearsal, launch };
+  const applicableChecks = checks.filter(check => checkApplies(check, progress.run?.mode));
+  // Practice closes activation by recording a reasoned skip after every review passes.
+  const completedSteps = stepCounts.complete + (rehearsal.eligible ? 1 : 0);
+  const totalItems = steps.length + applicableChecks.length;
+  const completedItems = completedSteps + checkCounts.passed;
+  return { stepCounts, checkCounts, disposed, finished, rehearsal, launch, completedSteps, completedItems, totalItems, totalChecks: applicableChecks.length };
 }
 export function parseProgress(value, year, steps, checks) {
   storageKey(year);

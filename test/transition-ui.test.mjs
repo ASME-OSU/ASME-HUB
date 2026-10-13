@@ -458,3 +458,58 @@ test('Practice cleanup screen includes the closed-intake and formula-preservatio
  const ui=browser();ui.$('transition-run-mode').value='rehearsal';await ui.$('transition-run-form').emit('submit');await ui.go('T05');
  const text=ui.$('transition-steps').textContent;assert.match(text,/previews and backs up MOCK attendance/);assert.match(text,/every Events form_open checkbox FALSE/);assert.match(text,/Never clear formula tabs/);await ui.$('transition-print').click();assert.match(ui.$('transition-print-sheet').textContent,/previews and backs up MOCK attendance/);
 });
+
+test('progress advances on passed reviews, ignores blockers, and falls when a review needs recheck', async () => {
+ const ui=browser(); await ui.go('T01');
+ const total=definitions.TRANSITION_STEPS.length+definitions.TRANSITION_CHECKS.filter(c=>state.checkApplies(c,'production')).length;
+ assert.equal(ui.$('transition-progress').max,total);
+ assert.equal(ui.$('transition-progress').value,0);
+ await ui.choose('V10','passed');
+ assert.equal(ui.$('transition-progress').value,1);
+ assert.match(ui.$('transition-completion').textContent,new RegExp(`1/${total} tasks complete`));
+ await ui.choose('T01','blocked'); assert.equal(ui.$('transition-progress').value,1);
+ await ui.choose('V10','needs_recheck'); assert.equal(ui.$('transition-progress').value,0);
+ assert.match(ui.$('transition-progress-help').textContent,/Next step only moves between instructions/);
+});
+
+test('reset starts at zero, preserves the old checklist and copies saved links; cancel changes nothing', async () => {
+ const ui=browser(); await ui.$('transition-run-form').emit('submit');
+ await ui.choose('V10','passed'); await ui.reason('T01','Original evidence');
+ await importMock(ui); await ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form').emit('submit');
+ const original=ui.saved(),key=state.storageKey('2027-2028',original.run.id),raw=ui.existing.get(key);
+ const linksKey=`${links.annualLinkStorageKey('2027-2028')}:${original.run.id}`,linkRaw=ui.existing.get(linksKey);
+ await ui.$('transition-reset').click(); await ui.$('transition-reset-cancel').click();
+ assert.equal(ui.saved().run.id,original.run.id); assert.equal(ui.existing.get(key),raw);
+ await ui.$('transition-reset').click(); await ui.$('transition-reset-confirm').click();
+ const fresh=ui.saved(); assert.notEqual(fresh.run.id,original.run.id); assert.equal(fresh.run.mode,original.run.mode);
+ assert.deepEqual(fresh.steps,{});assert.deepEqual(fresh.checks,{});assert.deepEqual(fresh.notes,{});assert.deepEqual(fresh.reasons,{});
+ assert.equal(ui.$('transition-progress').value,0);assert.equal(ui.$('transition-step-picker').value,'T01');
+ assert.equal(ui.existing.get(key),raw); assert.equal(ui.existing.get(linksKey),linkRaw);
+ assert.equal(ui.existing.get(`${links.annualLinkStorageKey('2027-2028')}:${fresh.run.id}`),linkRaw);
+ ui.$('transition-run').value=original.run.id; await ui.$('transition-run').emit('change'); assert.deepEqual(ui.saved(),original);
+});
+
+test('reset refuses stale evidence and stale annual links from another tab',async()=>{
+ for(const changed of ['progress','links']) {
+  const ui=browser(); await ui.$('transition-run-form').emit('submit');const before=ui.saved();
+  await ui.$('transition-reset').click();
+  const key=changed==='progress'?state.storageKey('2027-2028',before.run.id):`${links.annualLinkStorageKey('2027-2028')}:${before.run.id}`;
+  ui.existing.set(key,changed==='progress'?JSON.stringify({...before,notes:{T01:'Newer evidence'}}):JSON.stringify(mockHandoff()));
+  const newest=ui.existing.get(key);await ui.$('transition-reset-confirm').click();
+  assert.equal(ui.$('transition-run').value,before.run.id);assert.equal(ui.existing.get(key),newest);
+  assert.match(ui.$('transition-status').textContent,/changed in another tab/);
+ }
+});
+
+test('reset preserves a year-only legacy checklist in the selector with its historical bytes',async()=>{
+ const year='2027-2028',raw=JSON.stringify({version:1,guideVersion:'officer-transition-guide-5',year,savedAt:null,steps:{T01:'complete'},checks:{},notes:{T01:'Historical observation'}});
+ const oldKey=`${state.TRANSITION_LEGACY_STORAGE_PREFIX}${year}`,ui=browser(new Map([[oldKey,raw]]));
+ const oldId=ui.$('transition-run').value;
+ await ui.$('transition-reset').click();await ui.$('transition-reset-confirm').click();
+ assert.notEqual(ui.saved().run.id,oldId);
+ assert.ok(ui.$('transition-run').children.some(n=>n.value===oldId));
+ assert.equal(ui.existing.get(oldKey),raw);
+ assert.equal(ui.existing.get(state.storageKey(year,oldId)+':officer-transition-guide-5-backup'),raw);
+ ui.$('transition-run').value=oldId;await ui.$('transition-run').emit('change');
+ assert.match(ui.saved().notes.T01,/Historical observation/);
+});

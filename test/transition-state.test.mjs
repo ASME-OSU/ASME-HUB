@@ -78,3 +78,12 @@ test('legacy corruption is rejected before aggregation can hide it', () => {
  const missingEarlyEvidence={version:1,guideVersion:'officer-transition-guide-2',year,savedAt:null,steps:{},checks:{}};
  assert.doesNotThrow(()=>migrateProgress(missingEarlyEvidence,year,steps,checks));
 });
+
+test('task meter reaches full only after all reviews and steps, including reasoned practice closeout',()=>{
+ const production=ready(); production.steps.T05='complete';
+ const full=progressSummary(production,steps,checks); assert.equal(full.completedItems,full.totalItems);
+ production.steps.T05='failed';const failed=progressSummary(production,steps,checks);assert.equal(failed.completedItems,failed.totalItems-1);
+ const practice={...run(),steps:Object.fromEntries(steps.map(s=>[s.id,s.id==='T05'?'skipped':'complete'])),checks:Object.fromEntries(checks.filter(c=>checkApplies(c,'rehearsal')).map(c=>[c.id,'passed'])),reasons:{T05:'Practice does not activate'}};
+ const done=progressSummary(practice,steps,checks);assert.equal(done.completedItems,done.totalItems);
+ practice.checks.V16='needs_recheck';const reopened=progressSummary(practice,steps,checks);assert.equal(reopened.completedItems,reopened.totalItems-2);
+});
