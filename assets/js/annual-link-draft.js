@@ -19,7 +19,7 @@ export const PRIVATE_RECORD_FIELDS = [
   ["checklistUrl", "Current officer checklist link · Steps 1–5", "T01", "Ask the President for this year's checklist. Example: a private Google Doc listing these five steps."],
   ["handoffUrl", "Private handoff folder link", "T01", "Ask the President for this year's private handoff folder containing the checklist and contact instructions. Paste the folder URL, not the JSON links backup file URL."],
   ["accessOwnerUrl", "Access contact record link", "T01", "Ask the President for a document explaining how the President arranges access and recovery. Paste its link, not a name or email."],
-  ["receiptUrl", "Setup summary document link", "T02", "Ask the technical maintainer for the list of copied files and verified settings for this checklist's year."],
+  ["receiptUrl", "Setup summary document link (optional)", "T02", "Annual Setup shows the summary on screen. Add a saved private document link here only if you keep a separate copy."],
   ["communicationsUrl", "Approved communications record link", "T04", "Ask the President for the approved facts and the maintainer's verified sending-service route."],
   ["cleanupUrl", "Practice cleanup checklist link", "T05", "Ask the technical maintainer for the checklist naming only this attempt's test files and responses to remove."],
   ["rollbackUrl", "Rollback record link", "T05", "Ask the technical maintainer for the recovery record: backups, what was restored, and any remaining problem."],

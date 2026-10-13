@@ -22,7 +22,7 @@ Choose **Copy setup results**, return to Step 2 in the Hub, paste into **Paste s
 
 Open the seven links in the Hub and check their year. Compare the Form’s **Responses → View in Sheets** destination with the Points Master shown in the setup summary. The detailed summary is on the setup page under **Optional backup and detailed settings**. Saving links does not pass checks or activate the year.
 
-## 3. Export Access & Test Check-in
+## 3. Check attendance and finances
 
 **Real handoff:** review actual event settings, approved finances, bank reconciliation, both export imports and the maintainer’s dated readiness record. Use existing test evidence or create a separate set of Practice files for the exercises below. Do not enter fictional attendance or transactions in real working files. Missing evidence is Blocked and assigned to the maintainer.
 
@@ -52,7 +52,7 @@ Open both exports and authorize only their matching copied source workbooks from
 
 Run **ASME Tools → Run Pre-Flight Sanity Check** and save its actual report. Preflight checks wiring; it does not substitute for these submissions, import permissions, funding approval or owner sign-off. If results differ, record Blocked with the observed result and assign the technical maintainer.
 
-## 4. Communications & Calendar
+## 4. Check calendar and messages
 
 Open **Newsletter Builder** from Step 4. In **Calendar**, enter the full year and choose **Load fictional Fall/Spring**; check both semesters and the **FICTIONAL REHEARSAL** label. When finished, choose **Remove fictional events → Upcoming**. Repeat the preview on the **Public Events Calendar** generated list, using **Upcoming dates** after removal. Its embedded Google calendar is a separate live view.
 
@@ -60,7 +60,7 @@ In Real handoff, compare approved live calendar and communications records and s
 
 Keep three distinct backups: Hub **Export progress**, Hub **Download private links backup**, and Newsletter **Templates → Export Draft .json**. Follow the [three-file recovery procedure](recovery-practice.md) to restore them in a separate browser profile and compare the fields. A downloaded file alone is not restoration evidence.
 
-## 5. Activation & Go-Live
+## 5. Approve and start the year
 
 Practice ends with Points TESTING, Form intake closed, all event `form_open` FALSE, and settings inactive/noncurrent. Record activation **Skipped — Rehearsal only**. Preserve evidence or perform reviewed cleanup; do not activate practice files.
 
