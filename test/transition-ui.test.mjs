@@ -58,8 +58,8 @@ const mockHandoff = () => ({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:"2027-2
 
 test('annual setup step exposes installed chapter screen and concise five-step route',async()=>{
  const ui=browser();ui.window.ASME_HUB_CONFIG.annualProvisioner={url:'https://script.google.com/macros/s/chapter_setup/exec'};await ui.go('T02');
- assert.ok(ui.$('transition-steps').find(node=>node.href==='https://script.google.com/macros/s/chapter_setup/exec'));
- assert.match(ui.$('transition-steps').textContent,/One-Click Annual Setup/);assert.match(ui.$('transition-steps').textContent,/Download the summary/);assert.match(ui.$('transition-steps').textContent,/asmeohiostate@gmail.com must be the only Google account signed in/);assert.match(ui.$('transition-steps').textContent,/setup summary is a text file downloaded/);
+ assert.ok(ui.$('transition-steps').find(node=>node.href==='https://script.google.com/macros/s/chapter_setup/exec?year=2027-2028&mode=production'));
+ assert.match(ui.$('transition-steps').textContent,/Prepare this year’s files/);assert.match(ui.$('transition-steps').textContent,/Copy setup results/);assert.match(ui.$('transition-steps').textContent,/asmeohiostate@gmail.com must be the only Google account signed in/);assert.match(ui.$('transition-steps').textContent,/downloading the summary is optional/);
  await ui.go('T05');assert.match(ui.$('transition-steps').textContent,/Config!B5 to LIVE/);
  ui.window.ASME_HUB_CONFIG.annualProvisioner.url='https://evil.example/macros/s/chapter_setup/exec';await ui.go('T02');
  assert.equal(ui.$('transition-steps').find(node=>node.href==='https://evil.example/macros/s/chapter_setup/exec'),null);
@@ -107,7 +107,7 @@ test("private record URL controls hide production records in practice and retain
  const access = field("Access contact record link");
  assert.equal(access.find(node => node.tagName === "input").type, "url");
  assert.match(access.textContent, /President[\s\S]*Paste its link, not a name or email/);
- assert.match(ui.$("transition-dialog").textContent, /Ask the technical maintainer for the annual link handoff JSON/);
+ assert.match(ui.$("transition-dialog").textContent, /Step 2 lets you paste all seven links/);
  const handoff = mockHandoff();
  handoff.records = { acceptanceUrl: "https://example.org/private-review", rollbackUrl: "https://example.org/private-recovery", approvalUrl: "https://example.org/private-production-approval" };
  await importMock(ui, handoff);
@@ -194,7 +194,7 @@ test("legacy UI migration preserves the original and saves a separate recheck ru
   const existing = new Map([[key, old]]);
   const ui = browser(existing);
   assert.match(ui.$("transition-status").textContent, /Guide updated/);
-  await ui.go("T01"); await ui.choose("V10", "passed"); await ui.choose("T01", "complete");
+  await ui.go("T01"); await ui.choose("V20", "passed"); await ui.choose("T01", "complete");
   assert.equal(existing.get(key), old);
   assert.equal(ui.saved().run.mode, "rehearsal");
   assert.equal(ui.saved().run.id, "legacy");
@@ -309,7 +309,7 @@ test('named sixteen-step production migration preserves raw original and cannot 
  const raw=JSON.stringify(old),key=state.storageKey(old.year,'older');
  const existing=new Map([[key,raw]]),ui=browser(existing);
  assert.equal(existing.get(key),raw);await ui.go('T05');await ui.choose('T05','complete');assert.equal(existing.get(key),raw);
- await ui.go('T01');await ui.choose('V10','passed');
+ await ui.go('T01');await ui.choose('V20','passed');
  assert.equal(existing.get(key+':officer-transition-guide-6-backup'),raw);
  assert.equal(ui.saved().steps.T05,'in_progress');assert.equal(ui.saved().checks.V01,'needs_recheck');
  assert.match(ui.saved().notes.T05,/Historical cleanup receipt/);
@@ -359,7 +359,7 @@ test('disposed blockers and skipped activation visibly retain missing rehearsal 
  for(const step of definitions.TRANSITION_STEPS){await ui.go(step.id);if(step.id==='T05'){await ui.reason('T05','Rehearsal only');await ui.choose('T05','skipped');}else await ui.choose(step.id,'blocked');}
  assert.match(ui.$('transition-summary').textContent,/Open the unfinished steps to resolve their blockers/);
  assert.equal(ui.saved().steps.T05,'skipped');
- assert.match(ui.$('transition-summary').textContent,/Cleanup: Not checked. Reviewer acceptance: Not checked/);
+ assert.match(ui.$('transition-summary').textContent,/Cleanup: Not checked yet. Reviewer acceptance: Not checked yet/);
  assert.match(ui.$('transition-readiness').textContent,/Private rehearsal not complete/);
 });
 
@@ -464,17 +464,17 @@ test('progress advances on passed reviews, ignores blockers, and falls when a re
  const total=definitions.TRANSITION_STEPS.length+definitions.TRANSITION_CHECKS.filter(c=>state.checkApplies(c,'production')).length;
  assert.equal(ui.$('transition-progress').max,total);
  assert.equal(ui.$('transition-progress').value,0);
- await ui.choose('V10','passed');
+ await ui.choose('V20','passed');
  assert.equal(ui.$('transition-progress').value,1);
  assert.match(ui.$('transition-completion').textContent,new RegExp(`1/${total} tasks complete`));
  await ui.choose('T01','blocked'); assert.equal(ui.$('transition-progress').value,1);
- await ui.choose('V10','needs_recheck'); assert.equal(ui.$('transition-progress').value,0);
+ await ui.choose('V20','needs_recheck'); assert.equal(ui.$('transition-progress').value,0);
  assert.match(ui.$('transition-progress-help').textContent,/Next step only moves between instructions/);
 });
 
 test('reset starts at zero, preserves the old checklist and copies saved links; cancel changes nothing', async () => {
  const ui=browser(); await ui.$('transition-run-form').emit('submit');
- await ui.choose('V10','passed'); await ui.reason('T01','Original evidence');
+ await ui.choose('V20','passed'); await ui.reason('T01','Original evidence');
  await importMock(ui); await ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form').emit('submit');
  const original=ui.saved(),key=state.storageKey('2027-2028',original.run.id),raw=ui.existing.get(key);
  const linksKey=`${links.annualLinkStorageKey('2027-2028')}:${original.run.id}`,linkRaw=ui.existing.get(linksKey);
@@ -512,4 +512,36 @@ test('reset preserves a year-only legacy checklist in the selector with its hist
  assert.equal(ui.existing.get(state.storageKey(year,oldId)+':officer-transition-guide-5-backup'),raw);
  ui.$('transition-run').value=oldId;await ui.$('transition-run').emit('change');
  assert.match(ui.saved().notes.T01,/Historical observation/);
+});
+
+test('Step 1 owns setup controls and Start uses typed year without a separate Use year click',async()=>{
+ const ui=browser();await ui.go('T01');assert.ok(ui.$('transition-steps').find(n=>n===ui.$('transition-checklist-options')));
+ ui.$('transition-year').value='2028';await ui.$('transition-run-form').emit('submit');
+ const runId=ui.$('transition-run').value;assert.equal(JSON.parse(ui.existing.get(state.storageKey('2028-2029',runId))).year,'2028-2029');
+ await ui.go('T02');assert.equal(ui.$('transition-steps').find(n=>n===ui.$('transition-checklist-options')),null);
+ assert.equal(ui.$('transition-checklist-options').parent,ui.$('transition-setup-home'));
+});
+
+test('setup result paste saves seven links with existing private records; rejects wrong year and Practice in real handoff',async()=>{
+ const ui=browser();ui.$('transition-run-mode').value='rehearsal';await ui.$('transition-run-form').emit('submit');await importMock(ui,{...mockHandoff(),records:{checklistUrl:'https://example.org/checklist'}});
+ await ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form').emit('submit');
+ const key=`${links.annualLinkStorageKey('2027-2028')}:${ui.saved().run.id}`;
+ const paste=async value=>{await ui.go('T02');const form=ui.$('transition-steps').find(n=>n.className==='transition-setup-transfer');form.find(n=>n.tagName==='textarea').value=JSON.stringify(value);await form.emit('submit');};
+ await paste(mockHandoff());assert.equal(Object.keys(JSON.parse(ui.existing.get(key)).links).length,7);assert.equal(JSON.parse(ui.existing.get(key)).records.checklistUrl,'https://example.org/checklist');
+ const before=ui.existing.get(key);await paste({...mockHandoff(),year:'2028-2029'});assert.equal(ui.existing.get(key),before);assert.match(ui.$('transition-status').textContent,/selected transition year/);
+ ui.$('transition-run-mode').value='production';await ui.$('transition-run-form').emit('submit');await paste(mockHandoff());assert.match(ui.$('transition-status').textContent,/Practice files/);
+});
+
+test('changing typed year lists its saved checklists and Continue loads them without creating another run',async()=>{
+ const make=year=>state.emptyProgress(year,state.createTransitionRun('Saved '+year,'production',year));
+ const a=make('2027-2028'),b=make('2028-2029');const existing=new Map([[state.storageKey(a.year,a.run.id),JSON.stringify(a)],[state.storageKey(b.year,b.run.id),JSON.stringify(b)]]);
+ const ui=browser(existing);await ui.go('T01');const count=existing.size;
+ ui.$('transition-year').value='2028';await ui.$('transition-year').emit('change');assert.equal(ui.$('transition-run').value,b.run.id);assert.equal(existing.size,count);
+ ui.$('transition-year').value='2027';await ui.$('transition-run-continue').click();assert.equal(ui.$('transition-run').value,a.run.id);assert.equal(existing.size,count);
+});
+
+test('choose Practice before changing the year preserves the intended new-checklist purpose',async()=>{
+ const ui=browser();await ui.go('T01');ui.$('transition-run-mode').value='rehearsal';ui.$('transition-year').value='2028';await ui.$('transition-year').emit('change');
+ assert.equal(ui.$('transition-run-mode').value,'rehearsal');await ui.$('transition-run-form').emit('submit');
+ const result=JSON.parse(ui.existing.get(state.storageKey('2028-2029',ui.$('transition-run').value)));assert.equal(result.run.mode,'rehearsal');
 });

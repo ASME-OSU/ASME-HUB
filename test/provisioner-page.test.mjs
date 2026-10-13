@@ -11,16 +11,16 @@ function page() {
   }
   for (const match of html.matchAll(/<(\w+)[^>]*\bid="([^"]+)"[^>]*>/g)) elements.set(match[2],element(match[1]));
   const runner = {withSuccessHandler(fn){this.success=fn;return this;},withFailureHandler(fn){this.failure=fn;return this;}};
-  for (const method of ['getAnnualSetupConfig','saveAnnualSetupConfig','runAnnualSetup']) runner[method] = arg => calls.push({method,arg,success:runner.success,failure:runner.failure});
+  for (const method of ['getAnnualSetupConfig','saveAnnualSetupConfig','runAnnualSetup']) runner[method] = (arg,answers) => calls.push({method,arg,answers,success:runner.success,failure:runner.failure});
   const document = {getElementById:id=>elements.get(id),querySelectorAll:()=>[...elements.values()].filter(e=>['input','button'].includes(e.tag)),createElement:tag=>element(tag)};
   vm.runInNewContext(script,{document,google:{script:{run:runner}},Blob,URL:{createObjectURL:blob=>{urls.push(blob);return 'blob:receipt';},revokeObjectURL:()=>{}},setTimeout:fn=>fn()});
   return {get:id=>elements.get(id),calls,downloads,urls};
 }
-const config = {rootFolderId:'root',controlCenterId:'center',engagementGoal:25,calendarIcalUrl:''};
+const config = {rootFolderId:'root',controlCenterId:'center',engagementGoal:25,calendarIcalUrl:'',workspaceMode:'production'};
 test('setup page loads saved chapter fields, saves changes and blocks duplicate submissions',()=>{
   const p=page();assert.equal(p.get('year').disabled,true);p.calls[0].success(config);assert.equal(p.get('year').disabled,false);assert.equal(p.get('rootFolderId').value,'root');
   p.get('engagementGoal').value='50';p.get('config-form').submit();assert.equal(p.calls[1].arg.engagementGoal,'50');p.get('config-form').submit();assert.equal(p.calls.length,2);
-  p.calls[1].success(config);assert.equal(p.get('configuration').open,false);assert.match(p.get('status').textContent,/saved/);
+  p.calls[1].success(config);p.calls[2].success(config);assert.equal(p.get('configuration').open,false);assert.match(p.get('status').textContent,/Ready/);
 });
 test('setup page displays seven returned links and downloads receipt after annual setup',()=>{
   const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();assert.equal(p.calls[1].method,'runAnnualSetup');assert.equal(p.calls[1].arg,'2027-2028');

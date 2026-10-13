@@ -7,7 +7,7 @@ const ready=()=>({...run('production'),steps:Object.fromEntries(steps.filter(s=>
 test('launch blockers use ordinary step and review names while keeping stable ids',()=>{
  const pending=launchEligibility(run('production'),steps,checks);
  assert.ok(pending.missing.includes('T02')); assert.ok(pending.unchecked.includes('V19'));
- assert.match(pending.reason,/One-Click Annual Setup/); assert.match(pending.reason,/event-update method/);
+ assert.match(pending.reason,/Prepare this year’s files/); assert.match(pending.reason,/event-update method/);
  assert.doesNotMatch(pending.reason,/\b(?:T|V)\d{2}\b/);
 });
 test('guide10 migration preserves evidence and reopens changed event-update review',()=>{
@@ -36,7 +36,7 @@ test('five-step definition includes wiring, scoring, communications and cleanup 
 test('same-year named mock runs isolate state and skipped reason survives export',()=>{const a={...run(),steps:{T02:'skipped'},reasons:{T02:'Mock only'}};assert.notEqual(storageKey(year,'a'),storageKey(year,'b'));assert.deepEqual(importProgress(exportProgress(a,steps,checks),year,steps,checks),a);assert.throws(()=>read({...a,reasons:{}}),/reason/);});
 test('strict production activation requires every earlier step and all checks',()=>{const p=ready();assert.equal(launchEligibility(p,steps,checks).eligible,true);assert.equal(read({...p,steps:{...p.steps,T05:'complete'}}).steps.T05,'complete');for(const id of ['T01','T02','T03','T04'])assert.throws(()=>read({...p,steps:{...p.steps,[id]:'blocked',T05:'complete'}}),/prerequisites/);assert.throws(()=>read({...p,run:run().run,steps:{...p.steps,T05:'complete'}}),/rehearsal/);});
 test('mock skip never completes launch, later communications can be reported independently',()=>{const a={...run(),steps:{T02:'skipped',T04:'complete',T05:'skipped'},checks:Object.fromEntries(checks.filter(c=>c.step==='T04').map(c=>[c.id,'passed'])),reasons:{T02:'Isolated mock',T05:'NO-GO'}};assert.deepEqual(read(a),a);assert.equal(launchEligibility(a,steps,checks).eligible,false);assert.equal(progressSummary(a,steps,checks).stepCounts.skipped,2);});
-test('changed prerequisite reopens dependent confirmations and activation',()=>{const p=ready();p.steps.T05='complete';const n=reconcileProgress({...p,steps:{...p.steps,T02:'blocked'}},steps,checks,p);assert.equal(n.steps.T03,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V04,'needs_recheck');assert.equal(n.checks.V10,'passed');});
+test('changed prerequisite reopens dependent confirmations and activation',()=>{const p=ready();p.steps.T05='complete';const n=reconcileProgress({...p,steps:{...p.steps,T02:'blocked'}},steps,checks,p);assert.equal(n.steps.T03,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V04,'needs_recheck');assert.equal(n.checks.V10,'needs_recheck');});
 test('imported production completion requires fresh checks',()=>{const p=ready();p.steps.T05='complete';const n=importProgress(exportProgress(p,steps,checks),year,steps,checks);assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');});
 test('16-step versions2-6 migrate without changing original or carrying launch readiness',()=>{for(const v of [2,3,4,5,6]){const p={version:v===6?2:1,guideVersion:'officer-transition-guide-'+v,year,run:run().run,savedAt:null,reasons:{},notes:{},steps:{T03:'blocked',T15:'complete',T16:'complete'},checks:{V01:'unable',V10:'passed'}};const before=structuredClone(p),n=migrateProgress(p,year,steps,checks);assert.deepEqual(p,before);assert.equal(n.steps.T02,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');assert.match(n.notes.T02,/T03: blocked/);assert.deepEqual(read(n),n);assert.throws(()=>migrateProgress({...p,checks:{V99:'passed'}},year,steps,checks),/Unknown check/);}});
 test('five-step guide 7 migration keeps each step in place and new checks unverified',()=>{
@@ -86,4 +86,18 @@ test('task meter reaches full only after all reviews and steps, including reason
  const practice={...run(),steps:Object.fromEntries(steps.map(s=>[s.id,s.id==='T05'?'skipped':'complete'])),checks:Object.fromEntries(checks.filter(c=>checkApplies(c,'rehearsal')).map(c=>[c.id,'passed'])),reasons:{T05:'Practice does not activate'}};
  const done=progressSummary(practice,steps,checks);assert.equal(done.completedItems,done.totalItems);
  practice.checks.V16='needs_recheck';const reopened=progressSummary(practice,steps,checks);assert.equal(reopened.completedItems,reopened.totalItems-2);
+});
+
+test('guide11 preserves notes while moving annual access review after creation and reopening completion',()=>{
+ const original={...ready(),guideVersion:'officer-transition-guide-11',steps:{...ready().steps,T05:'complete'},notes:{V10:'Earlier access check'}};
+ const before=structuredClone(original),next=migrateProgress(original,year,steps,checks);assert.deepEqual(original,before);
+ assert.equal(next.checks.V10,'needs_recheck');assert.equal(next.steps.T03,'in_progress');assert.equal(next.steps.T05,'in_progress');assert.equal(next.notes.V10,'Earlier access check');assert.equal(launchEligibility(next,steps,checks).eligible,false);
+});
+
+test('guide9 and10 migrate completed annual checks even when their old Step1 access review was pending',()=>{
+ for(const guideVersion of ['officer-transition-guide-9','officer-transition-guide-10']) {
+  const p={...ready(),guideVersion,steps:{T03:'complete'},checks:{...ready().checks,V10:'not_checked'}};
+  const next=migrateProgress(p,year,steps,checks);assert.equal(next.steps.T03,'in_progress');assert.equal(next.checks.V10,undefined);
+  const passed=migrateProgress({...p,checks:{...p.checks,V10:'passed'}},year,steps,checks);assert.equal(passed.checks.V10,'needs_recheck');
+ }
 });

@@ -1,6 +1,6 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261012d";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261012d";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261012d";
+import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261013a";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261013a";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261013a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -9,14 +9,16 @@ if (section) {
   const list = $("transition-steps");
   const yearInput = $("transition-year");
   const yearSetup = $("transition-year-setup");
-  // Keep the year choice above the checklist controls on every step.
+  const setupOptions = $("transition-checklist-options");
+  const setupHome = $("transition-setup-home");
+  // Step 1 owns setup; the header links back to it from later steps.
   const yearOptions = $("transition-year-options");
   let selectedYear = "";
   let selectedRunId = "";
   const statusLine = $("transition-status");
   const byId = new Map(TRANSITION_STEPS.map((step) => [step.id, step]));
   const statusLabels = { not_started: "Not started", in_progress: "In progress", blocked: "Blocked", failed: "Failed", skipped: "Skipped — reason recorded", complete: "Complete — officer marked" };
-  const checkLabels = { not_checked: "Not checked", checking: "Checking", passed: "Passed — officer reported", failed: "Failed", unable: "Unable to verify", needs_recheck: "Needs recheck", skipped: "Skipped — reason recorded" };
+  const checkLabels = { not_checked: "Not checked yet", checking: "I’m checking", passed: "Yes — I checked", failed: "No — needs fixing", unable: "I need help", needs_recheck: "Check again", skipped: "Not applicable — explain why" };
   const roleLabels = { president: "President", vice_president: "Vice President", treasurer: "Treasurer", secretary: "Secretary / points", social_chair: "Social Chair", webmaster: "Webmaster", ecouncil: "E-Council Representative", advisor: "Advisor" };
   let pendingSkipId = null;
   let previousGuideRaw = null;
@@ -125,7 +127,7 @@ if (section) {
   const annualSummary = node("summary", "", "Saved links");
   annualTools.append(annualSummary);
   annualTools.append(node("p", "", "Review this checklist's copied-tool and record links here. Paste full HTTPS document or folder links supplied by the President or technical maintainer, not names or email addresses."));
-  annualTools.append(node("p", "", "Ask the technical maintainer for the annual link handoff JSON for this year and attempt. Import automation links fills these fields for review; Save private link list on this device keeps them. The readable setup summary is a separate list of copied files and checked settings. Importing links does not run setup or change Google."));
+  annualTools.append(node("p", "", "Step 2 lets you paste all seven links from Annual Setup at once. You can also enter links here or import a saved backup. The setup summary on the setup page explains the files and their settings. Saving links does not complete your checks."));
   annualTools.append(node("p", "", "Use a private officer browser profile: anyone using it can see saved links. Progress exports and printing exclude these links; download the private links backup separately. Only approved public values belong in the current Hub Control Center."));
   const annualForm = node("form", "settings-grid");
   annualForm.id = "transition-annual-links-form";
@@ -324,7 +326,7 @@ if (section) {
   function instructionsFor(step) {
     if (progress.run.mode === "production") return step.productionInstructions || step.instructions || [step.action];
     if (step.id === "T05" && progress.run.mode === "rehearsal") return [step.instructions[0], "Keep the Form and mock events closed, Points in TESTING, and the copied year inactive. Open this run’s private checklist to review the fictional items and recovery record.", "Record the reviewer’s decision to retain or remove the listed test items. Preserve formula tabs and exception evidence, then confirm the safe settings again.", "The President or named practice reviewer records sign-off in the private checklist. Example: “Keep the five fictional responses and two closed MOCK events privately; recovery files opened correctly; practice accepted on [date].” Skip activation with the reason Rehearsal only. This sign-off does not approve a real launch."];
-    if (step.id === "T01" && progress.run.mode === "rehearsal") return ["Use the Practice checklist selected under Choose checklist above. The President leads, and the team records their checks.", "Use your approved test account to open every copied tool. In the private checklist document, record the account, practice lead and who helps restore access or backups.", "Ask the President through asme@osu.edu for a filled checklist for this year, the setup summary and the private links backup (.json). The contact can be recorded as the President; a personal name is not required. Say your role, target year and whether this is Practice or Real handoff. Save the supplied URLs under Saved links at the bottom. Until they arrive, mark Blocked; you can still read later steps and do local calendar practice. The shared start page is guidance, not this year’s completed checklist."];
+    if (step.id === "T01" && progress.run.mode === "rehearsal") return ["Choose Practice in the questions above, then Start checklist. This keeps your test results separate from the real handoff.", "Ask the President which test account, private folder and copied settings sheet to use. Record who is leading the practice and who can help if access fails.", "Step 2 creates the test files. Step 3 checks that the reviewer can open them. Keep test files separate from the real chapter files."];
     return (step.instructions || [step.action]).filter((text, index) => progress.run.mode !== "rehearsal" || !(step.id === "T04" && [2,4,5,6].includes(index)) && !text.startsWith("Production launch:"));
   }
   function checksFor(step) { return TRANSITION_CHECKS.filter((check) => check.step === step.id); }
@@ -486,7 +488,7 @@ if (section) {
     if (step.id === "T02") {
       try {
         const setupUrl = new URL(window.ASME_HUB_CONFIG?.annualProvisioner?.url || "");
-        if (setupUrl.protocol === "https:" && setupUrl.hostname === "script.google.com" && /^\/macros\/s\/[\w-]+\/exec$/.test(setupUrl.pathname) && !setupUrl.username && !setupUrl.password) resources.append(resourceRow(setupUrl.href, "Open Annual Setup", "First choose Chrome’s ASME profile and confirm asmeohiostate@gmail.com is the only Google account signed in. Select this checklist’s year, then download the setup summary."));
+        if (setupUrl.protocol === "https:" && setupUrl.hostname === "script.google.com" && /^\/macros\/s\/[\w-]+\/exec$/.test(setupUrl.pathname) && !setupUrl.username && !setupUrl.password) { setupUrl.searchParams.set("year", selectedYear); setupUrl.searchParams.set("mode", progress.run.mode); resources.append(resourceRow(setupUrl.href, "Open Annual Setup", "First choose Chrome’s ASME profile and confirm asmeohiostate@gmail.com is the only Google account signed in. Select this checklist’s year, then answer its questions and copy the setup results.")); }
       } catch { /* No link is shown until the chapter setup screen is installed. */ }
       help.append(resourceRow("https://github.com/ASME-OSU/ASME-HUB/blob/main/integrations/apps-script/transition-simple/README.md", "Annual setup screen installation", "Install the setup screen once, then create each year from its form.", "guide"));
     }
@@ -565,6 +567,7 @@ if (section) {
     annualActions.prepend(annualSave);
     annualSettings.hidden = step.id === "T02";
     yearSetup.hidden = false;
+    setupHome.append(setupOptions);
     list.replaceChildren();
     const card = node("article", "transition-step");
     card.id = `transition-${step.id}`;
@@ -578,12 +581,13 @@ if (section) {
     pill.dataset.state = statusOf(step.id);
     heading.append(identity, pill);
     card.append(heading);
+    if (step.id === "T01") card.append(setupOptions);
     card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${stepTitle(byId.get(id))}`).join("; ") : "None"}`));
     card.append(node("h4", "", "Follow these tasks"));
     const quickStart = progress.run.mode === "production" ? step.productionQuickStart || step.quickStart : step.quickStart;
-    if (quickStart) card.append(node("p", "transition-manual-check", quickStart));
+    if (quickStart && step.id !== "T01") card.append(node("p", "transition-manual-check", quickStart));
     const procedure = node("ol", "transition-procedure");
-    for (const action of instructionsFor(step)) procedure.append(node("li", "", action));
+    for (const action of instructionsFor(step).filter((_, index) => step.id !== "T01" || index > 0)) procedure.append(node("li", "", action));
     card.append(procedure);
     if (step.id === "T05") {
       const outstanding = node("section", "transition-pending-reviews");
@@ -599,7 +603,30 @@ if (section) {
       }
       if (outstanding.childElementCount > 1) card.append(outstanding);
     }
-    if (step.id === "T02") card.append(node("p", "transition-manual-check", "The setup summary is a text file downloaded from Annual Setup. It lists this year’s seven links and the settings checked during setup. The annual files are the Points Master, attendance Form, Points Export, Budget Tracker and Budget Export. Example note: I opened all seven supplied links for 2027–2028; the Form opened the Points Master response tab listed in the summary. If a link or summary is missing, ask the President for the files rather than copying last year’s files."));
+    if (step.id === "T02") {
+      const transfer = node("form", "transition-setup-transfer");
+      transfer.append(node("h4", "", "Bring your new links into the Hub"), node("p", "", "In Annual Setup, choose Copy setup results. Paste them here and save. You do not need to download a file. This saves links, not completed checks."));
+      const paste = node("textarea"); paste.setAttribute("aria-label", "Paste setup results"); paste.placeholder = "Paste the results copied from Annual Setup";
+      const submit = node("button", "secondary-button", "Save setup results"); submit.type = "submit";
+      transfer.append(paste, submit);
+      transfer.addEventListener("submit", event => {
+        event.preventDefault();
+        try {
+          assertAnnualDraftUnchanged();
+          if (unreadableAnnualLinks) throw new Error("Reload and resolve the unreadable saved links first.");
+          if (paste.value.length > 100000) throw new Error("Setup results are too large.");
+          const draft = importAnnualLinkDraft(paste.value, selectedYear, window.ASME_HUB_CONFIG);
+          const savedDraft = observedAnnualRaw ?? observedLegacyAnnualRaw;
+          if (!draft.records && savedDraft) draft.records = importAnnualLinkDraft(savedDraft, selectedYear, window.ASME_HUB_CONFIG).records;
+          if (Object.keys(draft.links).length !== ANNUAL_LINK_FIELDS.length) throw new Error("Copy the complete result with all seven links from Annual Setup.");
+          if (progress.run.mode === "production" && draft.mock) throw new Error("These are Practice files. Return to Step 1 and choose Practice, or use the real year’s setup results.");
+          if (progress.run.mode === "rehearsal" && !draft.mock) throw new Error("Practice requires results from a separate Practice workspace.");
+          fillAnnualLinks(draft); saveAnnualLinks(); render(); say("Your seven links are saved. Open them below, check the year, then record what you verified.");
+        } catch (error) { say(`Could not save setup results: ${error.message}`, true); }
+      });
+      card.append(transfer);
+    }
+    if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates the attendance and budget files for your year. Its summary shows their links and settings. Copy the setup results here once; downloading the summary is optional. Keep last year’s files as records."));
     if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. The technical maintainer checks the other response tabs in the same copied workbook. Example note: Five MOCK rows arrived in the summary’s tab; [maintainer] confirmed the other response tabs contain none of these rows on [date]."));
     if (step.id === "T04" && progress.run.mode === "rehearsal") {
       const recovery = node("details", "transition-tools");
@@ -760,7 +787,11 @@ if (section) {
     } catch (error) { say(`Could not reset progress: ${error.message} Your previous checklist is preserved.`, true); }
   });
   $("transition-run-continue").addEventListener("click", () => {
-    // Selection already loads the record; continue focuses its first unfinished step.
+    try {
+      const year = transitionYear(yearInput.value);
+      if (year !== selectedYear) { populateTransitionYears(year); readYear(); }
+    } catch (error) { yearInput.setCustomValidity(error.message); yearInput.reportValidity(); say(error.message, true); return; }
+    // Continue also honors the typed year when change has not fired yet.
     $("transition-checklist-options").open = false;
     go(firstIncomplete());
   });
@@ -770,6 +801,8 @@ if (section) {
   $("transition-run-form").addEventListener("submit", event => {
     event.preventDefault();
     try {
+      const requestedYear = transitionYear(yearInput.value);
+      if (requestedYear !== selectedYear) populateTransitionYears(requestedYear);
       const mode = $("transition-run-mode").value;
       const name = $("transition-run-name").value.trim() || `${runModeLabel(mode)} ${selectedYear} · ${new Date().toLocaleDateString()}`;
       const candidate = emptyProgress(selectedYear, createTransitionRun(name, mode));
@@ -788,6 +821,12 @@ if (section) {
   });
   $("transition-next-reason").tabIndex = -1;
   yearInput.addEventListener("input", () => yearInput.setCustomValidity(""));
+  yearInput.addEventListener("change", () => {
+    try {
+      const year = transitionYear(yearInput.value);
+      if (year !== selectedYear) { const purpose = $("transition-run-mode").value; populateTransitionYears(year); readYear(); go(0); $("transition-run-mode").value = purpose; }
+    } catch (error) { yearInput.setCustomValidity(error.message); say(error.message, true); }
+  });
   $("transition-year-form").addEventListener("submit", (event) => {
     event.preventDefault();
     try {
@@ -858,7 +897,7 @@ if (section) {
       card.append(node("p", "", `President leads; team checks: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
       card.append(node("p", "", `Prerequisites: ${step.needs.join(", ") || "None"}`));
       for (const instruction of instructionsFor(step)) card.append(node("p", "", instruction));
-      if (step.id === "T02") card.append(node("p", "transition-manual-check", "The setup summary is a text file downloaded from Annual Setup. It lists this year’s seven links and the settings checked during setup. The annual files are the Points Master, attendance Form, Points Export, Budget Tracker and Budget Export. Example note: I opened all seven supplied links for 2027–2028; the Form opened the Points Master response tab listed in the summary. If a link or summary is missing, ask the President for the files rather than copying last year’s files."));
+      if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates the attendance and budget files for your year. Its summary shows their links and settings. Copy the setup results here once; downloading the summary is optional. Keep last year’s files as records."));
     if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. The technical maintainer checks the other response tabs in the same copied workbook. Example note: Five MOCK rows arrived in the summary’s tab; [maintainer] confirmed the other response tabs contain none of these rows on [date]."));
     if (step.id === "T04" && progress.run.mode === "rehearsal") {
       const recovery = node("details", "transition-tools");

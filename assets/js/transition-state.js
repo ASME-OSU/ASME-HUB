@@ -1,7 +1,7 @@
 export const TRANSITION_STATE_VERSION = 2;
 // Changed meaning always reopens earlier confirmations.
-export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-11";
-export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10].map(version => `officer-transition-guide-${version}`);
+export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-12";
+export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(version => `officer-transition-guide-${version}`);
 export const TRANSITION_LEGACY_STORAGE_PREFIX = "asmeHubTransitionProgressV1:";
 export const TRANSITION_STORAGE_PREFIX = "asmeHubTransitionProgressV2:";
 export const TRANSITION_STATUSES = ["not_started", "in_progress", "blocked", "failed", "skipped", "complete"];
@@ -105,6 +105,12 @@ export function parseProgress(value, year, steps, checks) {
 }
 export function migrateProgress(value, year, steps, checks) {
   if (value?.guideVersion === TRANSITION_GUIDE_VERSION) return parseProgress(value, year, steps, checks);
+  if (value?.guideVersion === "officer-transition-guide-11") {
+    const candidate = { ...value, guideVersion: TRANSITION_GUIDE_VERSION, steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
+    if (candidate.checks.V10 === "passed") candidate.checks.V10 = "needs_recheck";
+    for (const id of ["T03","T05"]) if (candidate.steps[id] === "complete") candidate.steps[id] = "in_progress";
+    return reconcileProgress(parseProgress(candidate, year, steps, checks), steps, checks);
+  }
   if (["officer-transition-guide-9", "officer-transition-guide-10"].includes(value?.guideVersion)) {
     // Keep historical observations and mode; changed production criteria need
     // fresh review. Practice criteria and private evidence are unchanged.
@@ -114,7 +120,8 @@ export function migrateProgress(value, year, steps, checks) {
       for (const id of changed) if (candidate.checks[id] === "passed") candidate.checks[id] = "needs_recheck";
       for (const id of value.guideVersion === "officer-transition-guide-9" ? ["T02", "T04", "T05"] : ["T02", "T05"]) if (candidate.steps[id] === "complete") candidate.steps[id] = "in_progress";
     }
-    return parseProgress(candidate, year, steps, checks);
+    candidate.guideVersion = "officer-transition-guide-11";
+    return migrateProgress(candidate, year, steps, checks);
   }
   if (![1, TRANSITION_STATE_VERSION].includes(value?.version) || !TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(value?.guideVersion)) throw new Error("This progress file uses an unsupported version or guide.");
   if(value.year!==year)throw new Error('This file belongs to a different transition year.');

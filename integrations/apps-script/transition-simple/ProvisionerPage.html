@@ -4,51 +4,70 @@
   <base target="_blank">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body{font:16px system-ui,sans-serif;margin:0;background:#f5f6f8;color:#17202a}main{max-width:680px;margin:32px auto;padding:24px;background:white;border-radius:12px}label{display:block;margin:16px 0}input,button{box-sizing:border-box;font:inherit;padding:10px;border:1px solid #7c8793;border-radius:6px}input{display:block;width:100%;margin-top:6px}button{background:#bb0000;color:white;cursor:pointer}button:disabled{opacity:.6;cursor:wait}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f8;padding:16px}a{color:#8b0000}aside{border-left:5px solid #bb0000;background:#fff3dc;padding:16px;margin:20px 0}aside p:last-child{margin-bottom:0}small{display:block;margin-top:6px}#status{min-height:24px}#status[data-error="true"]{color:#a00000}@media(max-width:720px){main{margin:0;border-radius:0}}
+    body{font:16px system-ui,sans-serif;margin:0;background:#f5f6f8;color:#17202a}main{max-width:680px;margin:32px auto;padding:24px;background:white;border-radius:12px}label{display:block;margin:16px 0}input,button,select,textarea{box-sizing:border-box;font:inherit;padding:10px;border:1px solid #7c8793;border-radius:6px}input,select,textarea{display:block;width:100%;margin-top:6px}button{background:#bb0000;color:white;cursor:pointer}button:disabled{opacity:.6;cursor:wait}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f6f8;padding:16px}a{color:#8b0000}aside{border-left:5px solid #bb0000;background:#fff3dc;padding:16px;margin:20px 0}aside p:last-child{margin-bottom:0}small{display:block;margin-top:6px}#status{min-height:24px}#status[data-error="true"]{color:#a00000}@media(max-width:720px){main{margin:0;border-radius:0}}
   </style>
 </head>
 <body><main>
   <h1>ASME Annual Setup</h1>
   <aside id="account-warning" role="note"><strong>Before you continue: use Chrome’s ASME profile.</strong><p>Open Chrome’s profile menu (top right) and choose <strong>ASME</strong>. In that profile, <strong>asmeohiostate@gmail.com must be the only Google account signed in</strong>. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile before continuing. Multiple signed-in accounts can stop this private setup page from opening.</p><p>This page cannot check your Chrome profile or count signed-in accounts. Confirm them yourself before creating files.</p></aside>
-  <p>Sign in as the chapter account. Choose the year and create its five working files, linked attendance Form and inactive settings row.</p>
-  <details id="configuration"><summary>Chapter setup — save once</summary>
+  <p>Answer the questions below. We reuse the chapter’s saved folder, settings sheet and calendar, and create fresh files for the new year. Last year’s files stay unchanged.</p>
+  <details id="configuration"><summary>Change saved workspace — President or maintainer</summary>
     <form id="config-form">
-      <label>Annual workspace folder link<input id="rootFolderId" required></label>
-      <label>Control Center spreadsheet link<input id="controlCenterId" required></label>
-      <label>Approved engagement goal<input id="engagementGoal" type="number" min="1" step="1" required></label>
-      <label>Calendar iCal URL (optional)<input id="calendarIcalUrl" type="url"></label>
+      <label>Where should the new files be stored? (Google Drive folder link)<input id="rootFolderId" required></label>
+      <label>Which settings sheet should the chapter use? (Control Center link)<input id="controlCenterId" required></label>
+      <label>Default member goal<input id="engagementGoal" type="number" min="1" step="1" required></label>
+      <label>Chapter calendar feed link (optional)<input id="calendarIcalUrl" type="url"></label>
+      <label>What is this workspace for?<select id="workspaceMode" required><option value="">President must confirm</option><option value="production">Real handoff</option><option value="rehearsal">Practice only</option></select></label>
+      <p>Check the folder and settings sheet before choosing. Practice must use its own private folder and copied settings sheet.</p>
       <button type="submit">Save chapter setup</button>
     </form>
   </details>
   <form id="annual-form">
-    <label>Academic year<input id="year" placeholder="2027-2028" pattern="[0-9]{4}-[0-9]{4}" required><small>Use consecutive years. Fall term is set automatically.</small></label>
-    <button type="submit">Create this year’s files</button>
+    <input id="mode" type="hidden" value="__MODE__">
+    <label>Which academic year are you preparing?<input id="year" value="__YEAR__" placeholder="2027-2028" pattern="[0-9]{4}-[0-9]{4}" required><small>This comes from Step 1 in the Hub. Fall term and budget dates are filled in automatically.</small></label>
+    <label>How many different members do you want to attend this year?<input id="annualGoal" type="number" min="1" step="1" required><small>Each person counts once, even if they attend several events. Ask the President to approve this goal.</small></label>
+    <p id="goal-source"></p><p id="workspace-summary"></p>
+    <button id="create" type="submit">Create or reopen this year’s files</button>
   </form>
   <p id="status" role="status" aria-live="polite">Loading chapter setup…</p>
   <p><strong>Setup summary:</strong> a downloadable text file listing this year’s seven links and the settings checked during setup. Keep it to reopen and verify the same files later.</p>
-  <section id="result" hidden><h2>Your annual files</h2><ul id="links"></ul><p id="next"></p><button id="download" type="button">Download setup summary</button><pre id="receipt"></pre></section>
+  <section id="result" hidden><h2>Your annual files</h2><ul id="links"></ul><p id="next"></p><label>Setup results for Step 2 in the Hub<textarea id="hub-results" readonly></textarea></label><button id="copy" type="button">Copy setup results</button><p id="copy-status" role="status"></p><details><summary>Optional backup and detailed settings</summary><button id="download" type="button">Download setup summary</button><pre id="receipt"></pre></details></section>
   <script>
-    const fields = ['rootFolderId','controlCenterId','engagementGoal','calendarIcalUrl'];
-    let busy = false, receipt = '', receiptYear = '';
+    const fields = ['rootFolderId','controlCenterId','engagementGoal','calendarIcalUrl','workspaceMode'];
+    let busy = false, receipt = '', receiptYear = '', savedConfig = null;
+    const mode = document.getElementById('mode').value === 'rehearsal' ? 'rehearsal' : 'production';
     const status = document.getElementById('status');
-    function setBusy(value) { busy = value; document.querySelectorAll('button,input').forEach(el => el.disabled = value); }
+    function setBusy(value) { busy = value; document.querySelectorAll('button,input,select').forEach(el => el.disabled = value); }
     function say(message, error = false) { status.textContent = message; status.dataset.error = String(error); }
     function failed(error) { setBusy(false); say(error.message || String(error), true); }
-    setBusy(true);
-    google.script.run.withSuccessHandler(config => {
-      fields.forEach(key => document.getElementById(key).value = config[key]);
-      document.getElementById('configuration').open = !config.rootFolderId;
-      setBusy(false); say(config.rootFolderId ? 'Ready. Choose your academic year.' : 'Enter and save the chapter setup first.');
-    }).withFailureHandler(failed).getAnnualSetupConfig();
+    function showConfig(config) {
+      savedConfig = config;
+      fields.forEach(key => document.getElementById(key).value = config[key] || '');
+      document.getElementById('annualGoal').value = config.engagementGoal;
+      document.getElementById('goal-source').textContent = (config.goalSource || 'Saved chapter setup') + ': ' + config.engagementGoal + ' members. You can change the goal for a new year.';
+      document.getElementById('workspace-summary').textContent = 'Using ' + (config.workspaceMode === 'production' ? 'Real handoff' : config.workspaceMode === 'rehearsal' ? 'Practice only' : 'an unconfirmed workspace') + '. We will keep the saved chapter folder and settings sheet. Calendar: ' + (config.calendarIcalUrl ? 'saved chapter calendar' : 'no feed saved') + '.';
+      document.getElementById('configuration').open = !config.rootFolderId || config.workspaceMode !== mode;
+      document.getElementById('create').disabled = config.workspaceMode !== mode || !config.rootFolderId;
+      document.getElementById('annualGoal').readOnly = Boolean(config.existing);
+      if (config.workspaceMode !== mode) say('Ask the President to confirm the saved workspace for ' + (mode === 'production' ? 'Real handoff' : 'Practice') + ' before continuing.', true);
+      else say(config.existing ? 'This year already has files. Continue to reopen them using the goal saved when they were created. Ask the President to review any changes.' : 'Ready. Check the year and member goal.');
+    }
+    function loadConfig() {
+      setBusy(true);
+      google.script.run.withSuccessHandler(config => { setBusy(false); showConfig(config); }).withFailureHandler(failed).getAnnualSetupConfig(document.getElementById('year').value);
+    }
+    loadConfig();
+    document.getElementById('year').addEventListener('change', () => { document.getElementById('result').hidden = true; loadConfig(); });
     document.getElementById('config-form').addEventListener('submit', event => {
       event.preventDefault(); if (busy) return;
       document.getElementById('result').hidden = true; receipt = ''; receiptYear = '';
       const config = Object.fromEntries(fields.map(key => [key, document.getElementById(key).value]));
       setBusy(true); say('Checking and saving chapter setup…');
-      google.script.run.withSuccessHandler(() => { setBusy(false); document.getElementById('configuration').open = false; say('Chapter setup saved. Choose your academic year.'); }).withFailureHandler(failed).saveAnnualSetupConfig(config);
+      google.script.run.withSuccessHandler(() => { loadConfig(); }).withFailureHandler(failed).saveAnnualSetupConfig(config);
     });
     document.getElementById('annual-form').addEventListener('submit', event => {
       event.preventDefault(); if (busy) return;
+      if (!savedConfig || savedConfig.workspaceMode !== mode) { say('The President must confirm this workspace first.', true); return; }
       document.getElementById('result').hidden = true;
       const year = document.getElementById('year').value.trim();
       setBusy(true); say('Creating annual files. Keep this page open. If setup stops, run the same year again to resume.');
@@ -57,9 +76,15 @@
         const links = document.getElementById('links'); links.replaceChildren();
         const targets = [['Annual folder', result.folderUrl], ['Points Master', result.links.pointsMaster], ['Attendance Form editor', result.formEditUrl], ['Attendance Form respondent', result.links.formRespondent], ['Points Export', result.links.pointsExport], ['Budget Tracker', result.links.budgetTracker], ['Budget Export', result.links.budgetExport]];
         targets.forEach(([title, url]) => { const li = document.createElement('li'), a = document.createElement('a'); a.textContent = title; a.href = url; a.rel = 'noopener noreferrer'; li.append(a); links.append(li); });
+        document.getElementById('hub-results').value = result.hubHandoff || ''; document.getElementById('copy-status').textContent = 'Next: copy these results, return to Step 2 in the Hub, paste them and choose Save setup results.';
         document.getElementById('receipt').textContent = receipt; document.getElementById('next').textContent = result.next; document.getElementById('result').hidden = false;
         say('Annual setup ready. Intake is closed, Points is TESTING and the year is inactive.');
-      }).withFailureHandler(failed).runAnnualSetup(year);
+      }).withFailureHandler(failed).runAnnualSetup(year, {engagementGoal:document.getElementById('annualGoal').value, mode:mode, rootFolderId:savedConfig.rootFolderId, controlCenterId:savedConfig.controlCenterId, configRevision:savedConfig.configRevision});
+    });
+    document.getElementById('copy').addEventListener('click', async () => {
+      const text = document.getElementById('hub-results'); text.focus(); text.select();
+      try { await navigator.clipboard.writeText(text.value); document.getElementById('copy-status').textContent = 'Copied. Return to Step 2 in the Hub, paste and choose Save setup results.'; }
+      catch { document.getElementById('copy-status').textContent = 'The results are selected. Press Command+C (Mac) or Ctrl+C (Windows), then paste them into Step 2 in the Hub.'; }
     });
     document.getElementById('download').addEventListener('click', () => {
       const url = URL.createObjectURL(new Blob([receipt], {type:'text/plain;charset=utf-8'})), a = document.createElement('a');

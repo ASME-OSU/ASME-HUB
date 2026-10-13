@@ -7,6 +7,18 @@
  */
 var ASME_ANNUAL_HEADERS=['academic_year','display_label','engagement_goal','attendance_sheet_url','leaderboard_tab','dashboard_json_url','attendance_form_url','points_master_url','calendar_page_url','calendar_ical_url','is_active','is_current','last_updated','status_note','event_metrics_tab','budget_tracker_url','budget_export_sheet_url','budget_export_sheet_tab','banking_url','fundraising_url'];
 var ASME_ANNUAL_TEMPLATES={pointsMaster:'1UXprLAnzUjlzaojb7BDYTN9Om25xPFRYGQZIyHQRG2M',attendanceForm:'1ofRiLS_WtQpH_poxU4blyKn7pZVriUWL8dsvfCJLLYA',pointsExport:'1CESQs6sY_WC9u0wonYq_CFraFFymtTJkh9SSv2DTXuY',budgetTracker:'1KMIkxLjNMRFilpicXIqePvy6XvZxgmJrRO3VT7DiCW8',budgetExport:'1vDHoouuaWX3NvdrflUiulesHU9z1JZ383_Tnu3Wqz-s'};
+function asmeAnnualConfigRevision_(cfg) {
+  return JSON.stringify([cfg.rootFolderId || '', cfg.controlCenterId || '', cfg.workspaceMode || '', cfg.calendarIcalUrl || '', cfg.engagementGoal || '']);
+}
+function asmeCheckWorkspacePurpose_(properties, cfg) {
+  var saved = properties.getProperties();
+  Object.keys(saved).forEach(function(key) {
+    if (key.indexOf('ASME_SIMPLE_ANNUAL_') !== 0) return;
+    var value; try { value = JSON.parse(saved[key]); } catch (ignored) { throw new Error('Saved workspace history needs maintainer review.'); }
+    if (!value.plan || (value.plan.rootFolderId !== cfg.rootFolderId && value.plan.controlCenterId !== cfg.controlCenterId)) return;
+    if ((value.workspaceMode && value.workspaceMode !== cfg.workspaceMode) || (!value.workspaceMode && cfg.workspaceMode === 'production')) throw new Error('Existing files in this unconfirmed workspace or Practice workspace need review. Use a separate folder and settings sheet for Real handoff.');
+  });
+}
 function asmeAnnualYear_(year,term){
   var match=/^(20\d{2}|21\d{2})-(20\d{2}|21\d{2}|2200)$/.exec(String(year));
   if(!match||+match[2]!==+match[1]+1||+match[1]>2199||term!=='Fall '+match[1])throw new Error('Use consecutive academic years and exact fall term, e.g. 2027-2028 / Fall 2027.');
@@ -78,7 +90,7 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
     '- Real engagement goal/calendar approval, funding approval, bank reconciliation, public-field approval and launch approval: UNVERIFIED.',
     '- Incoming officer acceptance: UNVERIFIED.',
     '',
-    'Keep this receipt with the named private Hub run; progress export does not carry the annual link draft. Intake remains closed and this row is inactive/noncurrent.'
+    'Keep this summary with your checklist. Copy setup results into Step 2 of the Hub; downloads are optional backups. Intake remains closed and this row is inactive/noncurrent.'
   ];
   return lines.join('\n');
 }
@@ -123,15 +135,23 @@ function asmeVerifyCompletedAnnual_(state,master,form,year){
   var budget=SpreadsheetApp.openById(state.ids.budgetTracker),setup=budget.getSheetByName('Setup & Lists'),dates=[year.start+'-08-01',year.end+'-07-31',year.start+'-08-01',year.start+'-12-31',year.end+'-01-01',year.end+'-05-31'];
   if(!setup||['B4','B5','B11','B12','B13','B14'].some(function(a,i){var actual=setup.getRange(a).getValue(),expected=Utilities.parseDate(dates[i],budget.getSpreadsheetTimeZone(),'yyyy-MM-dd');return actual instanceof Date&&expected instanceof Date?actual.getTime()!==expected.getTime():actual!==expected;}))throw new Error('Completed annual budget dates changed; no files were changed.');
 }
-function provisionAnnualYear(targetYear,fallTerm){
+function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
   var year=asmeAnnualYear_(targetYear,fallTerm),owner='asmeohiostate@gmail.com';
   if(Session.getEffectiveUser().getEmail().toLowerCase()!==owner||Session.getActiveUser().getEmail().toLowerCase()!==owner)throw new Error('Run as the chapter Google account.');
-  var properties=PropertiesService.getScriptProperties(),cfg=JSON.parse(properties.getProperty('ANNUAL_PROVISIONER_CONFIG')||'{}');
+  var properties=PropertiesService.getScriptProperties(),configRaw=properties.getProperty('ANNUAL_PROVISIONER_CONFIG')||'{}',cfg=JSON.parse(configRaw);
+  if (annualAnswers) {
+    if (!annualAnswers || typeof annualAnswers !== 'object' || ['production','rehearsal'].indexOf(annualAnswers.mode) < 0 || cfg.workspaceMode !== annualAnswers.mode || cfg.rootFolderId !== annualAnswers.rootFolderId || cfg.controlCenterId !== annualAnswers.controlCenterId || asmeAnnualConfigRevision_(cfg) !== annualAnswers.configRevision) throw new Error('Ask the President to confirm whether the saved workspace is Real handoff or Practice before creating files.');
+    var goal = Number(annualAnswers.engagementGoal);
+    if (!Number.isInteger(goal) || goal <= 0) throw new Error('Enter a positive whole number for this year’s member goal.');
+    cfg.engagementGoal = goal;
+  }
   if(!cfg.rootFolderId||!cfg.controlCenterId||cfg.rootFolderId===cfg.controlCenterId||cfg.rootFolderId==='125_HEyqM4T0lrSSuBfSzPT_o0B8kScHK'||Object.keys(ASME_ANNUAL_TEMPLATES).some(function(k){return [cfg.rootFolderId,cfg.controlCenterId].indexOf(ASME_ANNUAL_TEMPLATES[k])>=0;})||!Number.isInteger(cfg.engagementGoal)||cfg.engagementGoal<=0)throw new Error('Maintainer must configure chapter root, Control Center and approved positive goal once.');
   if(cfg.calendarIcalUrl && !/^https:\/\/[^\s]+$/.test(cfg.calendarIcalUrl))throw new Error('Calendar feed must be an HTTPS URL.');
   var lock=LockService.getScriptLock();if(!lock.tryLock(30000))throw new Error('Annual setup is already running.');
   var key=asmeAnnualRunKey_(targetYear,cfg.rootFolderId,cfg.controlCenterId),state;
   try{
+    if ((properties.getProperty('ANNUAL_PROVISIONER_CONFIG')||'{}') !== configRaw) throw new Error('Chapter setup changed while waiting. Reload the setup page before continuing.');
+    if (annualAnswers) asmeCheckWorkspacePurpose_(properties, cfg);
     var center=SpreadsheetApp.openById(cfg.controlCenterId),settings=center.getSheetByName('Hub_Settings_Public');
     if(!settings||JSON.stringify(settings.getRange(1,1,1,20).getValues()[0])!==JSON.stringify(ASME_ANNUAL_HEADERS)||settings.getRange(1,1,1,20).getFormulas()[0].some(Boolean)||settings.getLastRow()>1000)throw new Error('Control Center A:T must match exact 20-column schema.');
     state=JSON.parse(properties.getProperty(key)||'{}');
@@ -142,6 +162,8 @@ function provisionAnnualYear(targetYear,fallTerm){
     if(!Object.keys(state).length){var legacy=JSON.parse(properties.getProperty('ASME_SIMPLE_ANNUAL_'+targetYear)||'{}');if(JSON.stringify(legacy.plan)===JSON.stringify(plan)){state=legacy;migrateLegacy=true;}}
     if(Object.keys(state).length && (JSON.stringify(state.plan)!==JSON.stringify(plan)||!state.ids||typeof state.ids!=='object'||Array.isArray(state.ids)||['new','draft_ready'].indexOf(state.phase)<0||typeof state.draftTimestamp!=='string'||isNaN(Date.parse(state.draftTimestamp))||new Date(state.draftTimestamp).toISOString()!==state.draftTimestamp))throw new Error('Existing run configuration changed or its saved receipt is invalid; maintainer must review it.');
     if(!Object.keys(state).length)state={year:targetYear,rootFolderId:cfg.rootFolderId,plan:plan,ids:{},phase:'new',draftTimestamp:new Date().toISOString()};
+    if (annualAnswers && Object.keys(state.ids || {}).length && ((!state.workspaceMode && annualAnswers.mode === 'production') || (state.workspaceMode && state.workspaceMode !== annualAnswers.mode))) throw new Error('These existing files are Practice or have an unconfirmed purpose. Use a separate reviewed Real handoff workspace.');
+    if (!Object.keys(state.ids || {}).length) state.workspaceMode = cfg.workspaceMode || '';
     state.runKey=key;
     function save(){properties.setProperty(key,JSON.stringify(state));}
     function privateOwned(file){if(file.getOwner().getEmail().toLowerCase()!==owner||file.getSharingAccess()!==DriveApp.Access.PRIVATE||file.isTrashed()||file.getEditors().concat(file.getViewers()).some(function(user){return user.getEmail().toLowerCase()!==owner;}))throw new Error('Expected private chapter-owned file/folder: '+file.getName());}

@@ -1,6 +1,6 @@
 # Officer transition: start here
 
-Use this guide for the real transfer of chapter responsibilities to incoming officers. Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**. Enter the starting year, such as **2027** for 2027–2028, choose **Use year**, then start or continue the checklist for your handoff. **Real handoff** is the normal officer route. Optional **Practice (maintainer review)** is for a maintainer or team member deliberately trying the tools in separate private copies.
+Use this guide for the real transfer of chapter responsibilities to incoming officers. Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**. In Step 1, enter the starting year, such as **2027** for 2027–2028, choose the purpose, then start or continue your checklist. **Real handoff** is the normal officer route. Optional **Practice (maintainer review)** is for a maintainer or team member deliberately trying the tools in separate private copies.
 
 You do not need to run a fictional five-submission exercise to begin or complete ordinary officer handoff tasks. Review the current setup and the evidence the President supplies. If a technical result is missing, ask the maintainer to verify it and record the blocker; do not invent a pass or repeat fictional inputs in real member or financial records.
 
@@ -46,7 +46,7 @@ If practice copies were used, inventory and retain or remove their fictional inp
 
 ## Keep the records together
 
-**Choose or change checklist** opens the local checklist settings; they collapse after Start or Continue. **Record results** stores observations on this device; the President names who transfers notes or exported progress to the shared private checklist. For example, copy “Secretary edit access blocked; President to arrange access” to the shared record. **Add a note or evidence** records an explanation or private evidence link. **Saved links and backup tools** holds that checklist's links and separate backups. Private record fields take full HTTPS document or folder links, not a person's name or email. Review imported link fields before **Save**: the private handoff folder and the importable JSON file serve different purposes.
+Step 1 contains the year and purpose questions. **Change year** returns there from later steps. **Record results** stores observations on this device; the President names who transfers notes or exported progress to the shared private checklist. For example, copy “Secretary edit access blocked; President to arrange access” to the shared record. **Add a note or evidence** records an explanation or private evidence link. **Saved links and backup tools** holds that checklist's links and separate backups. Private record fields take full HTTPS document or folder links, not a person's name or email. Review imported link fields before **Save**: the private handoff folder and a saved links backup serve different purposes.
 
 The President supplies a completed copy of the [private handoff checklist](private-run-checklist-template.md). Use the [practice cleanup template](selective-mock-cleanup-template.md) only if practice data needs disposition. Keep exact file inventories, member/test data and approvals in the chapter-controlled private folder. Credentials and recovery codes belong in the authorized credential system.
 

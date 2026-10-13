@@ -36,7 +36,7 @@ function harness(){
   }
   function book(id,sheets){const b={id,sheets:new Map(sheets.map(s=>[s.name,s])),getId:()=>id,getSheetByName:n=>b.sheets.get(n),getSheets:()=>[...b.sheets.values()],insertSheet:name=>{writes.push('archive');const s=new Sheet(name);b.sheets.set(name,s);return s;},getSpreadsheetTimeZone:()=> 'America/New_York',toast:()=>{}};books.set(id,b);return b;}
   function form(id){const f={id,destination:null,accepting:false,responses:[],choices:[],choiceWrites:0,title:'template',getId:()=>id,getResponses:()=>f.responses,deleteAllResponses:()=>{throw Error('Bulk deletion must not be used');},deleteResponse:responseId=>{writes.push('delete form responses');f.responses=f.responses.filter(r=>r.getId()!==responseId);},isAcceptingResponses:()=>f.accepting,setAcceptingResponses:v=>{writes.push('intake');f.accepting=v;},setTitle:v=>{writes.push('title');f.title=v;},getDestinationId:()=>{if(!f.destination)throw Error('Exception: The form currently has no response destination.');return f.destination;},setDestination:(_,dest)=>{writes.push('destination');f.destination=dest;const s=new Sheet('Observed response 8',[clone(ctx.ASME_RESPONSE_HEADERS)]);s.formUrl='form:'+id;books.get(dest).sheets.set(s.name,s);},getPublishedUrl:()=>`https://docs.google.com/forms/d/e/${id}/viewform`,getEditUrl:()=>`https://docs.google.com/forms/d/${id}/edit`,getItems:()=>[{getTitle:()=> 'Event ID',asListItem:()=>({getChoices:()=>f.choices.map(c=>({getValue:()=>c})),setChoiceValues:a=>{f.choiceWrites++;writes.push('choices');f.choices=clone(a);}})}]};forms.set(id,f);return f;}
-  const ctx=vm.createContext({console,Date,PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k)||null,setProperty:(k,v)=>{props.set(k,v);}})},Session:{getEffectiveUser:()=>({getEmail:()=>actor}),getActiveUser:()=>({getEmail:()=>activeActor})},LockService:{getScriptLock:()=>({tryLock:()=>{if(locked)return false;locked=true;return true;},releaseLock:()=>{locked=false;}})},DriveApp:{Access:{PRIVATE:'private'},getFolderById:id=>{const f=files.get(id);if(!f?.folder)throw Error('folder missing');return f;},getFileById:id=>{const f=files.get(id);if(!f||f.folder)throw Error('file missing');return f;}},SpreadsheetApp:{ProtectionType:{SHEET:'sheet'},openById:id=>{if(!books.has(id))throw Error('book missing');return books.get(id);},getActiveSpreadsheet:()=>books.get('annual-master'),flush:()=>{}},FormApp:{DestinationType:{SPREADSHEET:'spreadsheet'},ItemType:{LIST:'list'},openById:id=>{if(!forms.has(id))throw Error('form missing');return forms.get(id);},openByUrl:url=>forms.get(url.slice(5))},Utilities:{sleep:()=>{},parseDate:(date,tz,pattern)=>{assert.equal(tz,'America/New_York');assert.equal(pattern,'yyyy-MM-dd');return date;}},ScriptApp:{EventType:{ON_EDIT:'onEdit'},getProjectTriggers:()=>triggers,newTrigger:handler=>{let id;const b={forSpreadsheet:ss=>{id=ss.getId();return b;},onEdit:()=>b,create:()=>{writes.push('trigger');const t={getHandlerFunction:()=>handler,getTriggerSourceId:()=>id,getEventType:()=> 'onEdit'};triggers.push(t);return t;}};return b;}}});
+  const ctx=vm.createContext({console,Date,PropertiesService:{getScriptProperties:()=>({getProperty:k=>props.get(k)||null,getProperties:()=>Object.fromEntries(props),setProperty:(k,v)=>{props.set(k,v);}})},Session:{getEffectiveUser:()=>({getEmail:()=>actor}),getActiveUser:()=>({getEmail:()=>activeActor})},LockService:{getScriptLock:()=>({tryLock:()=>{if(locked)return false;locked=true;return true;},releaseLock:()=>{locked=false;}})},DriveApp:{Access:{PRIVATE:'private'},getFolderById:id=>{const f=files.get(id);if(!f?.folder)throw Error('folder missing');return f;},getFileById:id=>{const f=files.get(id);if(!f||f.folder)throw Error('file missing');return f;}},SpreadsheetApp:{ProtectionType:{SHEET:'sheet'},openById:id=>{if(!books.has(id))throw Error('book missing');return books.get(id);},getActiveSpreadsheet:()=>books.get('annual-master'),flush:()=>{}},FormApp:{DestinationType:{SPREADSHEET:'spreadsheet'},ItemType:{LIST:'list'},openById:id=>{if(!forms.has(id))throw Error('form missing');return forms.get(id);},openByUrl:url=>forms.get(url.slice(5))},Utilities:{sleep:()=>{},parseDate:(date,tz,pattern)=>{assert.equal(tz,'America/New_York');assert.equal(pattern,'yyyy-MM-dd');return date;}},ScriptApp:{EventType:{ON_EDIT:'onEdit'},getProjectTriggers:()=>triggers,newTrigger:handler=>{let id;const b={forSpreadsheet:ss=>{id=ss.getId();return b;},onEdit:()=>b,create:()=>{writes.push('trigger');const t={getHandlerFunction:()=>handler,getTriggerSourceId:()=>id,getEventType:()=> 'onEdit'};triggers.push(t);return t;}};return b;}}});
   vm.runInContext(scripts,ctx);
   new File('root','chapter root',null,true);new File('center','Control Center');
   const settings=new Sheet('Hub_Settings_Public',[clone(ctx.ASME_ANNUAL_HEADERS)]);book('center',[settings]);
@@ -45,7 +45,7 @@ function harness(){
   const events=new Sheet('Events',[eventHeaders,['20270826-001','Welcome',45000,'Fall 2027','2027-28','General Body Meeting',5,true,true],['closed','Closed',45000,'Fall 2027','2027-28','General Body Meeting',5,true,false]]);
   const sourceSheets=[cfg,new Sheet('_Raw_Ingest',[],[[ctx.ASME_RAW_INGEST_FORMULA]]),events,new Sheet('Roster',[],[["=INDEX('_Raw_Ingest'!C:C,ROW())"]]),new Sheet('Point Log',[],[['=INDEX(_Raw_Ingest!K:K,ROW())']]),new Sheet('Website Staging')];
   for(const [k,id]of Object.entries(ctx.ASME_ANNUAL_TEMPLATES)){new File(id,k,null,false,k==='attendanceForm'?'form':'sheet');if(k==='pointsMaster')book(id,sourceSheets);else if(k==='attendanceForm')form(id);else if(k==='budgetTracker')book(id,[new Sheet('Setup & Lists'),new Sheet('Start Here',[['ASME Budget Tracker — TEMPLATE — MAKE A COPY']]),new Sheet('Dashboard',[['ASME Budget Tracker — TEMPLATE — COPY BEFORE SETUP']])]);else book(id,[new Sheet('Config')]);}
-  props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({rootFolderId:'root',controlCenterId:'center',engagementGoal:25,calendarIcalUrl:'https://example.org/calendar.ics'}));writes.length=0;
+  props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({rootFolderId:'root',controlCenterId:'center',engagementGoal:25,workspaceMode:'rehearsal',calendarIcalUrl:'https://example.org/calendar.ics'}));writes.length=0;
   return {ctx,files,books,forms,props,triggers,writes,settings,Sheet,File,book,form,events,eventHeaders,setActor:v=>{actor=v;},setActiveActor:v=>{activeActor=v;},loseCopy:()=>{failCopy=true;},loseAppend:()=>{failAppend=true;},run:()=>ctx.provisionAnnualYear('2027-2028','Fall 2027'),runKey:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId);},state:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return JSON.parse(props.get(ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId)));}};
 }
 test('actual provisioner creates five private copies, observed pointer, six dates and exact inactive row',()=>{
@@ -146,17 +146,17 @@ test('execute-as-owner invocation still refuses another active account or unknow
 
 test('setup screen saves validated chapter links without editing properties manually',()=>{
   const h=harness();
-  const cfg=h.ctx.saveAnnualSetupConfig({rootFolderId:'https://drive.google.com/drive/folders/root?usp=sharing',controlCenterId:'https://docs.google.com/spreadsheets/d/center/edit',engagementGoal:'25',calendarIcalUrl:'https://example.org/calendar.ics'});
+  const cfg=h.ctx.saveAnnualSetupConfig({rootFolderId:'https://drive.google.com/drive/folders/root?usp=sharing',controlCenterId:'https://docs.google.com/spreadsheets/d/center/edit',engagementGoal:'25',workspaceMode:'rehearsal',calendarIcalUrl:'https://example.org/calendar.ics'});
   assert.equal(cfg.rootFolderId,'root');assert.equal(cfg.controlCenterId,'center');assert.equal(cfg.engagementGoal,25);
   assert.equal(h.ctx.getAnnualSetupConfig().rootFolderId,'root');
-  const r=h.ctx.runAnnualSetup('2027-2028');assert.equal(r.success,true);assert.equal(Object.keys(r.links).length,5);assert.match(r.readableReceipt,/inactive|FALSE/);
-  const before=h.writes.length;h.ctx.runAnnualSetup('2027-2028');assert.equal(h.writes.length,before);
+  const r=h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(r.success,true);assert.equal(Object.keys(r.links).length,5);assert.match(r.readableReceipt,/inactive|FALSE/);
+  const before=h.writes.length;h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(h.writes.length,before);
 });
 test('setup screen rejects wrong account, invalid goal, resource links and headers before saving',()=>{
-  const h=harness(),valid={rootFolderId:'root',controlCenterId:'center',engagementGoal:25},before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
+  const h=harness(),valid={rootFolderId:'root',controlCenterId:'center',engagementGoal:25,workspaceMode:'rehearsal'},before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
   for(const delta of [{engagementGoal:0},{engagementGoal:1.5},{rootFolderId:'https://evil.example/root'},{calendarIcalUrl:'http://example.org/feed'},{rootFolderId:h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster}])assert.throws(()=>h.ctx.saveAnnualSetupConfig({...valid,...delta}));
   h.settings.values[0][0]='wrong';assert.throws(()=>h.ctx.saveAnnualSetupConfig(valid),/headers/);
-  h.setActiveActor('someone@example.com');assert.throws(()=>h.ctx.getAnnualSetupConfig(),/chapter/);assert.throws(()=>h.ctx.runAnnualSetup('2027-2028'),/chapter/);
+  h.setActiveActor('someone@example.com');assert.throws(()=>h.ctx.getAnnualSetupConfig(),/chapter/);assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/chapter/);
   assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);assert.equal(h.writes.length,0);
 });
 function cleanupFixture(){
@@ -216,4 +216,61 @@ test('cleanup rechecks raw rows and safe bindings after Form deletion before cle
 test('canceling cleanup confirmation changes neither store',()=>{
   const h=cleanupFixture();h.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>h.master;h.ctx.SpreadsheetApp.getUi=()=>({Button:{YES:'yes'},ButtonSet:{YES_NO:'yesno'},alert:()=> 'no'});
   assert.equal(h.ctx.clearTestData().cleared,false);assert.equal(h.writes.length,0);assert.equal(h.form.responses.length,1);
+});
+
+test('annual questions use a per-year goal, preserve saved chapter defaults and resume with saved goal',()=>{
+ const h=harness(),before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
+ const r=h.ctx.runAnnualSetup('2027-2028',{engagementGoal:'50',mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});
+ assert.equal(r.receipt,undefined);assert.equal(JSON.parse(r.hubHandoff).year,'2027-2028');assert.equal(Object.keys(JSON.parse(r.hubHandoff).links).length,7);
+ assert.match(JSON.parse(r.hubHandoff).mock.controlCenterUrl,/center/);
+ assert.equal(h.state().plan.engagementGoal,50);assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);
+ assert.equal(h.ctx.getAnnualSetupConfig('2027-2028').engagementGoal,50);assert.equal(h.ctx.getAnnualSetupConfig('2027-2028').existing,true);
+ const writes=h.writes.length;h.ctx.runAnnualSetup('2027-2028',{engagementGoal:50,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(h.writes.length,writes);
+ assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{engagementGoal:51,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/configuration changed/);assert.equal(h.writes.length,writes);
+});
+
+test('goal suggestion reads last year without copying old annual destinations or approving the goal',()=>{
+ const h=harness();const previous=Array(20).fill('');previous[0]='2026-2027';previous[2]=65;previous[3]='old-export';h.settings.values.push(previous);
+ const before=h.props.get('ANNUAL_PROVISIONER_CONFIG'),view=h.ctx.getAnnualSetupConfig('2027-2028');
+ assert.equal(view.engagementGoal,65);assert.match(view.goalSource,/2026-2027/);assert.equal(view.existing,false);assert.equal(h.writes.length,0);assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);
+ const result=h.ctx.runAnnualSetup('2027-2028',{engagementGoal:70,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.notEqual(result.links.pointsExport,'old-export');assert.equal(h.state().plan.engagementGoal,70);
+});
+
+test('real handoff cannot silently reuse Practice or unconfirmed workspace; invalid goal writes nothing',()=>{
+ for(const answers of [{engagementGoal:25,mode:'production',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'},{engagementGoal:0,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'},{engagementGoal:1.5,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}]){
+  const h=harness();assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',answers));assert.equal(h.writes.length,0);
+ }
+ const h=harness();const cfg=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG'));delete cfg.workspaceMode;h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify(cfg));
+ assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/confirm/);assert.equal(h.writes.length,0);
+});
+
+test('workspace purpose is immutable and stored on created runs',()=>{
+ const h=harness(),cfg=h.ctx.getAnnualSetupConfig();h.ctx.runAnnualSetup('2027-2028',{...cfg,mode:'rehearsal'});
+ assert.equal(h.state().workspaceMode,'rehearsal');const writes=h.writes.length;
+ assert.throws(()=>h.ctx.saveAnnualSetupConfig({...cfg,workspaceMode:'production'}),/Do not change/);assert.equal(h.writes.length,writes);
+ // Even external property changes cannot reclassify the previously created files.
+ h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({...JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG')),workspaceMode:'production'}));
+ const changed=h.ctx.getAnnualSetupConfig();assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{...changed,mode:'production'}),/Existing files/);assert.equal(h.writes.length,writes);
+});
+
+test('stale page refuses changed workspace or calendar before writing files',()=>{
+ for(const change of [{rootFolderId:'other-root'},{calendarIcalUrl:'https://example.org/new.ics'}]) {
+  const h=harness(),shown=h.ctx.getAnnualSetupConfig();h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({...JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG')),...change}));
+  assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{...shown,mode:'rehearsal'}),/confirm/);assert.equal(h.writes.length,0);
+ }
+});
+
+test('old workspace with existing unclassified files cannot be relabeled real',()=>{
+ const h=harness();h.run();const cfg=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG'));delete cfg.workspaceMode;h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify(cfg));
+ assert.throws(()=>h.ctx.saveAnnualSetupConfig({...cfg,workspaceMode:'production'}),/unconfirmed workspace/);
+});
+
+test('Real and Practice cannot share either root or settings sheet even after changing current config',()=>{
+ const h=harness();h.ctx.runAnnualSetup('2027-2028',{...h.ctx.getAnnualSetupConfig(),mode:'rehearsal'});
+ new h.File('newroot','New root',null,true);new h.File('newcenter','New center',null);h.book('newcenter',[new h.Sheet('Hub_Settings_Public',[h.ctx.ASME_ANNUAL_HEADERS])]);
+ const cfg=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG')),before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
+ for(const change of [{rootFolderId:'newroot'},{controlCenterId:'newcenter'}]) assert.throws(()=>h.ctx.saveAnnualSetupConfig({...cfg,...change,workspaceMode:'production'}),/separate folder and settings sheet/);
+ assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);
+ h.ctx.saveAnnualSetupConfig({...cfg,rootFolderId:'newroot',controlCenterId:'newcenter',workspaceMode:'production'});
+ for(const change of [{rootFolderId:'root'},{controlCenterId:'center'}]) assert.throws(()=>h.ctx.saveAnnualSetupConfig({...cfg,rootFolderId:'newroot',controlCenterId:'newcenter',...change,workspaceMode:'production'}),/separate folder and settings sheet/);
 });
