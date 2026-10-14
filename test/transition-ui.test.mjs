@@ -469,7 +469,7 @@ test('progress advances on passed reviews, ignores blockers, and falls when a re
  assert.match(ui.$('transition-completion').textContent,new RegExp(`1/${total} tasks complete`));
  await ui.choose('T01','blocked'); assert.equal(ui.$('transition-progress').value,1);
  await ui.choose('V20','needs_recheck'); assert.equal(ui.$('transition-progress').value,0);
- assert.match(ui.$('transition-progress-help').textContent,/Next step only moves between instructions/);
+ assert.match(ui.$('transition-progress-help').textContent,/Read next step does not complete work/);
 });
 
 test('reset starts at zero, preserves the old checklist and copies saved links; cancel changes nothing', async () => {
@@ -544,4 +544,24 @@ test('choose Practice before changing the year preserves the intended new-checkl
  const ui=browser();await ui.go('T01');ui.$('transition-run-mode').value='rehearsal';ui.$('transition-year').value='2028';await ui.$('transition-year').emit('change');
  assert.equal(ui.$('transition-run-mode').value,'rehearsal');await ui.$('transition-run-form').emit('submit');
  const result=JSON.parse(ui.existing.get(state.storageKey('2028-2029',ui.$('transition-run').value)));assert.equal(result.run.mode,'rehearsal');
+});
+
+ test('completion button records the step only after its reviews and navigation does not advance progress',async()=>{
+ const ui=browser();await ui.$('transition-run-form').emit('submit');
+ const finish=()=>ui.$('transition-steps').find(n=>n.tagName==='button'&&n.textContent==='Mark step complete');
+ assert.equal(finish().disabled,true);const before=ui.$('transition-progress').value;
+ await ui.$('transition-next').emit('click');assert.equal(ui.$('transition-progress').value,before);await ui.go('T01');
+ await ui.choose('V20','passed');assert.equal(finish().disabled,false);const reviews=ui.$('transition-progress').value;
+ await finish().click();assert.equal(ui.saved().steps.T01,'complete');assert.equal(ui.$('transition-progress').value,reviews+1);
+ });
+
+test('reload keeps the selected non-default year and its saved progress',async()=>{
+ const ui=browser();ui.$('transition-year').value='2040';ui.$('transition-run-mode').value='rehearsal';await ui.$('transition-run-form').emit('submit');await ui.choose('V20','passed');
+ const again=browser(ui.existing);assert.equal(again.$('transition-guide-year').textContent,'2040–2041');assert.equal(again.$('transition-progress').value,1);assert.equal(again.$('transition-run-mode').value,'rehearsal');
+});
+
+test('first upgraded load restores latest valid saved year without a year pointer',async()=>{
+ const ui=browser();ui.$('transition-year').value='2040';ui.$('transition-run-mode').value='rehearsal';await ui.$('transition-run-form').emit('submit');await ui.choose('V20','passed');
+ ui.existing.delete('asmeHubTransitionSelectedYearV2');ui.existing.set(state.storageKey('2042-2043','bad'),JSON.stringify({year:'2042-2043',savedAt:'2099-01-01'}));
+ const again=browser(ui.existing);assert.equal(again.$('transition-guide-year').textContent,'2040–2041');assert.equal(again.$('transition-progress').value,1);
 });

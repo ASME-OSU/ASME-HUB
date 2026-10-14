@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261013b">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261013e">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -770,6 +770,12 @@
               </div>
               <button type="button" class="transition-close icon-button" id="transition-close" aria-label="Close transition guide">×</button>
             </header>
+            <section class="transition-progress-panel" aria-label="Saved checklist progress">
+              <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
+              <progress id="transition-progress" value="0" max="5" aria-label="Checklist progress" aria-describedby="transition-progress-help"></progress>
+              <p id="transition-progress-help" class="transition-control-help"></p>
+              <p id="transition-status" class="transition-status" role="status" aria-live="polite"></p>
+            </section>
             <div class="transition-dialog-body">
               <div id="transition-setup-home" hidden><section id="transition-checklist-options" class="transition-checklist-options">
                 <h4>Start here</h4>
@@ -799,9 +805,6 @@
               </section>
               </section></div>
               <p id="transition-readiness" class="transition-banner" role="status"></p>
-              <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
-              <progress id="transition-progress" value="0" max="5" aria-label="Checklist progress" aria-describedby="transition-progress-help"></progress>
-              <p id="transition-progress-help" class="transition-control-help"></p>
               <button class="text-button" id="transition-reset" type="button">Reset checklist progress</button>
               <section id="transition-reset-confirmation" class="transition-banner" aria-label="Confirm checklist reset" hidden>
                 <p id="transition-reset-context"></p>
@@ -809,7 +812,6 @@
                 <button class="secondary-button" id="transition-reset-confirm" type="button">Start fresh checklist</button>
               </section>
               <p id="transition-summary" class="transition-summary"></p>
-              <p id="transition-status" class="transition-status" role="status" aria-live="polite"></p>
               <div id="transition-steps" class="transition-steps"></div>
               <p id="transition-next-reason" class="transition-next-reason" aria-live="polite"></p>
               <section id="transition-saved-tools" class="transition-saved-tools" aria-labelledby="transition-saved-tools-title">
@@ -1099,11 +1101,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261013b"></script>
+  <script src="assets/js/config.js?v=20261013e"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261013b"></script>
-  <script type="module" src="assets/js/transition.js?v=20261013b"></script>
+  <script src="assets/js/app.js?v=20261013e"></script>
+  <script type="module" src="assets/js/transition.js?v=20261013e"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

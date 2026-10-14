@@ -95,7 +95,10 @@ for (const step of TRANSITION_STEPS) {
 }
 for (const check of TRANSITION_CHECKS) {
  if(check.id === 'V01') check.productionTitle = 'Has the maintainer confirmed this year’s tools are ready?';
+ if(check.id === 'V05') check.productionTitle = 'Has the maintainer verified that non-live exports hide member rows and use only the approved public fields?';
+ if(check.id === 'V06') check.productionTitle = 'Do Budget Tracker and Budget Export match the private ledger and approved funding amounts?';
  if(check.id === 'V07') check.productionTitle = 'Does this year’s inactive Control Center row match the setup summary?';
+ if(check.id === 'V08') check.productionTitle = 'Do this year’s events appear in the Hub, website and newsletter calendar views?';
  if(check.id === 'V20') check.productionTitle = 'Does the private five-step checklist name each holder, access evidence, coordinator and recovery contact?';
  if(check.id === 'V19') check.productionTitle = 'Has the maintainer confirmed the event-update method and responsible owner?';
  if(check.id === 'V16') check.productionTitle = 'Have prior-year records, inherited test data and approved access changes been accounted for before launch?';
@@ -162,3 +165,5 @@ annualSetupStep.instructions = [setupAccountWarning,
 ];
 // Annual-copy access is checked after the copies exist, rather than before setup.
 TRANSITION_CHECKS.find(check => check.id === 'V10').step = 'T03';
+// Event updates are installed or reviewed alongside the actual event work.
+TRANSITION_CHECKS.find(check => check.id === 'V19').step = 'T03';

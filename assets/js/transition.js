@@ -1,6 +1,6 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261013b";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261013b";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261013b";
+import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES } from "./transition-steps.js?v=20261013e";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261013e";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261013e";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -13,7 +13,30 @@ if (section) {
   const setupHome = $("transition-setup-home");
   // Step 1 owns setup; the header links back to it from later steps.
   const yearOptions = $("transition-year-options");
+  const selectedYearKey = "asmeHubTransitionSelectedYearV2";
   let selectedYear = "";
+  try {
+    const savedYear = localStorage.getItem(selectedYearKey);
+    if (validTransitionYear(savedYear)) selectedYear = savedYear;
+    else if (savedYear === null) {
+      // Older releases did not remember the viewed year. Restore the latest
+      // validated saved checklist rather than showing a different year at zero.
+      let latest = -Infinity;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith(TRANSITION_STORAGE_PREFIX)) continue;
+        const suffix = key.slice(TRANSITION_STORAGE_PREFIX.length), parts = suffix.split(":");
+        if (parts.length !== 2 || !validTransitionYear(parts[0])) continue;
+        try {
+          const original = JSON.parse(localStorage.getItem(key));
+          if (original.run?.id !== parts[1]) continue;
+          const saved = migrateProgress(original, parts[0], TRANSITION_STEPS, TRANSITION_CHECKS);
+          const stamp = Date.parse(saved.savedAt);
+          if (stamp > latest) { latest = stamp; selectedYear = saved.year; }
+        } catch { /* Preserve malformed records; they cannot select a year. */ }
+      }
+    }
+  } catch { /* Use the next year when storage is unavailable. */ }
   let selectedRunId = "";
   const statusLine = $("transition-status");
   const byId = new Map(TRANSITION_STEPS.map((step) => [step.id, step]));
@@ -46,6 +69,7 @@ if (section) {
     const selected = validTransitionYear(preferred) ? preferred : transitionYear(nextStart);
     yearOptions.replaceChildren(...choices.map((year) => new Option(year.replace("-", "–"), year.slice(0, 4))));
     selectedYear = selected;
+    try { localStorage.setItem(selectedYearKey, selected); } catch { /* The current view remains usable. */ }
     yearInput.value = selected.slice(0, 4);
   }
   populateTransitionYears();
@@ -550,7 +574,7 @@ if (section) {
     meter.value = summary.completedItems;
     meter.setAttribute("aria-label", `Checklist progress: ${summary.completedItems} of ${summary.totalItems} tasks complete`);
     meter.setAttribute("aria-valuetext", `${summary.checkCounts.passed} of ${summary.totalChecks} reviews passed; ${summary.completedSteps} of ${TRANSITION_STEPS.length} steps complete`);
-    $("transition-progress-help").textContent = `${summary.checkCounts.passed}/${summary.totalChecks} reviews passed · ${summary.completedSteps}/${TRANSITION_STEPS.length} steps complete. Passing a review or completing a step advances the bar. Next step only moves between instructions. Blocked, failed and skipped items do not count${progress.run.mode === "rehearsal" ? "; Practice’s activation skip counts after all practice reviews pass" : ""}.`;
+    $("transition-progress-help").textContent = `${summary.checkCounts.passed}/${summary.totalChecks} reviews · ${summary.completedSteps}/${TRANSITION_STEPS.length} steps complete. Results save automatically. Read next step does not complete work.`;
     $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps ${progress.run.mode === "rehearsal" ? "finished (including the activation skip when practice is complete)" : "complete"}. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Reviewer acceptance" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
     $("transition-launch-summary").textContent = `${progress.run.name} · ${selectedYear.replace("-", "–")}: ${summary.completedItems}/${summary.totalItems} tasks complete · ${progress.run.mode === "rehearsal" ? summary.rehearsal.eligible ? "GO — private rehearsal complete; production activation excluded" : "Private rehearsal not complete" : summary.launch.eligible ? "production prerequisites reported passed; coordinator approval required" : "Handoff reviews incomplete"}.`;
     // One link editor stays at the bottom for the currently selected checklist.
@@ -641,9 +665,9 @@ if (section) {
     appendStepResources(resources, step);
     card.append(resources);
     if (stepLinks[step.id] || step.id === "T02") {
-      const panel = node("section", "transition-inline-links");
-      panel.append(node("h4", "", "Review links and summary"));
-      panel.append(node("p", "", "Enter or import the supplied links under Saved links at the bottom, then compare them with the setup summary."));
+      const panel = node("details", "transition-inline-links");
+      panel.append(node("summary", "", "Optional: edit or restore links manually"));
+      panel.append(node("p", "", "Use this only to correct a saved link or restore a links backup. The Copy setup results box above is the usual path. Saving links does not complete a review."));
       const editLinks = node("button", "secondary-button", "Edit saved links");
       editLinks.type = "button";
       editLinks.addEventListener("click", () => {
@@ -667,11 +691,12 @@ if (section) {
     }
     const confirmation = node("section", "transition-confirmation");
     card.append(confirmation);
-    confirmation.append(node("h4", "", "Record results"), node("p", "transition-manual-check", step.id === "T01" && progress.run.mode === "rehearsal" ? "Record the practice lead, test account and recovery contact. Check that every copied tool opens and the private checklist matches this attempt." : progress.run.mode === "production" ? step.productionCheck : step.check));
-    if (checksFor(step).length) confirmation.append(node("p", "", "Perform these checks in the named services, then record your result below. Your selections record reported observations."));
+    confirmation.append(node("h4", "", "Record results"), node("p", "transition-manual-check", step.id === "T01" && progress.run.mode === "rehearsal" ? "Record the practice lead, test account and recovery contact. Confirm that the private checklist matches this attempt. Step 3 checks access to the files created in Step 2." : progress.run.mode === "production" ? step.productionCheck : step.check));
+    if (checksFor(step).length) confirmation.append(node("p", "", step.launch && progress.run.mode === "rehearsal" ? "Do each check in the linked tool, then choose your result below. “Yes — I checked” advances the bar." : "Do each check in the linked tool, then choose your result below. “Yes — I checked” advances the bar. When the checks and tasks are done, choose “Mark step complete”."));
     const productionChecks = node("details", "transition-production-checks");
     productionChecks.append(node("summary", "", "Production checks — not part of this rehearsal"));
     let hasProductionChecks = false;
+    if (step.launch && progress.run.mode === "rehearsal") confirmation.append(node("p", "transition-control-help", "Practice does not start a real year. After these checks pass, set Step result to Skipped and save a reason such as ‘Practice only — no launch’."));
     for (const check of checksFor(step)) {
       if (!checkApplies(check, progress.run.mode)) {
         if (progress.run.mode === "production") continue;
@@ -702,13 +727,13 @@ if (section) {
       appendEvidence(confirmation, check.id);
     }
     if (hasProductionChecks) confirmation.append(productionChecks);
-    const control = node("label", "transition-status-control", "Step status");
+    const control = node("label", "transition-status-control", "Step result");
     const select = node("select");
     select.dataset.transitionControl = step.id;
     select.setAttribute("aria-label", `${step.id} officer progress`);
     TRANSITION_STATUSES.forEach((value) => select.add(new Option(statusLabels[value], value)));
     select.value = statusOf(step.id);
-    select.addEventListener("change", () => {
+    const recordStepResult = () => {
       const value = select.value;
       if (value === "complete") {
         const missing = unmet(step);
@@ -723,14 +748,22 @@ if (section) {
       const steps = { ...progress.steps };
       if (value === "not_started") delete steps[step.id]; else steps[step.id] = value;
       save(reconcileProgress({ ...progress, steps }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), step.id);
-    });
+    };
+    select.addEventListener("change", recordStepResult);
+    const finish = node("button", "primary-button transition-finish-step", statusOf(step.id) === "complete" ? "Step complete" : "Mark step complete");
+    finish.type = "button";
+    finish.disabled = statusOf(step.id) === "complete" || unchecked(step).length > 0 || Boolean(step.launch && !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible);
+    if (!(step.launch && progress.run.mode === "rehearsal")) {
+      finish.addEventListener("click", () => { select.value = "complete"; recordStepResult(); });
+      confirmation.append(finish, node("p", "transition-control-help", statusOf(step.id) === "complete" ? "This step is complete. Its results are saved on this device." : unchecked(step).length ? `${unchecked(step).length} ${unchecked(step).length === 1 ? "check still needs" : "checks still need"} “Yes — I checked”. Results save automatically when you select them.` : "All checks for this step are recorded. Mark the step complete when its tasks are finished."));
+    }
     control.append(select);
     confirmation.append(control);
     appendEvidence(confirmation, step.id);
     const reason = blockingReason(step);
     list.append(card);
     $("transition-back").disabled = currentIndex === 0;
-    $("transition-next").textContent = currentIndex === TRANSITION_STEPS.length - 1 ? "Finish review" : "Next step";
+    $("transition-next").textContent = currentIndex === TRANSITION_STEPS.length - 1 ? "Review what remains" : "Read next step";
     const mockMode = progress.run.mode === "rehearsal";
     dialog.dataset.mockMode = String(mockMode);
     $("transition-next").disabled = false;

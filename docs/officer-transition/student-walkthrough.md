@@ -70,6 +70,6 @@ Real activation requires recorded incoming acceptance, required reviews, actual 
 
 ## Progress and starting again
 
-The progress bar counts passed reviews and completed steps. Choosing Next step only moves between instructions. A blocked or failed item does not advance the bar. In Practice, the final activation skip counts only after the required practice reviews pass.
+The progress bar counts passed reviews and completed steps. The bar stays visible while you work. Select **Yes — I checked** for each review to advance it. When the tasks and reviews are done, choose **Mark step complete**. Results save automatically. **Read next step** only moves between instructions. A blocked or failed item does not advance the bar. In Practice, the final activation skip counts only after the required practice reviews pass.
 
 To start again, choose **Reset checklist progress**, read the named checklist and year, then choose **Start fresh checklist**. This starts with no results or notes and carries over only the links already saved. Your previous checklist remains under **Step 1 → Saved checklist for this year**; select it and choose **Continue checklist** to return to it. Unsaved edits do not carry over. This does not create Google files, change the active year, or grant launch approval.
