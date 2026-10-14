@@ -4,11 +4,15 @@ import {checkApplies,rehearsalEligibility,emptyProgress,createTransitionRun,pars
 const year='2027-2028',run=(mode='rehearsal',id='a')=>emptyProgress(year,createTransitionRun(id,mode,id));
 const read=v=>parseProgress(v,year,steps,checks);
 const ready=()=>({...run('production'),steps:Object.fromEntries(steps.filter(s=>!s.launch).map(s=>[s.id,'complete'])),checks:Object.fromEntries(checks.map(c=>[c.id,'passed']))});
-test('launch blockers use ordinary step and review names while keeping stable ids',()=>{
+test('launch summary counts nonlaunch prerequisites and applicable production reviews',()=>{
  const pending=launchEligibility(run('production'),steps,checks);
- assert.ok(pending.missing.includes('T02')); assert.ok(pending.unchecked.includes('V19'));
- assert.match(pending.reason,/Prepare this year’s files/); assert.match(pending.reason,/event-update method/);
- assert.doesNotMatch(pending.reason,/\b(?:T|V)\d{2}\b/);
+ assert.deepEqual(pending.missing,steps.filter(s=>!s.launch).map(s=>s.id));
+ assert.equal(pending.unchecked.length,20);
+ assert.match(pending.reason,/4 prerequisite steps and 20 reviews remain/);
+ const partial={...run('production'),steps:{T01:'complete'},checks:{V20:'passed'}};
+ assert.match(launchEligibility(partial,steps,checks).reason,/3 prerequisite steps and 19 reviews remain/);
+ const done=launchEligibility(ready(),steps,checks);assert.equal(done.eligible,true);assert.equal(done.missing.length,0);assert.equal(done.unchecked.length,0);
+ const practice=launchEligibility({...ready(),run:run().run},steps,checks);assert.equal(practice.eligible,false);assert.match(practice.reason,/never authorizes a production launch/);
 });
 test('guide10 migration preserves evidence and reopens changed event-update review',()=>{
  const old={...ready(),guideVersion:'officer-transition-guide-10',steps:{...ready().steps,T05:'complete'},notes:{V19:'Prior automatic observation'}};

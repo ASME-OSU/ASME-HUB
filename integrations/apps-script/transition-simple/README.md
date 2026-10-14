@@ -14,11 +14,13 @@ The existing editor routes remain `provisionReviewedAnnualYear('2027-2028')` and
 
 ## Five officer steps
 
-1. **Choose your year:** answer the year/purpose questions and confirm setup/account access.
-2. **Prepare this year’s files:** the saved chapter workspace and calendar are reused. Last year’s goal is a suggestion; the President approves the new goal. Existing years reopen with their original goal. Choose Copy setup results, paste them into Step 2, and save all seven links at once. A download is not required. Everyone uses the same files. Open the five working files. Intake stays closed, Points TESTING and the settings row inactive/noncurrent.
-3. **Export Access & Test Check-in:** allow matching Points/Budget imports. In an isolated set of private practice files, create events whose ID or name begins with `MOCK`, sync them and complete all five fictional cases in the guide (first profile, duplicate, returning member, missing profile, late profile). Verify five arrivals, A’s annual 13 points and B’s 8; Fall totals are 5 and 0. Close intake again and run **Pre-Flight Sanity Check**. Enable automatic event sync once per annual copy.
-4. **Communications & Calendar:** confirm the chapter calendar, website annual links, newsletter sender/reply-to and approved postal address.
-5. **Activation & Go-Live:** close intake and event `form_open` checkboxes. Use **Clear Test Data** in the test files, resolve required reviews, then have the authorized owner set Points LIVE and the verified Control Center year active/current at the approved time. Retire the former current-year flag. Practice stays TESTING and inactive.
+Use the [student walkthrough](../../../docs/officer-transition/student-walkthrough.md) as the primary officer guide. **Real handoff has 20 reviews; Practice has 16.** Source cleanup, configuration and installation remain maintainer responsibilities.
+
+1. **Choose your year:** select year/purpose and confirm shared workspace, approved account and help contact. Annual Setup access is checked in Step 2.
+2. **Prepare this year’s files:** use the approved single-account ASME profile and **Open Annual Setup**. Confirm separate Real/Practice workspace purpose. One designated operator chooses **Create or reopen this year’s files**; teammates reuse the same files. Choose **Copy setup results → Paste setup results → Save setup results**. Downloads and detailed settings are optional backup/comparison tools. Compare actual destinations/settings with the summary and dated maintainer evidence; saving links does not pass reviews.
+3. **Check attendance and finances:** Real handoff reviews actual data, approvals, reconciliation and readiness evidence. Practice uses isolated copies for the guide’s five fictional cases and budget inputs; never enter these in Real files.
+4. **Check calendar and messages:** Real handoff reviews approved events/drafts. Practice uses fictional previews and an unsent MOCK issue. Keep progress, private links and editable newsletter as separate backups; verify assigned recovery with the three-file guide.
+5. **Real — Approve and start the year:** only after required reviews, incoming acceptance and launch approval, the authorized owner sets verified new-row active/current TRUE and Points Config!B5 LIVE at the approved time; sets the previous year’s is_current FALSE preserving records; rechecks Hub, website, Form and newsletter. **Practice — Close and review your practice run:** keep TESTING, closed intake/events and inactive/noncurrent settings; record activation Skipped — Rehearsal only, reviewed retention/cleanup and reviewer acceptance.
 
 ## Clear Test Data
 
@@ -36,7 +38,7 @@ Source delivery, Google installation and web deployment are separate. Verify ins
 
 ## Student rehearsal instructions
 
-Use [the student walkthrough](../../../docs/officer-transition/student-walkthrough.md) for the exact order, five cases, expected results and stop conditions. The text setup summary is readable evidence, not an importable Hub JSON file: manually paste its seven links into the Hub and save, then download the Hub private links backup. Google Form copies may need **Publish** before testing; restrict responders to approved testers first. Publishing and accepting responses are separate controls. After testing, close acceptance even if the Form remains published.
+Use [the student walkthrough](../../../docs/officer-transition/student-walkthrough.md) for the exact order, five cases, expected results and stop conditions. Choose **Copy setup results**, then **Paste setup results → Save setup results** in Step 2 to save all seven links at once. The readable detailed summary supplies expected comparisons; it does not certify fresh Google values. **Download private links backup** is an optional later backup. Google Form copies may need **Publish** before testing; restrict responders to approved testers first. Publishing and accepting responses are separate controls. After testing, close acceptance even if the Form remains published.
 
 ## Saved workspace and annual questions
 

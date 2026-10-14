@@ -6,9 +6,13 @@
 2. Compare Budget Tracker **Setup & Lists B4/B5** with the receipt's annual start/end dates. For 2027–2028 these are August 1, 2027 and July 31, 2028. Record observed values; do not edit formula cells.
 3. Ask the Treasurer to show source and export values for approved expenses, confirmed plan, remaining plan, pending expenses and funding status. The record must identify the exact source/export cells and observation time. An export opening without an error is insufficient; zero needs an explanation.
 4. Record incoming handoff acceptance and assigned open work in the shared checklist. Acceptance can occur while launch is blocked.
-5. Follow the separate private launch record only after the President approves activation. That record names the settings operator, approved switch time, required readback and rollback owner. An incoming officer's local checkmark or an inactive saved row does not activate the year.
+5. Follow the separate private launch record only after the President approves activation. That record names the settings operator, approved switch time, required readback and rollback owner. The launch rollback plan identifies the previous year/settings and before-change snapshot, named restore operator, precise restore actions, failure/stop criteria and decision/contact route. A three-file recovery note is a separate record. An incoming officer's local checkmark or an inactive saved row does not activate the year.
 
 The fictional arithmetic and old check-ID mapping below are historical maintainer examples, not tasks for normal officer handoff. Current Real handoff has 20 applicable reviews; optional Practice has 16. Use the current Hub labels and shared checklist for the actual review.
+
+## Practice only: budget procedure
+
+Use the [three-part Practice budget check](student-walkthrough.md#practice-budget-check): plan inputs, dated MOCK transactions, then Tracker/Export comparison. With the reviewed zero opening baseline, approved cash is 80, projected cash after pending expense is 70, pending expense is 10 and approved plan remaining is 80. Inventory prior entries first; do not change opening balances to force a sample result. MOCK review in Funding Setup B10 supplies no real funding authority.
 
 <details>
 <summary>Treasurer/settings operator reference and dated practice evidence</summary>
@@ -34,9 +38,9 @@ reporting rule, not confirmation of the fictional event dates or room bookings.
 
 ## Current run records: rehearsal completion and production readiness
 
-In a rehearsal, T02’s **Check saved bundle against receipt** uses the saved private copied Control Center and provisioner receipt. It preserves the existing provisioner-owned inactive row and never transfers to the legacy annual-save service. The optional script-project link opens its reviewed editor; execution remains a Google action with a confirmed target. All seven annual links and both private reference fields remain local to the named run, and progress exports/printing exclude them. Current Hub settings and its normal shared comparison still target the chapter’s production Center. Use fresh direct Google readback for V07 on the private mock.
+In Practice, T02’s **Create or reopen this year’s files → Copy setup results → Paste setup results → Save setup results** route uses the approved separate workspace and copied Control Center. One designated operator runs setup; teammates reuse those files. The optional **Compare saved links with setup summary** comparison uses the saved private copied Control Center and summary. It preserves the existing provisioner-owned inactive row and never transfers to the legacy annual-save service. The optional script-project link opens its reviewed editor; execution remains a Google action with a confirmed target. All seven annual links and both private reference fields remain local to the named run, and progress exports/printing exclude them. Current Hub settings and its normal shared comparison still target the chapter’s production Center. Use fresh direct Google readback for V07 on the private mock.
 
-In **Transition to New Year**, choose an academic year and create a distinct named **Rehearsal** or **Production** run. Runs isolate progress and local annual-link drafts. Read any step using the step selector; Next remains available while a prerequisite is incomplete. Record independent later observations with the dependency warning, without marking the earlier dependency passed. Choosing **Skipped** opens a reason field; save the reason to record that skip. Optional notes stay collapsed until opened.  record **Failed**, **Blocked**, and **Not checked** truthfully. Keep detailed evidence in the private tracker and use references in guide notes, because exports and printing include those notes.
+In **Transition to New Year**, choose an academic year and create a distinct named **Practice** or **Real handoff** checklist. Runs isolate progress and local annual-link drafts. Read any step using the step selector; Next remains available while a prerequisite is incomplete. Record independent later observations with the dependency warning, without marking the earlier dependency passed. Choosing **Skipped** opens a reason field; save the reason to record that skip. Optional notes stay collapsed until opened.  record **Failed**, **Blocked**, and **Not checked** truthfully. Keep detailed evidence in the private tracker and use references in guide notes, because exports and printing include those notes.
 
 Every step having a disposition means the record can be reviewed; it does not imply finished closeout. V16 cleanup and V17 reviewer acceptance (incoming acceptance in production) remain independent of skipped activation; complete, skipped, failed and blocked counts remain separate from check results. A rehearsal reaches **GO — private rehearsal complete** only when T01–T04 are complete, all 16 applicable checks are passed, and T05 is skipped with a reason. Production-only checks appear separately as not applicable to rehearsal. The rehearsal remains **NO-GO for production**. T05 can be marked complete only in a production run with all T01–T04 complete and all required manual checks passed; the coordinator still reviews current private evidence and authorizes launch. A skipped T01 never becomes real officer access. T05 cleanup/handoff remains available after NO-GO; record rehearsal T05 as Skipped with its reason and retain the cleanup receipt in the private tracker. There is no cleanup mark that authorizes launch.
 
@@ -86,6 +90,8 @@ unpaid commitments still need their own review. Preserve legacy formulas for
 compatibility; use the confirmed figures and status together when deciding what
 the plan means. A Dashboard improvement should show these confirmed figures
 beside the legacy explanation without replacing transaction formulas.
+
+### Legacy category table and confirmed plan
 
 The October 8 private mock Dashboard observation (evidence retained in the private handoff) shows approved spending plan 100 and remaining plan 80, while the `Category / Planned / Actual` table shows General Meetings planned as a dash and actual as 20. Subsequent native formula inspection confirmed Dashboard I18 reads legacy `Budgets!B4`: its effective value is numeric zero, formatted as a dash. The copied Budget Export separately reads current `Category Budgets!D5` (100) when Funding Setup is Confirmed, falling back to legacy `Budgets!B4` otherwise. Its overall plan uses Category Budgets D20 when Confirmed. The Hub now explains this distinction; a Hub unavailable marker is not a workbook's formatted zero. No canonical formulas were changed. Mock arithmetic 80 ledger, 70 projected, 10 pending and 80 plan remaining passed within the observed copy's scope; real funding approval and bank reconciliation remain separate.
 
@@ -294,11 +300,9 @@ packets are preparation evidence.
    Check for concurrent edits. Confirm one current active outgoing row and an
    inactive/noncurrent target. Capture Form destination/schema/choices, Points
    status, imports, budget authority, and deployment/workflow references.
-3. **Editor:** make only approved activation flag changes: target active/current
-   true, outgoing current false. Preserve historical rows and established archive
-   behavior. Independently reread both rows; verify exactly one current active
+3. **Editor:** at the approved time set the verified target **is_active = TRUE** and **is_current = TRUE**; set the previous year’s **is_current = FALSE**. Preserve historical rows. Do not clear its is_active flag unless the approved plan requires it. Independently reread both rows; verify exactly one current active
    year. Open a fresh Hub and check selected/default year and actual resource IDs.
-4. **Consumer owners:** update and independently inspect Points/feed/cache,
+4. **Consumer owners:** recheck the **Hub, website, Form and newsletter** by name; update and independently inspect Points/feed/cache,
    finance, calendar, Website/CMS and Newsletter sources. Record actual refresh
    completion, event time zone, destinations and signed-out allowed output where
    required. Hub flags do not edit those independent sources. Keep campaigns

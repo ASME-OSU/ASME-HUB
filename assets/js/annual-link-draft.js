@@ -22,7 +22,7 @@ export const PRIVATE_RECORD_FIELDS = [
   ["receiptUrl", "Setup summary document link (optional)", "T02", "Annual Setup shows the summary on screen. Add a saved private document link here only if you keep a separate copy."],
   ["communicationsUrl", "Approved communications record link", "T04", "Ask the President for the approved facts and the maintainer's verified sending-service route."],
   ["cleanupUrl", "Practice cleanup checklist link", "T05", "Ask the technical maintainer for the checklist naming only this attempt's test files and responses to remove."],
-  ["rollbackUrl", "Rollback record link", "T05", "Ask the technical maintainer for the recovery record: backups, what was restored, and any remaining problem."],
+  ["rollbackUrl", "Rollback record link", "T05", "Ask the technical maintainer for the launch rollback plan: previous year and settings, named restore operator, precise restore actions, failure/stop criteria and the decision/contact route."],
   ["acceptanceUrl", "Incoming officer acceptance record link", "T05", "Ask the President for the incoming officer's dated sign-off document, including any unresolved tasks."],
   ["approvalUrl", "Coordinator launch approval record link", "T05", "Ask the President for the coordinator's dated approval record before making the year live."]
 ];

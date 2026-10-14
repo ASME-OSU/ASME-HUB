@@ -212,3 +212,29 @@ body[data-theme="dark"] .transition-dialog {
 .transition-progress-panel .transition-status { margin: 6px 0 0; }
 .transition-finish-step { margin-top: 12px; }
 @media (max-width: 640px) { .transition-progress-panel { padding: 0 12px 8px; } }
+
+.transition-glossary { margin: 16px 0; padding: 12px; border: 1px solid var(--flow-border, #aab3c0); border-radius: 10px; font-size: 13px; line-height: 1.6; }
+.transition-glossary h4 { margin: 0 0 6px; }
+.transition-glossary p { margin: 6px 0; }
+.transition-glossary summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 600; }
+.transition-glossary dt { font-weight: 600; }
+.transition-glossary dd { margin: 0 0 8px; }
+.transition-review-map { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 12px 0; font-size: 13px; line-height: 1.5; }
+.transition-review-map caption { margin-bottom: 8px; text-align: left; font-weight: 700; }
+.transition-review-map :is(th, td) { padding: 8px; border: 1px solid var(--flow-border, #aab3c0); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.transition-review-map th { font-weight: 600; }
+.transition-pending-group { margin: 12px 0; padding: 12px; border: 1px solid var(--flow-border, #aab3c0); border-radius: 10px; }
+.transition-pending-group h5 { margin: 0; font-size: 14px; }
+.transition-pending-group li { margin: 6px 0; line-height: 1.5; }
+.transition-backup-examples pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; border: 1px solid var(--flow-border, #aab3c0); border-radius: 8px; font-size: 12px; line-height: 1.5; }
+@media screen and (max-width: 640px) {
+  .transition-review-map thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
+  .transition-review-map :is(tbody, tr, th, td) { display: block; width: auto; }
+  .transition-review-map tr { margin-bottom: 12px; }
+  .transition-review-map td::before { content: attr(data-label) ": "; font-weight: 600; }
+}
+@media print {
+  .transition-review-map { font-size: 9pt; }
+  .transition-review-map tr { break-inside: avoid; }
+  .transition-review-map thead { display: table-header-group; }
+}

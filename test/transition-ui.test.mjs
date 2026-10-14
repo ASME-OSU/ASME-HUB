@@ -113,7 +113,8 @@ test("private record URL controls hide production records in practice and retain
  await importMock(ui, handoff);
  const form = ui.$("transition-dialog").find(node => node.id === "transition-annual-links-form");
  await form.emit("submit");
- const draft = JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${ui.saved().run.id}`));
+ const draftRunId=ui.saved().run.id;
+ const draft = JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${draftRunId}`));
  assert.equal(draft.records.approvalUrl, handoff.records.approvalUrl);
  ui.$("transition-run-mode").value = "production";
  await ui.$("transition-run-form").emit("submit");
@@ -121,6 +122,12 @@ test("private record URL controls hide production records in practice and retain
  assert.equal(field("Coordinator launch approval record link").hidden, false);
  assert.equal(field("Incoming officer acceptance record link").hidden, false);
  assert.equal(field("Rollback record link").hidden, false);
+ assert.match(field("Rollback record link").textContent,/previous year and settings.*restore operator.*restore actions.*stop criteria/);
+ const practiceEntry=[...ui.existing.entries()].find(([key,value])=>key.startsWith(state.TRANSITION_STORAGE_PREFIX)&&JSON.parse(value).run?.mode==="rehearsal"&&JSON.parse(value).run.id===draftRunId);
+ ui.$("transition-run").value=JSON.parse(practiceEntry[1]).run.id;await ui.$("transition-run").emit("change");
+ const reload=browser(ui.existing);const recovery=reload.$("transition-dialog").find(node=>node.tagName==="label"&&node.textContent.startsWith("Recovery notes document link"));
+ assert.equal(recovery.find(node=>node.tagName==="input").value,handoff.records.rollbackUrl);
+ assert.doesNotMatch(recovery.textContent,/launch rollback plan/);
 });
 
 test("rehearsal review opens only its private provisioner-owned source and never transfers to legacy save",async()=>{
@@ -235,7 +242,8 @@ test("annual-link drafts stay isolated between same-year runs", async () => {
   await ui.go("T04");
   assert.equal(label.parent, editor);
   assert.equal(details.parent, ui.$("transition-saved-tools"));
-  assert.match(ui.$("transition-steps").textContent, /Follow these tasks.*Record results/);
+  assert.ok(ui.$("transition-steps").find(n => n.tagName === "ol" && n.className === "transition-procedure"));
+  assert.ok(ui.$("transition-steps").find(n => n.className === "transition-confirmation"));
   ui.$("transition-run-name").value = "Copy set B"; await ui.$("transition-run-form").emit("submit");
   await ui.go("T02");
   const bLabel = ui.$("transition-saved-tools").find(node => node.tagName === "label" && node.textContent.startsWith("Points Master (officer edit link)"));
@@ -448,7 +456,7 @@ test('Real handoff activation is explicit in the screen and printout',async()=>{
  await ui.$('transition-print').click();
  for(const text of [screen,ui.$('transition-print-sheet').textContent]) {
   assert.match(text,/is_active=TRUE and is_current=TRUE/);
-  assert.match(text,/retires the previous year’s is_current flag/);
+  assert.match(text,/previous year’s is_current to FALSE/);
   assert.match(text,/approved Form intake state/);
   assert.match(text,/rollback plan/);
  }
@@ -564,4 +572,69 @@ test('first upgraded load restores latest valid saved year without a year pointe
  const ui=browser();ui.$('transition-year').value='2040';ui.$('transition-run-mode').value='rehearsal';await ui.$('transition-run-form').emit('submit');await ui.choose('V20','passed');
  ui.existing.delete('asmeHubTransitionSelectedYearV2');ui.existing.set(state.storageKey('2042-2043','bad'),JSON.stringify({year:'2042-2043',savedAt:'2099-01-01'}));
  const again=browser(ui.existing);assert.equal(again.$('transition-guide-year').textContent,'2040–2041');assert.equal(again.$('transition-progress').value,1);
+});
+
+
+test("student walkthrough is the first help destination for initial steps", async () => {
+ const ui=browser();
+ for (const [id,anchor] of [["T01","1-choose-your-year"],["T02","2-prepare-this-years-files"],["T03","3-check-attendance-and-finances"]]) {
+  await ui.go(id);
+  const help=ui.$("transition-steps").find(n=>n.className==="transition-maintainer-resources");
+  const first=help.find(n=>n.tagName==="a");assert.ok(first.href.endsWith(`student-walkthrough.md#${anchor}`));
+  const glossary=ui.$("transition-steps").find(n=>n.className==="transition-glossary");
+  assert.ok(glossary.find(n=>n.tagName==="details"&&n.find(c=>c.tagName==="summary")));
+ }
+});
+
+test("each Step 2 manual review has a comparison row in both modes without saving a pass", async () => {
+ for (const mode of ["production","rehearsal"]) {
+  const ui=browser();ui.$("transition-run-mode").value=mode;await ui.$("transition-run-form").emit("submit");await ui.go("T02");
+  const map=ui.$("transition-steps").find(n=>n.className==="transition-review-map");
+  const rows=map.find(n=>n.tagName==="tbody").children;
+  const ids=definitions.TRANSITION_CHECKS.filter(c=>c.step==="T02"&&state.checkApplies(c,mode)).map(c=>c.id);
+  assert.deepEqual(rows.map(n=>n.dataset.review).sort(),ids.sort());
+  for (const row of rows) {assert.equal(row.children.length,4);assert.ok(row.children.every(n=>n.textContent.length));assert.equal(row.children[0].attrs.scope,"row");}
+  assert.deepEqual(ui.saved().checks,{});
+  assert.match(rows.find(n=>n.dataset.review==="V07").textContent,/A:T/);
+  assert.match(rows.find(n=>n.dataset.review==="V21").textContent,/2027-08-01.*2028-07-31/);
+  await ui.$("transition-print").click();assert.ok(ui.$("transition-print-sheet").find(n=>n.className==="transition-review-map"));
+ }
+});
+
+test("selected-year Practice dates and explicit communications tasks match screen and print", async () => {
+ for (const year of ["2027-2028","2035-2036"]) {
+  const ui=browser();ui.$("transition-year").value=year.slice(0,4);ui.$("transition-run-mode").value="rehearsal";await ui.$("transition-run-form").emit("submit");
+  await ui.go("T03");await ui.$("transition-print").click();
+  const start=Number(year.slice(0,4));
+  for (const text of [ui.$("transition-steps").textContent,ui.$("transition-print-sheet").textContent]) {
+   assert.ok(text.includes(`${start}-09-15`));assert.ok(text.includes(`${start+1}-01-15`));assert.doesNotMatch(text,/\{(?:fall|spring)EventDate\}/);
+  }
+  await ui.go("T04");const procedure=ui.$("transition-steps").find(n=>n.className==="transition-procedure");
+  assert.deepEqual(procedure.children.map(n=>n.textContent),definitions.TRANSITION_STEPS.find(s=>s.id==="T04").instructions);
+  const title=definitions.TRANSITION_STEPS.find(s=>s.id==="T05").title;
+  await ui.go("T05");assert.equal(ui.$("transition-steps").find(n=>n.tagName==="h3").textContent,title);
+  assert.ok(ui.$("transition-step-picker").children.find(n=>n.value==="T05").textContent.includes(title));
+  await ui.$("transition-print").click();assert.ok(ui.$("transition-print-sheet").find(n=>n.tagName==="h2"&&n.textContent.includes(title)));
+ }
+});
+
+test("recovery aid uses current import control and parseable schema excerpts in screen and print", async () => {
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await ui.$("transition-run-form").emit("submit");await ui.go("T04");
+ const label=ui.$("transition-dialog").find(n=>n.tagName==="label"&&n.textContent.startsWith("Import private links backup"));assert.equal(label.find(n=>n.tagName==="input").type,"file");
+ const screen=ui.$("transition-steps").find(n=>n.className==="transition-backup-examples");
+ const excerpts=screen.children.filter(n=>n.tagName==="pre").map(n=>JSON.parse(n.textContent));
+ assert.equal(excerpts.length,3);assert.equal(excerpts[0].year,"2027-2028");assert.ok(excerpts[0].run.name);assert.ok(excerpts[0].notes.T01);
+ assert.ok(new URL(excerpts[1].links.pointsMaster));assert.ok(excerpts[2].state.fields["s-subject"]);assert.ok(excerpts[2].state.fields["s-preheader"]);assert.ok(excerpts[2].state.events[0].title);
+ await ui.$("transition-print").click();const print=ui.$("transition-print-sheet").find(n=>n.className==="transition-backup-examples");assert.equal(print.textContent,screen.textContent);
+ await importMock(ui);await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");assert.equal(Object.keys(JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${ui.saved().run.id}`)).links).length,7);
+});
+
+test("remaining-work action announces counts repeatedly and groups only applicable reviews", async () => {
+ for (const [mode,count] of [["production",20],["rehearsal",16]]) {
+  const ui=browser();ui.$("transition-run-mode").value=mode;await ui.$("transition-run-form").emit("submit");await ui.go("T05");
+  const groups=ui.$("transition-steps").find(n=>n.className==="transition-pending-reviews");
+  assert.equal(groups.children.filter(n=>n.className==="transition-pending-group").flatMap(n=>n.find(c=>c.tagName==="ul")?.children||[]).length,count);
+  for(let repeat=0;repeat<2;repeat++) {await ui.$("transition-next").click();assert.ok(ui.$("transition-status").textContent.includes(`${count} reviews remain`));assert.ok(ui.$("transition-status").textContent.length<320);}
+  const group=groups.children.find(n=>n.dataset.step==="T03");await group.find(n=>n.tagName==="button").click();assert.equal(ui.$("transition-step-picker").value,"T03");
+ }
 });
