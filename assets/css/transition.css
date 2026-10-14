@@ -205,3 +205,10 @@ body[data-theme="dark"] .transition-dialog {
 }
 
 .transition-setup-transfer textarea { display: block; width: 100%; min-height: 100px; margin: 8px 0; box-sizing: border-box; }
+
+.transition-progress-panel { flex: 0 0 auto; padding: 0 22px 10px; border-bottom: 1px solid var(--flow-border); background: var(--flow-surface); }
+.transition-progress-panel .transition-control-help { margin: 6px 0 0; font-size: 12px; }
+.transition-progress-panel .transition-status:empty { display: none; }
+.transition-progress-panel .transition-status { margin: 6px 0 0; }
+.transition-finish-step { margin-top: 12px; }
+@media (max-width: 640px) { .transition-progress-panel { padding: 0 12px 8px; } }

@@ -1,7 +1,7 @@
 export const TRANSITION_STATE_VERSION = 2;
 // Changed meaning always reopens earlier confirmations.
-export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-12";
-export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(version => `officer-transition-guide-${version}`);
+export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-13";
+export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(version => `officer-transition-guide-${version}`);
 export const TRANSITION_LEGACY_STORAGE_PREFIX = "asmeHubTransitionProgressV1:";
 export const TRANSITION_STORAGE_PREFIX = "asmeHubTransitionProgressV2:";
 export const TRANSITION_STATUSES = ["not_started", "in_progress", "blocked", "failed", "skipped", "complete"];
@@ -105,11 +105,17 @@ export function parseProgress(value, year, steps, checks) {
 }
 export function migrateProgress(value, year, steps, checks) {
   if (value?.guideVersion === TRANSITION_GUIDE_VERSION) return parseProgress(value, year, steps, checks);
-  if (value?.guideVersion === "officer-transition-guide-11") {
+  if (value?.guideVersion === "officer-transition-guide-12") {
     const candidate = { ...value, guideVersion: TRANSITION_GUIDE_VERSION, steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
+    if (candidate.checks.V19 === "passed") candidate.checks.V19 = "needs_recheck";
+    for (const id of ["T03", "T05"]) if (candidate.steps[id] === "complete") candidate.steps[id] = "in_progress";
+    return reconcileProgress(parseProgress(candidate, year, steps, checks), steps, checks);
+  }
+  if (value?.guideVersion === "officer-transition-guide-11") {
+    const candidate = { ...value, guideVersion: "officer-transition-guide-12", steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
     if (candidate.checks.V10 === "passed") candidate.checks.V10 = "needs_recheck";
     for (const id of ["T03","T05"]) if (candidate.steps[id] === "complete") candidate.steps[id] = "in_progress";
-    return reconcileProgress(parseProgress(candidate, year, steps, checks), steps, checks);
+    return migrateProgress(candidate, year, steps, checks);
   }
   if (["officer-transition-guide-9", "officer-transition-guide-10"].includes(value?.guideVersion)) {
     // Keep historical observations and mode; changed production criteria need
@@ -180,6 +186,9 @@ export function importProgress(text, year, steps, checks) {
 }
 export function reconcileProgress(progress, steps, checks, previous = null) {
   const next = { ...progress, steps: { ...progress.steps }, checks: { ...progress.checks } };
+  // A changed review can reopen its step just as an explicit step-status change
+  // does. Identify that before propagating invalidation to dependent reviews.
+  for (const step of steps) if (next.steps[step.id] === "complete" && checks.some(check => check.step === step.id && checkApplies(check, next.run.mode) && next.checks[check.id] !== "passed")) next.steps[step.id] = "in_progress";
   const invalidated = new Set(previous ? steps.filter(step => previous.steps[step.id] === "complete" && next.steps[step.id] !== "complete").map(step => step.id) : []);
   let changed = true;
   while (changed) {

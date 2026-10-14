@@ -37,6 +37,16 @@ test('same-year named mock runs isolate state and skipped reason survives export
 test('strict production activation requires every earlier step and all checks',()=>{const p=ready();assert.equal(launchEligibility(p,steps,checks).eligible,true);assert.equal(read({...p,steps:{...p.steps,T05:'complete'}}).steps.T05,'complete');for(const id of ['T01','T02','T03','T04'])assert.throws(()=>read({...p,steps:{...p.steps,[id]:'blocked',T05:'complete'}}),/prerequisites/);assert.throws(()=>read({...p,run:run().run,steps:{...p.steps,T05:'complete'}}),/rehearsal/);});
 test('mock skip never completes launch, later communications can be reported independently',()=>{const a={...run(),steps:{T02:'skipped',T04:'complete',T05:'skipped'},checks:Object.fromEntries(checks.filter(c=>c.step==='T04').map(c=>[c.id,'passed'])),reasons:{T02:'Isolated mock',T05:'NO-GO'}};assert.deepEqual(read(a),a);assert.equal(launchEligibility(a,steps,checks).eligible,false);assert.equal(progressSummary(a,steps,checks).stepCounts.skipped,2);});
 test('changed prerequisite reopens dependent confirmations and activation',()=>{const p=ready();p.steps.T05='complete';const n=reconcileProgress({...p,steps:{...p.steps,T02:'blocked'}},steps,checks,p);assert.equal(n.steps.T03,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V04,'needs_recheck');assert.equal(n.checks.V10,'needs_recheck');});
+test('failed review reopens its completed step and downstream evidence before saving',()=>{
+ const original=ready();original.steps.T05='complete';const before=structuredClone(original);
+ const next=reconcileProgress({...original,checks:{...original.checks,V02:'failed'}},steps,checks,original);
+ assert.deepEqual(original,before);assert.equal(next.checks.V02,'failed');
+ for(const id of ['T02','T03','T04','T05'])assert.equal(next.steps[id],'in_progress',id);
+ for(const id of ['V10','V19','V22','V17'])assert.equal(next.checks[id],'needs_recheck',id);
+ assert.equal(next.steps.T01,'complete');assert.equal(next.checks.V20,'passed');assert.deepEqual(read(next),next);
+ const repaired=reconcileProgress({...next,steps:{...next.steps,T02:'complete'},checks:{...next.checks,...Object.fromEntries(checks.filter(c=>c.step==='T02').map(c=>[c.id,'passed']))}},steps,checks,next);
+ assert.equal(repaired.steps.T03,'in_progress');assert.equal(repaired.checks.V19,'needs_recheck');assert.equal(launchEligibility(repaired,steps,checks).eligible,false);
+});
 test('imported production completion requires fresh checks',()=>{const p=ready();p.steps.T05='complete';const n=importProgress(exportProgress(p,steps,checks),year,steps,checks);assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');});
 test('16-step versions2-6 migrate without changing original or carrying launch readiness',()=>{for(const v of [2,3,4,5,6]){const p={version:v===6?2:1,guideVersion:'officer-transition-guide-'+v,year,run:run().run,savedAt:null,reasons:{},notes:{},steps:{T03:'blocked',T15:'complete',T16:'complete'},checks:{V01:'unable',V10:'passed'}};const before=structuredClone(p),n=migrateProgress(p,year,steps,checks);assert.deepEqual(p,before);assert.equal(n.steps.T02,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');assert.match(n.notes.T02,/T03: blocked/);assert.deepEqual(read(n),n);assert.throws(()=>migrateProgress({...p,checks:{V99:'passed'}},year,steps,checks),/Unknown check/);}});
 test('five-step guide 7 migration keeps each step in place and new checks unverified',()=>{
@@ -99,5 +109,14 @@ test('guide9 and10 migrate completed annual checks even when their old Step1 acc
   const p={...ready(),guideVersion,steps:{T03:'complete'},checks:{...ready().checks,V10:'not_checked'}};
   const next=migrateProgress(p,year,steps,checks);assert.equal(next.steps.T03,'in_progress');assert.equal(next.checks.V10,undefined);
   const passed=migrateProgress({...p,checks:{...p.checks,V10:'passed'}},year,steps,checks);assert.equal(passed.checks.V10,'needs_recheck');
+ }
+});
+
+test('event sync review belongs to attendance work and guide12 migration preserves earlier setup',()=>{
+ assert.equal(checks.find(c=>c.id==='V19').step,'T03');
+ for(const mode of ['production','rehearsal'])for(const eventStatus of ['passed','not_checked']){
+  const old={...ready(),run:run(mode).run,guideVersion:'officer-transition-guide-12',checks:{...ready().checks,V19:eventStatus},notes:{V19:'Earlier event method evidence'},steps:{T01:'complete',T02:eventStatus==='passed'?'complete':'in_progress',T03:'complete',T04:'complete',T05:mode==='rehearsal'?'skipped':'in_progress'},reasons:mode==='rehearsal'?{T05:'Practice only'}:{}};
+  const before=structuredClone(old),next=migrateProgress(old,year,steps,checks);
+  assert.deepEqual(old,before);assert.equal(next.guideVersion,'officer-transition-guide-13');assert.equal(next.steps.T02,old.steps.T02);assert.equal(next.steps.T03,'in_progress');assert.equal(next.checks.V19,eventStatus==='passed'?'needs_recheck':undefined);assert.equal(next.notes.V19,old.notes.V19);assert.deepEqual(read(next),next);assert.equal(progressSummary(next,steps,checks).finished,false);
  }
 });
