@@ -35,7 +35,7 @@ See [current implementation and verification status](current-implementation.md) 
 
 ## Hosting and storage
 
-Rehearsal T02 saves a private copied Control Center and optional provisioner-project editor reference alongside its seven links. **Check saved bundle against receipt** validates and retains that run’s browser draft, then offers direct native row comparison against the provisioner receipt. It never calls the legacy writer or switches the production settings source. Private reference fields are excluded from progress export and print. All access, permissions and exact saved values still need Google readback.
+Rehearsal T02 saves a private copied Control Center and optional provisioner-project editor reference alongside its seven links. **Compare saved links with setup summary** validates and retains that run’s browser draft, then offers direct native row comparison against the provisioner receipt. It never calls the legacy writer or switches the production settings source. Private reference fields are excluded from progress export and print. All access, permissions and exact saved values still need Google readback.
 
 | Component | Host/control | What is stored there |
 |---|---|---|

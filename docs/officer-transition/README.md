@@ -2,23 +2,26 @@
 
 Use this guide for the real transfer of chapter responsibilities to incoming officers. Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**. In Step 1, enter the starting year, such as **2027** for 2027–2028, choose the purpose, then start or continue your checklist. **Real handoff** is the normal officer route. Optional **Practice (maintainer review)** is for a maintainer or team member deliberately trying the tools in separate private copies.
 
+Use the [student walkthrough](student-walkthrough.md) as the primary step-by-step guide. Real handoff has **20 applicable reviews**; Practice has **16**. The [words used here](student-walkthrough.md#words-used-here) explain settings, exports, readiness evidence and other terms.
+
 You do not need to run a fictional five-submission exercise to begin or complete ordinary officer handoff tasks. Review the current setup and the evidence the President supplies. If a technical result is missing, ask the maintainer to verify it and record the blocker; do not invent a pass or repeat fictional inputs in real member or financial records.
 
 ## Step 1 Get access and materials
 
 1. Ask the President through [asme@osu.edu](mailto:asme@osu.edu) for the current private handoff folder and checklist for your year.
 2. Use the completed role access table in the private checklist: open each listed link with its approved account and confirm the listed view/edit permission. A missing table is a materials blocker for the President.
-3. Record any missing access, the file link and the next action. Ask the President to coordinate help.
+3. Record any missing access, the file link and the next action. Ask the President to coordinate help. Check the shared workspace here; Annual Setup access is checked in Step 2, where its link and approved-profile warning are available.
 
 Example request: “I am the incoming Secretary for 2027–2028. Please send the current handoff folder and annual tool links, and arrange the access I need.” A personal name is not required for the President contact. A dated example folder does not establish the current handoff.
 
 ## Step 2 Get this year's tools
 
-1. Get the annual links and setup receipt from the President or maintainer.
-2. Open the existing annual copies. Compare the expected values and exact tab/cell locations in the receipt with each supplied file. A matching title alone is insufficient.
-3. Ask the maintainer to resolve a wrong link, missing setup or duplicate copy before continuing that task. Do not create another annual bundle merely because a template instruction is visible.
+1. Use Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**, then choose **Open Annual Setup**. Missing workspace approval or permissions stays Blocked with the President; do not bypass it with another account.
+2. Confirm the selected year and workspace purpose. Real handoff and Practice only use separate folders/settings sheets. One designated operator chooses **Create or reopen this year’s files**; everyone reuses the same annual files. Resume a stopped setup in the same year/workspace instead of making duplicates.
+3. Choose **Copy setup results → Paste setup results → Save setup results** in Step 2. The detailed summary and downloads are optional backup/comparison tools, not an entry requirement.
+4. Open the saved links and actual Google settings. Use the [four-review comparison map](student-walkthrough.md#compare-the-four-step-2-reviews) to compare destinations, dates, source IDs and inactive/noncurrent flags. A pasted summary supplies expected values, not fresh Google readback.
 
-The maintainer creates or verifies annual copies, response wiring, import sources, dates and inactive settings. Installation evidence must match the actual native version. Repository source alone does not prove the helper is installed.
+The maintainer handles source cleanup, configuration, script installation and technical readiness evidence. Saving results does not pass reviews or activate the year. Missing evidence stays Blocked with a named owner.
 
 ## Step 3 Prepare attendance and finances
 
@@ -36,13 +39,13 @@ An optional practice plan may use fictional attendance cases and budget arithmet
 
 Use [the three-file recovery guide](recovery-practice.md) when verifying a restore. A downloaded backup is not proof that it restores successfully. A separate-profile restore is a maintainer recovery check, not the first action every incoming officer must take.
 
-## Step 5 Approve and switch to the new year
+## Step 5 Approve and start the year
 
 1. Record unfinished work and its owner.
 2. Ask the President and incoming holders to record handoff acceptance and assigned open work. They can accept the transfer while launch remains blocked.
-3. Use the separate launch record for approval, named operator, switch time and rollback. Keep outgoing access until the agreed access change. An inactive settings row does not activate the year.
+3. Use the separate launch record for approval, named operator, switch time and rollback. The rollback plan identifies the previous year/settings, named restore operator, exact restore actions, stop criteria and decision/contact route. At the approved time the settings owner sets the verified new row active/current and Points Config!B5 LIVE, sets the previous year’s is_current FALSE while preserving records, and rechecks Hub, website, Form and newsletter. Keep outgoing access until the agreed access change. An inactive settings row does not activate the year.
 
-If practice copies were used, inventory and retain or remove their fictional inputs under a reviewed cleanup decision. Ordinary real handoff does not require fictional-data cleanup when no fictional data was created.
+For **Practice — Close and review your practice run**, keep TESTING, closed intake/events and inactive/noncurrent settings, skip activation with Rehearsal only, and obtain reviewer acceptance. If practice copies were used, inventory and retain or remove their fictional inputs under a reviewed cleanup decision. Ordinary real handoff does not require fictional-data cleanup when no fictional data was created.
 
 ## Keep the records together
 

@@ -51,9 +51,7 @@ export function launchEligibility(progress, steps, checks) {
   const missing = steps.filter(step => !step.launch && progress.steps[step.id] !== "complete").map(step => step.id);
   const unchecked = checks.filter(check => checkApplies(check, "production") && progress.checks[check.id] !== "passed").map(check => check.id);
   const eligible = progress.run?.mode === "production" && !missing.length && !unchecked.length;
-  const unfinished = steps.filter(step => missing.includes(step.id)).map(step => step.productionTitle || step.title);
-  const reviews = checks.filter(check => unchecked.includes(check.id)).map(check => check.productionTitle || check.title);
-  return { eligible, missing, unchecked, reason: eligible ? "Required production checks are reported passed. Coordinator approval and current private evidence are still required before launch." : progress.run?.mode !== "production" ? "NO-GO: rehearsal evidence never authorizes a production launch. Create a separate production run and perform the real checks." : `NO-GO: ${unfinished.length ? `Finish these steps: ${unfinished.join("; ")}. ` : ""}${reviews.length ? `Reviews still needed: ${reviews.join("; ")}` : ""}` };
+  return { eligible, missing, unchecked, reason: eligible ? "Required production checks are reported passed. Coordinator approval and current private evidence are still required before launch." : progress.run?.mode !== "production" ? "NO-GO: rehearsal evidence never authorizes a production launch. Create a separate production run and perform the real checks." : `NO-GO: ${missing.length} prerequisite ${missing.length === 1 ? "step" : "steps"} and ${unchecked.length} ${unchecked.length === 1 ? "review" : "reviews"} remain. Use Reviews still needed below.` };
 }
 export function progressSummary(progress, steps, checks) {
   const stepCounts = Object.fromEntries(TRANSITION_STATUSES.map(status => [status, steps.filter(step => (progress.steps[step.id] || "not_started") === status).length]));

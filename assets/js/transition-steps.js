@@ -1,169 +1,450 @@
-// Five officer-facing steps. Historical 16-step records remain retained for review.
+// Canonical mode-specific instructions. Review IDs, applicability and prerequisites remain stable.
+// The UI expands event-date tokens from the checklist’s validated academic year.
 export const TRANSITION_STEPS = [
-  {id:'T01',title:"Confirm access and materials",roles:['president','secretary'],needs:[],
-   action:"Use the checklist selected under Choose checklist above. The President leads, and the team records their checks. Open the current officer checklist below. Record the President as your contact; a personal name is not required. The President arranges technical help and recovery. Each incoming officer must open the private handoff and their required Google tools using their own approved account, then record the date and whether they can edit. If you see “Request access,” copy the tool’s URL into the checklist and assign the access request to the coordinator. Mark this step Blocked until that officer confirms access. Keep outgoing officers’ access until incoming acceptance is recorded. Use the private checklist saved for this run. Shared handoff references are candidates until the coordinator verifies the target year, five-step contents and contact instructions. If the checklist or responsible contact is missing, record Blocked.",
-   instructions:["Use the checklist selected under Choose checklist above. The President leads, and the team records their checks.", "Open the current officer checklist below. Record the President as your contact; a personal name is not required. The President arranges technical help and recovery. Each incoming officer must open the private handoff and their required Google tools using their own approved account, then record the date and whether they can edit.", "If you see “Request access,” copy the tool’s URL into the checklist and assign the access request to the coordinator. Mark this step Blocked until that officer confirms access. Keep outgoing officers’ access until incoming acceptance is recorded.", "Use the private checklist saved for this run. Shared handoff references are candidates until the coordinator verifies the target year, five-step contents and contact instructions. If the checklist or responsible contact is missing, record Blocked."],
-   check:"the contact fields are filled, each required incoming officer has confirmed their own access, and the checklist matches this year and these five steps."},
-  {id:'T02',title:"Get the annual files and check it",roles:['president','secretary','treasurer'],needs:['T01'],resource:'templates',templateActions:['pointsMaster','attendanceForm','pointsExport','budgetTracker','budgetExport'],
-   action:"Annual tool creation is the technical maintainer’s responsibility. Open your year’s setup summary below. If it is missing, ask the President to arrange technical setup; do not run scripts or reuse last year’s working files yourself. The summary must list the annual folder, Points Master, check-in Form editor and respondent links, Budget Tracker, both exports, and the correct Control Center (a private copy for rehearsal). Open each link using the chapter account and check that it is labeled for your target year. In the Form editor, choose Responses → View in Sheets. Confirm it opens this year’s Points Master and the response tab named in the summary. For newly created files, verify zero responses in both the Form and its actual response tab, with intake closed. If resuming a run with retained evidence, inventory those records with the maintainer; do not clear them to force an empty baseline. Open Points Master → Config. Compare the year, response tab and Form ID with the summary. Confirm mode TESTING. Open the Control Center identified in the summary and compare its year, links, goal and calendar setting. Compare annual dates in the workbook locations named by the summary. For a rehearsal, active and current must both remain FALSE.",
-   instructions:["Annual tool creation is the technical maintainer’s responsibility. Open your year’s setup summary below. If it is missing, ask the President to arrange technical setup; do not run scripts or reuse last year’s working files yourself.", "The summary must list the annual folder, Points Master, check-in Form editor and respondent links, Budget Tracker, both exports, and the correct Control Center (a private copy for rehearsal). Open each link using the chapter account and check that it is labeled for your target year.", "In the Form editor, choose Responses → View in Sheets. Confirm it opens this year’s Points Master and the response tab named in the summary. For newly created files, verify zero responses in both the Form and its actual response tab, with intake closed. If resuming a run with retained evidence, inventory those records with the maintainer; do not clear them to force an empty baseline.", "Open Points Master → Config. Compare the year, response tab and Form ID with the summary. Confirm mode TESTING. Open the Control Center identified in the summary and compare its year, links, goal and calendar setting. Compare annual dates in the workbook locations named by the summary. For a rehearsal, active and current must both remain FALSE."],
-   check:"every link opens the correct private copy, the destination and settings match the summary, and the maintainer has confirmed clean source masters and event-sync setup. Record discrepancies as Blocked."},
-  {id:'T03',title:"Run check-in and budget tests",roles:['secretary','treasurer','webmaster'],needs:['T02'],
-   action:"Open the copied Points Master → README. Edit only the yellow input cells. In Events, enter two clearly labeled MOCK events: a Fall General Body Meeting worth 5 points and a Spring Technical Workshop worth 8 points. Leave IDs, term, year and calculated points alone. Wait for those automatic values to appear before continuing. Open the two mock events for check-in, then choose ASME Tools → Sync Events to Google Form. Open the copied Form and confirm each event appears once. Choose ASME Tools → Enable automatic event sync once in this annual copy. Edit a MOCK event name through Sheets, retaining its MOCK prefix, and confirm the Form choice changes. A manual sync alone does not prove the automatic trigger. Before opening rehearsal intake, use the Form’s Publish → Manage responders to restrict access to your approved testers. Publish the private Form if unpublished, then explicitly enable Accepting responses and verify the respondent link shows the questions. Do not distribute the mock link publicly. Submit the five cases below using fictional names and name.numbers. Check Point Log, Member Totals and Review Queue. A’s annual total must be 13 and B’s 8. With Fall selected as the current term, term totals must be 5 and 0. The two exceptions stay visible for review; creating B’s profile does not by itself prove the earlier exception was resolved. Arrival check: open the response tab named in the setup summary and count the five fictional submissions, matching their timestamps and MOCK event names. Ask the technical maintainer to inspect the other response tabs in this copied workbook and confirm those submissions are absent there. Record their result separately from arrival. These two checks cover this workbook only; you are not asked to prove that every external system is empty. Close Form intake and set both mock event form_open cells FALSE. Sync again. Open the respondent link and confirm it says it is no longer accepting responses. Open both copied exports using the authorized chapter account and allow only the matching private import connections identified in the summary. If an import is unresolved, record Blocked and contact the maintainer. This is not an instruction to publish or share either workbook. Open Points Export in TESTING and PAUSED. Member rows must be suppressed in both. Restore TESTING afterward. Record public-field approval separately from this suppression test. Open Budget Tracker → Start Here. For the private rehearsal, enter a fictional 100 allocation and matching 100 category plan. Confirm category differences are zero, then record a mock review. Enter fictional approved income 100, approved expense 20 and pending expense 10. Expect ledger 80, projected ledger 70, pending 10 and approved plan remaining 80. Compare Budget Export with those values. Real funding approval and bank-statement reconciliation are separate checks. The legacy category-plan table may use a different source from the approved spending plan; inspect its source label and do not treat a dash as a zero approved allocation. Run ASME Tools → Run Pre-Flight Sanity Check. Save its result and your actual observations. Preflight confirms wiring; it does not replace the five submissions or approvals.",
-   instructions:["Open the copied Points Master → README. Edit only the yellow input cells. In Events, enter two clearly labeled MOCK events: a Fall General Body Meeting worth 5 points and a Spring Technical Workshop worth 8 points. Leave IDs, term, year and calculated points alone. Wait for those automatic values to appear before continuing.", "Open the two mock events for check-in, then choose ASME Tools → Sync Events to Google Form. Open the copied Form and confirm each event appears once. Choose ASME Tools → Enable automatic event sync once in this annual copy. Edit a MOCK event name through Sheets, retaining its MOCK prefix, and confirm the Form choice changes. A manual sync alone does not prove the automatic trigger.", "Before opening rehearsal intake, use the Form’s Publish → Manage responders to restrict access to your approved testers. Publish the private Form if unpublished, then explicitly enable Accepting responses and verify the respondent link shows the questions. Do not distribute the mock link publicly. Submit the five cases below using fictional names and name.numbers.", "Check Point Log, Member Totals and Review Queue. A’s annual total must be 13 and B’s 8. With Fall selected as the current term, term totals must be 5 and 0. The two exceptions stay visible for review; creating B’s profile does not by itself prove the earlier exception was resolved. Arrival check: open the response tab named in the setup summary and count the five fictional submissions, matching their timestamps and MOCK event names. Ask the technical maintainer to inspect the other response tabs in this copied workbook and confirm those submissions are absent there. Record their result separately from arrival. These two checks cover this workbook only; you are not asked to prove that every external system is empty.", "Close Form intake and set both mock event form_open cells FALSE. Sync again. Open the respondent link and confirm it says it is no longer accepting responses.", "Open both copied exports using the authorized chapter account and allow only the matching private import connections identified in the summary. If an import is unresolved, record Blocked and contact the maintainer. This is not an instruction to publish or share either workbook.", "Open Points Export in TESTING and PAUSED. Member rows must be suppressed in both. Restore TESTING afterward. Record public-field approval separately from this suppression test.", "Open Budget Tracker → Start Here. For the private rehearsal, enter a fictional 100 allocation and matching 100 category plan. Confirm category differences are zero, then record a mock review. Enter fictional approved income 100, approved expense 20 and pending expense 10. Expect ledger 80, projected ledger 70, pending 10 and approved plan remaining 80. Compare Budget Export with those values. Real funding approval and bank-statement reconciliation are separate checks. The legacy category-plan table may use a different source from the approved spending plan; inspect its source label and do not treat a dash as a zero approved allocation.", "Run ASME Tools → Run Pre-Flight Sanity Check. Save its result and your actual observations. Preflight confirms wiring; it does not replace the five submissions or approvals."],
-   check:"Record each technical observation and approval separately below. Missing evidence stays unverified; assign a named owner in your private checklist."},
-  {id:'T04',title:"Check calendars and prepare communications",roles:['president','webmaster','social_chair'],needs:['T02'],
-   action:"Open Newsletter Builder → Calendar. Enter the full academic year shown in the Hub, such as 2027-2028, and choose Load fictional Fall/Spring. Confirm both semesters appear and the status says FICTIONAL REHEARSAL. These events are local; they do not create Google events or invitations. Open the Public Events Calendar link below and repeat its local fictional preview in the generated list above the embedded Google calendar. Check desktop and phone layout. When finished, choose Remove fictional events, then Upcoming in Newsletter Builder and Upcoming dates in the public page’s generated list. Confirm the FICTIONAL REHEARSAL label is gone and the chapter snapshot status returns. If loading fails, choose Refresh chapter snapshot and record the error. The embedded live Google calendar is a separate view; local preview success does not prove Google changes have propagated. For real calendar verification, compare event title, date, time, time zone and location in Google, the Hub, website and newsletter. Record the refresh time and mismatches. Before editing an existing newsletter, choose Templates → Export Draft .json. Inspect the downloaded file, then use Templates → Import Draft .json in an isolated browser profile and verify that its subject, preheader and content restore. Use a clearly labeled MOCK issue for practice. Check target year, officer names, subject, preheader, links and footer in Desktop and Mobile previews. Do not send the rehearsal. The coordinator supplies the approved sender, reply-to and complete mailing address. Verify sender/reply-to in the sending service using the verified route in this run’s approved communications facts; the builder preview does not verify sender identity. Record who approved them and when. Check the website’s annual links, leadership and dated statistics against the coordinator’s approved facts. Save drafts for review; record anything still awaiting approval as Blocked. If the sending-service route, approved statistics (definition, source and as-of date), sender, reply-to or mailing address is missing, record Blocked and assign the communications owner. Existing footer text does not establish approval.",
-   instructions:["Open Newsletter Builder → Calendar. Enter the full academic year shown in the Hub, such as 2027-2028, and choose Load fictional Fall/Spring. Confirm both semesters appear and the status says FICTIONAL REHEARSAL. These events are local; they do not create Google events or invitations.", "Open the Public Events Calendar link below and repeat its local fictional preview in the generated list above the embedded Google calendar. Check desktop and phone layout. When finished, choose Remove fictional events, then Upcoming in Newsletter Builder and Upcoming dates in the public page’s generated list. Confirm the FICTIONAL REHEARSAL label is gone and the chapter snapshot status returns. If loading fails, choose Refresh chapter snapshot and record the error. The embedded live Google calendar is a separate view; local preview success does not prove Google changes have propagated.", "For real calendar verification, compare event title, date, time, time zone and location in Google, the Hub, website and newsletter. Record the refresh time and mismatches.", "Before editing an existing newsletter, choose Templates → Export Draft .json. Inspect the downloaded file, then use Templates → Import Draft .json in an isolated browser profile and verify that its subject, preheader and content restore. Use a clearly labeled MOCK issue for practice. Check target year, officer names, subject, preheader, links and footer in Desktop and Mobile previews. Do not send the rehearsal.", "The coordinator supplies the approved sender, reply-to and complete mailing address. Verify sender/reply-to in the sending service using the verified route in this run’s approved communications facts; the builder preview does not verify sender identity. Record who approved them and when.", "Check the website’s annual links, leadership and dated statistics against the coordinator’s approved facts. Save drafts for review; record anything still awaiting approval as Blocked.", "If the sending-service route, approved statistics (definition, source and as-of date), sender, reply-to or mailing address is missing, record Blocked and assign the communications owner. Existing footer text does not establish approval."],
-   check:"Record each technical observation and approval separately below. Missing evidence stays unverified; assign a named owner in your private checklist."},
-  {id:'T05',title:"Close the rehearsal or launch an approved year",roles:['president','secretary','treasurer','webmaster'],needs:['T01','T02','T03','T04'],launch:true,
-   action:"Rehearsal closeout: keep intake closed, mock events closed, Points TESTING, and active/current flags unchanged. Export the run record, verify the downloaded file, and preserve the separate private summary/link files and evidence; the progress export does not include annual-link draft fields. Open the selective cleanup checklist below; its owner must inventory marked test submissions, events, adjustments and budget inputs; record an approved retain/remove decision for each; identify formula tabs to preserve; and list the checks to repeat afterward. Form responses and raw sheet entries require separate accounting. Match original records by timestamp, fictional identity and event, never by proxy source_row alone. Preserve OPEN exception evidence before approved source cleanup and recheck the derived queue afterward. Record removal or approved retention and incoming acceptance separately. Retained evidence must stay private and isolated from production; unexplained leftover test data does not pass closeout. If the checklist or owner is missing, leave closeout Blocked and retain the isolated evidence. Skip production activation with the reason “Rehearsal only.” This does not mark cleanup, handoff or acceptance complete. Production launch: use a separate production run. All prerequisites and checks must pass, the coordinator must approve, and cleanup/rollback evidence must be complete. Only the authorized owner should make the live settings changes at the approved time. Recheck every consumer afterward and record incoming acceptance.",
-   instructions:["Rehearsal closeout: keep intake closed, mock events closed, Points TESTING, and active/current flags unchanged. Export the run record, verify the downloaded file, and preserve the separate private summary/link files and evidence; the progress export does not include annual-link draft fields. Open the selective cleanup checklist below; its owner must inventory marked test submissions, events, adjustments and budget inputs; record an approved retain/remove decision for each; identify formula tabs to preserve; and list the checks to repeat afterward. Form responses and raw sheet entries require separate accounting. Match original records by timestamp, fictional identity and event, never by proxy source_row alone. Preserve OPEN exception evidence before approved source cleanup and recheck the derived queue afterward. Record removal or approved retention and incoming acceptance separately. Retained evidence must stay private and isolated from production; unexplained leftover test data does not pass closeout. If the checklist or owner is missing, leave closeout Blocked and retain the isolated evidence.", "Skip production activation with the reason “Rehearsal only.” This does not mark cleanup, handoff or acceptance complete.", "Production launch: use a separate production run. All prerequisites and checks must pass, the coordinator must approve, and cleanup/rollback evidence must be complete. Only the authorized owner should make the live settings changes at the approved time. Recheck every consumer afterward and record incoming acceptance."],
-   check:"Record each technical observation and approval separately below. Missing evidence stays unverified; assign a named owner in your private checklist."}
+  {
+    "id": "T01",
+    "roles": [
+      "president",
+      "secretary"
+    ],
+    "needs": [],
+    "title": "Choose your year",
+    "productionTitle": "Choose your year",
+    "quickStart": "Start this Practice checklist, then confirm the approved workspace, test account and access/recovery contact.",
+    "productionQuickStart": "Start this Real handoff checklist, then confirm the approved workspace, chapter account and access/recovery contact.",
+    "instructions": [
+      "Choose Practice in the questions above, then Start checklist. To resume, choose your saved checklist and Continue checklist. Practice keeps your results separate from the real handoff.",
+      "Ask the President which approved test account, private folder and copied Control Center to use. Record the practice lead and access/recovery contact in the private checklist.",
+      "Open the approved private workspace with that account. Missing workspace approval or permission stays Blocked; give the President the URL and access problem.",
+      "Annual Setup access is checked in Step 2, where its link and account warning appear. Step 2 creates or reopens the practice files; Step 3 checks the reviewer’s access to them."
+    ],
+    "productionInstructions": [
+      "Answer the two questions above, then choose Start checklist. To resume, choose your saved checklist and Continue checklist.",
+      "Ask the President who leads the handoff, which chapter account to use, and who helps with access and recovery. Keep the approved instructions and role/access table in the current private checklist.",
+      "Open the shared officer workspace using the approved account. Missing workspace approval or permission stays Blocked; give the President the URL and access problem. Annual Setup access is checked in Step 2, where its link and account warning appear.",
+      "Step 2 creates or reopens the annual files; Step 3 checks access to them. Keep outgoing officers’ access until the incoming team accepts the handoff."
+    ],
+    "check": "Record each actual observation and approval separately below. Missing evidence stays unverified; assign its owner in the private checklist.",
+    "productionCheck": "Record the actual result or the maintainer’s dated readiness record. Missing access, errors or approval stay Blocked; ask the President for the next action."
+  },
+  {
+    "id": "T02",
+    "roles": [
+      "president",
+      "secretary",
+      "treasurer"
+    ],
+    "needs": [
+      "T01"
+    ],
+    "resource": "templates",
+    "templateActions": [
+      "pointsMaster",
+      "attendanceForm",
+      "pointsExport",
+      "budgetTracker",
+      "budgetExport"
+    ],
+    "title": "Prepare this year’s files",
+    "productionTitle": "Prepare this year’s files",
+    "quickStart": "Use the designated operator’s Annual Setup results for this year: Copy setup results → Paste setup results → Save setup results. Compare the actual files below.",
+    "productionQuickStart": "Use the designated operator’s Annual Setup results for this year: Copy setup results → Paste setup results → Save setup results. Compare the actual files below.",
+    "instructions": [
+      "Before opening Annual Setup, use Chrome’s profile menu (top right) to choose ASME. In that profile, asmeohiostate@gmail.com must be the only Google account signed in. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile first. Multiple signed-in accounts can prevent the private setup page from opening.",
+      "Choose Open Annual Setup below. Confirm the workspace says Practice and uses the approved separate private folder and copied Control Center. If the workspace needs confirmation or permission, record Blocked and ask the President.",
+      "Check the year from Step 1 and enter a fictional member goal. One designated operator creates or reopens this year’s practice files; everyone else reuses those same files. Preserve existing records when resuming.",
+      "Choose Copy setup results on that page. Return here, paste into the Paste setup results box and choose Save setup results. Detailed settings and downloads are optional backup/comparison tools.",
+      "Open each saved link and check the copy’s year. Use the Step 2 comparison aid below to inspect the actual Form destination and response tab, Points Config, copied Control Center row and Budget dates against the setup summary.",
+      "Keep Points TESTING, Form intake closed and copied settings inactive/noncurrent until Step 3 opens the approved private test window. Get the maintainer’s dated readiness evidence; missing evidence stays unverified."
+    ],
+    "productionInstructions": [
+      "Before opening Annual Setup, use Chrome’s profile menu (top right) to choose ASME. In that profile, asmeohiostate@gmail.com must be the only Google account signed in. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile first. Multiple signed-in accounts can prevent the private setup page from opening.",
+      "Choose Open Annual Setup below. Your year comes from Step 1. Confirm the saved workspace says Real handoff. If it says Practice, needs confirmation or lacks permission, record Blocked and ask the President.",
+      "Answer the member-goal question using the President’s approved goal; the previous goal is a suggestion. One designated operator creates or reopens this year’s files. The approved chapter folder and calendar are reused; everyone else uses those same files. Preserve existing records when resuming.",
+      "Choose Copy setup results on that page. Return here, paste into the Paste setup results box and choose Save setup results. Detailed settings and downloads are optional backup/comparison tools.",
+      "Open each saved link and check the year. Use the Step 2 comparison aid below to inspect the actual Form destination and response tab, Points Config, Control Center row and Budget dates against the setup summary.",
+      "Keep intake closed and the year inactive/noncurrent until Step 5 approval. Obtain the maintainer’s dated clean-source, import and event-update readiness evidence; missing evidence stays unverified."
+    ],
+    "check": "Record each actual observation and approval separately below. Missing evidence stays unverified; assign its owner in the private checklist.",
+    "productionCheck": "Record the actual result or the maintainer’s dated readiness record. Missing access, errors or approval stay Blocked; ask the President for the next action."
+  },
+  {
+    "id": "T03",
+    "roles": [
+      "secretary",
+      "treasurer",
+      "webmaster"
+    ],
+    "needs": [
+      "T02"
+    ],
+    "title": "Check attendance and finances",
+    "productionTitle": "Check attendance and finances",
+    "quickStart": "In the isolated Practice copies, check the five fictional submissions and budget exercise, inspect export suppression, close intake and events, and record actual results.",
+    "productionQuickStart": "Review real events, approved finances, exports and the maintainer’s dated readiness record. Resolve missing access and evidence before launch.",
+    "instructions": [
+      "Use only the isolated Practice copies. Open copied Points Master → README and edit the yellow inputs. In Events, enter B event_name, C event_date and F event_type: MOCK Fall / {fallEventDate} / General Body Meeting → 5 points; MOCK Spring / {springEventDate} / Technical Workshop → 8 points. Event type determines calculated points.",
+      "Preserve Events A event_id, D term, E academic_year and G points. Wait for those automatic values. During the approved private test window, set both events’ H scoring_active and I form_open to TRUE.",
+      "Choose ASME Tools → Sync Events to Google Form. Confirm each MOCK event appears once in the copied Form. Choose Enable automatic event sync once in this annual copy; edit a MOCK event name in Sheets while retaining MOCK, and confirm the Form choice updates. A manual sync alone does not prove the automatic trigger.",
+      "In the copied Form, use Publish → Manage responders to restrict access to approved testers. Publish if needed, then enable Accepting responses and verify the respondent link shows the questions. Keep this mock link private.",
+      "Submit the five cases below. name.number means the OSU username-style identifier: A = rehearsala.999 and B = rehearsalb.999. Reuse each member’s exact identifier. For “Is this your first submission this academic year?”, choose the table’s Yes or No; complete every required profile field in the Yes cases using fictional details.",
+      "Check Point Log, Member Totals and Review Queue. Scores must be 5/0/8/0/8; annual totals A = 13, B = 8; with Fall selected, term totals A = 5, B = 0. Duplicate and missing-profile exceptions remain visible and OPEN. B’s later profile does not by itself prove the earlier exception resolved.",
+      "In the response tab named by the summary, find all five fictional submissions by timestamp, identifier and MOCK event. Ask the maintainer to inspect the other response tabs in this copied workbook and confirm these submissions are absent. Record arrival and other-tab inspection separately.",
+      "Close Accepting responses and set both Events I form_open cells FALSE. Sync again; open the respondent link and confirm it is no longer accepting responses.",
+      "Open both copied exports with the approved account and allow only the matching private source connections in the summary. An unresolved import stays Blocked for the maintainer; do not publish or share the workbooks.",
+      "In copied Points Master → Config!B5, verify TESTING. Open copied Points Export → Leaderboard_Public: headers may remain, but member rows must be hidden. Set Master Config!B5 to PAUSED and inspect Leaderboard_Public again. Restore B5 to TESTING and confirm it. Other approved aggregate/status tabs may contain data; public-field approval is separate.",
+      "For the budget exercise, use a clean isolated copy or have the reviewer inventory prior entries. Open Budget Tracker → Start Here for yellow inputs. In Funding Setup, set B5:D5 = 100,0,0; B6:D6 = 0,0,0; B8 = “None — MOCK rehearsal only”.",
+      "In Category Budgets, set B5 = 100 and all other B5:C18 cells to zero. Check B23:C23 = 0,0. Record a fictional funding review in Funding Setup B10; this is not real funding approval. Setup & Lists B7 is Huntington’s opening balance, not an allocation input; preserve existing balances and formulas.",
+      "In Transactions, enter three dated MOCK rows within the selected academic year, all for the same OSU Bank Account: Income 100 Approved; Expense 20 Approved; Expense 10 Pending Approval. Preserve calculated Semester and Signed Cash Flow.",
+      "With a zero opening baseline, compare Budget Tracker and Budget Export separately: ledger (approved cash balance) 80; projected ledger after pending expense 70; pending expense 10; approved spending-plan remaining 80. Existing opening balances change these expectations. The legacy category-plan table may use a different source; check its source label and do not treat a dash as zero approved allocation.",
+      "Run ASME Tools → Run Pre-Flight Sanity Check. Save the result and actual observations. Preflight checks wiring; the five submissions, separate approvals and review evidence are still required."
+    ],
+    "productionInstructions": [
+      "Open Points Master → README. Add this year’s actual events using the approved input cells. Confirm event dates, categories and points.",
+      "Follow the event-update method in the readiness record. For manual updates, the named owner chooses ASME Tools → Sync Events to Google Form after approved event changes and before intake opens. Ask the maintainer to resolve errors; leave formula tabs alone.",
+      "In the Form editor verify the approved event choices and respondent access settings. Keep intake closed until the President approves opening it.",
+      "A deliberately staged unpublished Form is acceptable now; have the authorized operator verify publication and respondent access before approved collection. Use the summary and maintainer’s readiness record to verify connections; officers are not required to submit fictional member cases.",
+      "Open Budget Tracker → Start Here. Enter approved opening balances, funding and category plans in the indicated input cells.",
+      "Record real approvals and reconcile the ledger to the dated bank evidence with the Treasurer. Do not enter fictional 100/20/10 transactions.",
+      "Compare Points Export and Budget Export with the approved source data. Resolve import or calculation errors with the President before launch. Confirm approved public fields and private member-data boundaries from the maintainer’s record; never publish private sheets."
+    ],
+    "check": "Record each actual observation and approval separately below. Missing evidence stays unverified; assign its owner in the private checklist.",
+    "productionCheck": "Record the actual result or the maintainer’s dated readiness record. Missing access, errors or approval stay Blocked; ask the President for the next action."
+  },
+  {
+    "id": "T04",
+    "roles": [
+      "president",
+      "webmaster",
+      "social_chair"
+    ],
+    "needs": [
+      "T02"
+    ],
+    "title": "Check calendar and messages",
+    "productionTitle": "Check calendar and messages",
+    "quickStart": "Check and remove local fictional previews, review an unsent MOCK newsletter, and verify three private backups in a separate recovery profile.",
+    "productionQuickStart": "Compare approved events, review the editable newsletter and website draft, retain three private backups and obtain dated recovery readiness evidence.",
+    "instructions": [
+      "Open Newsletter Builder → Calendar. Enter the full academic year selected in this checklist and choose Load fictional Fall/Spring. Confirm both semesters and FICTIONAL REHEARSAL. These events stay local and create no Google events or invitations.",
+      "Open Public Events Calendar and repeat its local fictional preview in the generated list above the embedded Google calendar. Check desktop and phone. Then choose Remove fictional events, Upcoming in Newsletter Builder, and Upcoming dates on the public page. Confirm the fictional label is gone and the chapter snapshot returns; use Refresh chapter snapshot and record any error.",
+      "Before changing an existing newsletter, choose Templates → Export Draft .json and preserve it privately. Use a clearly labeled MOCK issue. In Settings edit Email Subject Line and Preheader Text (preview line in inbox); use Links for quick links, Design for footer/address, and Announce → Author Attribution for the officer signature. Review Desktop and Mobile previews; keep the draft unsent.",
+      "Keep three private backups: newsletter draft, Hub progress, and private links. Use Saved links and backup tools → Progress backup and print for progress; use Saved links for Download private links backup. Compare each downloaded file with the working screens using the recovery guide below.",
+      "In a separate browser profile, restore the three backups and compare the restored checklist, seven links and newsletter content. Preserve the original profile and any existing recovery-profile work before imports. Record observed results and limits; downloads alone do not prove restoration."
+    ],
+    "productionInstructions": [
+      "Open the chapter calendar and check actual approved events: title, date, time, time zone and location. Compare the same events in the Hub, public Events Calendar and Newsletter Builder. Refresh chapter data, record the time and resolve mismatches.",
+      "Before editing an existing newsletter, choose Templates → Export Draft .json and keep an untouched private backup.",
+      "In Newsletter Builder → Settings, edit Email Subject Line and Preheader Text (preview line in inbox). Use Links for annual quick links, Design → Footer Org Name / Footer Address Line, and Announce → Author Attribution for the officer signature and Message for issue text. Review Desktop and Mobile previews and save the editable draft for approval.",
+      "Ask the President for approved sender, reply-to, complete mailing address and dated public facts. Verify sender/reply-to and the sending-service route with its owner. Missing facts or approval stays Blocked; obtain content-owner approval before sending.",
+      "For website changes, the authorized Webmaster opens WordPress login → Pages → Leadership or the intended page. Preserve the current content, apply the approved draft, choose Save Draft, reload and Preview. Follow the page map in More help for annual links on other pages. Obtain content-owner approval before publishing.",
+      "Keep three private backups: editable newsletter draft, Hub progress and private links. Use Saved links and backup tools → Progress backup and print for progress; use Saved links for Download private links backup. Compare downloads with the working screens. Get the maintainer’s dated recovery readiness record; downloads alone do not prove restoration."
+    ],
+    "check": "Record each actual observation and approval separately below. Missing evidence stays unverified; assign its owner in the private checklist.",
+    "productionCheck": "Record the actual result or the maintainer’s dated readiness record. Missing access, errors or approval stay Blocked; ask the President for the next action."
+  },
+  {
+    "id": "T05",
+    "roles": [
+      "president",
+      "secretary",
+      "treasurer",
+      "webmaster"
+    ],
+    "needs": [
+      "T01",
+      "T02",
+      "T03",
+      "T04"
+    ],
+    "launch": true,
+    "title": "Close and review your practice run",
+    "productionTitle": "Approve and start the year",
+    "quickStart": "Close intake and events, keep Points TESTING and settings inactive/noncurrent, record cleanup or private retention and reviewer sign-off, then skip activation with Rehearsal only.",
+    "productionQuickStart": "After required reviews, incoming acceptance and recorded launch approval, the authorized settings owner sets Points LIVE, activates the verified new year, sets the previous year’s is_current to FALSE, and rechecks the Hub, website, Form and newsletter.",
+    "instructions": [
+      "Before cleanup, close Form intake and set every Events form_open checkbox FALSE. In a fresh annual copy, ASME Tools → Clear Test Data previews and backs up MOCK attendance before removal; it does not remove event definitions, adjustments or budget entries. Review those separately. If the menu is absent, reload once; older copies need the maintainer’s cleanup/menu update. Never clear formula tabs.",
+      "Keep copied Points Master Config!B5 TESTING and the copied year is_active=FALSE and is_current=FALSE. Open the private cleanup checklist. Its owner inventories submissions, events, adjustments and budget inputs, records approved retain/remove decisions, and lists checks to repeat. Missing owner or approval stays Blocked; retain isolated evidence.",
+      "Account separately for Form responses and raw sheet entries. Match originals by timestamp, fictional identity and event, never proxy source_row alone. Preserve OPEN exception evidence before approved cleanup, then recheck the derived queue and safe settings. Retained test evidence stays private and separate from production.",
+      "Export and compare the progress record, separate private-links backup and newsletter draft. Record the practice reviewer’s acceptance, date and limits in the private checklist, including cleanup/retention and recovery results.",
+      "Skip activation with the reason Rehearsal only. This records the activation skip; cleanup and reviewer acceptance still require their own evidence. Practice acceptance does not authorize a real launch."
+    ],
+    "productionInstructions": [
+      "Ask the President to review access, annual settings, attendance, finances and communications. Record unresolved items as Blocked. Preserve prior-year records and approved access; account for any inherited test data with the maintainer before launch. If any item is missing, assign its owner and deadline in the shared checklist.",
+      "Obtain the coordinator’s dated launch approval and rollback plan, including who restores the previous settings if a consumer fails. The checklist records review; it does not change Google or activate the year.",
+      "At the approved time, the authorized settings owner sets the verified real Points Master Config!B5 to LIVE, sets the new year’s actual Control Center row is_active=TRUE and is_current=TRUE, and sets the previous year’s is_current to FALSE. Preserve prior-year records. Check the approved Form intake state. Reopen the Hub, website, Form and newsletter and confirm each uses the correct year and approved public data; follow the recorded rollback plan if a consumer fails.",
+      "Record incoming officer acceptance separately from activation. The team may accept custody with named open tasks and deadlines; that decision does not authorize launch while required reviews remain unfinished. Keep outgoing access until acceptance is recorded, then have the President arrange the approved access changes."
+    ],
+    "check": "Record each actual observation and approval separately below. Missing evidence stays unverified; assign its owner in the private checklist.",
+    "productionCheck": "Record the actual result or the maintainer’s dated readiness record. Missing access, errors or approval stay Blocked; ask the President for the next action."
+  }
 ];
+// Keep the action fallback aligned with the explicit Practice tasks.
+for (const step of TRANSITION_STEPS) step.action = step.instructions.join(" ");
+
 export const TRANSITION_CHECKS = [
- {id:'V01',step:'T02',title:'Are all required masters clean and ready to copy?'},
- {id:'V02',step:'T02',title:'Does the Form send responses to this year’s workbook and actual tab?'},
- {id:'V03',step:'T03',title:'Do the five responses appear only in the configured response tab of the copied workbook?'},
- {id:'V04',step:'T03',title:'Did tests earn the expected points and totals with visible exceptions?'},
- {id:'V05',step:'T03',title:'Are public fields approved and member output suppressed while non-live?'},
- {id:'V06',step:'T03',title:'Do budget balances and approved funding match the private ledger?'},
- {id:'V07',step:'T02',title:'Does a fresh Google read match the inactive/noncurrent draft settings?'},
- {id:'V08',step:'T04',title:'Do calendars show correct current events in every tool?'},
- {id:'V09',step:'T04',title:'Do approved public pages and links work on desktop and phone?'},
- {id:'V10',step:'T01',title:'Can incoming officers use every tool their roles require?',rehearsalTitle:'Can the reviewer open every copied tool with the approved rehearsal account?'},
- {"id": "V11", "step": "T03", "title": "Has the owner approved the exact public fields, separately from suppression?"},
- {"id": "V12", "step": "T03", "title": "Is real funding authority approved with dated private evidence?"},
- {"id": "V13", "step": "T03", "title": "Are ledger balances reconciled to dated bank statements?"},
- {"id": "V14", "step": "T04", "title": "Are live calendar title, date, time, time zone, location and refresh observations recorded across every consumer?"},
- {"id": "V15", "step": "T04", "title": "Are sender, reply-to, mailing address and dated public facts approved, with the sending-service route verified?"},
- {"id": "V16", "step": "T05", "title": "Has the cleanup owner accounted for every retained or removed test item and rechecked safe settings?"},
- {"id": "V17", "step": "T05", "title": "Has incoming acceptance been recorded independently of activation?", "rehearsalTitle": "Has the reviewer accepted the private rehearsal and its recorded limits?"},
- {"id": "V18", "step": "T05", "title": "Has the coordinator approved this production launch and rollback record?"},
- {"id": "V19", "step": "T02", "title": "Has automatic event sync been installed and observed separately from initial/manual sync?"},
- {"id": "V20", "step": "T01", "title": "Does the current private T01–T05 checklist identify each holder, access evidence, coordinator and recovery contact?", "rehearsalTitle": "Does this rehearsal have a current checklist, lead, test account and recovery plan?"},
- {"id": "V21", "step": "T02", "title": "Does this run’s readable setup summary match the actual copies, settings and workbook date locations?"},
- {"id": "V22", "step": "T04", "title": "Have downloaded Hub and newsletter backups been inspected and restored in an isolated recovery roundtrip?"},
- {"id": "V23", "step": "T03", "title": "Are member rows suppressed in both TESTING and PAUSED, then restored to TESTING?"},
- {"id": "V24", "step": "T03", "title": "Do copied budget tracker and export show ledger 80, projected 70, pending 10 and approved plan remaining 80?"},
- {"id": "V25", "step": "T04", "title": "Do both local fictional calendar previews work on desktop and phone, then return to Upcoming?"},
- {"id": "V26", "step": "T03", "title": "Did the five fictional submissions arrive in the named response tab?"}
-].map(check => ({ ...check, modes: ['V03','V04','V23','V24','V25','V26'].includes(check.id) ? ['rehearsal'] : ['V05','V06','V08','V09','V11','V12','V13','V14','V15','V18'].includes(check.id) ? ['production'] : ['rehearsal','production'] }));
-
-export const TRANSITION_TEST_CASES = [["1", "A, Yes; complete profile", "Fall", "5"], ["2", "A, No", "Same Fall event", "0; duplicate exception OPEN"], ["3", "A, No", "Spring", "8"], ["4", "B, No; no existing profile", "Fall", "0; missing-profile exception OPEN"], ["5", "B, Yes; complete profile", "Spring", "8"]];
-
-// Operational instructions are separate from optional maintainer diagnostics.
-const operational = {
- T01: ["Confirm access and materials", [
-  "Choose your handoff year and Start checklist. Use Real handoff for the actual officer transition. Continue checklist opens an existing attempt.",
-  "Ask the President for this year’s private handoff folder, filled checklist and tool links. Save those URLs under Saved links. The President is your contact; no personal name is required.",
-  "Use the role table in the private checklist: it names each tool, exact link, approved account and required permission. Open each listed tool using that account. Confirm you can edit the required inputs. If Request access appears, give the President that tool’s URL and record Blocked until access is restored.",
-  "Keep the outgoing officers’ access until the incoming team accepts the handoff. Record your access date and any unresolved item in the shared private checklist. Hub checkmarks and notes stay in this browser; download them for the President’s review." ]],
- T02: ["Get this year’s tools", [
-  "Open the setup summary supplied by the President. It lists this year’s annual folder, Points Master, Form editor and respondent links, Budget Tracker, exports and Control Center. Missing summary or copies: ask the President to arrange technical setup and record Blocked.",
-  "Choose Open Annual Setup, sign in with the chapter account, choose the target year and run setup. For existing annual files, use their summary instead. Read the setup summary on the page and open each created link to confirm the file year. For a fresh practice run, use the private practice folder and copied Control Center. Do not copy last year’s working files.",
-  "In the Form editor choose Responses → View in Sheets. Confirm this year’s Points Master and the response tab match the summary. Preserve existing responses; ask the maintainer to explain any unexpected destination or data.",
-  "Open Points Master → Config. Compare the year, Form ID and response-tab name with the setup summary. Ask the maintainer to correct any mismatch.",
-  "Open Budget Tracker and compare the annual start and end dates with the summary.",
-  "Open the supplied Control Center and find your year’s row. Confirm the row matches the summary and stays inactive until Step 5 approval.",
-  "Get the maintainer’s dated readiness record for the annual tools and imports. It must name the event-update method: verified automatic updates, or a responsible manual owner who syncs approved event changes before intake opens." ]],
- T03: ["Prepare attendance and finances", [
-  "Open Points Master → README. Add this year’s actual events using the approved input cells. Confirm event dates, categories and points.",
-  "Follow the event-update method in the readiness record. For manual updates, the named owner chooses ASME Tools → Sync Events to Google Form after approved event changes and before intake opens. Ask the maintainer to resolve errors; leave formula tabs alone.",
-  "In the Form editor verify the approved event choices and respondent access settings. Keep intake closed until the President approves opening it.",
-  "A deliberately staged unpublished Form is acceptable now; have the authorized operator verify publication and respondent access before approved collection. Use the summary and maintainer’s readiness record to verify connections; officers are not required to submit fictional member cases.",
-  "Open Budget Tracker → Start Here. Enter approved opening balances, funding and category plans in the indicated input cells.",
-  "Record real approvals and reconcile the ledger to the dated bank evidence with the Treasurer. Do not enter fictional 100/20/10 transactions.",
-  "Compare Points Export and Budget Export with the approved source data. Resolve import or calculation errors with the President before launch. Confirm approved public fields and private member-data boundaries from the maintainer’s record; never publish private sheets." ]],
- T04: ["Update calendars and communications", [
-  "Open the chapter calendar and confirm this year’s actual events: title, date, time, time zone and location.",
-  "Compare the same events in the Hub, public Events Calendar and Newsletter Builder; refresh chapter data and record any mismatch.",
-  "Back up an existing newsletter with Templates → Export Draft .json before editing it.",
-  "Update the subject, preheader, officer names, annual links and footer. Review Desktop and Mobile previews and save the draft for approval.",
-  "Ask the President for approved sender, reply-to, mailing address and dated public facts. Verify the sending-service route with its owner before sending.",
-  "Update the website’s annual links and leadership using the approved facts.",
-  "Export Hub progress and Download private links backup under Saved links and backup tools. Keep these and the newsletter draft private. Ask the maintainer for the dated recovery readiness record; a successful download alone does not prove restoration." ]],
- T05: ["Approve and switch to the new year", [
-  "Ask the President to review access, annual settings, attendance, finances and communications. Record unresolved items as Blocked. Preserve prior-year records and approved access; account for any inherited test data with the maintainer before launch. If any item is missing, assign its owner and deadline in the shared checklist.",
-  "Obtain the coordinator’s dated launch approval and rollback plan, including who restores the previous settings if a consumer fails. The checklist records review; it does not change Google or activate the year.",
-  "At the approved time, the authorized settings owner sets the verified real Points Master Config!B5 to LIVE, sets the new year’s actual Control Center row is_active=TRUE and is_current=TRUE, and retires the previous year’s is_current flag. Preserve prior-year records. Check the approved Form intake state. Reopen the Hub, website, Form and newsletter and confirm each uses the correct year and approved public data; follow the recorded rollback plan if a consumer fails.",
-  "Record incoming officer acceptance separately from activation. The team may accept custody with named open tasks and deadlines; that decision does not authorize launch while required reviews remain unfinished. Keep outgoing access until acceptance is recorded, then have the President arrange the approved access changes." ]]
-};
-for (const step of TRANSITION_STEPS) {
- [step.productionTitle, step.productionInstructions] = operational[step.id];
- step.productionCheck = "Record the actual result or the maintainer’s dated readiness record. Missing access, errors or approval stay Blocked; ask the President for the next action.";
-}
-for (const check of TRANSITION_CHECKS) {
- if(check.id === 'V01') check.productionTitle = 'Has the maintainer confirmed this year’s tools are ready?';
- if(check.id === 'V05') check.productionTitle = 'Has the maintainer verified that non-live exports hide member rows and use only the approved public fields?';
- if(check.id === 'V06') check.productionTitle = 'Do Budget Tracker and Budget Export match the private ledger and approved funding amounts?';
- if(check.id === 'V07') check.productionTitle = 'Does this year’s inactive Control Center row match the setup summary?';
- if(check.id === 'V08') check.productionTitle = 'Do this year’s events appear in the Hub, website and newsletter calendar views?';
- if(check.id === 'V20') check.productionTitle = 'Does the private five-step checklist name each holder, access evidence, coordinator and recovery contact?';
- if(check.id === 'V19') check.productionTitle = 'Has the maintainer confirmed the event-update method and responsible owner?';
- if(check.id === 'V16') check.productionTitle = 'Have prior-year records, inherited test data and approved access changes been accounted for before launch?';
- if(check.id === 'V22') check.productionTitle = 'Has the maintainer supplied a dated recovery readiness record for the Hub, private links and newsletter?';
-}
-
-// Short officer route; the detailed checks below retain evidence and launch rules.
-const simpleRoute = {
- T01: ['Year Selection & Access', 'Choose the academic year and sign in with the chapter Google account. Confirm the incoming team can open its tools.'],
- T02: ['One-Click Annual Setup', 'Choose Open Annual Setup, choose the same year and run setup. Download the summary with your five files. Setup leaves the Form closed, Points TESTING and the year inactive.'],
- T03: ['Export Access & Test Check-in', 'Open Points Export and Budget Export and allow their matching imports. In your private practice files, follow the five fictional check-ins listed below. Verify their delivery and expected points, close intake and event checkboxes, then run ASME Tools → Run Pre-Flight Sanity Check.'],
- T04: ['Communications & Calendar', 'Confirm the chapter calendar and annual website links. Review the newsletter sender, reply-to and approved postal address.'],
- T05: ['Activation & Go-Live', 'Close intake and test events. In the test files, run ASME Tools → Clear Test Data to archive and remove MOCK attendance. After required reviews, the authorized owner sets Points LIVE and switches the verified Control Center year to active/current. Practice runs stay TESTING and inactive.']
-};
-for (const step of TRANSITION_STEPS) {
- [step.title, step.quickStart] = simpleRoute[step.id];
- step.productionTitle = step.title;
-}
-const annualSetupStep = TRANSITION_STEPS.find(step => step.id === 'T02');
-annualSetupStep.instructions[0] = 'Choose Open Annual Setup using the chapter account. For new practice files, select a private practice folder and copied Control Center in Chapter setup, choose this checklist’s year, and run setup. Download the summary. If your annual files already exist, use their summary and compare the files instead of creating another set of files.';
-annualSetupStep.productionInstructions[0] = 'First check whether the President has supplied the annual files and summary. If yes, open and verify those files. If no, the President names one setup operator to choose Open Annual Setup in the ASME Chrome profile, enter this checklist’s year, run setup once, and download the summary. Other incoming officers use the same files. The President supplies the annual workspace folder, Control Center and approved engagement goal for Chapter setup; do not guess these fields.';
-
-// Keep each mode's short route consistent with its detailed tasks.
-const studentQuickStarts = {
- T01: 'Select the year and checklist mode. For Practice, use an isolated private folder and copied Control Center. The President supplies real handoff access and approved setup values.',
- T02: 'Use the existing summary when resuming. For a new set of annual files, the designated setup operator chooses Open Annual Setup in the ASME Chrome profile, saves the supplied setup fields, enters the same academic year and runs once. Download the summary and save its seven links.',
- T03: 'Open both exports and allow access only to their matching source files. In Practice, complete all five fictional cases below, verify delivery and points, close intake and events, then run Pre-Flight Sanity Check.',
- T04: 'Compare approved calendar and communications information. Practice previews stay fictional; save a newsletter draft and three separate backups. Do not send the practice issue.',
- T05: 'For Practice, keep Points TESTING, intake and events closed, and settings inactive/noncurrent. Review ASME Tools → Clear Test Data or retain test evidence, and skip activation with the reason Rehearsal only. The real settings owner activates only after recorded launch approval.'
-};
-for (const step of TRANSITION_STEPS) step.quickStart = studentQuickStarts[step.id];
-TRANSITION_STEPS.find(step => step.id === 'T03').productionQuickStart = 'Review real events, approved finances and the maintainer’s readiness record. Resolve both export imports. Fictional check-ins belong in a separate set of Practice files.';
-TRANSITION_STEPS.find(step => step.id === 'T05').productionQuickStart = 'After required reviews, incoming acceptance and recorded launch approval, the authorized settings owner sets the verified real Points Master Config!B5 to LIVE, activates the new Control Center year as current, retires the previous current-year flag and verifies the approved intake state and every consumer.';
-TRANSITION_STEPS.find(step => step.id === 'T05').instructions.unshift('Before cleanup, close Form intake and set every Events form_open checkbox FALSE. In a fresh annual copy, ASME Tools → Clear Test Data previews and backs up MOCK attendance before removal; it does not remove event definitions, adjustments or budget entries. Review those separately. If the menu is absent, reload once; older annual copies need the maintainer to install the new cleanup/menu source. Retain evidence if the operator has not approved removal. Never clear formula tabs.');
-
-const setupAccountWarning = 'Before opening Annual Setup, use Chrome’s profile menu (top right) to choose ASME. In that profile, asmeohiostate@gmail.com must be the only Google account signed in. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile first. Multiple signed-in accounts can prevent the private setup page from opening.';
-annualSetupStep.instructions.unshift(setupAccountWarning);
-annualSetupStep.productionInstructions.unshift(setupAccountWarning);
-
-// Keep the main officer path short; detailed procedures remain under More help.
-const plainTitles = ['Choose your year', 'Prepare this year’s files', 'Check attendance and finances', 'Check calendar and messages', 'Approve and start the year'];
-TRANSITION_STEPS.forEach((step,index) => { step.productionTitle = plainTitles[index]; if (!step.launch) step.title = plainTitles[index]; });
-const firstStep = TRANSITION_STEPS[0];
-firstStep.productionInstructions = [
-  'Answer the two questions above, then choose Start checklist. If you already started, choose your saved checklist and Continue checklist.',
-  'Ask the President who is leading the handoff, which chapter account to use, and who can help with access. Keep their instructions in the private officer checklist.',
-  'Confirm you can open the chapter’s setup page and shared officer workspace. Step 2 creates the annual files; Step 3 checks access to those new files.',
-  'Keep outgoing officers’ access until the incoming team accepts the handoff.'
+  {
+    "id": "V01",
+    "step": "T02",
+    "title": "Are all required masters clean and ready to copy?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ],
+    "productionTitle": "Has the maintainer confirmed this year’s tools are ready?"
+  },
+  {
+    "id": "V02",
+    "step": "T02",
+    "title": "Does the Form send responses to this year’s workbook and actual tab?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ]
+  },
+  {
+    "id": "V03",
+    "step": "T03",
+    "title": "Do the five responses appear only in the configured response tab of the copied workbook?",
+    "modes": [
+      "rehearsal"
+    ]
+  },
+  {
+    "id": "V04",
+    "step": "T03",
+    "title": "Did tests earn the expected points and totals with visible exceptions?",
+    "modes": [
+      "rehearsal"
+    ]
+  },
+  {
+    "id": "V05",
+    "step": "T03",
+    "title": "Are public fields approved and member output suppressed while non-live?",
+    "modes": [
+      "production"
+    ],
+    "productionTitle": "Has the maintainer verified that non-live exports hide member rows and use only the approved public fields?"
+  },
+  {
+    "id": "V06",
+    "step": "T03",
+    "title": "Do budget balances and approved funding match the private ledger?",
+    "modes": [
+      "production"
+    ],
+    "productionTitle": "Do Budget Tracker and Budget Export match the private ledger and approved funding amounts?"
+  },
+  {
+    "id": "V07",
+    "step": "T02",
+    "title": "Does a fresh Google read match the inactive/noncurrent draft settings?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ],
+    "productionTitle": "Does this year’s inactive Control Center row match the setup summary?"
+  },
+  {
+    "id": "V08",
+    "step": "T04",
+    "title": "Do calendars show correct current events in every tool?",
+    "modes": [
+      "production"
+    ],
+    "productionTitle": "Do this year’s events appear in the Hub, website and newsletter calendar views?"
+  },
+  {
+    "id": "V09",
+    "step": "T04",
+    "title": "Do approved public pages and links work on desktop and phone?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V10",
+    "step": "T03",
+    "title": "Can incoming officers use every tool their roles require?",
+    "rehearsalTitle": "Can the reviewer open every copied tool with the approved rehearsal account?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ]
+  },
+  {
+    "id": "V11",
+    "step": "T03",
+    "title": "Has the owner approved the exact public fields, separately from suppression?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V12",
+    "step": "T03",
+    "title": "Is real funding authority approved with dated private evidence?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V13",
+    "step": "T03",
+    "title": "Are ledger balances reconciled to dated bank statements?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V14",
+    "step": "T04",
+    "title": "Are live calendar title, date, time, time zone, location and refresh observations recorded across every consumer?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V15",
+    "step": "T04",
+    "title": "Are sender, reply-to, mailing address and dated public facts approved, with the sending-service route verified?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V16",
+    "step": "T05",
+    "title": "Has the cleanup owner accounted for every retained or removed test item and rechecked safe settings?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ],
+    "productionTitle": "Have prior-year records, inherited test data and approved access changes been accounted for before launch?"
+  },
+  {
+    "id": "V17",
+    "step": "T05",
+    "title": "Has incoming acceptance been recorded independently of activation?",
+    "rehearsalTitle": "Has the reviewer accepted the private rehearsal and its recorded limits?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ]
+  },
+  {
+    "id": "V18",
+    "step": "T05",
+    "title": "Has the coordinator approved this production launch and rollback record?",
+    "modes": [
+      "production"
+    ]
+  },
+  {
+    "id": "V19",
+    "step": "T03",
+    "title": "Has automatic event sync been installed and observed separately from initial/manual sync?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ],
+    "productionTitle": "Has the maintainer confirmed the event-update method and responsible owner?"
+  },
+  {
+    "id": "V20",
+    "step": "T01",
+    "title": "Does the current private T01–T05 checklist identify each holder, access evidence, coordinator and recovery contact?",
+    "rehearsalTitle": "Does this rehearsal have a current checklist, lead, test account and recovery plan?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ],
+    "productionTitle": "Does the private five-step checklist name each holder, access evidence, coordinator and recovery contact?"
+  },
+  {
+    "id": "V21",
+    "step": "T02",
+    "title": "Does this run’s readable setup summary match the actual copies, settings and workbook date locations?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ]
+  },
+  {
+    "id": "V22",
+    "step": "T04",
+    "title": "Have downloaded Hub and newsletter backups been inspected and restored in an isolated recovery roundtrip?",
+    "modes": [
+      "rehearsal",
+      "production"
+    ],
+    "productionTitle": "Has the maintainer supplied a dated recovery readiness record for the Hub, private links and newsletter?"
+  },
+  {
+    "id": "V23",
+    "step": "T03",
+    "title": "Are member rows suppressed in both TESTING and PAUSED, then restored to TESTING?",
+    "modes": [
+      "rehearsal"
+    ]
+  },
+  {
+    "id": "V24",
+    "step": "T03",
+    "title": "Do copied budget tracker and export show ledger 80, projected 70, pending 10 and approved plan remaining 80?",
+    "modes": [
+      "rehearsal"
+    ]
+  },
+  {
+    "id": "V25",
+    "step": "T04",
+    "title": "Do both local fictional calendar previews work on desktop and phone, then return to Upcoming?",
+    "modes": [
+      "rehearsal"
+    ]
+  },
+  {
+    "id": "V26",
+    "step": "T03",
+    "title": "Did the five fictional submissions arrive in the named response tab?",
+    "modes": [
+      "rehearsal"
+    ]
+  }
 ];
-firstStep.quickStart = 'Start the checklist here. Then confirm who can help you and which account to use.';
-annualSetupStep.productionInstructions = [setupAccountWarning,
-  'Choose Open Annual Setup below. Your year is filled in from Step 1. Check that the saved workspace says Real handoff; if it says Practice or needs confirmation, ask the President to correct it.',
-  'Answer the member-goal question. The previous goal is a suggestion for the President to approve. Continue to create or reopen this year’s files; the chapter folder and calendar are reused.',
-  'Choose Copy setup results on that page. Return here, paste them into the box and choose Save setup results. No downloaded package is needed.',
-  'Open the new files below. Check the year. In the Form, choose Responses → View in Sheets and confirm it opens this year’s Points Master. Compare the settings shown in the setup summary.',
-  'Keep intake closed and the year inactive until Step 5. Ask the maintainer to confirm event updates and the readiness checks.'
+
+export const TRANSITION_TEST_IDENTITIES = "Fictional identities: A = rehearsala.999; B = rehearsalb.999. name.number is the OSU username-style identifier. Reuse the exact identifier for each member. The Yes/No choices answer “Is this your first submission this academic year?”; complete all required fictional profile fields for Yes.";
+export const TRANSITION_TEST_CASES = [
+  [
+    "1",
+    "A (rehearsala.999), Yes; complete profile",
+    "MOCK Fall",
+    "5"
+  ],
+  [
+    "2",
+    "A (rehearsala.999), No",
+    "Same MOCK Fall event",
+    "0; duplicate exception OPEN"
+  ],
+  [
+    "3",
+    "A (rehearsala.999), No",
+    "MOCK Spring",
+    "8"
+  ],
+  [
+    "4",
+    "B (rehearsalb.999), No; no existing profile",
+    "MOCK Fall",
+    "0; missing-profile exception OPEN"
+  ],
+  [
+    "5",
+    "B (rehearsalb.999), Yes; complete profile",
+    "MOCK Spring",
+    "8"
+  ]
 ];
-annualSetupStep.quickStart = 'Answer the questions in Annual Setup, then copy its results into the box below.';
-annualSetupStep.instructions = [setupAccountWarning,
-  'Choose Open Annual Setup. Confirm the workspace says Practice and uses a separate private folder and copied settings sheet.',
-  'Check the year and enter a fictional member goal. Continue to create or reopen the practice files.',
-  'Copy setup results, return here, paste them into the box and choose Save setup results. Open the links and compare the settings with the summary on the setup page.',
-  'Keep practice intake closed and settings inactive until the testing instructions in Step 3 tell you to open them.'
-];
-// Annual-copy access is checked after the copies exist, rather than before setup.
-TRANSITION_CHECKS.find(check => check.id === 'V10').step = 'T03';
-// Event updates are installed or reviewed alongside the actual event work.
-TRANSITION_CHECKS.find(check => check.id === 'V19').step = 'T03';

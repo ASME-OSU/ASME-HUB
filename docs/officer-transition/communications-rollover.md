@@ -2,16 +2,19 @@
 
 Use this with **T04 — Update calendars and communications**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
 actual people responsible for communications, the calendar and website in the
-private handoff checklist. A role listed here does not appoint a new officer. Contact the President through [asme@osu.edu](mailto:asme@osu.edu) with your role, target year and Practice/Real handoff purpose to obtain the filled current checklist, maintainer's name, readable setup receipt and private link-bundle JSON. A receipt is the maintainer's list of copied files and verified settings; retain the record links supplied for this attempt. Missing materials stay Blocked.
+private handoff checklist. A role listed here does not appoint a new officer. Contact the President through [asme@osu.edu](mailto:asme@osu.edu) with your role, target year and Practice/Real handoff purpose to obtain the filled current checklist, maintainer’s name, workspace approval and approved communications record. Step 2 creates or reopens the annual files and saves their setup results; a private links JSON is an optional backup. A receipt is the maintainer's list of copied files and verified settings; retain the record links supplied for this attempt. Missing materials stay Blocked.
 
 ## Officer route: review real dates and editable communications
 
 1. Open the current calendar and Newsletter Builder from Step 4 in the Hub. Use the annual links supplied for your checklist.
 2. Ask the calendar owner to confirm upcoming dates, Eastern times, rooms and descriptions. Reuse the existing chapter calendar unless its owner approves a change.
 3. In Newsletter Builder, choose **Templates → Export Draft .json** before editing. Keep this untouched editable backup in the private handoff folder.
-4. Update the draft with approved dates, facts, sender and reply-to. Record missing facts as Blocked and assign the communications owner. Obtain approval before sending or publishing.
-5. Keep **Export progress**, **Download private link bundle** and the editable Newsletter Draft as three separate files. Reference the maintainer's dated recovery record; ask the maintainer to resolve missing restoration evidence.
-6. Save the observation locally in **Record results**, then give the note or exported progress to the President for the shared private checklist. Teammates do not see local checkmarks automatically.
+4. Update **Settings → Email Subject Line / Preheader Text** (inbox preview line), **Links** for annual quick links, **Design → Footer Org Name / Footer Address Line**, and **Announce → Message / Author Attribution** for issue text and officer signature. Use approved dates/facts; the responsible owner supplies sender, reply-to and full postal address. Missing approval remains Blocked. Obtain content-owner approval before sending or publishing.
+5. The authorized Webmaster uses **WordPress Admin Login → Pages → Leadership** or the intended page → preserve current content → approved draft → **Save Draft**, reload and **Preview** on desktop/phone. Annual links may belong to other pages; use the [page map](#webmaster-t04-public-page-source-and-publication-map).
+6. Keep **Export progress**, **Download private links backup** and the editable Newsletter Draft as three separate files. Reference the maintainer's dated recovery record; ask the maintainer to resolve missing restoration evidence.
+7. Save the observation locally in **Record results**, then give the note or exported progress to the President for the shared private checklist. Teammates do not see local checkmarks automatically.
+
+### Practice only
 
 Fictional calendar previews and a separate-profile restore are optional assigned practice. They are not prerequisites for updating the real draft. The [recovery procedure](recovery-practice.md) is for the person assigned to test restoration.
 
@@ -209,7 +212,7 @@ establish these separate scopes:
    expected issue under `state`. The library file is a list of saved templates.
    Save dated, distinct filenames in the annual Communications folder and keep
    an untouched backup. If the download indicator times out, inspect Downloads
-   before retrying; a file may have downloaded successfully. Ask the Webmaster
+   before retrying; a file may have downloaded successfully. Use the [expected-versus-observed backup examples](recovery-practice.md#expected-versus-observed-examples) to compare subject, preheader and one content item with the editor. Ask the Webmaster
    to inspect any unreadable file before overwriting a draft. Never use
    **Clear Saved Draft** as the first handoff action.
 2. In a separate browser/profile (not another tab), export and verify any
