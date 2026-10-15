@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261015a">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261015d">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -805,17 +805,18 @@
               </section>
               </section></div>
               <p id="transition-readiness" class="transition-banner" role="status"></p>
-              <button class="text-button" id="transition-reset" type="button">Reset checklist progress</button>
+              <details class="transition-tools transition-checklist-options"><summary>Checklist options</summary><button class="text-button" id="transition-reset" type="button">Reset checklist progress</button>
               <section id="transition-reset-confirmation" class="transition-banner" aria-label="Confirm checklist reset" hidden>
                 <p id="transition-reset-context"></p>
                 <button class="secondary-button" id="transition-reset-cancel" type="button">Cancel</button>
                 <button class="secondary-button" id="transition-reset-confirm" type="button">Start fresh checklist</button>
               </section>
+              </details>
               <p id="transition-summary" class="transition-summary"></p>
               <div id="transition-steps" class="transition-steps"></div>
               <p id="transition-next-reason" class="transition-next-reason" aria-live="polite"></p>
-              <section id="transition-saved-tools" class="transition-saved-tools" aria-labelledby="transition-saved-tools-title">
-                <h3 id="transition-saved-tools-title" class="transition-area-title">Saved links and backup tools</h3>
+              <details id="transition-saved-tools" class="transition-saved-tools" aria-labelledby="transition-saved-tools-title">
+                <summary id="transition-saved-tools-title" class="transition-area-title">Saved links and backup tools</summary>
                 <p id="transition-saved-tools-context" class="transition-summary"></p>
               <details id="transition-progress-tools" class="transition-tools"><summary>Progress backup and print</summary>
                 <p>Progress last saved on this device: <strong id="transition-saved-at">Never</strong></p>
@@ -827,7 +828,7 @@
                 </div>
               </details>
                 <a class="secondary-button" id="transition-control-center" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener noreferrer">Open current Hub Control Center</a>
-              </section>
+              </details>
             </div>
             <footer class="transition-step-actions">
               <button class="secondary-button" type="button" id="transition-back">Back</button>
@@ -1101,11 +1102,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261015a"></script>
+  <script src="assets/js/config.js?v=20261015d"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261015a"></script>
-  <script type="module" src="assets/js/transition.js?v=20261015a"></script>
+  <script src="assets/js/app.js?v=20261015d"></script>
+  <script type="module" src="assets/js/transition.js?v=20261015d"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

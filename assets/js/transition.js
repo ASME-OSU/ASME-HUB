@@ -1,8 +1,8 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015a";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015a";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015a";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015d";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015d";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015d";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015a";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015d";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -43,7 +43,7 @@ if (section) {
   const statusLine = $("transition-status");
   const byId = new Map(TRANSITION_STEPS.map((step) => [step.id, step]));
   const statusLabels = { not_started: "Not started", in_progress: "In progress", blocked: "Blocked", failed: "Failed", skipped: "Skipped — reason recorded", complete: "Complete — officer marked" };
-  const checkLabels = { not_checked: "Not checked yet", checking: "I’m checking", passed: "Yes — I checked", failed: "No — needs fixing", unable: "I need help", needs_recheck: "Check again", skipped: "Not applicable — explain why" };
+  const checkLabels = { not_checked: "Not yet", checking: "Checking now", passed: "Yes — checked", failed: "Needs fixing", unable: "Need help", needs_recheck: "Check again", skipped: "Does not apply — add a reason" };
   const roleLabels = { president: "President", vice_president: "Vice President", treasurer: "Treasurer", secretary: "Secretary / points", social_chair: "Social Chair", webmaster: "Webmaster", ecouncil: "E-Council Representative", advisor: "Advisor" };
   let pendingSkipId = null;
   let previousGuideRaw = null;
@@ -344,6 +344,15 @@ if (section) {
     } catch { annualSay("Could not remove local links. Check browser storage.", true); }
   });
 
+  const disclosureState = new Map();
+  function disclosure(label, className, key) {
+    const item = node("details", className);
+    const context = `${selectedYear}:${selectedRunId}:${TRANSITION_STEPS[currentIndex].id}:${key}`;
+    item.open = disclosureState.get(context) || false;
+    item.append(node("summary", "", label));
+    item.addEventListener("toggle", () => disclosureState.set(context, item.open));
+    return item;
+  }
   function node(tag, className, value) {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -353,6 +362,10 @@ if (section) {
   function statusOf(id) { return progress.steps[id] || "not_started"; }
   function checkOf(id) { return progress.checks[id] || "not_checked"; }
   function titleFor(check) { return progress.run.mode === "rehearsal" ? check.rehearsalTitle || check.title : check.productionTitle || check.title; }
+  function questionFor(check) {
+    const text = TRANSITION_OFFICER_QUESTIONS[check.id];
+    return typeof text === "string" ? text : text?.[progress.run.mode] || titleFor(check);
+  }
   function stepTitle(step) { return progress.run.mode === "production" ? step.productionTitle || step.title : step.title; }
   function yearText(text) {
     const start = Number(selectedYear.slice(0, 4));
@@ -375,7 +388,7 @@ if (section) {
   }
   function blockingReason(step) {
     const missing = unmet(step);
-    return missing.length ? `Dependency warning: ${missing.join(", ")} is incomplete. You may read and record this independent observation; it does not complete those prerequisites.` : "";
+    return missing.length ? `Finish ${missing.map(id => stepTitle(byId.get(id))).join(", ")} before completing the handoff. You can still read ahead.` : "";
   }
   function savedRuns() {
     const runs = [];
@@ -414,7 +427,7 @@ if (section) {
         } else {
           progress = emptyProgress(selectedYear, createTransitionRun(`Preparation ${selectedYear}`));
           selectedRunId = progress.run.id;
-          say("Ready for the real officer handoff. Start a checklist for this year, or record your first result to save this attempt on this device.");
+          say("Choose your year in Step 1 to start or continue.");
         }
       } else {
         const raw = localStorage.getItem(storageKey(selectedYear, selectedRunId));
@@ -468,11 +481,12 @@ if (section) {
       return false;
     }
   }
-  function appendEvidence(parent, id) {
+  function appendEvidence(parent, id, explanation = "") {
     const skipped = pendingSkipId === id || progress.steps[id] === "skipped" || progress.checks[id] === "skipped";
     const details = node("details", "transition-evidence-details");
     details.open = skipped;
-    details.append(node("summary", "", skipped ? "Explain why this is skipped" : "Add a note or evidence"));
+    details.append(node("summary", "", skipped ? "Explain why this is skipped" : explanation ? "Details or add a note" : "Add a note or evidence"));
+    if (explanation) details.append(node("p", "", explanation));
     const form = node("form", "transition-evidence");
     form.dataset.evidenceId = id;
     const reasonLabel = node("label", "transition-check-control", "Why are you skipping this?");
@@ -527,7 +541,7 @@ if (section) {
     for (const [id, ...cells] of rows) {
       const check = TRANSITION_CHECKS.find(entry => entry.id === id);
       const row = node("tr"); row.dataset.review = id;
-      const name = node("th", "", `${id} · ${titleFor(check)}`); name.setAttribute("scope", "row"); row.append(name);
+      const name = node("th", "", titleFor(check)); name.setAttribute("scope", "row"); row.append(name);
       cells.forEach((value, index) => { const cell = node("td", "", value); cell.dataset.label = ["Where to check", "Expected result", "Who checks it"][index]; row.append(cell); });
       body.append(row);
     }
@@ -592,29 +606,35 @@ if (section) {
     if (!annualSetupClient && apiConfig) annualSetupClient = createAnnualSetupClient(apiConfig);
     const client = annualSetupClient;
     const key = `${selectedYear}:${selectedRunId}:${progress.run.mode}`;
-    if (!annualSetupSessions.has(key)) annualSetupSessions.set(key, { config: null, message: "Sign in with the approved chapter Google account to load this year’s workspace and member goal.", error: false, receipt: "" });
+    if (!annualSetupSessions.has(key)) annualSetupSessions.set(key, { config: null, message: "Use the chapter Google account to get started.", error: false, receipt: "" });
     const session = annualSetupSessions.get(key);
     const panel = node("section", "transition-connected-setup");
     panel.dataset.annualSetup = "connected";
-    panel.append(node("h4", "", "Prepare this year’s files here"), node("p", "", `Selected year: ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}. One designated operator creates or reopens the same annual files. Confirm the approved chapter account in the Google sign-in window.`));
+    panel.append(node("h4", "", "Prepare this year’s files here"), node("p", "", `${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}`));
     const connect = node("button", "secondary-button", "Sign in with chapter Google account"); connect.type = "button";
     connect.disabled = annualSetupPending || !client?.ready;
-    const goalLabel = node("label", "transition-check-control", "How many different members should attend this year?");
+    const goalLabel = node("label", "transition-check-control", "Member goal for this year");
     const goal = node("input"); goal.type = "number"; goal.min = "1"; goal.step = "1"; goal.required = true;
     goal.setAttribute("aria-label", "Annual member goal");
     goal.value = session.goal ?? session.config?.engagementGoal ?? "";
     goal.readOnly = Boolean(session.config?.existing);
     goal.disabled = annualSetupPending || !session.config;
     goal.addEventListener("input", () => { session.goal = goal.value; });
-    goalLabel.append(goal, node("small", "", session.config?.existing ? "This year already has files. Its original member goal is preserved; ask the President to review any change." : "Each person counts once. Use the President’s approved goal for a new year."));
+    goalLabel.append(goal, node("small", "", session.config?.existing ? "Saved goal. Ask the President if it needs changing." : "Each person counts once. Use the President’s approved goal."));
     panel.append(connect, goalLabel);
     const config = session.config;
+    goalLabel.hidden = !config;
+    connect.hidden = Boolean(config) && !session.error;
     if (config) {
-      panel.append(node("p", "", `Goal source: ${config.goalSource || "Saved chapter setup"}. Workspace: ${runModeLabel(config.workspaceMode)}. Calendar: ${config.calendarIcalUrl ? "saved chapter feed" : "no feed saved"}.`));
-      if (/^[\w-]+$/.test(config.rootFolderId || "")) panel.append(resourceRow(`https://drive.google.com/drive/folders/${config.rootFolderId}`, "Approved annual workspace folder", "Check this is the approved folder for this checklist’s purpose."));
-      if (/^[\w-]+$/.test(config.controlCenterId || "")) panel.append(resourceRow(`https://docs.google.com/spreadsheets/d/${config.controlCenterId}/edit`, "Approved Control Center", "Practice must use its own copied settings spreadsheet.", "sheet"));
+      const workspace = node("details", "transition-tools");
+      workspace.append(node("summary", "", "Workspace settings"));
+      workspace.append(node("p", "", `Goal source: ${config.goalSource || "Saved chapter setup"}. Workspace: ${runModeLabel(config.workspaceMode)}. Calendar: ${config.calendarIcalUrl ? "saved chapter feed" : "no feed saved"}.`));
+      if (/^[\w-]+$/.test(config.rootFolderId || "")) workspace.append(resourceRow(`https://drive.google.com/drive/folders/${config.rootFolderId}`, "Approved annual workspace folder", "Check this is the approved folder for this checklist’s purpose."));
+      if (/^[\w-]+$/.test(config.controlCenterId || "")) workspace.append(resourceRow(`https://docs.google.com/spreadsheets/d/${config.controlCenterId}/edit`, "Approved Control Center", "Practice must use its own copied settings spreadsheet.", "sheet"));
+      panel.append(workspace);
     }
-    const create = node("button", "secondary-button", "Create or reopen this year’s files"); create.type = "button";
+    const create = node("button", "primary-button", "Create or reopen this year’s files"); create.type = "button";
+    create.hidden = !config;
     create.disabled = annualSetupPending || !client?.ready || !config || config.workspaceMode !== progress.run.mode;
     const status = node("p", "transition-status", !client?.ready ? "Connected setup is not configured yet. Ask the maintainer to enable it, or open the manual fallback below." : session.message);
     status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error);
@@ -657,7 +677,7 @@ if (section) {
         saveSetupResults(result.hubHandoff);
         session.receipt = typeof result.readableReceipt === "string" ? result.readableReceipt : "";
         session.config = { ...approved, existing: true, engagementGoal: approvedGoal, goalSource: "This year’s saved setup" }; session.goal = approvedGoal;
-        session.message = "Annual files are ready and all seven links are saved in this checklist. Intake remains closed, Points is TESTING and the year is inactive. Open the files and record each manual review.";
+        session.message = "Files ready — all seven links are saved under Your files. The year stays inactive until approved.";
         say(session.message);
       } catch (error) { session.error = true; session.message = `${error.message || "Setup could not finish."} Setup may have created files: keep the same year and workspace when retrying. Sign in again if Google authorization expired.`; say(session.message, true); }
       finally { finish(); }
@@ -675,7 +695,7 @@ if (section) {
       if (!reference || typeof reference.url !== "string") continue;
       try {
         const url = new URL(reference.url);
-        if (url.protocol === "https:" && !url.username && !url.password) resources.append(resourceRow(url.href, id === "handoff-checklist" ? "Shared start page — request this year’s checklist" : reference.title || id, step.id === "T01" ? "Shared start page or folder. It explains how to obtain this year’s filled checklist; it is not your saved checklist or an approval." : "Open the normal chapter editor with your authorized account."));
+        if (url.protocol === "https:" && !url.username && !url.password) resources.append(resourceRow(url.href, id === "handoff-checklist" ? "Shared start page — request this year’s checklist" : reference.title || id, step.id === "T01" ? "Ask the President for your year’s filled checklist here." : "Open the normal chapter editor with your authorized account."));
       } catch { /* Malformed references never become guide links. */ }
     }
     const help = node("details", "transition-maintainer-resources");
@@ -705,15 +725,18 @@ if (section) {
     }
     const missingLinks = [];
     for (const [key, title, stepId] of PRIVATE_RECORD_FIELDS.filter(([key, , id]) => id === step.id && privateRecordApplies(key))) {
-      if (savedAnnualLinks[key]) resources.append(resourceRow(savedAnnualLinks[key], privateRecordTitle(key, title), "Saved for this run. Verify year, owner, access and contents; a link alone is not approval."));
+      if (savedAnnualLinks[key]) resources.append(resourceRow(savedAnnualLinks[key], privateRecordTitle(key, title), "Check that this is the right year and you can open it."));
       else if (key !== "receiptUrl") missingLinks.push(privateRecordTitle(key, title));
     }
     const annualResources = step.id === "T02" ? ANNUAL_LINK_FIELDS.map(([key,title]) => [key,title]) : step.id === "T03" ? [["pointsMaster", "Copied Points Master → README"], ["attendanceFormEditor", "Copied Form editor"], ["attendanceFormRespondent", progress.run.mode === "production" ? "Attendance check-in link" : "Respondent test link"], ["pointsExport", "Copied Points Export"], ["budgetTracker", "Copied Budget Tracker → Start Here"], ["budgetExport", "Copied Budget Export"]] : [];
     for (const [key, title] of annualResources) {
-      if (savedAnnualLinks[key]) resources.append(resourceRow(savedAnnualLinks[key], title, "Selected run’s saved copy. Select the named tab inside the workbook; no tab ID is assumed.", "sheet"));
+      if (savedAnnualLinks[key]) resources.append(resourceRow(savedAnnualLinks[key], title, "Your saved copy for this year.", "sheet"));
       else missingLinks.push(title);
     }
-    if (missingLinks.length) resources.append(node("p", "transition-warning", `Missing for this checklist: ${missingLinks.join("; ")}. Ask the President for these links and records. Leave affected reviews Blocked until supplied.`));
+    if (missingLinks.length) {
+      resources.append(node("p", "transition-warning", step.id === "T03" ? "Some files are missing. Finish setup in Step 2, or ask the President for help." : "Some links are missing. Ask the President for help; see More help below."));
+      help.append(node("p", "transition-warning", `Missing for this checklist: ${missingLinks.join("; ")}. Ask the President for these links and records. Leave affected reviews Blocked until supplied.`));
+    }
     const seen = new Set();
     for (const parent of [resources, help]) for (const row of [...parent.children]) {
       const link = row.querySelector?.("a");
@@ -749,13 +772,15 @@ if (section) {
     $("transition-change-year").hidden = currentIndex === 0;
     $("transition-saved-at").textContent = progress.savedAt ? new Date(progress.savedAt).toLocaleString() : "Never";
     $("transition-position").textContent = `Current step · ${currentIndex + 1} of ${TRANSITION_STEPS.length}`;
-    $("transition-completion").textContent = `${summary.completedItems}/${summary.totalItems} tasks complete · ${Math.round(summary.completedItems / summary.totalItems * 100)}%`;
+    $("transition-completion").textContent = `${completed} of ${TRANSITION_STEPS.length} steps done`;
     const meter = $("transition-progress");
     meter.max = summary.totalItems;
     meter.value = summary.completedItems;
     meter.setAttribute("aria-label", `Checklist progress: ${summary.completedItems} of ${summary.totalItems} tasks complete`);
     meter.setAttribute("aria-valuetext", `${summary.checkCounts.passed} of ${summary.totalChecks} reviews passed; ${summary.completedSteps} of ${TRANSITION_STEPS.length} steps complete`);
-    $("transition-progress-help").textContent = `${summary.checkCounts.passed}/${summary.totalChecks} reviews · ${summary.completedSteps}/${TRANSITION_STEPS.length} steps complete. Results save automatically. Read next step does not complete work.`;
+    $("transition-progress-help").textContent = "Saved automatically on this device.";
+    $("transition-summary").hidden = true;
+    $("transition-readiness").hidden = step.id !== "T05";
     $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps ${progress.run.mode === "rehearsal" ? "finished (including the activation skip when practice is complete)" : "complete"}. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Reviewer acceptance" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
     $("transition-launch-summary").textContent = `${progress.run.name} · ${selectedYear.replace("-", "–")}: ${summary.completedItems}/${summary.totalItems} tasks complete · ${progress.run.mode === "rehearsal" ? summary.rehearsal.eligible ? "GO — private rehearsal complete; production activation excluded" : "Private rehearsal not complete" : summary.launch.eligible ? "production prerequisites reported passed; coordinator approval required" : "Handoff reviews incomplete"}.`;
     // One link editor stays at the bottom for the currently selected checklist.
@@ -778,23 +803,37 @@ if (section) {
     card.id = `transition-${step.id}`;
     const heading = node("div", "transition-step-heading");
     const identity = node("div", "transition-step-identity");
-    identity.append(node("span", "transition-step-badge", step.id));
+    const badge = node("span", "transition-step-badge");
+    badge.setAttribute("aria-hidden", "true");
+    const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const iconUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    iconUse.setAttribute("href", `#icon-${["calendar", "download", "check-square", "calendar", "check-square"][currentIndex]}`);
+    icon.append(iconUse); badge.append(icon); identity.append(badge);
     const title = node("div", "transition-step-title");
-    title.append(node("h3", "", stepTitle(step)), node("p", "transition-owner", `President leads; team checks: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
+    title.append(node("h3", "", stepTitle(step)));
     identity.append(title);
     const pill = node("span", "transition-step-state", statusLabels[statusOf(step.id)]);
     pill.dataset.state = statusOf(step.id);
     heading.append(identity, pill);
     card.append(heading);
     if (step.id === "T01") card.append(setupOptions);
-    card.append(node("p", "transition-prerequisites", `Prerequisites: ${step.needs.length ? step.needs.map((id) => `${id} ${stepTitle(byId.get(id))}`).join("; ") : "None"}`));
-    appendGlossary(card, step);
-    card.append(node("h4", "", "Follow these tasks"));
-    const quickStart = progress.run.mode === "production" ? step.productionQuickStart || step.quickStart : step.quickStart;
-    if (quickStart && step.id !== "T01") card.append(node("p", "transition-manual-check", yearText(quickStart)));
+    const hasAnnualFiles = ANNUAL_LINK_FIELDS.every(([key]) => savedAnnualLinks[key]);
+    const officerCopy = TRANSITION_OFFICER_COPY[step.id];
+    card.append(node("p", "transition-step-intro", step.id === "T02" && hasAnnualFiles ? "Your links are saved. Open your files, then confirm the results." : officerCopy.intro));
+    const shortActions = progress.run.mode === "rehearsal" ? officerCopy.practice || officerCopy.actions : officerCopy.actions;
+    if (shortActions.length) {
+      const actions = node("ol", "transition-short-actions");
+      for (const action of shortActions) actions.append(node("li", "", action));
+      card.append(actions);
+    }
+    const detail = disclosure(step.id === "T03" && progress.run.mode === "rehearsal" ? "Practice instructions — with your maintainer" : "Detailed instructions & troubleshooting", "transition-tools transition-detailed-help", "instructions");
+    detail.append(node("p", "transition-owner", `Team: ${step.roles.map(role => roleLabels[role] || role).join(", ")}.`));
+    detail.append(node("p", "", `Before this step: ${step.needs.length ? step.needs.map(id => stepTitle(byId.get(id))).join("; ") : "Nothing else needed"}.`));
+    appendGlossary(detail, step);
+    detail.append(node("h4", "", "Full instructions"));
     const procedure = node("ol", "transition-procedure");
-    for (const action of instructionsFor(step).filter((_, index) => step.id !== "T01" || index > 0)) procedure.append(node("li", "", action));
-    card.append(procedure);
+    for (const action of instructionsFor(step)) procedure.append(node("li", "", action));
+    detail.append(procedure);
     if (step.id === "T05") {
       const outstanding = node("section", "transition-pending-reviews");
       outstanding.append(node("h4", "", "Reviews still needed"));
@@ -805,7 +844,7 @@ if (section) {
         group.dataset.step = entry.id;
         group.append(node("h5", "", stepTitle(entry)));
         const reviews = node("ul");
-        for (const review of pending) reviews.append(node("li", "", titleFor(review)));
+        for (const review of pending) reviews.append(node("li", "", questionFor(review)));
         if (reviews.childElementCount) group.append(reviews);
         if (!entry.launch && statusOf(entry.id) !== "complete") group.append(node("p", "", "Record the step result after its tasks and reviews."));
         const jump = node("button", "secondary-button", `Review ${stepTitle(entry)}`);
@@ -817,7 +856,10 @@ if (section) {
       if (outstanding.childElementCount > 1) card.append(outstanding);
     }
     if (step.id === "T02") {
-      appendConnectedSetup(card);
+      if (hasAnnualFiles && !annualSetupPending) {
+        const again = disclosure("Reopen setup", "transition-tools", "reopen-setup");
+        appendConnectedSetup(again); card.append(again);
+      } else appendConnectedSetup(card);
       const fallback = node("details", "transition-tools");
       fallback.append(node("summary", "", "Manual fallback: open Annual Setup and paste results"));
       const transfer = node("form", "transition-setup-transfer");
@@ -831,16 +873,19 @@ if (section) {
         try { saveSetupResults(paste.value); }
         catch (error) { say(`Could not save setup results: ${error.message}`, true); }
       });
-      fallback.append(transfer); card.append(fallback);
+      fallback.append(transfer); detail.append(fallback);
     }
-    if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates or reopens the attendance and budget files for your year. Connected setup saves all seven links here automatically; its detailed summary is optional. Keep last year’s files as records."));
-    if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. The technical maintainer checks the other response tabs in the same copied workbook. Example note: Five MOCK rows arrived in the summary’s tab; [maintainer] confirmed the other response tabs contain none of these rows on [date]."));
-    appendRecovery(card, step);
-    appendTestCases(card, step);
+    appendRecovery(detail, step);
+    appendTestCases(detail, step);
     const resources = node("section", "transition-resources");
     resources.id = "transition-step-resources";
     appendStepResources(resources, step);
-    card.append(resources);
+    if (step.id === "T02") {
+      const files = disclosure("Your files", "transition-tools transition-files", "files");
+      files.hidden = !hasAnnualFiles;
+      files.append(resources);
+      card.append(files);
+    } else card.append(resources);
     if (stepLinks[step.id] || step.id === "T02") {
       const panel = node("details", "transition-inline-links");
       panel.append(node("summary", "", "Optional: edit or restore links manually"));
@@ -848,6 +893,7 @@ if (section) {
       const editLinks = node("button", "secondary-button", "Edit saved links");
       editLinks.type = "button";
       editLinks.addEventListener("click", () => {
+        $("transition-saved-tools").open = true;
         annualTools.open = true;
         annualTools.scrollIntoView?.({ behavior: "smooth", block: "start" });
         annualInputs.get("pointsMaster").focus();
@@ -864,13 +910,19 @@ if (section) {
       stepAnnualMessage.setAttribute("role", "status");
       stepAnnualMessage.setAttribute("aria-live", "polite");
       panel.append(action, stepAnnualMessage);
-      card.append(panel);
+      detail.append(panel);
     }
-    if (step.id === "T02") appendSetupComparison(card);
+    if (step.id === "T02") appendSetupComparison(detail);
     const confirmation = node("section", "transition-confirmation");
+    confirmation.hidden = step.id === "T02" && !hasAnnualFiles;
     card.append(confirmation);
-    confirmation.append(node("h4", "", "Record results"), node("p", "transition-manual-check", step.id === "T01" && progress.run.mode === "rehearsal" ? "Record the practice lead, test account and recovery contact. Confirm that the private checklist matches this attempt. Step 3 checks access to the files created in Step 2." : progress.run.mode === "production" ? step.productionCheck : step.check));
-    if (checksFor(step).length) confirmation.append(node("p", "", step.launch && progress.run.mode === "rehearsal" ? "Do each check in the linked tool, then choose your result below. “Yes — I checked” advances the bar." : "Do each check in the linked tool, then choose your result below. “Yes — I checked” advances the bar. When the checks and tasks are done, choose “Mark step complete”."));
+    confirmation.append(node("h4", "", "Did this work?"));
+    const teamChecks = disclosure("", "transition-tools transition-team-checks", "team");
+    const teamIds = new Set(["V01", "V02", "V03", "V05", "V07", "V11", "V12", "V13", "V14", "V15", "V19", "V22", "V23"]);
+    const applicableTeam = checksFor(step).filter(check => teamIds.has(check.id) && checkApplies(check, progress.run.mode));
+    teamChecks.children[0].textContent = `Confirm with your team (${applicableTeam.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
+    if (applicableTeam.some(check => pendingSkipId === check.id)) teamChecks.open = true;
+    teamChecks.append(node("p", "", "Ask the President or maintainer to check these with you. Confirm only what has been checked."));
     const productionChecks = node("details", "transition-production-checks");
     productionChecks.append(node("summary", "", "Production checks — not part of this rehearsal"));
     let hasProductionChecks = false;
@@ -882,10 +934,11 @@ if (section) {
         hasProductionChecks = true;
         continue;
       }
-      const label = node("label", "transition-check-control", titleFor(check));
+      const checkTarget = teamIds.has(check.id) ? teamChecks : confirmation;
+      const label = node("label", "transition-check-control", questionFor(check));
       const select = node("select");
       select.dataset.transitionControl = check.id;
-      select.setAttribute("aria-label", `Manual check: ${titleFor(check)}`);
+      select.setAttribute("aria-label", `Manual check: ${questionFor(check)}`);
       TRANSITION_CHECK_STATUSES.forEach((value) => select.add(new Option(checkLabels[value], value)));
       select.value = checkOf(check.id);
       select.addEventListener("change", () => {
@@ -901,10 +954,12 @@ if (section) {
         save(reconcileProgress({ ...progress, checks, reasons }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), check.id);
       });
       label.append(select);
-      confirmation.append(label);
-      appendEvidence(confirmation, check.id);
+      checkTarget.append(label);
+      appendEvidence(checkTarget, check.id, titleFor(check));
     }
-    if (hasProductionChecks) confirmation.append(productionChecks);
+    if (applicableTeam.length) confirmation.append(teamChecks);
+    if (hasProductionChecks) detail.append(productionChecks);
+    card.append(detail);
     const control = node("label", "transition-status-control", "Step result");
     const select = node("select");
     select.dataset.transitionControl = step.id;
@@ -917,7 +972,7 @@ if (section) {
         const missing = unmet(step);
         const pending = unchecked(step);
         if (pending.length || (step.launch && !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible)) {
-          say(step.launch ? launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).reason : `Record manual ${pending.map(titleFor).join(", ")} as passed before marking ${step.id} complete.`, true);
+          say(step.launch ? launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).reason : `Confirm the remaining items before finishing this step.`, true);
           select.value = statusOf(step.id);
           return;
         }
@@ -933,11 +988,14 @@ if (section) {
     finish.disabled = statusOf(step.id) === "complete" || unchecked(step).length > 0 || Boolean(step.launch && !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible);
     if (!(step.launch && progress.run.mode === "rehearsal")) {
       finish.addEventListener("click", () => { select.value = "complete"; recordStepResult(); });
-      confirmation.append(finish, node("p", "transition-control-help", statusOf(step.id) === "complete" ? "This step is complete. Its results are saved on this device." : unchecked(step).length ? `${unchecked(step).length} ${unchecked(step).length === 1 ? "check still needs" : "checks still need"} “Yes — I checked”. Results save automatically when you select them.` : "All checks for this step are recorded. Mark the step complete when its tasks are finished."));
+      confirmation.append(finish, node("p", "transition-control-help", statusOf(step.id) === "complete" ? "This step is complete. Its results are saved on this device." : unchecked(step).length ? `${unchecked(step).length} confirmations left, including any team checks above.` : "All checks for this step are recorded. Mark the step complete when its tasks are finished."));
     }
     control.append(select);
-    confirmation.append(control);
-    appendEvidence(confirmation, step.id);
+    const otherResult = disclosure("Need help, skip, or add a note", "transition-tools", "step-result");
+    otherResult.open = otherResult.open || pendingSkipId === step.id || ["blocked", "failed", "skipped"].includes(statusOf(step.id)) || Boolean(step.launch && progress.run.mode === "rehearsal");
+    otherResult.append(control);
+    appendEvidence(otherResult, step.id);
+    confirmation.append(otherResult);
     const reason = blockingReason(step);
     list.append(card);
     $("transition-back").disabled = currentIndex === 0;
@@ -946,6 +1004,7 @@ if (section) {
     dialog.dataset.mockMode = String(mockMode);
     $("transition-next").disabled = false;
     $("transition-next").setAttribute("aria-disabled", "false");
+    $("transition-next-reason").hidden = !reason;
     $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? mockMode ? "Record cleanup and reviewer acceptance here. Rehearsal activation stays skipped." : "Record incoming acceptance and the President’s separate launch decision. Finish review shows anything still needed." : "You may read the next step and record its own result.");
   }
   function go(index) {

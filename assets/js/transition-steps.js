@@ -454,3 +454,105 @@ export const TRANSITION_TEST_CASES = [
     "8"
   ]
 ];
+
+// Short officer-facing copy; detailed procedures and review identities remain above.
+export const TRANSITION_OFFICER_COPY = {
+  "T01": {
+    "intro": "Choose the year and ask the President for the chapter account and handoff folder.",
+    "actions": [],
+    "practice": [
+      "Use the approved test account and private Practice folder."
+    ]
+  },
+  "T02": {
+    "intro": "Sign in, check the member goal, then create your files. The Hub saves their links for you.",
+    "actions": []
+  },
+  "T03": {
+    "intro": "Open your files and check them with the Secretary and Treasurer.",
+    "actions": [
+      "Add this year\u2019s events in Points Master. Check that the attendance form lists them.",
+      "Fill in the approved balances and spending plan in Budget Tracker.",
+      "Ask your team to confirm that attendance, points and budget totals work."
+    ],
+    "practice": [
+      "Work with your maintainer using the Practice instructions below.",
+      "Try the five sample check-ins and budget exercise, then compare the results.",
+      "Close the test form when you finish. Keep the Practice files private."
+    ]
+  },
+  "T04": {
+    "intro": "Check the events and messages officers will share.",
+    "actions": [
+      "Check the same event in the Hub, website and newsletter.",
+      "Update the newsletter draft and approved website changes. Preview both on a phone.",
+      "Save your backups. Get approval before sending or publishing."
+    ],
+    "practice": [
+      "Try the fictional calendar preview in both tools. Switch back to Upcoming afterward.",
+      "Preview an unsent MOCK newsletter on desktop and phone.",
+      "Follow the backup practice below with your maintainer."
+    ]
+  },
+  "T05": {
+    "intro": "Review the handoff with the President before starting the year.",
+    "actions": [
+      "Confirm the incoming officers can use their tools.",
+      "Ask the President to review the remaining items and approve the launch.",
+      "Follow the approved launch plan. Keep last year\u2019s files."
+    ],
+    "practice": [
+      "Ask your reviewer to confirm cleanup and sign off on the practice.",
+      "Skip starting the real year. Record \u201cPractice only \u2014 no launch\u201d as the reason."
+    ]
+  }
+};
+export const TRANSITION_OFFICER_QUESTIONS = {
+  "V01": {
+    "production": "Has your maintainer confirmed the tools are ready?",
+    "rehearsal": "Has your maintainer checked the templates?"
+  },
+  "V02": "Does the attendance form save to this year\u2019s Points Master?",
+  "V03": "Has your maintainer confirmed the test responses went only to the right tab?",
+  "V04": "Did the sample check-ins earn the expected points?",
+  "V05": "Has your maintainer checked that member data stays private?",
+  "V06": "Do the budget totals match the Treasurer\u2019s records?",
+  "V07": "Has your team checked this year\u2019s saved settings?",
+  "V08": "Do the events appear in all three calendars?",
+  "V09": "Do the public pages and links work on a phone and computer?",
+  "V10": {
+    "production": "Can each incoming officer open and use their tools?",
+    "rehearsal": "Can your reviewer open all the Practice files?"
+  },
+  "V11": "Has the owner approved what can be shown publicly?",
+  "V12": "Has the authorized person approved the funding?",
+  "V13": "Do the balances match the bank records?",
+  "V14": "Do the event dates, times and locations match after a refresh?",
+  "V15": "Has the owner approved the newsletter details and sending account?",
+  "V16": {
+    "production": "Are last year\u2019s records, test data and access changes accounted for?",
+    "rehearsal": "Has your reviewer checked the test cleanup and safe settings?"
+  },
+  "V17": {
+    "production": "Has the incoming team accepted the handoff?",
+    "rehearsal": "Has your reviewer signed off on the practice?"
+  },
+  "V18": "Has the President approved the launch and recovery plan?",
+  "V19": {
+    "production": "Is someone responsible for keeping Form events up to date?",
+    "rehearsal": "Did a sheet edit automatically update the test Form?"
+  },
+  "V20": {
+    "production": "Do you have the current checklist and know who can help?",
+    "rehearsal": "Do you have a Practice checklist, test account and reviewer?"
+  },
+  "V21": "Do the new files and dates match this year?",
+  "V22": {
+    "production": "Has your maintainer confirmed the backups can be restored?",
+    "rehearsal": "Did you restore and compare all three backups?"
+  },
+  "V23": "Are member rows hidden in both test modes?",
+  "V24": "Do the sample budget totals match the expected amounts?",
+  "V25": "Did both calendar previews work and return to Upcoming?",
+  "V26": "Did all five sample check-ins arrive?"
+};
