@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261015d">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261015g">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -778,40 +778,46 @@
             </section>
             <div class="transition-dialog-body">
               <div id="transition-setup-home" hidden><section id="transition-checklist-options" class="transition-checklist-options">
-                <h4>Start here</h4>
+                <div id="transition-setup-fields">
               <section id="transition-year-setup" class="transition-checklist-setup">
 
-                <p id="transition-dialog-description">Answer these two questions, then choose Start checklist. To return to earlier work, choose a saved checklist below.</p>
+                <p id="transition-dialog-description">Choose a year and purpose to get started.</p>
                 <div class="transition-controls">
                   <div id="transition-year-form"><label>Which year are you preparing? <input id="transition-year" form="transition-run-form" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" list="transition-year-options" required placeholder="2027" aria-describedby="transition-year-help"></label><datalist id="transition-year-options"></datalist></div>
                 </div>
-                <p id="transition-year-help">Enter the first year, such as 2027 for 2027–2028. This prepares a checklist; it does not switch the live chapter year.</p>
+                <p id="transition-year-help">Use the first year: 2027 means 2027–2028.</p>
               </section>
               <section class="transition-run-controls" aria-label="Start or continue a checklist">
                 <form id="transition-run-form">
-                  <label>What are you doing? <select id="transition-run-mode" aria-describedby="transition-mode-help"><option value="production">Real handoff</option><option value="rehearsal">Practice (maintainer review)</option></select></label>
-                  <button class="primary-button" type="submit">Start checklist</button>
-                  <p id="transition-mode-help" class="transition-control-help">Choose Real handoff for next year’s officer handoff. Practice is a separate test run.</p>
-                  <details class="transition-run-name-options"><summary>Give this checklist a name (optional)</summary><label>Checklist name <input id="transition-run-name" maxlength="120" placeholder="Fall practice · team name"></label></details>
+                  <label>What are you doing? <select id="transition-run-mode" aria-describedby="transition-mode-help"><option value="production">Real handoff</option><option value="rehearsal">Practice</option></select></label>
+                  <button id="transition-start-continue" class="primary-button" type="submit">Start</button>
+                  <p id="transition-mode-help" class="transition-control-help">Real handoff prepares for next year. Practice lets you try the steps separately.</p>
                 </form>
-                <div class="transition-continue-controls"><label>Saved checklist for this year <select id="transition-run"></select></label><button class="secondary-button" id="transition-run-continue" type="button">Continue checklist</button></div>
+                <p id="transition-start-context" class="transition-control-help"></p>
+              </section></div>
+              <div id="transition-setup-ready"><p id="transition-ready-context"></p><button id="transition-edit-setup" class="text-button" type="button">Change year or purpose</button></div>
+              <details id="transition-more-options" class="transition-run-advanced"><summary>More options</summary>
+                <div id="transition-other-progress" class="transition-continue-controls"><label>Other saved progress <select id="transition-run"></select></label><button class="secondary-button" id="transition-run-continue" type="button">Open selected progress</button></div>
                 <p id="transition-run-context" class="transition-summary"></p>
-                <details class="transition-run-advanced"><summary>Checklist details and advanced controls</summary>
+                <label>Optional name for a separate attempt <input id="transition-run-name" maxlength="120" placeholder="Team practice"></label>
+                <button id="transition-run-new" class="secondary-button" type="button">Start a separate attempt</button>
+                <p class="transition-control-help">Keeps your earlier progress. Uses the year and purpose chosen above.</p>
+                <details class="transition-run-advanced"><summary>Progress details</summary>
                   <p id="transition-run-id" class="transition-summary"></p>
                   <button class="secondary-button" id="transition-run-reload" type="button">Reload saved checklist</button>
                   <p class="transition-control-help">Reload after another tab changes this checklist. You can also jump to any step to read it or record a result.</p>
                   <label>Jump to a step <select id="transition-step-picker" aria-label="Jump to a checklist step"></select></label>
                 </details>
-              </section>
-              </section></div>
-              <p id="transition-readiness" class="transition-banner" role="status"></p>
-              <details class="transition-tools transition-checklist-options"><summary>Checklist options</summary><button class="text-button" id="transition-reset" type="button">Reset checklist progress</button>
+              <details id="transition-reset-options" class="transition-tools transition-checklist-options"><summary>Checklist options</summary><button class="text-button" id="transition-reset" type="button">Reset checklist progress</button>
               <section id="transition-reset-confirmation" class="transition-banner" aria-label="Confirm checklist reset" hidden>
                 <p id="transition-reset-context"></p>
                 <button class="secondary-button" id="transition-reset-cancel" type="button">Cancel</button>
                 <button class="secondary-button" id="transition-reset-confirm" type="button">Start fresh checklist</button>
               </section>
               </details>
+              </details>
+              </section></div>
+              <p id="transition-readiness" class="transition-banner" role="status"></p>
               <p id="transition-summary" class="transition-summary"></p>
               <div id="transition-steps" class="transition-steps"></div>
               <p id="transition-next-reason" class="transition-next-reason" aria-live="polite"></p>
@@ -830,7 +836,7 @@
                 <a class="secondary-button" id="transition-control-center" href="https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit#gid=1830416343" target="_blank" rel="noopener noreferrer">Open current Hub Control Center</a>
               </details>
             </div>
-            <footer class="transition-step-actions">
+            <footer id="transition-navigation" class="transition-step-actions">
               <button class="secondary-button" type="button" id="transition-back">Back</button>
               <button class="primary-button" type="button" id="transition-next">Next step</button>
             </footer>
@@ -1102,11 +1108,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261015d"></script>
+  <script src="assets/js/config.js?v=20261015g"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261015d"></script>
-  <script type="module" src="assets/js/transition.js?v=20261015d"></script>
+  <script src="assets/js/app.js?v=20261015g"></script>
+  <script type="module" src="assets/js/transition.js?v=20261015g"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

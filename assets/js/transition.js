@@ -1,8 +1,8 @@
-import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015d";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015d";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015d";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015g";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015g";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015g";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015d";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015g";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -83,6 +83,7 @@ if (section) {
   const annualSetupSessions = new Map();
   let currentIndex = 0;
   let opener = null;
+  let activeSetupRunId = "";
   let guideResourceSnapshot = window.ASME_TRANSITION_RESOURCE_SNAPSHOT || null;
   let guideResources = window.ASME_TRANSITION_RESOURCES || [];
   const guideResourceIds = { T01: ["officer-handoff", "handoff-checklist"], T04: ["newsletter-builder", "events-calendar", "calendar-editor", "website-editor"] };
@@ -93,6 +94,7 @@ if (section) {
     return progress.run.mode !== "rehearsal" || !["communicationsUrl", "approvalUrl"].includes(key);
   }
   function privateRecordTitle(key, title) {
+    if (key === "checklistUrl") return "Officer checklist document";
     if (progress.run.mode === "production" && key === "cleanupUrl") return "Prior-year records and data review link";
     if (progress.run.mode === "rehearsal") {
       if (key === "acceptanceUrl") return "Reviewer sign-off record link";
@@ -402,30 +404,56 @@ if (section) {
     }
     return runs;
   }
-  function populateRuns() {
-    let runs = []; try { runs = savedRuns(); } catch { /* In-memory guide remains usable. */ }
-    if (!runs.some(run => run.id === selectedRunId)) runs.push(progress.run);
-    $("transition-run").replaceChildren(...runs.map(run => new Option(`${run.name} · ${runModeLabel(run.mode)}`, run.id)));
-    $("transition-run").value = selectedRunId;
+  function matchingRun(mode) {
+    let runs;
+    try {
+      runs = savedRuns().filter(run => {
+        if (run.mode !== mode) return false;
+        try {
+          const value = JSON.parse(localStorage.getItem(storageKey(selectedYear, run.id)));
+          if (value?.run?.id !== run.id) return false;
+          const valid = migrateProgress(value, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
+          run.savedAt = Date.parse(valid.savedAt) || 0;
+          return true;
+        } catch { return false; }
+      });
+      const preferred = [selectedRunId, localStorage.getItem(`${runSelectionKey(selectedYear)}:${mode}`), localStorage.getItem(runSelectionKey(selectedYear))];
+      for (const id of preferred) {
+        const match = runs.find(run => run.id === id);
+        if (match) return match;
+      }
+    } catch { return null; }
+    return runs.sort((a, b) => b.savedAt - a.savedAt || a.id.localeCompare(b.id))[0] || null;
   }
-  function readYear(preferredRunId = "") {
+  function populateRuns() {
+    let runs = []; try { runs = savedRuns(); } catch { /* Saved records remain untouched. */ }
+    if (observedLegacyRaw && !runs.some(run => run.id === selectedRunId)) runs.push(progress.run);
+    $("transition-run").replaceChildren(...runs.map(run => new Option(`${run.name} · ${runModeLabel(run.mode)}`, run.id)));
+    $("transition-run").value = runs.some(run => run.id === selectedRunId) ? selectedRunId : "";
+    $("transition-other-progress").hidden = !runs.some(run => run.id !== selectedRunId);
+  }
+  function choosePurpose(mode) {
+    const match = matchingRun(mode);
+    readYear(match?.id || "", mode);
+  }
+  function readYear(preferredRunId = "", requestedMode = "") {
     observedProgressRaw = null;
     observedLegacyRaw = null;
     previousGuideRaw = null;
     unreadableProgress = false;
     yearInput.value = selectedYear.slice(0, 4);
     try {
-      selectedRunId = preferredRunId || localStorage.getItem(runSelectionKey(selectedYear)) || savedRuns()[0]?.id || "";
+      selectedRunId = preferredRunId || (requestedMode ? matchingRun(requestedMode)?.id : localStorage.getItem(runSelectionKey(selectedYear)) || matchingRun("production")?.id || matchingRun("rehearsal")?.id) || "";
       if (!selectedRunId) {
         const legacy = localStorage.getItem(`${TRANSITION_LEGACY_STORAGE_PREFIX}${selectedYear}`);
-        if (legacy) {
+        if (legacy && (!requestedMode || migrateProgress(JSON.parse(legacy), selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS).run.mode === requestedMode)) {
           observedLegacyRaw = legacy;
           previousGuideRaw = legacy;
           progress = migrateProgress(JSON.parse(legacy), selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
           selectedRunId = progress.run.id;
           say(migrationNotice + " Original legacy data remains preserved.");
         } else {
-          progress = emptyProgress(selectedYear, createTransitionRun(`Preparation ${selectedYear}`));
+          progress = emptyProgress(selectedYear, createTransitionRun(`Preparation ${selectedYear}`, requestedMode || "production"));
           selectedRunId = progress.run.id;
           say("Choose your year in Step 1 to start or continue.");
         }
@@ -436,11 +464,11 @@ if (section) {
         if (!parsed || parsed.run?.id !== selectedRunId) throw new Error("The saved run identity does not match its storage location.");
         previousGuideRaw = TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(parsed.guideVersion) ? raw : null;
         progress = migrateProgress(parsed, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
-        say(previousGuideRaw ? migrationNotice : "Checklist loaded from this device. Reconfirm current evidence before activation.");
+        say(previousGuideRaw ? migrationNotice : "Your progress is saved on this device.");
       }
     } catch (error) {
       unreadableProgress = true;
-      progress = emptyProgress(selectedYear, createTransitionRun("Unreadable run — original preserved", "rehearsal", /^[A-Za-z0-9_-]{1,100}$/.test(selectedRunId) ? selectedRunId : "legacy"));
+      progress = emptyProgress(selectedYear, createTransitionRun("Unreadable run — original preserved", requestedMode || "rehearsal", /^[A-Za-z0-9_-]{1,100}$/.test(selectedRunId) ? selectedRunId : "legacy"));
       selectedRunId = progress.run.id;
       say(`Local progress could not be loaded: ${error.message} Existing saved data was not changed. Create an isolated run to continue.`, true);
     }
@@ -756,10 +784,17 @@ if (section) {
     const summary = progressSummary(progress, TRANSITION_STEPS, TRANSITION_CHECKS);
     const completed = summary.completedSteps;
     populateRuns();
-    $("transition-run-context").textContent = `Current checklist: ${progress.run.name} · ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}.`;
+    $("transition-run-context").textContent = `Your progress: ${progress.run.name} · ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}.`;
     $("transition-saved-tools-context").textContent = `These tools belong to ${progress.run.name} · ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}. They use the same checklist selected above.`;
     $("transition-run-id").textContent = `Checklist identifier: ${progress.run.id}`;
     $("transition-run-mode").value = progress.run.mode;
+    const started = activeSetupRunId === selectedRunId;
+    $("transition-setup-fields").hidden = started;
+    $("transition-setup-ready").hidden = !started;
+    $("transition-ready-context").textContent = `${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}`;
+    const resume = matchingRun(progress.run.mode) || (observedLegacyRaw ? progress.run : null);
+    $("transition-start-continue").textContent = resume ? "Continue" : "Start";
+    $("transition-start-context").textContent = resume ? `Your ${selectedYear.replace("-", "–")} ${runModeLabel(progress.run.mode)} progress is saved on this device.` : "Progress will be saved on this device.";
     $("transition-readiness").textContent = progress.run.mode === "rehearsal" ? summary.rehearsal.reason : summary.launch.eligible ? "The required handoff reviews are recorded. Obtain the President’s launch approval before switching the year." : `Officer handoff: ${summary.launch.missing.length} setup steps and ${summary.launch.unchecked.length} reviews remain. Follow the steps below; record any access problem or error and ask the President for help.`;
     $("transition-step-picker").replaceChildren(...TRANSITION_STEPS.map(entry => new Option(`${entry.id} · ${stepTitle(entry)} · ${statusLabels[statusOf(entry.id)]}`, entry.id)));
     $("transition-step-picker").value = step.id;
@@ -817,12 +852,16 @@ if (section) {
     heading.append(identity, pill);
     card.append(heading);
     if (step.id === "T01") card.append(setupOptions);
+    const preparing = step.id === "T01" && activeSetupRunId !== selectedRunId;
+    $("transition-reset-options").hidden = preparing;
+    $("transition-navigation").hidden = preparing;
+    $("transition-saved-tools").hidden = preparing;
     const hasAnnualFiles = ANNUAL_LINK_FIELDS.every(([key]) => savedAnnualLinks[key]);
     const officerCopy = TRANSITION_OFFICER_COPY[step.id];
-    card.append(node("p", "transition-step-intro", step.id === "T02" && hasAnnualFiles ? "Your links are saved. Open your files, then confirm the results." : officerCopy.intro));
+    const intro = node("p", "transition-step-intro", step.id === "T02" && hasAnnualFiles ? "Your links are saved. Open your files, then confirm the results." : officerCopy.intro); intro.hidden = preparing; card.append(intro);
     const shortActions = progress.run.mode === "rehearsal" ? officerCopy.practice || officerCopy.actions : officerCopy.actions;
     if (shortActions.length) {
-      const actions = node("ol", "transition-short-actions");
+      const actions = node("ol", "transition-short-actions"); actions.hidden = preparing;
       for (const action of shortActions) actions.append(node("li", "", action));
       card.append(actions);
     }
@@ -880,6 +919,7 @@ if (section) {
     const resources = node("section", "transition-resources");
     resources.id = "transition-step-resources";
     appendStepResources(resources, step);
+    if (preparing) resources.hidden = true;
     if (step.id === "T02") {
       const files = disclosure("Your files", "transition-tools transition-files", "files");
       files.hidden = !hasAnnualFiles;
@@ -914,7 +954,7 @@ if (section) {
     }
     if (step.id === "T02") appendSetupComparison(detail);
     const confirmation = node("section", "transition-confirmation");
-    confirmation.hidden = step.id === "T02" && !hasAnnualFiles;
+    confirmation.hidden = preparing || (step.id === "T02" && !hasAnnualFiles);
     card.append(confirmation);
     confirmation.append(node("h4", "", "Did this work?"));
     const teamChecks = disclosure("", "transition-tools transition-team-checks", "team");
@@ -959,7 +999,7 @@ if (section) {
     }
     if (applicableTeam.length) confirmation.append(teamChecks);
     if (hasProductionChecks) detail.append(productionChecks);
-    card.append(detail);
+    detail.hidden = preparing; card.append(detail);
     const control = node("label", "transition-status-control", "Step result");
     const select = node("select");
     select.dataset.transitionControl = step.id;
@@ -1002,7 +1042,8 @@ if (section) {
     $("transition-next").textContent = currentIndex === TRANSITION_STEPS.length - 1 ? "Review what remains" : "Read next step";
     const mockMode = progress.run.mode === "rehearsal";
     dialog.dataset.mockMode = String(mockMode);
-    $("transition-next").disabled = false;
+    $("transition-next").hidden = preparing;
+    $("transition-next").disabled = preparing;
     $("transition-next").setAttribute("aria-disabled", "false");
     $("transition-next-reason").hidden = !reason;
     $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? mockMode ? "Record cleanup and reviewer acceptance here. Rehearsal activation stays skipped." : "Record incoming acceptance and the President’s separate launch decision. Finish review shows anything still needed." : "You may read the next step and record its own result.");
@@ -1017,6 +1058,7 @@ if (section) {
   function open() {
     opener = document.activeElement;
     currentIndex = firstIncomplete();
+    activeSetupRunId = currentIndex > 0 ? selectedRunId : "";
     render();
     dialog.showModal();
     $("transition-close").focus();
@@ -1026,11 +1068,14 @@ if (section) {
   dialog.addEventListener("close", () => { if (opener?.isConnected) opener.focus(); });
   dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
   $("transition-back").addEventListener("click", () => { if (currentIndex > 0) go(currentIndex - 1); });
-  $("transition-change-year").addEventListener("click", () => { $("transition-checklist-options").open = true; go(0); yearInput.focus(); });
+  function editSetup() { activeSetupRunId = ""; go(0); yearInput.focus(); }
+  $("transition-change-year").addEventListener("click", editSetup);
+  $("transition-edit-setup").addEventListener("click", editSetup);
+  $("transition-run-mode").addEventListener("change", event => { activeSetupRunId = ""; choosePurpose(event.target.value); go(0); });
   $("transition-step-picker").addEventListener("change", event => go(TRANSITION_STEPS.findIndex(step => step.id === event.target.value)));
   $("transition-run-reload").addEventListener("click", () => readYear(selectedRunId));
   $("transition-reset").addEventListener("click", () => {
-    $("transition-reset-context").textContent = `Start ${progress.run.name} (${selectedYear.replace("-", "–")}, ${runModeLabel(progress.run.mode)}) again with no results or notes? Its saved links carry over. Your previous checklist stays available under Saved checklist for this year. Unsaved edits will not carry over. Google files and the active year are unchanged.`;
+    $("transition-reset-context").textContent = `Start ${progress.run.name} (${selectedYear.replace("-", "–")}, ${runModeLabel(progress.run.mode)}) again with no results or notes? Its saved links carry over. Your previous progress stays available under More options. Unsaved edits will not carry over. Google files and the active year are unchanged.`;
     $("transition-reset-confirmation").hidden = false;
     $("transition-reset-cancel").focus();
   });
@@ -1053,7 +1098,7 @@ if (section) {
       pendingSkipId = null;
       readYear(candidate.run.id);
       go(0);
-      say("Progress reset to zero in a fresh checklist. Your previous results and notes remain under Saved checklist for this year. Saved links were copied; recheck them before recording results.");
+      say("Progress reset to zero in a fresh checklist. Your previous results and notes remain under More options. Saved links were copied; recheck them before recording results.");
     } catch (error) { say(`Could not reset progress: ${error.message} Your previous checklist is preserved.`, true); }
   });
   $("transition-run-continue").addEventListener("click", () => {
@@ -1063,28 +1108,46 @@ if (section) {
     } catch (error) { yearInput.setCustomValidity(error.message); yearInput.reportValidity(); say(error.message, true); return; }
     // Continue also honors the typed year when change has not fired yet.
     $("transition-checklist-options").open = false;
+    activeSetupRunId = selectedRunId;
     go(firstIncomplete());
   });
   $("transition-run").addEventListener("change", event => {
-    try { localStorage.setItem(runSelectionKey(selectedYear), event.target.value); readYear(); } catch { say("Could not select the saved run. Check browser storage.", true); }
+    try { localStorage.setItem(runSelectionKey(selectedYear), event.target.value); readYear(); localStorage.setItem(`${runSelectionKey(selectedYear)}:${progress.run.mode}`, selectedRunId); activeSetupRunId = ""; render(); } catch { say("Could not select the saved run. Check browser storage.", true); }
   });
-  $("transition-run-form").addEventListener("submit", event => {
-    event.preventDefault();
+  function startOrContinue(forceNew = false) {
     try {
-      const requestedYear = transitionYear(yearInput.value);
-      if (requestedYear !== selectedYear) populateTransitionYears(requestedYear);
       const mode = $("transition-run-mode").value;
+      const requestedYear = transitionYear(yearInput.value);
+      if (requestedYear !== selectedYear) { populateTransitionYears(requestedYear); choosePurpose(mode); }
+      if (!forceNew && observedLegacyRaw && progress.year === selectedYear && progress.run.mode === mode) {
+        if (!save(progress)) return;
+        activeSetupRunId = selectedRunId;
+        go(firstIncomplete());
+        return;
+      }
+      const match = !forceNew && matchingRun(mode);
+      if (match) {
+        readYear(match.id);
+        try { localStorage.setItem(runSelectionKey(selectedYear), match.id); localStorage.setItem(`${runSelectionKey(selectedYear)}:${mode}`, match.id); } catch { /* The progress itself is already saved. */ }
+        activeSetupRunId = selectedRunId;
+        go(firstIncomplete());
+        return;
+      }
       const name = $("transition-run-name").value.trim() || `${runModeLabel(mode)} ${selectedYear} · ${new Date().toLocaleDateString()}`;
       const candidate = emptyProgress(selectedYear, createTransitionRun(name, mode));
       localStorage.setItem(storageKey(selectedYear, candidate.run.id), JSON.stringify(candidate));
-      try { localStorage.setItem(runSelectionKey(selectedYear), candidate.run.id); } catch { /* The saved run remains discoverable. */ }
+      try { localStorage.setItem(runSelectionKey(selectedYear), candidate.run.id); localStorage.setItem(`${runSelectionKey(selectedYear)}:${mode}`, candidate.run.id); } catch { /* The saved attempt remains discoverable. */ }
       $("transition-run-name").value = "";
       readYear(candidate.run.id);
+      activeSetupRunId = selectedRunId;
+      $("transition-more-options").open = false;
       $("transition-checklist-options").open = false;
       go(0);
-      say(`Started a ${runModeLabel(mode)} checklist for ${selectedYear.replace("-", "–")}. This attempt has its own notes and private links; the current Hub year is unchanged.`);
-    } catch (error) { say(`Could not start checklist: ${error.message}`, true); }
-  });
+      say(`Started ${selectedYear.replace("-", "–")} · ${runModeLabel(mode)}. Progress saves on this device.`);
+    } catch (error) { say(`Could not open your progress: ${error.message}`, true); }
+  }
+  $("transition-run-form").addEventListener("submit", event => { event.preventDefault(); startOrContinue(); });
+  $("transition-run-new").addEventListener("click", () => startOrContinue(true));
   $("transition-next").addEventListener("click", () => {
     if (currentIndex < TRANSITION_STEPS.length - 1) go(currentIndex + 1);
     else {
@@ -1098,7 +1161,7 @@ if (section) {
   yearInput.addEventListener("change", () => {
     try {
       const year = transitionYear(yearInput.value);
-      if (year !== selectedYear) { const purpose = $("transition-run-mode").value; populateTransitionYears(year); readYear(); go(0); $("transition-run-mode").value = purpose; }
+      if (year !== selectedYear) { const purpose = $("transition-run-mode").value; populateTransitionYears(year); activeSetupRunId = ""; choosePurpose(purpose); go(0); }
     } catch (error) { yearInput.setCustomValidity(error.message); say(error.message, true); }
   });
   $("transition-year-form").addEventListener("submit", (event) => {
