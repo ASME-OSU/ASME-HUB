@@ -78,6 +78,8 @@ else {
 const simpleManifest = JSON.parse(read("integrations/apps-script/transition-simple/appsscript.json.example"));
 if (simpleManifest.webapp?.executeAs !== "USER_ACCESSING" || simpleManifest.webapp?.access !== "MYSELF") errors.push("Simple provisioner must use chapter-self access and the accessing user's authority.");
 
+if (simpleManifest.executionApi?.access !== "MYSELF") errors.push("The connected annual setup API must remain chapter-self only.");
+
 const annualPage = read("integrations/apps-script/AnnualSettingsPage.html.example");
 const annualPageScript = annualPage.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 if (!annualPageScript) errors.push("Annual settings Google page script is missing.");
