@@ -30,8 +30,16 @@ class Element {
 }
 function browser(existing = new Map(), resourceSnapshot = [], failSelection = false, setupClient = null) {
   const ids = new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(match => [match[1], new Element()]));
-  const $ = id => { assert.ok(ids.has(id), `Production HTML must provide ${id}`); return ids.get(id); };
+  const $ = id => {
+   assert.ok(ids.has(id), `Production HTML must provide ${id}`);
+   const element=ids.get(id);
+   // Browser lookups cannot find static controls while their step card is detached.
+   for (let parent=element.parent;parent;parent=parent.parent) if(parent.className==="transition-step"&&!parent.parent) return null;
+   return element;
+  };
   const dialog = $("transition-dialog");
+  $("transition-checklist-options").append($("transition-reset-options"));
+  $("transition-reset-options").append($("transition-reset"));
   const body = new Element(); body.className = "transition-dialog-body";
   const tools = $("transition-progress-tools"); tools.className = "transition-tools";
   dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
