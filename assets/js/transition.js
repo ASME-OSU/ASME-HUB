@@ -1,6 +1,8 @@
-import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261014a";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261014a";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261014a";
+import { TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015a";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015a";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015a";
+
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -76,6 +78,9 @@ if (section) {
   let progress = emptyProgress(selectedYear);
   const runSelectionKey = year => `asmeHubTransitionSelectedRunV2:${year}`;
   const annualRunKey = () => `${annualLinkStorageKey(selectedYear)}:${selectedRunId}`;
+  let annualSetupClient = null;
+  let annualSetupPending = false;
+  const annualSetupSessions = new Map();
   let currentIndex = 0;
   let opener = null;
   let guideResourceSnapshot = window.ASME_TRANSITION_RESOURCE_SNAPSHOT || null;
@@ -153,7 +158,7 @@ if (section) {
   const annualSummary = node("summary", "", "Saved links");
   annualTools.append(annualSummary);
   annualTools.append(node("p", "", "Review this checklist's copied-tool and record links here. Paste full HTTPS document or folder links supplied by the President or technical maintainer, not names or email addresses."));
-  annualTools.append(node("p", "", "Step 2 lets you paste all seven links from Annual Setup at once. You can also enter links here or import a saved backup. The setup summary on the setup page explains the files and their settings. Saving links does not complete your checks."));
+  annualTools.append(node("p", "", "Step 2 saves all seven links from connected Annual Setup automatically. Its manual fallback also lets you paste setup results. You can enter links here or import a saved backup. The setup summary explains the files and their settings. Saving links does not complete your checks."));
   annualTools.append(node("p", "", "Use a private officer browser profile: anyone using it can see saved links. Progress exports and printing exclude these links; download the private links backup separately. Only approved public values belong in the current Hub Control Center."));
   const annualForm = node("form", "settings-grid");
   annualForm.id = "transition-annual-links-form";
@@ -549,6 +554,116 @@ if (section) {
     for (const text of ["At the bottom of the Hub, open Saved links and backup tools. Under Progress backup and print, choose Export progress. Under Saved links, choose Download private links backup. In Newsletter Builder, choose Templates → Export Draft .json. Keep all three downloads.", "Open each JSON text backup and compare the expected and observed values below with your working screens.", "Chrome profile menu → Add → Continue without an account → name it ASME recovery practice. Open the same Hub and builder there; use your authorized dashboard password. Keep the original profile open.", "In the new profile select the same year and import progress into a separate Practice checklist. Step 1 → Start here → Saved checklist for this year → Continue checklist opens the restored checklist. Under Saved links and backup tools → Saved links, choose Import private links backup, then Save private link list on this device. Check the returned year, notes and seven links. Changed links reopen checks; confirm only what you rechecked.", "In the new builder use Templates → Import Draft .json. Compare subject, preheader, content and Desktop/Mobile previews. Return to the original profile and confirm its checklist and issue are intact. Record what matched; do not send the practice issue."]) tasks.append(node("li", "", text));
     recovery.append(tasks); appendBackupExamples(recovery); card.append(recovery);
   }
+  function saveSetupResults(text) {
+    assertAnnualDraftUnchanged();
+    if (unreadableAnnualLinks) throw new Error("Reload and resolve the unreadable saved links first.");
+    if (typeof text !== "string" || text.length > 100000) throw new Error("Setup results must be a text result under 100 KB.");
+    const draft = importAnnualLinkDraft(text, selectedYear, window.ASME_HUB_CONFIG);
+    const savedDraft = observedAnnualRaw ?? observedLegacyAnnualRaw;
+    if (!draft.records && savedDraft) draft.records = importAnnualLinkDraft(savedDraft, selectedYear, window.ASME_HUB_CONFIG).records;
+    if (Object.keys(draft.links).length !== ANNUAL_LINK_FIELDS.length) throw new Error("The setup result must contain all seven annual links.");
+    if (progress.run.mode === "production" && draft.mock) throw new Error("These are Practice files. Return to Step 1 and choose Practice, or use the real year’s setup results.");
+    if (progress.run.mode === "rehearsal" && !draft.mock) throw new Error("Practice requires results from a separate Practice workspace.");
+    const before = [...annualInputs, ...mockInputs, ...recordInputs].map(([key, input]) => [key, input.value]);
+    try { fillAnnualLinks(draft); saveAnnualLinks(); }
+    catch (error) {
+      const values = new Map(before);
+      for (const [key, input] of [...annualInputs, ...mockInputs, ...recordInputs]) input.value = values.get(key);
+      throw error;
+    }
+    render();
+    say("Your seven links are saved. Open them below, check the year, then record what you verified. Saving links does not pass a review.");
+  }
+  function setupFieldsSnapshot() {
+    return JSON.stringify([...annualInputs, ...mockInputs, ...recordInputs].map(([key, input]) => [key, input.value]));
+  }
+  function captureSetupContext() {
+    assertAnnualDraftUnchanged();
+    if (unreadableAnnualLinks || unreadableProgress) throw new Error("Reload and resolve unreadable saved checklist data before setup.");
+    return { year: selectedYear, runId: selectedRunId, mode: progress.run.mode, raw: observedAnnualRaw, legacyRaw: observedLegacyAnnualRaw, fields: setupFieldsSnapshot() };
+  }
+  function assertSetupContext(context) {
+    if (context.year !== selectedYear || context.runId !== selectedRunId || context.mode !== progress.run.mode) throw new Error("The selected year or checklist changed. No returned links were saved here. Return to the original checklist and reopen the same year’s setup.");
+    if (context.raw !== observedAnnualRaw || context.legacyRaw !== observedLegacyAnnualRaw || context.fields !== setupFieldsSnapshot()) throw new Error("This checklist’s links changed during setup. No returned links were saved. Review the newer links before retrying the same year.");
+    assertAnnualDraftUnchanged();
+  }
+  function appendConnectedSetup(card) {
+    const apiConfig = window.ASME_HUB_CONFIG?.annualProvisioner?.api;
+    if (!annualSetupClient && apiConfig) annualSetupClient = createAnnualSetupClient(apiConfig);
+    const client = annualSetupClient;
+    const key = `${selectedYear}:${selectedRunId}:${progress.run.mode}`;
+    if (!annualSetupSessions.has(key)) annualSetupSessions.set(key, { config: null, message: "Sign in with the approved chapter Google account to load this year’s workspace and member goal.", error: false, receipt: "" });
+    const session = annualSetupSessions.get(key);
+    const panel = node("section", "transition-connected-setup");
+    panel.dataset.annualSetup = "connected";
+    panel.append(node("h4", "", "Prepare this year’s files here"), node("p", "", `Selected year: ${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}. One designated operator creates or reopens the same annual files. Confirm the approved chapter account in the Google sign-in window.`));
+    const connect = node("button", "secondary-button", "Sign in with chapter Google account"); connect.type = "button";
+    connect.disabled = annualSetupPending || !client?.ready;
+    const goalLabel = node("label", "transition-check-control", "How many different members should attend this year?");
+    const goal = node("input"); goal.type = "number"; goal.min = "1"; goal.step = "1"; goal.required = true;
+    goal.setAttribute("aria-label", "Annual member goal");
+    goal.value = session.goal ?? session.config?.engagementGoal ?? "";
+    goal.readOnly = Boolean(session.config?.existing);
+    goal.disabled = annualSetupPending || !session.config;
+    goal.addEventListener("input", () => { session.goal = goal.value; });
+    goalLabel.append(goal, node("small", "", session.config?.existing ? "This year already has files. Its original member goal is preserved; ask the President to review any change." : "Each person counts once. Use the President’s approved goal for a new year."));
+    panel.append(connect, goalLabel);
+    const config = session.config;
+    if (config) {
+      panel.append(node("p", "", `Goal source: ${config.goalSource || "Saved chapter setup"}. Workspace: ${runModeLabel(config.workspaceMode)}. Calendar: ${config.calendarIcalUrl ? "saved chapter feed" : "no feed saved"}.`));
+      if (/^[\w-]+$/.test(config.rootFolderId || "")) panel.append(resourceRow(`https://drive.google.com/drive/folders/${config.rootFolderId}`, "Approved annual workspace folder", "Check this is the approved folder for this checklist’s purpose."));
+      if (/^[\w-]+$/.test(config.controlCenterId || "")) panel.append(resourceRow(`https://docs.google.com/spreadsheets/d/${config.controlCenterId}/edit`, "Approved Control Center", "Practice must use its own copied settings spreadsheet.", "sheet"));
+    }
+    const create = node("button", "secondary-button", "Create or reopen this year’s files"); create.type = "button";
+    create.disabled = annualSetupPending || !client?.ready || !config || config.workspaceMode !== progress.run.mode;
+    const status = node("p", "transition-status", !client?.ready ? "Connected setup is not configured yet. Ask the maintainer to enable it, or open the manual fallback below." : session.message);
+    status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error);
+    panel.append(create, status);
+    if (session.receipt) {
+      const receipt = node("details", "transition-tools transition-backup-examples");
+      receipt.append(node("summary", "", "Optional backup and detailed settings"), node("p", "", "Compare this setup summary with the actual files below. It does not certify permissions, clean sources or completed reviews."), node("pre", "", session.receipt));
+      panel.append(receipt);
+    }
+    const finish = () => { annualSetupPending = false; render(); };
+    connect.addEventListener("click", async () => {
+      if (annualSetupPending || !client?.ready) return;
+      try {
+        const context = captureSetupContext();
+        annualSetupPending = true; session.error = false; session.message = "Connecting to Google and loading the approved workspace…"; render();
+        await client.connect();
+        assertSetupContext(context);
+        const loaded = await client.call("getAnnualSetupConfig", [context.year]);
+        assertSetupContext(context);
+        if (!loaded || typeof loaded !== "object" || Array.isArray(loaded)) throw new Error("Google returned an unreadable workspace. Ask the maintainer to check setup.");
+        session.config = loaded; session.goal = loaded.engagementGoal; session.receipt = "";
+        if (loaded.workspaceMode !== context.mode) throw new Error(`The President must confirm a separate ${runModeLabel(context.mode)} workspace before continuing. The saved workspace purpose does not match this checklist.`);
+        if (!/^[\w-]+$/.test(loaded.rootFolderId || "") || !/^[\w-]+$/.test(loaded.controlCenterId || "") || !loaded.configRevision) { session.config = null; throw new Error("The saved workspace is incomplete. Ask the President or maintainer to confirm the folder and Control Center."); }
+        session.message = loaded.existing ? "This year already has files. Reopen them using the saved member goal." : "Workspace loaded. Check the approved member goal, then create this year’s files.";
+      } catch (error) { session.error = true; session.message = `${error.message || "Could not connect."} Choose Sign in again to reload the workspace, or retry after the maintainer resolves the issue.`; say(session.message, true); }
+      finally { finish(); }
+    });
+    create.addEventListener("click", async () => {
+      if (annualSetupPending || !client?.ready || !session.config) return;
+      try {
+        const context = captureSetupContext(), approved = session.config;
+        if (approved.workspaceMode !== context.mode) throw new Error("The saved workspace purpose does not match this checklist. Ask the President to confirm it.");
+        const approvedGoal = Number(approved.existing ? approved.engagementGoal : goal.value);
+        if (!Number.isInteger(approvedGoal) || approvedGoal <= 0) throw new Error("Enter a positive whole-number member goal approved by the President.");
+        const answers = { engagementGoal: approvedGoal, mode: context.mode, rootFolderId: approved.rootFolderId, controlCenterId: approved.controlCenterId, configRevision: approved.configRevision };
+        annualSetupPending = true; session.error = false; session.receipt = ""; session.message = "Creating or reopening annual files. Keep the Hub open. If this stops, retry the same year to resume; do not create a second workspace."; render();
+        const result = await client.call("runAnnualSetup", [context.year, answers]);
+        assertSetupContext(context);
+        if (!result || result.success !== true || result.targetYear !== context.year) throw new Error("Google did not confirm setup for the selected year. Reconnect and reopen the same year before retrying.");
+        saveSetupResults(result.hubHandoff);
+        session.receipt = typeof result.readableReceipt === "string" ? result.readableReceipt : "";
+        session.config = { ...approved, existing: true, engagementGoal: approvedGoal, goalSource: "This year’s saved setup" }; session.goal = approvedGoal;
+        session.message = "Annual files are ready and all seven links are saved in this checklist. Intake remains closed, Points is TESTING and the year is inactive. Open the files and record each manual review.";
+        say(session.message);
+      } catch (error) { session.error = true; session.message = `${error.message || "Setup could not finish."} Setup may have created files: keep the same year and workspace when retrying. Sign in again if Google authorization expired.`; say(session.message, true); }
+      finally { finish(); }
+    });
+    card.append(panel);
+  }
   function appendStepResources(resources, step) {
     resources.replaceChildren();
     const references = guideResourceSnapshot && window.ASME_SHARED_RESOURCES?.resolve
@@ -578,7 +693,7 @@ if (section) {
     if (step.id === "T02") {
       try {
         const setupUrl = new URL(window.ASME_HUB_CONFIG?.annualProvisioner?.url || "");
-        if (setupUrl.protocol === "https:" && setupUrl.hostname === "script.google.com" && /^\/macros\/s\/[\w-]+\/exec$/.test(setupUrl.pathname) && !setupUrl.username && !setupUrl.password) { setupUrl.searchParams.set("year", selectedYear); setupUrl.searchParams.set("mode", progress.run.mode); resources.append(resourceRow(setupUrl.href, "Open Annual Setup", "First choose Chrome’s ASME profile and confirm asmeohiostate@gmail.com is the only Google account signed in. Select this checklist’s year, then answer its questions and copy the setup results.")); }
+        if (setupUrl.protocol === "https:" && setupUrl.hostname === "script.google.com" && /^\/macros\/s\/[\w-]+\/exec$/.test(setupUrl.pathname) && !setupUrl.username && !setupUrl.password) { setupUrl.searchParams.set("year", selectedYear); setupUrl.searchParams.set("mode", progress.run.mode); help.append(resourceRow(setupUrl.href, "Open Annual Setup — manual fallback", "First choose Chrome’s ASME profile and confirm asmeohiostate@gmail.com is the only Google account signed in. Select this checklist’s year, then answer its questions and copy the setup results.")); }
       } catch { /* No link is shown until the chapter setup screen is installed. */ }
       help.append(resourceRow("https://github.com/ASME-OSU/ASME-HUB/blob/main/integrations/apps-script/transition-simple/README.md", "Annual setup screen installation", "Install the setup screen once, then create each year from its form.", "guide"));
     }
@@ -702,29 +817,23 @@ if (section) {
       if (outstanding.childElementCount > 1) card.append(outstanding);
     }
     if (step.id === "T02") {
+      appendConnectedSetup(card);
+      const fallback = node("details", "transition-tools");
+      fallback.append(node("summary", "", "Manual fallback: open Annual Setup and paste results"));
       const transfer = node("form", "transition-setup-transfer");
-      transfer.append(node("h4", "", "Bring your new links into the Hub"), node("p", "", "In Annual Setup, choose Copy setup results. Paste them here and save. You do not need to download a file. This saves links, not completed checks."));
+      transfer.append(node("h4", "", "Bring your new links into the Hub"), node("p", "", "If connected setup is unavailable, open Annual Setup under More help for this step. Choose Copy setup results, paste here and save. This saves links, not completed checks."));
       const paste = node("textarea"); paste.setAttribute("aria-label", "Paste setup results"); paste.placeholder = "Paste the results copied from Annual Setup";
-      const submit = node("button", "secondary-button", "Save setup results"); submit.type = "submit";
+      const submit = node("button", "secondary-button", "Save setup results"); submit.type = "submit"; submit.disabled = annualSetupPending;
       transfer.append(paste, submit);
       transfer.addEventListener("submit", event => {
         event.preventDefault();
-        try {
-          assertAnnualDraftUnchanged();
-          if (unreadableAnnualLinks) throw new Error("Reload and resolve the unreadable saved links first.");
-          if (paste.value.length > 100000) throw new Error("Setup results are too large.");
-          const draft = importAnnualLinkDraft(paste.value, selectedYear, window.ASME_HUB_CONFIG);
-          const savedDraft = observedAnnualRaw ?? observedLegacyAnnualRaw;
-          if (!draft.records && savedDraft) draft.records = importAnnualLinkDraft(savedDraft, selectedYear, window.ASME_HUB_CONFIG).records;
-          if (Object.keys(draft.links).length !== ANNUAL_LINK_FIELDS.length) throw new Error("Copy the complete result with all seven links from Annual Setup.");
-          if (progress.run.mode === "production" && draft.mock) throw new Error("These are Practice files. Return to Step 1 and choose Practice, or use the real year’s setup results.");
-          if (progress.run.mode === "rehearsal" && !draft.mock) throw new Error("Practice requires results from a separate Practice workspace.");
-          fillAnnualLinks(draft); saveAnnualLinks(); render(); say("Your seven links are saved. Open them below, check the year, then record what you verified.");
-        } catch (error) { say(`Could not save setup results: ${error.message}`, true); }
+        if (annualSetupPending) { say("Wait for the current setup request before importing results.", true); return; }
+        try { saveSetupResults(paste.value); }
+        catch (error) { say(`Could not save setup results: ${error.message}`, true); }
       });
-      card.append(transfer);
+      fallback.append(transfer); card.append(fallback);
     }
-    if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates the attendance and budget files for your year. Its summary shows their links and settings. Copy the setup results here once; downloading the summary is optional. Keep last year’s files as records."));
+    if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates or reopens the attendance and budget files for your year. Connected setup saves all seven links here automatically; its detailed summary is optional. Keep last year’s files as records."));
     if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. The technical maintainer checks the other response tabs in the same copied workbook. Example note: Five MOCK rows arrived in the summary’s tab; [maintainer] confirmed the other response tabs contain none of these rows on [date]."));
     appendRecovery(card, step);
     appendTestCases(card, step);
@@ -735,7 +844,7 @@ if (section) {
     if (stepLinks[step.id] || step.id === "T02") {
       const panel = node("details", "transition-inline-links");
       panel.append(node("summary", "", "Optional: edit or restore links manually"));
-      panel.append(node("p", "", "Use this only to correct a saved link or restore a links backup. The Copy setup results box above is the usual path. Saving links does not complete a review."));
+      panel.append(node("p", "", "Use this only to correct a saved link or restore a links backup. Connected setup above saves the seven tool links automatically. Saving links does not complete a review."));
       const editLinks = node("button", "secondary-button", "Edit saved links");
       editLinks.type = "button";
       editLinks.addEventListener("click", () => {
@@ -1008,7 +1117,7 @@ if (section) {
       const quickStart = progress.run.mode === "production" ? step.productionQuickStart || step.quickStart : step.quickStart;
       if (quickStart) card.append(node("p", "", yearText(quickStart)));
       for (const instruction of instructionsFor(step)) card.append(node("p", "", instruction));
-      if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates the attendance and budget files for your year. Its summary shows their links and settings. Copy the setup results here once; downloading the summary is optional. Keep last year’s files as records."));
+      if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates or reopens the attendance and budget files for your year. Connected setup saves all seven links here automatically; its detailed summary is optional. Keep last year’s files as records."));
     if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. The technical maintainer checks the other response tabs in the same copied workbook. Example note: Five MOCK rows arrived in the summary’s tab; [maintainer] confirmed the other response tabs contain none of these rows on [date]."));
     appendRecovery(card, step, true);
     appendTestCases(card, step);

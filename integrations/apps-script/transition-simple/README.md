@@ -45,3 +45,8 @@ Use [the student walkthrough](../../../docs/officer-transition/student-walkthrou
 The private setup app receives only year and purpose in its URL. It reads the previous-year goal from its configured settings sheet, or the saved setup for an existing year. The annual goal is used for that year without changing the chapter default. It checks the loaded configuration identity and revision before writes and again under its script lock; another tab’s changes require reloading.
 
 Older unclassified workspaces are not automatically trusted as Real handoff. The President confirms Practice explicitly or configures a separate reviewed Real workspace. New saved runs retain their purpose; Practice files cannot be relabeled as Real. These confirmations do not activate the year or approve funding, access or launch.
+
+
+### Run setup inside Hub Step 2
+
+The Hub can call these existing guarded functions directly through Google OAuth and an API executable deployment. See [HUB_API_SETUP.md](HUB_API_SETUP.md) for the one-time chapter configuration and acceptance checks. Until that configuration is completed, the private setup page remains the manual fallback.
