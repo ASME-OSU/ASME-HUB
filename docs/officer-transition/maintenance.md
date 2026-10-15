@@ -118,3 +118,7 @@ dates and evidence; do not convert fixture or repository test results into
 production PASS claims.
 
 </details>
+
+### Step 1 progress selection
+
+The main Start/Continue action resumes validated progress for the selected year and purpose, using the currently selected or last selected matching attempt before a deterministic most-recent fallback. It creates an attempt only if none matches. More options contains the explicit separate-attempt action and genuine saved alternatives; in-memory placeholders are not listed as saved. Legacy progress is preserved and migrated through the existing save guards. Purpose/year changes select progress rather than relabel it. Access questions appear after Start/Continue; their required confirmations and launch gates remain unchanged.

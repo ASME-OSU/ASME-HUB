@@ -458,7 +458,7 @@ export const TRANSITION_TEST_CASES = [
 // Short officer-facing copy; detailed procedures and review identities remain above.
 export const TRANSITION_OFFICER_COPY = {
   "T01": {
-    "intro": "Choose the year and ask the President for the chapter account and handoff folder.",
+    "intro": "Ask the President which account and officer folder to use, and who can help with access.",
     "actions": [],
     "practice": [
       "Use the approved test account and private Practice folder."
@@ -543,8 +543,8 @@ export const TRANSITION_OFFICER_QUESTIONS = {
     "rehearsal": "Did a sheet edit automatically update the test Form?"
   },
   "V20": {
-    "production": "Do you have the current checklist and know who can help?",
-    "rehearsal": "Do you have a Practice checklist, test account and reviewer?"
+    "production": "Do you have the approved account, officer folder and someone to contact for help?",
+    "rehearsal": "Do you have the approved test account, private Practice folder and reviewer?"
   },
   "V21": "Do the new files and dates match this year?",
   "V22": {
