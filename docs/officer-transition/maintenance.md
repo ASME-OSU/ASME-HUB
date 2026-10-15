@@ -51,8 +51,8 @@ organization-controlled backup.
 
 | File | Responsibility |
 |---|---|
-| `assets/js/transition-steps.js` | Canonical five-step instructions and required checks |
-| `assets/js/transition.js` | Shared step shell, numbered procedures, resource rows and existing progress/link controls |
+| `assets/js/transition-steps.js` | Short officer actions/questions plus complete technical instructions; required check identities remain stable |
+| `assets/js/transition.js` | Short main flow, expandable required team checks and technical details, resource rows and existing progress/link controls |
 | `assets/js/transition-state.js` | Progress validation, prerequisites, migration and reconciliation |
 | `assets/css/transition.css` | Scoped light/dark design tokens, components and mobile layouts; follows the Hub theme |
 | `index.html`, `sw.js` | Accessible dialog/header/fixed footer and matching offline asset versions |

@@ -348,7 +348,7 @@ test('new instructions render the five-case table in guide and print without cro
  assert.match(table.textContent,/missing-profile exception OPEN/);
  assert.ok(ui.$('transition-steps').find(node=>node.href?.includes('annual_points_1234567890123456')));
  await ui.$('transition-print').click(); assert.match(ui.$('transition-print-sheet').textContent,/Five fictional check-in submissions/);
- assert.match(ui.$('transition-print-sheet').textContent,/cleanup: Not checked/);
+ assert.match(ui.$('transition-print-sheet').textContent,/cleanup: Not yet/);
  ui.$('transition-run-name').value='Other MOCK'; await ui.$('transition-run-form').emit('submit'); await ui.go('T03');
  assert.equal(ui.$('transition-steps').find(node=>node.href?.includes('annual_points_1234567890123456')),null);
 });
@@ -368,7 +368,7 @@ test('disposed blockers and skipped activation visibly retain missing rehearsal 
  for(const step of definitions.TRANSITION_STEPS){await ui.go(step.id);if(step.id==='T05'){await ui.reason('T05','Rehearsal only');await ui.choose('T05','skipped');}else await ui.choose(step.id,'blocked');}
  assert.match(ui.$('transition-summary').textContent,/Open the unfinished steps to resolve their blockers/);
  assert.equal(ui.saved().steps.T05,'skipped');
- assert.match(ui.$('transition-summary').textContent,/Cleanup: Not checked yet. Reviewer acceptance: Not checked yet/);
+ assert.match(ui.$('transition-summary').textContent,/Cleanup: Not yet. Reviewer acceptance: Not yet/);
  assert.match(ui.$('transition-readiness').textContent,/Private rehearsal not complete/);
 });
 
@@ -475,10 +475,10 @@ test('progress advances on passed reviews, ignores blockers, and falls when a re
  assert.equal(ui.$('transition-progress').value,0);
  await ui.choose('V20','passed');
  assert.equal(ui.$('transition-progress').value,1);
- assert.match(ui.$('transition-completion').textContent,new RegExp(`1/${total} tasks complete`));
+ assert.match(ui.$('transition-completion').textContent,/0 of 5 steps done/);
  await ui.choose('T01','blocked'); assert.equal(ui.$('transition-progress').value,1);
  await ui.choose('V20','needs_recheck'); assert.equal(ui.$('transition-progress').value,0);
- assert.match(ui.$('transition-progress-help').textContent,/Read next step does not complete work/);
+ assert.match(ui.$('transition-progress-help').textContent,/Saved automatically on this device/);
 });
 
 test('reset starts at zero, preserves the old checklist and copies saved links; cancel changes nothing', async () => {
@@ -657,6 +657,7 @@ function deferredSetup() { let resolve;const promise=new Promise(done=>{resolve=
 
 test("connected Annual Setup saves seven links and preserves manual review gating", async()=>{
  const fixture=connectedFixture();const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");
+ assert.equal(ui.$("transition-steps").find(n=>n.className==="transition-confirmation").hidden,true);
  await connectSetup(ui);
  const goal=connectedPanel(ui).find(n=>n.tagName==="input");assert.equal(goal.value,120);assert.equal(goal.readOnly,false);
  goal.value="135";await goal.emit("input");
@@ -665,6 +666,7 @@ test("connected Annual Setup saves seven links and preserves manual review gatin
  assert.equal(fixture.calls[1].parameters[0],"2027-2028");
  assert.deepEqual(JSON.parse(JSON.stringify(fixture.calls[1].parameters[1])),{engagementGoal:135,mode:"production",rootFolderId:"fixture_folder",controlCenterId:"fixture_center",configRevision:"revision-1"});
  const saved=JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${ui.saved().run.id}`));assert.equal(Object.keys(saved.links).length,7);assert.deepEqual(ui.saved().checks,{});
+ assert.equal(ui.$("transition-steps").find(n=>n.className==="transition-confirmation").hidden,false);
  assert.equal(connectedPanel(ui).find(n=>n.tagName==="input").readOnly,true);
  assert.ok(connectedPanel(ui).find(n=>n.tagName==="pre"&&n.textContent===fixture.result.readableReceipt));
 });
@@ -715,4 +717,47 @@ test("connected setup rejects results with a different year or Practice tool con
   assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey("2027-2028"))).length,0);
   assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);
  }
+});
+
+test('short officer view keeps technical procedures collapsed and every required review available', async () => {
+ const ui=browser(); await ui.go('T02');
+ const card=ui.$('transition-steps');
+ const control=id=>card.find(n=>n.dataset.transitionControl===id);
+ const detail=card.find(n=>n.className.includes('transition-detailed-help'));
+ assert.equal(Boolean(detail.open),false);
+ assert.ok(detail.textContent.includes('Config B7 and B16'));
+ assert.ok(detail.find(n=>n.className==='transition-review-map'));
+ const team=card.find(n=>n.className.includes('transition-team-checks'));
+ assert.equal(Boolean(team.open),false);
+ assert.equal(control('V21').parent.parent.className,'transition-confirmation');
+ for(const id of ['V01','V02','V07']) assert.equal(control(id).parent.parent,team);
+ assert.match(control('V21').attrs['aria-label'],/Do the new files and dates match this year/);
+ assert.doesNotMatch(control('V21').attrs['aria-label'],/V\d\d|Config/);
+ await ui.choose('V21','passed');
+ assert.equal(card.find(n=>n.className.includes('transition-finish-step')).disabled,true);
+ assert.notEqual(ui.saved().steps.T02,'complete');
+});
+
+test('team review stays open across answers and exposes required skip reasons', async () => {
+ const ui=browser(); await ui.go('T02');
+ const team=ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks'));
+ team.open=true;await team.emit('toggle');
+ await ui.choose('V01','passed');
+ assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).open,true);
+ await ui.choose('V02','skipped');
+ assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).open,true);
+ assert.ok(ui.$('transition-steps').find(n=>n.className==='transition-evidence-details'&&n.open));
+ assert.notEqual(ui.saved().checks.V02,'skipped');
+});
+
+test('short action copy supports every mode without replacing detailed instructions or changing review counts', () => {
+ for(const step of definitions.TRANSITION_STEPS){
+  const copy=definitions.TRANSITION_OFFICER_COPY[step.id];
+  assert.ok(copy.intro.length<130);
+  assert.ok(copy.actions.length<=3);
+  assert.ok((copy.practice||copy.actions).length<=3);
+  assert.ok(step.instructions.length);
+ }
+ assert.equal(definitions.TRANSITION_CHECKS.filter(c=>state.checkApplies(c,'production')).length,20);
+ assert.equal(definitions.TRANSITION_CHECKS.filter(c=>state.checkApplies(c,'rehearsal')).length,16);
 });
