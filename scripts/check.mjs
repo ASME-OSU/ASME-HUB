@@ -32,6 +32,7 @@ for (const path of [
   "assets/js/transition-state.js",
   "assets/js/transition-steps.js",
   "assets/js/annual-link-draft.js",
+  "assets/js/annual-setup-api.js",
   "assets/js/annual-settings-input.js",
   "scripts/sync-calendar.mjs",
   "sw.js",

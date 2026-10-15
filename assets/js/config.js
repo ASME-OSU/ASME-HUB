@@ -2,7 +2,7 @@ window.ASME_HUB_CONFIG = {
   appName: "ASME Officer Hub",
   currentAcademicYear: "2026-2027",
   // Chapter-only simple setup deployment; separate from the older save service.
-  annualProvisioner: { url: "https://script.google.com/macros/s/AKfycby7Z37q8BFOIZ2J0FpLd__lUNG3-uPU5EVr4esqWVLmgJn0GQ4St8NehdHbbEidY52G/exec" },
+  annualProvisioner: { api: { clientId: "", deploymentId: "", scopes: ["https://www.googleapis.com/auth/drive", "https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/forms", "https://www.googleapis.com/auth/script.scriptapp", "https://www.googleapis.com/auth/userinfo.email"] }, url: "https://script.google.com/macros/s/AKfycby7Z37q8BFOIZ2J0FpLd__lUNG3-uPU5EVr4esqWVLmgJn0GQ4St8NehdHbbEidY52G/exec" },
   // Used by file:// previews, which cannot read the generated local placeholder.
   calendarSnapshotUrl:
     "https://asme-osu.github.io/ASME-HUB/data/calendar.json",

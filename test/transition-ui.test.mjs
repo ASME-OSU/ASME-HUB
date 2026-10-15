@@ -28,7 +28,7 @@ class Element {
   querySelector(selector) { return this.find(element => selector.startsWith(".") ? element.className.split(" ").includes(selector.slice(1)) : selector.startsWith("[data-transition-control=") ? element.dataset.transitionControl === selector.match(/"([^"]+)"/)[1] : element.tagName === selector); }
   find(predicate) { for (const child of this.children) { if (predicate(child)) return child; const found = child.find?.(predicate); if (found) return found; } return null; }
 }
-function browser(existing = new Map(), resourceSnapshot = [], failSelection = false) {
+function browser(existing = new Map(), resourceSnapshot = [], failSelection = false, setupClient = null) {
   const ids = new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(match => [match[1], new Element()]));
   const $ = id => { assert.ok(ids.has(id), `Production HTML must provide ${id}`); return ids.get(id); };
   const dialog = $("transition-dialog");
@@ -41,7 +41,8 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const dispatched = [];
   const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
   const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener() {}, print() {} };
-  const context = { ...state, ...definitions, ...links, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
+  if (setupClient) window.ASME_HUB_CONFIG.annualProvisioner = { api: { clientId: "fixture", deploymentId: "fixture", scopes: [] } };
+  const context = { ...state, ...definitions, ...links, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
   const control = id => $("transition-steps").querySelector(`[data-transition-control="${id}"]`);
   const go = async id => { $("transition-step-picker").value = id; await $("transition-step-picker").emit("change"); };
@@ -59,7 +60,7 @@ const mockHandoff = () => ({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:"2027-2
 test('annual setup step exposes installed chapter screen and concise five-step route',async()=>{
  const ui=browser();ui.window.ASME_HUB_CONFIG.annualProvisioner={url:'https://script.google.com/macros/s/chapter_setup/exec'};await ui.go('T02');
  assert.ok(ui.$('transition-steps').find(node=>node.href==='https://script.google.com/macros/s/chapter_setup/exec?year=2027-2028&mode=production'));
- assert.match(ui.$('transition-steps').textContent,/Prepare this year’s files/);assert.match(ui.$('transition-steps').textContent,/Copy setup results/);assert.match(ui.$('transition-steps').textContent,/asmeohiostate@gmail.com must be the only Google account signed in/);assert.match(ui.$('transition-steps').textContent,/downloading the summary is optional/);
+ assert.match(ui.$('transition-steps').textContent,/Prepare this year’s files/);assert.match(ui.$('transition-steps').textContent,/Copy setup results/);assert.match(ui.$('transition-steps').textContent,/asmeohiostate@gmail.com must be the only Google account signed in/);assert.ok(ui.$('transition-steps').find(n=>n.tagName==='summary'&&n.textContent.startsWith('Manual fallback:')));
  await ui.go('T05');assert.match(ui.$('transition-steps').textContent,/Config!B5 to LIVE/);
  ui.window.ASME_HUB_CONFIG.annualProvisioner.url='https://evil.example/macros/s/chapter_setup/exec';await ui.go('T02');
  assert.equal(ui.$('transition-steps').find(node=>node.href==='https://evil.example/macros/s/chapter_setup/exec'),null);
@@ -107,7 +108,7 @@ test("private record URL controls hide production records in practice and retain
  const access = field("Access contact record link");
  assert.equal(access.find(node => node.tagName === "input").type, "url");
  assert.match(access.textContent, /President[\s\S]*Paste its link, not a name or email/);
- assert.match(ui.$("transition-dialog").textContent, /Step 2 lets you paste all seven links/);
+ assert.match(ui.$("transition-dialog").textContent, /Step 2 saves all seven links/);
  const handoff = mockHandoff();
  handoff.records = { acceptanceUrl: "https://example.org/private-review", rollbackUrl: "https://example.org/private-recovery", approvalUrl: "https://example.org/private-production-approval" };
  await importMock(ui, handoff);
@@ -636,5 +637,82 @@ test("remaining-work action announces counts repeatedly and groups only applicab
   assert.equal(groups.children.filter(n=>n.className==="transition-pending-group").flatMap(n=>n.find(c=>c.tagName==="ul")?.children||[]).length,count);
   for(let repeat=0;repeat<2;repeat++) {await ui.$("transition-next").click();assert.ok(ui.$("transition-status").textContent.includes(`${count} reviews remain`));assert.ok(ui.$("transition-status").textContent.length<320);}
   const group=groups.children.find(n=>n.dataset.step==="T03");await group.find(n=>n.tagName==="button").click();assert.equal(ui.$("transition-step-picker").value,"T03");
+ }
+});
+
+
+function connectedFixture(options = {}) {
+ const config = { rootFolderId: "fixture_folder", controlCenterId: "fixture_center", configRevision: "revision-1", engagementGoal: 120, goalSource: "Saved chapter setup", workspaceMode: "production", existing: false, ...options.config };
+ const handoff=mockHandoff();delete handoff.mock;
+ const result={success:true,targetYear:"2027-2028",hubHandoff:JSON.stringify(handoff),readableReceipt:"Fixture setup summary"};
+ const calls=[];
+ const client={ready:true,connect:async()=>{},call:async(name,parameters)=>{calls.push({name,parameters});return name==="getAnnualSetupConfig"?config:options.run?options.run():result;}};
+ return {client,config,result,calls};
+}
+const connectedPanel=ui=>ui.$("transition-steps").find(n=>n.dataset.annualSetup==="connected");
+const setupButton=(ui,label)=>connectedPanel(ui).find(n=>n.tagName==="button"&&n.textContent===label);
+const connectSetup=ui=>setupButton(ui,"Sign in with chapter Google account").click();
+const runSetup=ui=>setupButton(ui,"Create or reopen this year’s files").click();
+function deferredSetup() { let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve}; }
+
+test("connected Annual Setup saves seven links and preserves manual review gating", async()=>{
+ const fixture=connectedFixture();const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");
+ await connectSetup(ui);
+ const goal=connectedPanel(ui).find(n=>n.tagName==="input");assert.equal(goal.value,120);assert.equal(goal.readOnly,false);
+ goal.value="135";await goal.emit("input");
+ await runSetup(ui);
+ assert.deepEqual(fixture.calls.map(c=>c.name),["getAnnualSetupConfig","runAnnualSetup"]);
+ assert.equal(fixture.calls[1].parameters[0],"2027-2028");
+ assert.deepEqual(JSON.parse(JSON.stringify(fixture.calls[1].parameters[1])),{engagementGoal:135,mode:"production",rootFolderId:"fixture_folder",controlCenterId:"fixture_center",configRevision:"revision-1"});
+ const saved=JSON.parse(ui.existing.get(`${links.annualLinkStorageKey("2027-2028")}:${ui.saved().run.id}`));assert.equal(Object.keys(saved.links).length,7);assert.deepEqual(ui.saved().checks,{});
+ assert.equal(connectedPanel(ui).find(n=>n.tagName==="input").readOnly,true);
+ assert.ok(connectedPanel(ui).find(n=>n.tagName==="pre"&&n.textContent===fixture.result.readableReceipt));
+});
+
+test("connected setup rejects a changed checklist while retaining any native result for same-year retry", async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise});const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");await connectSetup(ui);
+ const original=ui.$("transition-run").value;const running=runSetup(ui);
+ assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,true);
+ ui.$("transition-run-name").value="Other checklist";await ui.$("transition-run-form").emit("submit");
+ pending.resolve(fixture.result);await running;
+ assert.notEqual(ui.saved().run.id,original);
+ assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey("2027-2028"))).length,0);
+ assert.match(ui.$("transition-status").textContent,/selected year or checklist changed/);
+});
+
+test("connected setup preserves concurrent saved links and unsaved field edits", async()=>{
+ for (const savedElsewhere of [true,false]) {
+  const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise});const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");await connectSetup(ui);
+  const running=runSetup(ui),key=`${links.annualLinkStorageKey("2027-2028")}:${ui.$("transition-run").value}`;
+  const newer=JSON.stringify({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:"2027-2028",links:{}});
+  const input=ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.attrs["aria-label"]==="Points Master (officer edit link)");
+  if (savedElsewhere) ui.existing.set(key,newer);else input.value="https://docs.google.com/spreadsheets/d/unsaved_private_edit/edit";
+  pending.resolve(fixture.result);await running;
+  if(savedElsewhere) assert.equal(ui.existing.get(key),newer);else {assert.equal(ui.existing.get(key),undefined);assert.ok(input.value.includes("unsaved_private_edit"));}
+ }
+});
+
+test("connected setup blocks mismatched workspace and keeps existing annual goals readonly", async()=>{
+ const mismatch=connectedFixture({config:{workspaceMode:"rehearsal"}});const ui=browser(new Map(),[],false,mismatch.client);await ui.go("T02");await connectSetup(ui);
+ assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,true);await runSetup(ui);assert.equal(mismatch.calls.filter(c=>c.name==="runAnnualSetup").length,0);
+ assert.match(connectedPanel(ui).textContent,/workspace purpose does not match/);
+ const existing=connectedFixture({config:{existing:true,engagementGoal:88}});const resumed=browser(new Map(),[],false,existing.client);await resumed.go("T02");await connectSetup(resumed);
+ const goal=connectedPanel(resumed).find(n=>n.tagName==="input");assert.equal(goal.readOnly,true);goal.value="999";await runSetup(resumed);assert.equal(existing.calls[1].parameters[1].engagementGoal,88);
+});
+
+test("connected setup failure restores controls and retry uses the same annual identities", async()=>{
+ let attempts=0;const fixture=connectedFixture({run:()=>{if(++attempts===1)throw new Error("Authorization expired");return fixture.result;}});
+ const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");await connectSetup(ui);await runSetup(ui);
+ assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);assert.match(connectedPanel(ui).textContent,/same year and workspace/);
+ await runSetup(ui);const calls=fixture.calls.filter(c=>c.name==="runAnnualSetup");assert.equal(calls.length,2);assert.deepEqual(calls[0].parameters,calls[1].parameters);
+});
+
+
+test("connected setup rejects results with a different year or Practice tool context", async()=>{
+ for (const wrongYear of [true,false]) {
+  const fixture=connectedFixture();if(wrongYear)fixture.result.targetYear="2028-2029";else fixture.result.hubHandoff=JSON.stringify(mockHandoff());
+  const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");await connectSetup(ui);await runSetup(ui);
+  assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey("2027-2028"))).length,0);
+  assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);
  }
 });
