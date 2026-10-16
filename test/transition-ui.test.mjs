@@ -28,7 +28,7 @@ class Element {
   querySelector(selector) { return this.find(element => selector.startsWith(".") ? element.className.split(" ").includes(selector.slice(1)) : selector.startsWith("[data-transition-control=") ? element.dataset.transitionControl === selector.match(/"([^"]+)"/)[1] : element.tagName === selector); }
   find(predicate) { for (const child of this.children) { if (predicate(child)) return child; const found = child.find?.(predicate); if (found) return found; } return null; }
 }
-function browser(existing = new Map(), resourceSnapshot = [], failSelection = false, setupClient = null) {
+function browser(existing = new Map(), resourceSnapshot = [], failSelection = false, setupClient = null, faults = {}) {
   const ids = new Map([...html.matchAll(/\bid="([^"]+)"/g)].map(match => [match[1], new Element()]));
   const $ = id => {
    assert.ok(ids.has(id), `Production HTML must provide ${id}`);
@@ -44,11 +44,12 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const tools = $("transition-progress-tools"); tools.className = "transition-tools";
   dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
   $("transition-run-mode").value = "production";
-  const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
+  const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (faults.failProgress && key.startsWith(state.TRANSITION_STORAGE_PREFIX)) throw new Error("Audit storage quota exceeded"); if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
+  const windowListeners = new Map();
   const dispatched = [];
   const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
-  const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, location: {hash:""}, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener() {}, print() {} };
+  const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, location: {hash:""}, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener(name, callback) { windowListeners.set(name, callback); }, print() {} };
   if (setupClient) window.ASME_HUB_CONFIG.annualProvisioner = { api: { clientId: "fixture", deploymentId: "fixture", scopes: [] } };
   const context = { ...state, ...definitions, ...links, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
@@ -60,7 +61,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
     assert.ok(form, `Evidence form ${id}`); form.find(node => node.tagName === "textarea").value = text; await form.emit("submit");
   };
   const saved = () => { const id = $("transition-run").value; return JSON.parse(existing.get(state.storageKey("2027-2028", id))); };
-  return { $, go, choose, reason, saved, existing, document, window, dispatched };
+  return { $, go, choose, reason, saved, existing, document, window, windowListeners, dispatched };
 }
 
 async function startRun(ui) {
@@ -277,6 +278,10 @@ test("two tabs of one run preserve newer evidence and require explicit reload be
  assert.match(b.$("transition-status").textContent,/changed in another browser tab/);
  await b.$("transition-run-reload").click();
  assert.equal(b.saved().reasons.T01,"Saved by first tab");
+ await b.reason("T01","Reconciled after reload");
+ assert.equal(a.saved().reasons.T01,"Saved by first tab");
+ assert.match(b.$("transition-status").textContent,/saved note changed/);
+ await b.$("transition-steps").find(n=>n.className==="transition-evidence"&&n.dataset.evidenceId==="T01").find(n=>n.tagName==="button"&&n.textContent==="Discard draft").click();
  await b.reason("T01","Reconciled after reload");
  assert.equal(a.saved().reasons.T01,"Reconciled after reload");
 });
@@ -932,4 +937,48 @@ test("event actions open the Hub preview and retain the public calendar fallback
  assert.equal(group.find(n=>n.tagName==="a"&&n.textContent==="Open calendar").href,"https://org.osu.edu/asme/calendar/");
  await group.find(n=>n.tagName==="button"&&n.textContent==="Open Hub events").click();assert.equal(ui.window.location.hash,"events");assert.equal(ui.$("transition-dialog").open,false);
  const practice=browser();practice.$("transition-run-mode").value="rehearsal";await startRun(practice);await practice.go("T04");const news=practice.$("transition-steps").find(n=>n.dataset.workGroup==="newsletter");assert.equal(news.find(n=>n.tagName==="a"&&n.textContent==="Open website editor"),null);
+});
+
+
+function evidenceForm(ui,id) { return ui.$("transition-steps").find(n=>n.className==="transition-evidence"&&n.dataset.evidenceId===id); }
+function observation(ui,id) { return evidenceForm(ui,id).children.find(n=>n.tagName==="label"&&n.textContent.startsWith("What did you check?")).find(n=>n.tagName==="textarea"); }
+
+test("unsaved notes survive review changes and step navigation",async()=>{
+ const ui=browser();await startRun(ui);const input=observation(ui,"V20");input.value="Draft observation";await input.emit("input");
+ await ui.choose("V20","checking");assert.equal(observation(ui,"V20").value,"Draft observation");
+ await ui.go("T02");await ui.go("T01");assert.equal(observation(ui,"V20").value,"Draft observation");
+ assert.equal(evidenceForm(ui,"V20").parent.open,true);assert.equal(ui.saved().notes.V20,undefined);
+});
+
+test("Save and continue persists current-run note drafts before advancing",async()=>{
+ const ui=browser();await startRun(ui);const input=observation(ui,"V20");input.value="Audit observation";await input.emit("input");await ui.choose("V20","passed");
+ await finishAction(ui).click();assert.equal(ui.$("transition-step-picker").value,"T02");assert.equal(ui.saved().notes.V20,"Audit observation");
+ let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
+});
+
+test("note drafts stay isolated across attempts and survive failed saves",async()=>{
+ const ui=browser();await startRun(ui);const original=ui.saved();let input=observation(ui,"V20");input.value="Original draft";await input.emit("input");
+ ui.$("transition-run-name").value="Different audit attempt";await startRun(ui);assert.equal(observation(ui,"V20").value,"");
+ ui.$("transition-run").value=original.run.id;await ui.$("transition-run").emit("change");assert.equal(observation(ui,"V20").value,"Original draft");
+ const key=state.storageKey(original.year,original.run.id);ui.existing.set(key,JSON.stringify({...original,notes:{V20:"Newer saved note"}}));
+ await evidenceForm(ui,"V20").emit("submit");assert.equal(observation(ui,"V20").value,"Original draft");assert.match(ui.$("transition-status").textContent,/another browser tab/);
+});
+
+test("note drafts warn before reload and discard leaves saved evidence intact",async()=>{
+ const ui=browser();await startRun(ui);const input=observation(ui,"V20");input.value="Unsaved audit draft";await input.emit("input");
+ let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,true);
+ await evidenceForm(ui,"V20").find(n=>n.tagName==="button"&&n.textContent==="Discard draft").click();assert.equal(observation(ui,"V20").value,"");assert.equal(ui.saved().notes.V20,undefined);
+ warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
+});
+
+test("Finish practice saves final evidence drafts and retains the no-launch reason",async()=>{
+ const ui=readyBrowser(completedReviews("rehearsal"));await ui.go("T05");const input=observation(ui,"V17");input.value="Synthetic reviewer evidence";await input.emit("input");
+ await finishAction(ui).click();assert.equal(ui.saved().notes.V17,"Synthetic reviewer evidence");assert.match(ui.saved().reasons.T05,/Practice only — no launch/);
+});
+
+
+test("storage write failures retain note drafts and never advance completion",async()=>{
+ const faults={},ui=browser(new Map(),[],false,null,faults);await startRun(ui);await ui.choose("V20","passed");const input=observation(ui,"V20");input.value="Recoverable note draft";await input.emit("input");
+ faults.failProgress=true;await finishAction(ui).click();assert.equal(ui.$("transition-step-picker").value,"T01");assert.equal(observation(ui,"V20").value,"Recoverable note draft");assert.notEqual(ui.saved().steps.T01,"complete");assert.equal(ui.saved().notes.V20,undefined);assert.match(ui.$("transition-status").textContent,/quota exceeded/);
+ faults.failProgress=false;await finishAction(ui).click();assert.equal(ui.saved().notes.V20,"Recoverable note draft");assert.equal(ui.$("transition-step-picker").value,"T02");
 });

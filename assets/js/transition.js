@@ -1,8 +1,8 @@
-import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015k";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015k";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015k";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015o";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015o";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015o";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015k";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015o";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -46,6 +46,8 @@ if (section) {
   const checkLabels = { not_checked: "Not yet", checking: "Checking now", passed: "Yes — checked", failed: "Needs fixing", unable: "Need help", needs_recheck: "Check again", skipped: "Does not apply — add a reason" };
   const roleLabels = { president: "President", vice_president: "Vice President", treasurer: "Treasurer", secretary: "Secretary / points", social_chair: "Social Chair", webmaster: "Webmaster", ecouncil: "E-Council Representative", advisor: "Advisor" };
   let pendingSkipId = null;
+  const evidenceDrafts = new Map();
+  const evidenceKey = id => JSON.stringify([selectedYear, selectedRunId, id]);
   let previousGuideRaw = null;
   let unreadableProgress = false;
   let observedProgressRaw = null;
@@ -477,14 +479,25 @@ if (section) {
     readAnnualLinks();
     render();
   }
-  function save(next, focusControl) {
+  function includeEvidenceDrafts(next) {
+    const candidate = { ...next, notes: { ...next.notes }, reasons: { ...next.reasons } };
+    for (const draft of evidenceDrafts.values()) {
+      if (draft.year !== selectedYear || draft.runId !== selectedRunId) continue;
+      if ((progress.notes[draft.id] || "") !== draft.baseNote || (progress.reasons[draft.id] || "") !== draft.baseReason) throw new Error("A saved note changed while you were editing. Copy your draft, then Discard draft to load the saved note.");
+      candidate.notes[draft.id] = draft.note.trim();
+      if (draft.reason !== draft.baseReason) candidate.reasons[draft.id] = draft.reason.trim();
+    }
+    if (next.run.mode === "rehearsal" && next.steps.T05 === "skipped" && next.reasons.T05?.includes("Practice only — no launch.") && !candidate.reasons.T05?.includes("Practice only — no launch.")) candidate.reasons.T05 = [candidate.reasons.T05, "Practice only — no launch."].filter(Boolean).join("\n");
+    return candidate;
+  }
+  function save(next, focusControl, saveDrafts = false) {
     if (unreadableProgress) {
       say("Saved progress could not be read and will not be overwritten. Import a valid progress file or choose another year.", true);
       render();
       return false;
     }
     try {
-      const candidate = parseProgress({ ...next, savedAt: new Date().toISOString() }, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
+      const candidate = parseProgress({ ...(saveDrafts ? includeEvidenceDrafts(next) : next), savedAt: new Date().toISOString() }, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
       const key = storageKey(candidate.year, candidate.run.id);
       if (localStorage.getItem(key) !== observedProgressRaw || (observedLegacyRaw !== null && localStorage.getItem(`${TRANSITION_LEGACY_STORAGE_PREFIX}${candidate.year}`) !== observedLegacyRaw)) {
         say("This saved run changed in another browser tab. Your newer saved evidence was preserved. Choose Reload saved run before recording more results.", true);
@@ -499,6 +512,7 @@ if (section) {
       try { localStorage.setItem(runSelectionKey(candidate.year), candidate.run.id); } catch { /* Saved run remains discoverable. */ }
       previousGuideRaw = null;
       progress = candidate;
+      for (const [key, draft] of evidenceDrafts) if (draft.year === selectedYear && draft.runId === selectedRunId && (saveDrafts || (draft.note.trim() === (candidate.notes[draft.id] || "") && draft.reason.trim() === (candidate.reasons[draft.id] || "")))) evidenceDrafts.delete(key);
       say("Saved on this device. Officers perform the checks in the real systems; the Hub records their reported results.");
       render();
       list.querySelector(`[data-transition-control="${focusControl}"]`)?.focus();
@@ -511,24 +525,40 @@ if (section) {
     }
   }
   function appendEvidence(parent, id, explanation = "") {
+    const key = evidenceKey(id);
+    let draft = evidenceDrafts.get(key);
+    if (draft && draft.note.trim() === (progress.notes[id] || "") && draft.reason.trim() === (progress.reasons[id] || "")) { evidenceDrafts.delete(key); draft = null; }
     const skipped = pendingSkipId === id || progress.steps[id] === "skipped" || progress.checks[id] === "skipped";
     const details = node("details", "transition-evidence-details");
-    details.open = skipped;
+    details.open = skipped || Boolean(draft);
     details.append(node("summary", "", skipped ? "Explain why this is skipped" : explanation ? "Details or add a note" : "Add a note or evidence"));
     if (explanation) details.append(node("p", "", explanation));
     const form = node("form", "transition-evidence");
     form.dataset.evidenceId = id;
     const reasonLabel = node("label", "transition-check-control", "Why are you skipping this?");
-    reasonLabel.hidden = !skipped && !progress.reasons[id];
-    const reason = node("textarea"); reason.maxLength = 2000; reason.value = progress.reasons[id] || "";
+    reasonLabel.hidden = !skipped && !progress.reasons[id] && !draft?.reason;
+    const reason = node("textarea"); reason.maxLength = 2000; reason.value = draft?.reason ?? progress.reasons[id] ?? "";
     reasonLabel.append(reason);
     const noteLabel = node("label", "transition-check-control", "What did you check? (optional)");
-    const note = node("textarea"); note.maxLength = 2000; note.value = progress.notes[id] || "";
+    const note = node("textarea"); note.maxLength = 2000; note.value = draft?.note ?? progress.notes[id] ?? "";
     noteLabel.append(note);
     const button = node("button", "secondary-button", skipped ? "Save skip reason" : "Save note"); button.type = "submit";
-    form.append(reasonLabel, noteLabel, node("small", "", "A sentence is enough for a simple check: “I opened the folder but could not edit Points Master. The President will arrange access.” Add a screenshot or private checklist link for totals, errors or an approval. Exports and printing include notes; keep passwords and member or transaction details out."), button);
+    const hint = node("small", "transition-draft-hint", draft ? "Unsaved draft. Save note or finish this step to keep it." : ""); hint.setAttribute("role", "status");
+    const discard = node("button", "text-button", "Discard draft"); discard.type = "button"; discard.hidden = !draft;
+    const remember = () => {
+      const previous = evidenceDrafts.get(key);
+      if (note.value === (progress.notes[id] || "") && reason.value === (progress.reasons[id] || "")) evidenceDrafts.delete(key);
+      else evidenceDrafts.set(key, { year: selectedYear, runId: selectedRunId, id, note: note.value, reason: reason.value, baseNote: previous?.baseNote ?? progress.notes[id] ?? "", baseReason: previous?.baseReason ?? progress.reasons[id] ?? "" });
+      hint.textContent = evidenceDrafts.has(key) ? "Unsaved draft. Save note or finish this step to keep it." : ""; discard.hidden = !evidenceDrafts.has(key);
+    };
+    note.addEventListener("input", remember); reason.addEventListener("input", remember);
+    discard.addEventListener("click", () => { evidenceDrafts.delete(key); render(); });
+    form.append(reasonLabel, noteLabel, hint, discard, node("small", "", "A sentence is enough for a simple check: “I opened the folder but could not edit Points Master. The President will arrange access.” Add a screenshot or private checklist link for totals, errors or an approval. Exports and printing include notes; keep passwords and member or transaction details out."), button);
     form.addEventListener("submit", event => {
       event.preventDefault();
+      remember();
+      const editing = evidenceDrafts.get(key);
+      if (editing && ((progress.notes[id] || "") !== editing.baseNote || (progress.reasons[id] || "") !== editing.baseReason)) { say("A saved note changed while you were editing. Copy your draft, then Discard draft to load the saved note.", true); return; }
       const reasons = { ...progress.reasons, [id]: reason.value.trim() };
       const notes = { ...progress.notes, [id]: note.value.trim() };
       if (skipped && !reasons[id]) { say("Add a short reason for skipping this item.", true); return; }
@@ -1097,7 +1127,7 @@ if (section) {
       if (value === "skipped" && !progress.reasons[step.id]) { pendingSkipId = step.id; render(); say("Add a short reason to save this skip."); return; }
       const steps = { ...progress.steps };
       if (value === "not_started") delete steps[step.id]; else steps[step.id] = value;
-      return save(reconcileProgress({ ...progress, steps }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), step.id);
+      return save(reconcileProgress({ ...progress, steps }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), step.id, value === "complete");
     };
     select.addEventListener("change", recordStepResult);
     const practiceEnd = step.launch && progress.run.mode === "rehearsal";
@@ -1109,7 +1139,7 @@ if (section) {
         const current = progressSummary(progress, TRANSITION_STEPS, TRANSITION_CHECKS).rehearsal;
         if (current.missing.length || current.unchecked.length) { say("Finish the practice steps and checks before finishing.", true); return; }
         const next = reconcileProgress({ ...progress, steps: { ...progress.steps, T05: "skipped" }, reasons: { ...progress.reasons, T05: progress.reasons.T05?.includes("Practice only — no launch.") ? progress.reasons.T05 : [progress.reasons.T05, "Practice only — no launch."].filter(Boolean).join("\n") } }, TRANSITION_STEPS, TRANSITION_CHECKS, progress);
-        if (save(next, "T05")) say("Practice finished. No real year was started.");
+        if (save(next, "T05", true)) say("Practice finished. No real year was started.");
       } else if (statusOf(step.id) === "complete" && !step.launch) go(currentIndex + 1);
       else {
         select.value = "complete";
@@ -1345,6 +1375,10 @@ if (section) {
     document.body.classList.add("transition-print");
     $("transition-print-sheet").hidden = false;
     window.print();
+  });
+  window.addEventListener("beforeunload", event => {
+    if (!evidenceDrafts.size) return;
+    event.preventDefault(); event.returnValue = "";
   });
   window.addEventListener("afterprint", () => {
     document.body.classList.remove("transition-print");
