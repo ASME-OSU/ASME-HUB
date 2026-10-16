@@ -4092,6 +4092,159 @@ body[data-theme="dark"] .hub-search-result-copy strong {
 
 /* Responsive */
 
+/* Desktop navigation keeps secondary tools compact and scrolls at short heights. */
+@media (min-width: 1081px) {
+  :root {
+    --sidebar-width: 216px;
+    --sidebar-collapsed-width: 68px;
+  }
+
+  .sidebar {
+    padding: 22px 12px 14px;
+  }
+
+  .sidebar-brand {
+    margin: 0 8px 26px;
+    gap: 10px;
+  }
+
+  .sidebar-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sidebar-stack {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #46556a transparent;
+  }
+
+  .sidebar-nav {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .nav-section-label {
+    margin-left: 10px;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-link {
+    min-height: 42px;
+    padding: 0 10px;
+    gap: 9px;
+    font-size: 0.82rem;
+  }
+
+  .nav-icon {
+    width: 26px;
+    height: 28px;
+  }
+
+  .nav-label {
+    min-width: 0;
+  }
+
+  .sidebar-year {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: auto;
+    padding: 24px 10px 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .sidebar-year span {
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+  }
+
+  .sidebar-year strong {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-year small {
+    display: none;
+  }
+
+  .sidebar-footer {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sidebar-footer a,
+  .sidebar-footer button {
+    min-height: 38px;
+    border-radius: var(--radius-sm);
+  }
+
+  .sidebar-footer a {
+    width: 100%;
+    padding: 0 10px;
+  }
+
+  .sidebar-footer button {
+    flex: 1 0 36px;
+    justify-content: center;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .sidebar-footer button .sidebar-footer-label {
+    display: none;
+  }
+
+  .sidebar-footer :is(a, button):hover {
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .sidebar :is(a, button):focus-visible {
+    outline: 2px solid #a9c8ee;
+    outline-offset: -2px;
+  }
+
+  body.sidebar-collapsed .sidebar {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  body.sidebar-collapsed .sidebar-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  body.sidebar-collapsed .sidebar-stack {
+    position: static;
+    justify-content: flex-start;
+    gap: 0;
+  }
+
+  body.sidebar-collapsed .sidebar-footer {
+    margin-top: auto;
+    padding-top: 12px;
+  }
+
+  body.sidebar-collapsed .sidebar-footer :is(a, button) {
+    width: 100%;
+    flex-basis: 100%;
+  }
+}
+
 @media (max-width: 1240px) {
   .topbar-title,
   .year-select-label {
