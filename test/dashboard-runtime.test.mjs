@@ -74,7 +74,7 @@ function runtime(feeds = {}) {
   sandbox.globalThis = sandbox;
   vm.runInNewContext(sharedSource, sandbox);
   window.ASME_SHARED_RESOURCES = sandbox.ASME_SHARED_RESOURCES;
-  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
+  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
   vm.runInNewContext(source, sandbox, { filename: 'app.js' });
   return { api: sandbox.testApi, node, nodes, requests, feeds, failures, config, listeners, window, dispatched };
 }
@@ -382,4 +382,13 @@ test('resource refresh publishes full snapshot for independent-year guide resolu
   const target = run.window.ASME_SHARED_RESOURCES.resolve(snapshot.defaults, snapshot.records, '2027-2028', sourceFor('2027-2028'));
   assert.equal(target[0].title, 'Target Treasurer ledger');
   assert.equal(target[0].url, sourceFor('2027-2028').budgetTrackerUrl);
+});
+
+
+test('Hub search includes the transition guide by its title and common handoff terms',()=>{
+ const run=runtime();run.api.configureHubSearch([]);
+ for(const query of ['Transition','handoff','annual setup','practice','new year','transition guide']) {
+  run.api.renderHubSearchResults(query);const results=run.node('hub-search-results').children;
+  assert.equal(results.length,1,query);assert.equal(results[0].children[1].children[0].textContent,'Transition to New Year',query);assert.equal(typeof results[0].events.click,'function');
+ }
 });

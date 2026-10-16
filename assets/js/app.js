@@ -2827,6 +2827,14 @@
         icon: "link",
         keywords: "tools links sharepoint sheets forms",
       },
+      {
+        type: "section",
+        sectionId: "transition",
+        title: "Transition to New Year",
+        description: "Annual setup, officer handoff and practice guide",
+        icon: "check-square",
+        keywords: "transition handoff annual setup practice checklist new year guide",
+      },
     ];
     const resourceItems = resources.map((resource) => ({
       type: "resource",
@@ -4933,8 +4941,8 @@
 
   document.addEventListener("transition:annual-settings-draft", async (event) => {
     try {
-      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261015k");
-      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261015k");
+      const { annualSettingsDraft } = await import("./annual-link-draft.js?v=20261015o");
+      const { annualSettingsInput, annualSettingsTransferUrl } = await import("./annual-settings-input.js?v=20261015o");
       buildAnnualSettingsInput = annualSettingsInput;
       buildAnnualTransferUrl = annualSettingsTransferUrl;
       const draft = annualSettingsDraft(event.detail?.draft, config);

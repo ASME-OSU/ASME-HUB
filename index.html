@@ -14,8 +14,8 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261003d">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261015k">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261015o">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261015o">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -62,8 +62,7 @@
       </div>
       <p class="eyebrow">ASME at Ohio State</p>
       <h1 id="access-title">Officer Hub</h1>
-      <p class="gate-intro">One place to understand chapter activity and open the tools that keep ASME moving.</p>
-      <p class="access-help">Need access? Contact the outgoing President or transition coordinator through <a href="mailto:asme@osu.edu">asme@osu.edu</a>. Include your name, incoming role and target year. If you receive no reply, use your existing chapter channel to reach the outgoing President or advisor. Ask the coordinator to confirm the current inbox owner and role-appropriate tool access.</p>
+      <p class="gate-intro">Your chapter tools, in one place.</p>
       <form id="access-form" class="access-form" novalidate>
         <label for="hub-password">Dashboard password</label>
         <div class="password-field">
@@ -76,6 +75,8 @@
           <svg class="ui-icon" aria-hidden="true"><use href="#icon-arrow-right"></use></svg>
         </button>
       </form>
+      <p class="gate-access-help">Need access? Ask the President or <a href="mailto:asme@osu.edu">asme@osu.edu</a>.</p>
+      <details class="gate-access-details"><summary>More access help</summary><p>Include your name, officer role and year. If you don’t hear back, contact the transition coordinator or advisor through your chapter channel.</p></details>
       <div class="gate-install">
         <button class="install-app-button" type="button" data-install-app hidden>
           Install officer app
@@ -773,7 +774,7 @@
             <section class="transition-progress-panel" aria-label="Saved checklist progress">
               <div class="transition-progress-head"><strong id="transition-position"></strong><span id="transition-completion"></span></div>
               <progress id="transition-progress" value="0" max="5" aria-label="Checklist progress" aria-describedby="transition-progress-help"></progress>
-              <p id="transition-progress-help" class="transition-control-help"></p>
+              <p id="transition-progress-help" class="transition-control-help sr-only"></p>
               <p id="transition-status" class="transition-status" role="status" aria-live="polite"></p>
             </section>
             <div class="transition-dialog-body">
@@ -1108,11 +1109,11 @@
     </div>
   </dialog>
 
-  <script src="assets/js/config.js?v=20261015k"></script>
+  <script src="assets/js/config.js?v=20261015o"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261015k"></script>
-  <script type="module" src="assets/js/transition.js?v=20261015k"></script>
+  <script src="assets/js/app.js?v=20261015o"></script>
+  <script type="module" src="assets/js/transition.js?v=20261015o"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>
