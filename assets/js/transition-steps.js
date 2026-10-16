@@ -13,13 +13,13 @@ export const TRANSITION_STEPS = [
     "quickStart": "Start this Practice checklist, then confirm the approved workspace, test account and access/recovery contact.",
     "productionQuickStart": "Start this Real handoff checklist, then confirm the approved workspace, chapter account and access/recovery contact.",
     "instructions": [
-      "Choose Practice in the questions above, then Start checklist. To resume, choose your saved checklist and Continue checklist. Practice keeps your results separate from the real handoff.",
+      "Choose your year and Practice, then Start or Continue. Other saved attempts are under More options. Practice keeps your results separate from the real handoff.",
       "Ask the President which approved test account, private folder and copied Control Center to use. Record the practice lead and access/recovery contact in the private checklist.",
       "Open the approved private workspace with that account. Missing workspace approval or permission stays Blocked; give the President the URL and access problem.",
       "Annual Setup access is checked in Step 2, where its link and account warning appear. Step 2 creates or reopens the practice files; Step 3 checks the reviewer’s access to them."
     ],
     "productionInstructions": [
-      "Answer the two questions above, then choose Start checklist. To resume, choose your saved checklist and Continue checklist.",
+      "Choose your year and Real handoff, then Start or Continue. Other saved attempts are under More options.",
       "Ask the President who leads the handoff, which chapter account to use, and who helps with access and recovery. Keep the approved instructions and role/access table in the current private checklist.",
       "Open the shared officer workspace using the approved account. Missing workspace approval or permission stays Blocked; give the President the URL and access problem. Annual Setup access is checked in Step 2, where its link and account warning appear.",
       "Step 2 creates or reopens the annual files; Step 3 checks access to them. Keep outgoing officers’ access until the incoming team accepts the handoff."
@@ -52,7 +52,7 @@ export const TRANSITION_STEPS = [
     "instructions": [
       "Choose Sign in with chapter Google account below and select the approved chapter account in Google’s sign-in window. Confirm the selected year from Step 1. If sign-in is unavailable, follow the manual fallback instructions below.",
       "Check that Workspace says Practice. Open the approved annual workspace folder and Control Center links; they must be the separate private practice folder and copied settings spreadsheet. Missing approval, permission or a matching workspace stays Blocked for the President or maintainer.",
-      "For a new Practice year, answer How many different members should attend this year? with the agreed fictional goal. For an existing year, the original saved goal is preserved; ask the President to review any change.",
+      "For a new Practice year, set Member goal for this year with the agreed fictional goal. For an existing year, the original saved goal is preserved; ask the President to review any change.",
       "Choose Create or reopen this year’s files and keep the Hub open. One designated operator handles setup; everyone else reuses the same files. If setup stops or authorization expires, sign in again and reopen the same year and workspace to resume. Preserve existing records.",
       "After a successful connected setup, confirm the Hub reports all seven links saved in this checklist. Open Optional backup and detailed settings for the setup summary. Saving links does not pass any review or verify access, clean sources or readiness.",
       "If connected setup is unavailable or not configured, use the external manual fallback. First choose Chrome’s ASME profile; asmeohiostate@gmail.com must be the only Google account signed in to that profile. Ask the President for help if another account is listed. This profile requirement applies to the external setup page.",
@@ -63,7 +63,7 @@ export const TRANSITION_STEPS = [
     "productionInstructions": [
       "Choose Sign in with chapter Google account below and select the approved chapter account in Google’s sign-in window. Confirm the selected year from Step 1. If sign-in is unavailable, follow the manual fallback instructions below.",
       "Check that Workspace says Real handoff. Open the approved annual workspace folder and Control Center links. If the workspace says Practice, lacks confirmation or lacks permission, record Blocked and ask the President or maintainer.",
-      "For a new year, answer How many different members should attend this year? using the President’s approved goal. The suggested goal needs approval. For an existing year, the original saved goal is preserved; ask the President to review any change.",
+      "For a new year, set Member goal for this year using the President’s approved goal. The suggested goal needs approval. For an existing year, the original saved goal is preserved; ask the President to review any change.",
       "Choose Create or reopen this year’s files and keep the Hub open. One designated operator handles setup; everyone else reuses the same files. If setup stops or authorization expires, sign in again and reopen the same year and workspace to resume. Preserve existing records.",
       "After a successful connected setup, confirm the Hub reports all seven links saved in this checklist. Open Optional backup and detailed settings for the setup summary. Saving links does not pass any review or verify access, clean sources or readiness.",
       "If connected setup is unavailable or not configured, use the external manual fallback. First choose Chrome’s ASME profile; asmeohiostate@gmail.com must be the only Google account signed in to that profile. Ask the President for help if another account is listed. This profile requirement applies to the external setup page.",
@@ -166,14 +166,14 @@ export const TRANSITION_STEPS = [
     "launch": true,
     "title": "Close and review your practice run",
     "productionTitle": "Approve and start the year",
-    "quickStart": "Close intake and events, keep Points TESTING and settings inactive/noncurrent, record cleanup or private retention and reviewer sign-off, then skip activation with Rehearsal only.",
+    "quickStart": "Close intake and events, keep Points TESTING and settings inactive/noncurrent, record cleanup or private retention and reviewer sign-off, then choose Finish practice.",
     "productionQuickStart": "After required reviews, incoming acceptance and recorded launch approval, the authorized settings owner sets Points LIVE, activates the verified new year, sets the previous year’s is_current to FALSE, and rechecks the Hub, website, Form and newsletter.",
     "instructions": [
       "Before cleanup, close Form intake and set every Events form_open checkbox FALSE. In a fresh annual copy, ASME Tools → Clear Test Data previews and backs up MOCK attendance before removal; it does not remove event definitions, adjustments or budget entries. Review those separately. If the menu is absent, reload once; older copies need the maintainer’s cleanup/menu update. Never clear formula tabs.",
       "Keep copied Points Master Config!B5 TESTING and the copied year is_active=FALSE and is_current=FALSE. Open the private cleanup checklist. Its owner inventories submissions, events, adjustments and budget inputs, records approved retain/remove decisions, and lists checks to repeat. Missing owner or approval stays Blocked; retain isolated evidence.",
       "Account separately for Form responses and raw sheet entries. Match originals by timestamp, fictional identity and event, never proxy source_row alone. Preserve OPEN exception evidence before approved cleanup, then recheck the derived queue and safe settings. Retained test evidence stays private and separate from production.",
       "Export and compare the progress record, separate private-links backup and newsletter draft. Record the practice reviewer’s acceptance, date and limits in the private checklist, including cleanup/retention and recovery results.",
-      "Skip activation with the reason Rehearsal only. This records the activation skip; cleanup and reviewer acceptance still require their own evidence. Practice acceptance does not authorize a real launch."
+      "Choose Finish practice after all practice steps and checks pass. This records the activation skip with the reason Practice only — no launch; cleanup and reviewer acceptance still require their own evidence. Practice (rehearsal) acceptance does not authorize a real launch."
     ],
     "productionInstructions": [
       "Ask the President to review access, annual settings, attendance, finances and communications. Record unresolved items as Blocked. Preserve prior-year records and approved access; account for any inherited test data with the maintainer before launch. If any item is missing, assign its owner and deadline in the shared checklist.",
@@ -496,15 +496,9 @@ export const TRANSITION_OFFICER_COPY = {
   },
   "T05": {
     "intro": "Review the handoff with the President before starting the year.",
-    "actions": [
-      "Confirm the incoming officers can use their tools.",
-      "Ask the President to review the remaining items and approve the launch.",
-      "Follow the approved launch plan. Keep last year\u2019s files."
-    ],
-    "practice": [
-      "Ask your reviewer to confirm cleanup and sign off on the practice.",
-      "Skip starting the real year. Record \u201cPractice only \u2014 no launch\u201d as the reason."
-    ]
+    "practiceIntro": "Confirm cleanup and reviewer sign-off, then finish your practice.",
+    "actions": [],
+    "practice": []
   }
 };
 export const TRANSITION_OFFICER_QUESTIONS = {
