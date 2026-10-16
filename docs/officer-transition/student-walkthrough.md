@@ -4,7 +4,7 @@ Open the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to
 
 ## 1. Choose your year
 
-The questions are inside Step 1 → **Start here**. Enter the first year, such as **2027** for 2027–2028, choose **Real handoff** or **Practice**, then **Start checklist**. To return to existing work, choose its entry under **Saved checklist for this year** and **Continue checklist**. Changing the year loads that year’s saved checklists.
+Enter the first year, such as **2027** for 2027–2028, choose **Real handoff** or **Practice**, then **Start** or **Continue**. Continue reopens matching progress on this device. Other saved attempts and the explicit separate-attempt action are under **More options**. Your progress and the private **Officer checklist document** are separate records.
 
 Ask the President which chapter account to use and who can help with access. Confirm the shared officer workspace and filled private checklist open with your approved role access. Record missing permissions with the owner and next action. The **Annual Setup access check is in Step 2**, where its link and profile instructions are available. Annual files are created or reopened there.
 
@@ -25,15 +25,13 @@ Ask the President which chapter account to use and who can help with access. Con
 
 ## 2. Prepare this year’s files
 
-Before opening Annual Setup, use **Chrome’s ASME profile** with **asmeohiostate@gmail.com as its only signed-in Google account**. Ask the President for help if another account appears in the Google account menu. Missing workspace approval or permission stays **Blocked**; do not create files in another account to bypass it.
+Choose **Sign in with chapter Google account** in Step 2. Confirm the approved chapter account in Google’s sign-in window, check **Member goal for this year**, then choose **Create or reopen this year’s files**. Each member counts once; use the President’s approved goal. An existing year keeps its original goal.
 
-Choose **Open Annual Setup**. The year and purpose come from Step 1. Check the saved workspace purpose: **Real handoff** and **Practice only** must use separate folders and settings sheets. Old unconfirmed settings require the President’s review; do not relabel practice files as real. **One designated operator** creates or reopens the year’s files; everyone else reuses those same files.
+One designated operator creates or reopens files for the selected year and purpose. Real handoff and Practice must use separate approved workspaces. If the workspace purpose differs or access is missing, ask the President or maintainer before continuing. Keep the Hub open; retry the same year and workspace after an interruption. The Hub saves all seven links under **Your files**. Existing files can be reopened with **Reopen setup**.
 
-Answer **How many different members do you want to attend this year?** Each person counts once. Last year’s goal is an editable suggestion for a new year, subject to the President’s approval. For a year that already has files, the saved goal is shown and kept.
+Setup fills dates, connects attendance and budget files and leaves the year inactive. Last year’s records are preserved. Officers and the maintainer still confirm the actual files and required reviews below.
 
-Choose **Create or reopen this year’s files**. Keep the page open. If setup stops, return to the same year and workspace to resume. Setup creates attendance and budget files, fills dates, connects exports and saves an inactive/noncurrent year. Last year’s files remain records. The maintainer handles clean sources, configuration, script installation and mismatches; repository source does not prove native installation.
-
-Choose **Copy setup results**, return to Step 2 in the Hub, paste into **Paste setup results**, then choose **Save setup results**. No handoff-file download or seven separate pastes are needed. If automatic copying fails, select the displayed result and press Command+C on Mac or Ctrl+C on Windows. Downloads remain optional backups.
+**If connected setup is unavailable:** open **Detailed instructions & troubleshooting → Manual fallback** and **More help for this step → Open Annual Setup — manual fallback**. For this external page, use Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**. Confirm the year, purpose and goal. Choose **Copy setup results**, return to the Hub, paste into **Paste setup results**, then **Save setup results**. Downloads are optional backups.
 
 ### Compare the four Step 2 reviews
 
@@ -57,6 +55,8 @@ Review actual event settings, approved finances, bank reconciliation, both expor
 ### Practice only
 
 All mock events, five submissions, budget arithmetic and status changes below belong exclusively in isolated practice copies. Inventory any retained entries before adding more.
+
+Use the **Attendance** and **Budget** groups to open your saved files and record their checks. Technical team checks expand inside each group.
 
 Open the copied Points Master README. Enter only yellow input cells. In **Events**, enter **B event_name**, **C event_date**, **F event_type**, **H scoring_active** and **I form_open**:
 
@@ -125,12 +125,16 @@ At the approved time, only the authorized settings owner sets the verified new r
 
 ### Practice only — Close and review your practice run
 
-End with Points **TESTING**, Form intake closed, all event `form_open` FALSE and settings inactive/noncurrent. Record activation **Skipped — Rehearsal only**. Preserve evidence or perform reviewed cleanup and obtain reviewer acceptance; never activate Practice files.
+End with Points **TESTING**, Form intake closed, all event `form_open` FALSE and settings inactive/noncurrent. Preserve evidence or perform reviewed cleanup and obtain reviewer acceptance; never activate Practice files. After all required Practice steps and checks pass, choose **Finish practice**. This records the no-launch reason automatically and preserves your notes.
 
 For MOCK attendance cleanup, use **ASME Tools → Clear Test Data** only after the owner approves the reviewed disposition. It requires the exact annual Form/tab and closed TESTING state, verifies a private archive, then removes reviewed response IDs/raw rows. Original Google Form response IDs cannot be restored. Cancel to retain evidence. Event definitions, adjustments and budget inputs need separate input-cell review; preserve formulas. Mixed real/unmarked attendance stops cleanup. If the menu is missing, reload once; older copies require maintainer updates because template code does not propagate to existing copies.
 
 ## Progress and starting again
 
-The progress bar counts passed reviews and completed steps. Select **Yes — I checked** only for actual observations. When tasks and applicable reviews are done, choose **Mark step complete**. **Read next step** only moves between instructions; Blocked or Failed does not advance progress. Practice’s final activation skip counts only after required Practice reviews and reviewer acceptance. A NO-GO message summarizes remaining prerequisites; **Reviews still needed** lists the actual work and step links.
+The progress bar counts passed reviews and completed steps. Select **Yes — checked** only for actual observations. When tasks and applicable reviews are done, **Save and continue** saves the step and opens the next one. **Preview next step** only reads ahead; it does not complete work. Failed saves stay on the current step.
 
-To start again, choose **Reset checklist progress**, read the named checklist/year, then **Start fresh checklist**. It starts without results/notes and carries only saved links. The prior checklist remains under **Step 1 → Start here → Saved checklist for this year → Continue checklist**. Unsaved edits do not carry over. This does not create Google files or grant launch approval.
+Step 4 groups **Check events**, **Preview newsletter** and **Save backups**. **Open backup tools** expands progress and private-link backups; the editable newsletter draft is backed up separately in Newsletter Builder.
+
+Step 5 starts with a readiness summary. **See remaining items** expands the applicable reviews; **Go to next unfinished step** returns to earlier work. **Finish handoff** requires production approvals and records the handoff; the authorized owner follows the approved launch plan. **Finish practice** requires all Practice steps, cleanup and reviewer checks, and never launches a real year.
+
+To start again, open **Step 1 → More options → Checklist options → Reset checklist progress**, review the year and attempt, then **Start fresh checklist**. This carries saved links but starts without results or notes. Previous progress remains under **More options → Other saved progress**. Unsaved edits do not carry over. No Google files are created by resetting progress.

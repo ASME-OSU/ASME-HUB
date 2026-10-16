@@ -48,7 +48,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const documentListeners = new Map();
   const dispatched = [];
   const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
-  const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener() {}, print() {} };
+  const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, location: {hash:""}, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener() {}, print() {} };
   if (setupClient) window.ASME_HUB_CONFIG.annualProvisioner = { api: { clientId: "fixture", deploymentId: "fixture", scopes: [] } };
   const context = { ...state, ...definitions, ...links, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
@@ -455,7 +455,7 @@ test("officer action links stay direct while technical help collapses and missin
 
 test("final review names pending reviews by step and jumps to the selected work",async()=>{
  const ui=browser();await ui.go("T05");
- const section=ui.$("transition-steps").find(n=>n.className==="transition-pending-reviews");
+ const section=ui.$("transition-steps").find(n=>n.className.includes("transition-pending-reviews"));
  assert.ok(section);assert.match(section.textContent,/Reviews still needed/);
  const first=definitions.TRANSITION_STEPS[0];
  const jump=section.find(n=>n.tagName==="button"&&n.textContent.includes(first.productionTitle||first.title));
@@ -570,11 +570,11 @@ test('choose Practice before changing the year preserves the intended new-checkl
 
  test('completion button records the step only after its reviews and navigation does not advance progress',async()=>{
  const ui=browser();await startRun(ui);
- const finish=()=>ui.$('transition-steps').find(n=>n.tagName==='button'&&n.textContent==='Mark step complete');
+ const finish=()=>ui.$('transition-steps').find(n=>n.tagName==='button'&&n.textContent==='Save and continue');
  assert.equal(finish().disabled,true);const before=ui.$('transition-progress').value;
  await ui.$('transition-next').emit('click');assert.equal(ui.$('transition-progress').value,before);await ui.go('T01');
  await ui.choose('V20','passed');assert.equal(finish().disabled,false);const reviews=ui.$('transition-progress').value;
- await finish().click();assert.equal(ui.saved().steps.T01,'complete');assert.equal(ui.$('transition-progress').value,reviews+1);
+ await finish().click();assert.equal(ui.saved().steps.T01,'complete');assert.equal(ui.$('transition-progress').value,reviews+1);assert.equal(ui.$('transition-step-picker').value,'T02');
  });
 
 test('reload keeps the selected non-default year and its saved progress',async()=>{
@@ -646,7 +646,7 @@ test("recovery aid uses current import control and parseable schema excerpts in 
 test("remaining-work action announces counts repeatedly and groups only applicable reviews", async () => {
  for (const [mode,count] of [["production",20],["rehearsal",16]]) {
   const ui=browser();ui.$("transition-run-mode").value=mode;await startRun(ui);await ui.go("T05");
-  const groups=ui.$("transition-steps").find(n=>n.className==="transition-pending-reviews");
+  const groups=ui.$("transition-steps").find(n=>n.className.includes("transition-pending-reviews"));
   assert.equal(groups.children.filter(n=>n.className==="transition-pending-group").flatMap(n=>n.find(c=>c.tagName==="ul")?.children||[]).length,count);
   for(let repeat=0;repeat<2;repeat++) {await ui.$("transition-next").click();assert.ok(ui.$("transition-status").textContent.includes(`${count} reviews remain`));assert.ok(ui.$("transition-status").textContent.length<320);}
   const group=groups.children.find(n=>n.dataset.step==="T03");await group.find(n=>n.tagName==="button").click();assert.equal(ui.$("transition-step-picker").value,"T03");
@@ -859,4 +859,77 @@ test("submitting a typed year resumes legacy progress even before its change eve
  await ui.$("transition-run-form").emit("submit");
  const result=JSON.parse(ui.existing.get(state.storageKey(year,ui.$("transition-run").value)));
  assert.match(result.notes.T01,/Destination evidence/);assert.equal(ui.existing.get(key),raw);
+});
+
+
+function completedReviews(mode) {
+ const value=state.emptyProgress("2027-2028",state.createTransitionRun("Ready fixture",mode,"ready-"+mode));
+ for(const step of definitions.TRANSITION_STEPS.filter(step=>!step.launch)) value.steps[step.id]="complete";
+ for(const check of definitions.TRANSITION_CHECKS.filter(check=>state.checkApplies(check,mode))) value.checks[check.id]="passed";
+ return value;
+}
+const readyBrowser=value=>browser(new Map([[state.storageKey(value.year,value.run.id),JSON.stringify(value)]]));
+const finishAction=ui=>ui.$("transition-steps").find(n=>n.className.includes("transition-finish-step"));
+
+test("task groups use the selected annual files and keep every applicable check once",async()=>{
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);await importMock(ui);await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");await ui.go("T03");
+ const attendance=ui.$("transition-steps").find(n=>n.dataset.workGroup==="attendance"),budget=ui.$("transition-steps").find(n=>n.dataset.workGroup==="budget");
+ assert.match(attendance.find(n=>n.tagName==="a"&&n.textContent==="Open Points Master").href,/annual_points/);
+ assert.match(budget.find(n=>n.tagName==="a"&&n.textContent==="Open Budget Tracker").href,/annual_budget/);
+ assert.ok(attendance.find(n=>n.dataset.transitionControl==="V26"));assert.ok(budget.find(n=>n.dataset.transitionControl==="V24"));
+ const counts=new Map();function walk(n){if(n.dataset.transitionControl)counts.set(n.dataset.transitionControl,(counts.get(n.dataset.transitionControl)||0)+1);for(const child of n.children)walk(child);}walk(ui.$("transition-steps"));
+ for(const check of definitions.TRANSITION_CHECKS.filter(check=>check.step==="T03"&&state.checkApplies(check,"rehearsal")))assert.equal(counts.get(check.id),1,check.id);
+});
+
+test("communications groups update chapter buttons without discarding entered notes",async()=>{
+ const ui=browser(new Map(),[{id:"newsletter-builder",url:"https://chapter.example/old"}]);await ui.go("T04");
+ const group=ui.$("transition-steps").find(n=>n.dataset.workGroup==="newsletter"),link=group.find(n=>n.tagName==="a"&&n.textContent==="Open Newsletter Builder");assert.equal(link.href,"https://chapter.example/old");
+ const form=ui.$("transition-steps").find(n=>n.className==="transition-evidence"&&n.dataset.evidenceId==="V09"),note=form.find(n=>n.tagName==="textarea");note.value="Unsaved observation";
+ ui.document.dispatchEvent({type:"transition:resources-updated",detail:{resources:[{id:"newsletter-builder",url:"https://chapter.example/new"}]}});
+ assert.equal(link.href,"https://chapter.example/new");assert.equal(note.value,"Unsaved observation");
+ ui.document.dispatchEvent({type:"transition:resources-updated",detail:{resources:[{id:"newsletter-builder",url:"javascript:alert(1)"}]}});assert.equal(link.hidden,true);
+});
+
+test("backup action opens both progress and private-link backup sections",async()=>{
+ const ui=browser();await ui.go("T04");await ui.$("transition-steps").find(n=>n.tagName==="button"&&n.textContent==="Open backup tools").click();
+ assert.equal(ui.$("transition-saved-tools").open,true);assert.equal(ui.$("transition-progress-tools").open,true);
+ assert.equal(ui.$("transition-dialog").find(n=>n.tagName==="details"&&n.children.some(child=>child.tagName==="summary"&&child.textContent.startsWith("Saved links"))).open,true);
+});
+
+test("final review starts compact and sends officers to the next unfinished step",async()=>{
+ const ui=browser();await ui.go("T05");const pending=ui.$("transition-steps").find(n=>n.className.includes("transition-pending-reviews"));assert.equal(pending.open,false);
+ assert.match(ui.$("transition-steps").find(n=>n.className==="transition-final-summary").textContent,/4 earlier steps and 20 checks remain/);
+ await ui.$("transition-steps").find(n=>n.tagName==="button"&&n.textContent==="Go to next unfinished step").click();assert.equal(ui.$("transition-step-picker").value,"T01");
+});
+
+test("Finish practice requires all checks, records no-launch and preserves prior evidence",async()=>{
+ const value=completedReviews("rehearsal");value.notes.T05="Reviewer evidence";value.reasons.T05="Earlier recovery note";
+ const ui=readyBrowser(value);await ui.go("T05");assert.equal(finishAction(ui).textContent,"Finish practice");assert.equal(finishAction(ui).disabled,false);assert.match(ui.$("transition-steps").find(n=>n.className==="transition-step-intro").textContent,/finish your practice/);
+ await finishAction(ui).click();const saved=ui.saved();assert.equal(saved.steps.T05,"skipped");assert.match(saved.reasons.T05,/Earlier recovery note/);assert.match(saved.reasons.T05,/Practice only — no launch/);assert.equal(saved.notes.T05,"Reviewer evidence");assert.equal(state.progressSummary(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).rehearsal.eligible,true);assert.deepEqual(saved.checks,value.checks);assert.equal(finishAction(ui).textContent,"Practice finished");
+ const blocked=completedReviews("rehearsal");blocked.checks.V17="checking";const other=readyBrowser(blocked);await other.go("T05");assert.equal(finishAction(other).disabled,true);await finishAction(other).click();assert.notEqual(other.saved().steps.T05,"skipped");
+});
+
+test("Finish handoff retains production approval gates",async()=>{
+ const value=completedReviews("production"),ui=readyBrowser(value);await ui.go("T05");assert.equal(finishAction(ui).textContent,"Finish handoff");await finishAction(ui).click();assert.equal(ui.saved().steps.T05,"complete");
+ const blocked=completedReviews("production");blocked.checks.V18="unable";const other=readyBrowser(blocked);await other.go("T05");assert.equal(finishAction(other).disabled,true);await finishAction(other).click();assert.notEqual(other.saved().steps.T05,"complete");
+});
+
+test("Save and continue stays on the step when another tab changed its saved progress",async()=>{
+ const ui=browser();await startRun(ui);await ui.choose("V20","passed");const before=ui.saved(),key=state.storageKey(before.year,before.run.id),newer=JSON.stringify({...before,notes:{V20:"Newer tab evidence"}});ui.existing.set(key,newer);
+ await finishAction(ui).click();assert.equal(ui.$("transition-step-picker").value,"T01");assert.equal(ui.existing.get(key),newer);assert.match(ui.$("transition-status").textContent,/another browser tab/);
+});
+
+
+test("Real handoff opens the Form editor so officers can inspect events while intake is closed",async()=>{
+ const ui=browser();await startRun(ui);const handoff=mockHandoff();delete handoff.mock;await importMock(ui,handoff);await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");await ui.go("T03");
+ const group=ui.$("transition-steps").find(n=>n.dataset.workGroup==="attendance");
+ const link=group.find(n=>n.tagName==="a"&&n.textContent==="Open attendance form editor");assert.match(link.href,/forms\/d\/annual_form.*\/edit/);assert.equal(link.hidden,false);assert.equal(group.find(n=>n.tagName==="a"&&n.textContent==="Open check-in form"),null);
+});
+
+
+test("event actions open the Hub preview and retain the public calendar fallback",async()=>{
+ const ui=browser();await ui.go("T04");const group=ui.$("transition-steps").find(n=>n.dataset.workGroup==="events");
+ assert.equal(group.find(n=>n.tagName==="a"&&n.textContent==="Open calendar").href,"https://org.osu.edu/asme/calendar/");
+ await group.find(n=>n.tagName==="button"&&n.textContent==="Open Hub events").click();assert.equal(ui.window.location.hash,"events");assert.equal(ui.$("transition-dialog").open,false);
+ const practice=browser();practice.$("transition-run-mode").value="rehearsal";await startRun(practice);await practice.go("T04");const news=practice.$("transition-steps").find(n=>n.dataset.workGroup==="newsletter");assert.equal(news.find(n=>n.tagName==="a"&&n.textContent==="Open website editor"),null);
 });

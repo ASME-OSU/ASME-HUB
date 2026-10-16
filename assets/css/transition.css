@@ -252,3 +252,9 @@ body[data-theme="dark"] .transition-dialog {
 .transition-detailed-help .transition-tools { margin-top: 12px; }
 .transition-saved-tools > summary { min-height: 44px; display: list-item; cursor: pointer; }
 .transition-checklist-options > summary { font-size: 12px; min-height: 32px; color: var(--flow-secondary); }
+
+.transition-work-group, .transition-final-summary { margin-top: 16px; padding: 16px; border: 1px solid var(--flow-border); border-radius: 12px; }
+.transition-work-group > h4, .transition-final-summary > h4 { margin-top: 0; }
+.transition-work-group > p { color: var(--flow-secondary); line-height: 1.5; }
+.transition-work-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.transition-work-group .transition-check-control { margin-top: 14px; }

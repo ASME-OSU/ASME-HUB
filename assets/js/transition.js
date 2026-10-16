@@ -1,8 +1,8 @@
-import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015h";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015h";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015h";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015k";
+import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015k";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015k";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015h";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015k";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -84,6 +84,7 @@ if (section) {
   let currentIndex = 0;
   let opener = null;
   let activeSetupRunId = "";
+  const workLinkRefreshers = [];
   let guideResourceSnapshot = window.ASME_TRANSITION_RESOURCE_SNAPSHOT || null;
   let guideResources = window.ASME_TRANSITION_RESOURCES || [];
   const guideResourceIds = { T01: ["officer-handoff", "handoff-checklist"], T04: ["newsletter-builder", "events-calendar", "calendar-editor", "website-editor"] };
@@ -593,7 +594,7 @@ if (section) {
     const recovery = node(printed ? "section" : "details", "transition-tools");
     recovery.append(node(printed ? "h4" : "summary", "", "Practice restoring the three backup files"));
     const tasks = node("ol", "transition-procedure");
-    for (const text of ["At the bottom of the Hub, open Saved links and backup tools. Under Progress backup and print, choose Export progress. Under Saved links, choose Download private links backup. In Newsletter Builder, choose Templates → Export Draft .json. Keep all three downloads.", "Open each JSON text backup and compare the expected and observed values below with your working screens.", "Chrome profile menu → Add → Continue without an account → name it ASME recovery practice. Open the same Hub and builder there; use your authorized dashboard password. Keep the original profile open.", "In the new profile select the same year and import progress into a separate Practice checklist. Step 1 → Start here → Saved checklist for this year → Continue checklist opens the restored checklist. Under Saved links and backup tools → Saved links, choose Import private links backup, then Save private link list on this device. Check the returned year, notes and seven links. Changed links reopen checks; confirm only what you rechecked.", "In the new builder use Templates → Import Draft .json. Compare subject, preheader, content and Desktop/Mobile previews. Return to the original profile and confirm its checklist and issue are intact. Record what matched; do not send the practice issue."]) tasks.append(node("li", "", text));
+    for (const text of ["At the bottom of the Hub, open Saved links and backup tools. Under Progress backup and print, choose Export progress. Under Saved links, choose Download private links backup. In Newsletter Builder, choose Templates → Export Draft .json. Keep all three downloads.", "Open each JSON text backup and compare the expected and observed values below with your working screens.", "Chrome profile menu → Add → Continue without an account → name it ASME recovery practice. Open the same Hub and builder there; use your authorized dashboard password. Keep the original profile open.", "In the new profile select the same year and import progress into a separate Practice checklist. Choose the restored year and Practice, then Continue. Use More options → Other saved progress if several attempts exist. Under Saved links and backup tools → Saved links, choose Import private links backup, then Save private link list on this device. Check the returned year, notes and seven links. Changed links reopen checks; confirm only what you rechecked.", "In the new builder use Templates → Import Draft .json. Compare subject, preheader, content and Desktop/Mobile previews. Return to the original profile and confirm its checklist and issue are intact. Record what matched; do not send the practice issue."]) tasks.append(node("li", "", text));
     recovery.append(tasks); appendBackupExamples(recovery); card.append(recovery);
   }
   function saveSetupResults(text) {
@@ -712,11 +713,65 @@ if (section) {
     });
     card.append(panel);
   }
-  function appendStepResources(resources, step) {
-    resources.replaceChildren();
-    const references = guideResourceSnapshot && window.ASME_SHARED_RESOURCES?.resolve
+  function resolvedGuideResources() {
+    return guideResourceSnapshot && window.ASME_SHARED_RESOURCES?.resolve
       ? window.ASME_SHARED_RESOURCES.resolve(guideResourceSnapshot.defaults, guideResourceSnapshot.records, selectedYear, window.ASME_HUB_CONFIG?.dataSources?.[selectedYear] || {})
       : guideResources;
+  }
+  function appendWorkGroups(card, step) {
+    const practice = progress.run.mode === "rehearsal";
+    const urlFor = id => resolvedGuideResources().find(item => item.id === id)?.url;
+    const groups = step.id === "T03" ? [
+      { key: "attendance", title: "Attendance", text: practice ? "With your maintainer, try the five sample check-ins and check their points. Close the test form afterward." : "Add this year’s events, then check that the attendance form lists them.", links: [["Open Points Master", savedAnnualLinks.pointsMaster], practice ? ["Open check-in form", savedAnnualLinks.attendanceFormRespondent] : ["Open attendance form editor", savedAnnualLinks.attendanceFormEditor]], checks: ["V03", "V04", "V05", "V19", "V23", "V26"] },
+      { key: "budget", title: "Budget", text: practice ? "Try the sample budget entries in the Practice instructions, then compare the totals." : "Fill in the approved balances and spending plan with the Treasurer.", links: [["Open Budget Tracker", savedAnnualLinks.budgetTracker]], checks: ["V06", "V12", "V13", "V24"] }
+    ] : step.id === "T04" ? [
+      { key: "events", title: "Check events", text: practice ? "Try both fictional calendar previews, then return to Upcoming." : "Check the same event’s date, time and location in the Hub, website and newsletter.", links: [...(practice ? [] : [["Open calendar", () => urlFor("events-calendar") || "https://org.osu.edu/asme/calendar/"]]), ["Open Newsletter Builder", () => urlFor("newsletter-builder")]], hub: true, checks: ["V08", "V14", "V25"] },
+      { key: "newsletter", title: "Preview newsletter", text: practice ? "Preview an unsent MOCK draft on a phone and computer." : "Update the draft and approved website changes. Preview on a phone and computer; get approval before sharing.", links: [["Open Newsletter Builder", () => urlFor("newsletter-builder")], ...(practice ? [] : [["Open website editor", () => urlFor("website-editor")]])], checks: ["V09", "V11", "V15"] },
+      { key: "backups", title: "Save backups", text: practice ? "With your maintainer, restore and compare progress, private links and the newsletter draft." : "Save progress, private links and the editable newsletter draft. Ask your maintainer to check recovery.", links: [], checks: ["V22"], backup: true }
+    ] : [];
+    const targets = new Map();
+    for (const group of groups) {
+      const section = node("section", "transition-work-group"); section.dataset.workGroup = group.key;
+      section.append(node("h4", "", group.title), node("p", "", group.text));
+      const actions = node("div", "transition-work-actions");
+      const updates = [];
+      for (const [label, source] of group.links) {
+        const link = node("a", "secondary-button", label); link.target = "_blank"; link.rel = "noopener noreferrer";
+        updates.push(() => {
+          link.hidden = true;
+          try {
+            const url = new URL(typeof source === "function" ? source() : source);
+            if (url.protocol !== "https:" || url.username || url.password) return;
+            link.href = url.href; link.hidden = false;
+          } catch { /* Missing links stay unavailable until supplied. */ }
+        }); actions.append(link);
+      }
+      if (group.hub) {
+        const hub = node("button", "secondary-button", "Open Hub events"); hub.type = "button";
+        hub.addEventListener("click", () => { dialog.close(); window.location.hash = "events"; }); actions.prepend(hub);
+      }
+      if (group.backup) {
+        const tools = node("button", "secondary-button", "Open backup tools"); tools.type = "button";
+        tools.addEventListener("click", () => {
+          $("transition-saved-tools").open = true; $("transition-progress-tools").open = true; annualTools.open = true;
+          $("transition-saved-tools").scrollIntoView?.({ behavior: "smooth", block: "start" }); $("transition-export").focus();
+        }); actions.append(tools);
+      }
+      section.append(actions);
+      const missing = node("p", "transition-control-help", step.id === "T03" ? "Your links are missing. Finish setup in Step 2 or ask the President for help." : "Ask the President for the chapter’s links.");
+      section.append(missing);
+      const refresh = () => { updates.forEach(update => update()); missing.hidden = Boolean(group.backup) || [...actions.children].some(link => !link.hidden); };
+      refresh(); workLinkRefreshers.push(refresh);
+      const team = disclosure("", "transition-tools transition-team-checks", `team-${group.key}`);
+      const entry = { section, team, checks: group.checks };
+      for (const id of group.checks) targets.set(id, entry);
+      card.append(section);
+    }
+    return targets;
+  }
+  function appendStepResources(resources, step) {
+    resources.replaceChildren();
+    const references = resolvedGuideResources();
     for (const id of guideResourceIds[step.id] || []) {
       if (step.id === "T01" && savedAnnualLinks.checklistUrl && savedAnnualLinks.handoffUrl) continue;
       const reference = references.find(item => item.id === id);
@@ -776,6 +831,7 @@ if (section) {
     resources.hidden = !resources.childElementCount;
   }
   function render() {
+    workLinkRefreshers.length = 0;
     stepAnnualMessage = null;
     $("transition-export").disabled = unreadableProgress;
     $("transition-reset").disabled = unreadableProgress || unreadableAnnualLinks;
@@ -815,7 +871,7 @@ if (section) {
     meter.setAttribute("aria-valuetext", `${summary.checkCounts.passed} of ${summary.totalChecks} reviews passed; ${summary.completedSteps} of ${TRANSITION_STEPS.length} steps complete`);
     $("transition-progress-help").textContent = "Saved automatically on this device.";
     $("transition-summary").hidden = true;
-    $("transition-readiness").hidden = step.id !== "T05";
+    $("transition-readiness").hidden = true;
     $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps ${progress.run.mode === "rehearsal" ? "finished (including the activation skip when practice is complete)" : "complete"}. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Reviewer acceptance" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
     $("transition-launch-summary").textContent = `${progress.run.name} · ${selectedYear.replace("-", "–")}: ${summary.completedItems}/${summary.totalItems} tasks complete · ${progress.run.mode === "rehearsal" ? summary.rehearsal.eligible ? "GO — private rehearsal complete; production activation excluded" : "Private rehearsal not complete" : summary.launch.eligible ? "production prerequisites reported passed; coordinator approval required" : "Handoff reviews incomplete"}.`;
     // One link editor stays at the bottom for the currently selected checklist.
@@ -847,7 +903,7 @@ if (section) {
     const title = node("div", "transition-step-title");
     title.append(node("h3", "", stepTitle(step)));
     identity.append(title);
-    const pill = node("span", "transition-step-state", statusLabels[statusOf(step.id)]);
+    const pill = node("span", "transition-step-state", step.launch && progress.run.mode === "rehearsal" && summary.rehearsal.eligible ? "Practice complete" : statusLabels[statusOf(step.id)]);
     pill.dataset.state = statusOf(step.id);
     heading.append(identity, pill);
     card.append(heading);
@@ -857,9 +913,9 @@ if (section) {
     $("transition-saved-tools").hidden = preparing;
     const hasAnnualFiles = ANNUAL_LINK_FIELDS.every(([key]) => savedAnnualLinks[key]);
     const officerCopy = TRANSITION_OFFICER_COPY[step.id];
-    const intro = node("p", "transition-step-intro", step.id === "T02" && hasAnnualFiles ? "Your links are saved. Open your files, then confirm the results." : officerCopy.intro); intro.hidden = preparing; card.append(intro);
+    const intro = node("p", "transition-step-intro", step.id === "T02" && hasAnnualFiles ? "Your links are saved. Open your files, then confirm the results." : progress.run.mode === "rehearsal" ? officerCopy.practiceIntro || officerCopy.intro : officerCopy.intro); intro.hidden = preparing; card.append(intro);
     const shortActions = progress.run.mode === "rehearsal" ? officerCopy.practice || officerCopy.actions : officerCopy.actions;
-    if (shortActions.length) {
+    if (shortActions.length && !["T03", "T04"].includes(step.id)) {
       const actions = node("ol", "transition-short-actions"); actions.hidden = preparing;
       for (const action of shortActions) actions.append(node("li", "", action));
       card.append(actions);
@@ -873,7 +929,17 @@ if (section) {
     for (const action of instructionsFor(step)) procedure.append(node("li", "", action));
     detail.append(procedure);
     if (step.id === "T05") {
-      const outstanding = node("section", "transition-pending-reviews");
+      const remainingSteps = TRANSITION_STEPS.filter(entry => !entry.launch && statusOf(entry.id) !== "complete");
+      const remainingChecks = TRANSITION_CHECKS.filter(check => checkApplies(check, progress.run.mode) && checkOf(check.id) !== "passed");
+      const ready = node("section", "transition-final-summary");
+      ready.append(node("h4", "", summary.finished ? (progress.run.mode === "rehearsal" ? "Practice complete" : "Handoff recorded") : remainingSteps.length || remainingChecks.length ? "Finish remaining items" : "Ready for final confirmation"));
+      ready.append(node("p", "", summary.finished ? "Your results are saved on this device." : remainingSteps.length || remainingChecks.length ? `${remainingSteps.length} earlier steps and ${remainingChecks.length} checks remain.` : progress.run.mode === "rehearsal" ? "Finish practice below. No real year will be started." : "Record the approved handoff below. The President follows the launch plan."));
+      if (remainingSteps.length) {
+        const next = node("button", "secondary-button", "Go to next unfinished step"); next.type = "button";
+        next.addEventListener("click", () => go(TRANSITION_STEPS.indexOf(remainingSteps[0]))); ready.append(next);
+      }
+      card.append(ready);
+      const outstanding = disclosure("See remaining items", "transition-pending-reviews transition-tools", "remaining");
       outstanding.append(node("h4", "", "Reviews still needed"));
       for (const entry of TRANSITION_STEPS) {
         const pending = TRANSITION_CHECKS.filter(check => check.step === entry.id && checkApplies(check, progress.run.mode) && checkOf(check.id) !== "passed");
@@ -891,7 +957,7 @@ if (section) {
         group.append(jump);
         outstanding.append(group);
       }
-      if (outstanding.childElementCount > 1) card.append(outstanding);
+      if (remainingSteps.length || remainingChecks.length) card.append(outstanding);
     }
     if (step.id === "T02") {
       if (hasAnnualFiles && !annualSetupPending) {
@@ -917,6 +983,7 @@ if (section) {
     appendTestCases(detail, step);
     const resources = node("section", "transition-resources");
     resources.id = "transition-step-resources";
+    const workTargets = appendWorkGroups(card, step);
     appendStepResources(resources, step);
     if (preparing) resources.hidden = true;
     if (step.id === "T02") {
@@ -924,6 +991,8 @@ if (section) {
       files.hidden = !hasAnnualFiles;
       files.append(resources);
       card.append(files);
+    } else if (["T03", "T04", "T05"].includes(step.id)) {
+      const extra = disclosure(step.id === "T05" ? "Supporting records and help" : "More links and help", "transition-tools", "extra-links"); extra.append(resources); card.append(extra);
     } else card.append(resources);
     if (stepLinks[step.id] || step.id === "T02") {
       const panel = node("details", "transition-inline-links");
@@ -955,7 +1024,7 @@ if (section) {
     const confirmation = node("section", "transition-confirmation");
     confirmation.hidden = preparing || (step.id === "T02" && !hasAnnualFiles);
     card.append(confirmation);
-    confirmation.append(node("h4", "", "Did this work?"));
+    confirmation.append(node("h4", "", checksFor(step).some(check => checkApplies(check, progress.run.mode) && !workTargets.has(check.id)) ? "Did this work?" : "Finish this step"));
     const teamChecks = disclosure("", "transition-tools transition-team-checks", "team");
     const teamIds = new Set(["V01", "V02", "V03", "V05", "V07", "V11", "V12", "V13", "V14", "V15", "V19", "V22", "V23"]);
     const applicableTeam = checksFor(step).filter(check => teamIds.has(check.id) && checkApplies(check, progress.run.mode));
@@ -965,7 +1034,7 @@ if (section) {
     const productionChecks = node("details", "transition-production-checks");
     productionChecks.append(node("summary", "", "Production checks — not part of this rehearsal"));
     let hasProductionChecks = false;
-    if (step.launch && progress.run.mode === "rehearsal") confirmation.append(node("p", "transition-control-help", "Practice does not start a real year. After these checks pass, set Step result to Skipped and save a reason such as ‘Practice only — no launch’."));
+    if (step.launch && progress.run.mode === "rehearsal") confirmation.append(node("p", "transition-control-help", "Finish practice records that no real year is launched. Complete cleanup and reviewer checks first."));
     for (const check of checksFor(step)) {
       if (!checkApplies(check, progress.run.mode)) {
         if (progress.run.mode === "production") continue;
@@ -973,7 +1042,8 @@ if (section) {
         hasProductionChecks = true;
         continue;
       }
-      const checkTarget = teamIds.has(check.id) ? teamChecks : confirmation;
+      const work = workTargets.get(check.id);
+      const checkTarget = work ? (teamIds.has(check.id) ? work.team : work.section) : teamIds.has(check.id) ? teamChecks : confirmation;
       const label = node("label", "transition-check-control", questionFor(check));
       const select = node("select");
       select.dataset.transitionControl = check.id;
@@ -996,7 +1066,15 @@ if (section) {
       checkTarget.append(label);
       appendEvidence(checkTarget, check.id, titleFor(check));
     }
-    if (applicableTeam.length) confirmation.append(teamChecks);
+    for (const work of new Set(workTargets.values())) {
+      const required = applicableTeam.filter(check => work.checks.includes(check.id));
+      work.team.children[0].textContent = `Confirm with your team (${required.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
+      if (required.some(check => pendingSkipId === check.id)) work.team.open = true;
+      if (required.length) work.section.append(work.team);
+    }
+    const otherTeam = applicableTeam.filter(check => !workTargets.has(check.id));
+    teamChecks.children[0].textContent = `Confirm with your team (${otherTeam.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
+    if (otherTeam.length) confirmation.append(teamChecks);
     if (hasProductionChecks) detail.append(productionChecks);
     detail.hidden = preparing; card.append(detail);
     const control = node("label", "transition-status-control", "Step result");
@@ -1013,38 +1091,48 @@ if (section) {
         if (pending.length || (step.launch && !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible)) {
           say(step.launch ? launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).reason : `Confirm the remaining items before finishing this step.`, true);
           select.value = statusOf(step.id);
-          return;
+          return false;
         }
       }
       if (value === "skipped" && !progress.reasons[step.id]) { pendingSkipId = step.id; render(); say("Add a short reason to save this skip."); return; }
       const steps = { ...progress.steps };
       if (value === "not_started") delete steps[step.id]; else steps[step.id] = value;
-      save(reconcileProgress({ ...progress, steps }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), step.id);
+      return save(reconcileProgress({ ...progress, steps }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), step.id);
     };
     select.addEventListener("change", recordStepResult);
-    const finish = node("button", "primary-button transition-finish-step", statusOf(step.id) === "complete" ? "Step complete" : "Mark step complete");
+    const practiceEnd = step.launch && progress.run.mode === "rehearsal";
+    const finish = node("button", "primary-button transition-finish-step", practiceEnd ? summary.rehearsal.eligible ? "Practice finished" : "Finish practice" : step.launch ? statusOf(step.id) === "complete" ? "Handoff recorded" : "Finish handoff" : statusOf(step.id) === "complete" ? "Continue" : "Save and continue");
     finish.type = "button";
-    finish.disabled = statusOf(step.id) === "complete" || unchecked(step).length > 0 || Boolean(step.launch && !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible);
-    if (!(step.launch && progress.run.mode === "rehearsal")) {
-      finish.addEventListener("click", () => { select.value = "complete"; recordStepResult(); });
-      confirmation.append(finish, node("p", "transition-control-help", statusOf(step.id) === "complete" ? "This step is complete. Its results are saved on this device." : unchecked(step).length ? `${unchecked(step).length} confirmations left, including any team checks above.` : "All checks for this step are recorded. Mark the step complete when its tasks are finished."));
-    }
+    finish.disabled = practiceEnd ? summary.rehearsal.eligible || summary.rehearsal.missing.length > 0 || summary.rehearsal.unchecked.length > 0 : unchecked(step).length > 0 || Boolean(step.launch && (statusOf(step.id) === "complete" || !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible));
+    finish.addEventListener("click", () => {
+      if (practiceEnd) {
+        const current = progressSummary(progress, TRANSITION_STEPS, TRANSITION_CHECKS).rehearsal;
+        if (current.missing.length || current.unchecked.length) { say("Finish the practice steps and checks before finishing.", true); return; }
+        const next = reconcileProgress({ ...progress, steps: { ...progress.steps, T05: "skipped" }, reasons: { ...progress.reasons, T05: progress.reasons.T05?.includes("Practice only — no launch.") ? progress.reasons.T05 : [progress.reasons.T05, "Practice only — no launch."].filter(Boolean).join("\n") } }, TRANSITION_STEPS, TRANSITION_CHECKS, progress);
+        if (save(next, "T05")) say("Practice finished. No real year was started.");
+      } else if (statusOf(step.id) === "complete" && !step.launch) go(currentIndex + 1);
+      else {
+        select.value = "complete";
+        if (recordStepResult() && !step.launch) go(currentIndex + 1);
+      }
+    });
+    confirmation.append(finish, node("p", "transition-control-help", practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and reviewer checks first." : unchecked(step).length ? `${unchecked(step).length} confirmations left, including team checks.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
     control.append(select);
     const otherResult = disclosure("Need help, skip, or add a note", "transition-tools", "step-result");
-    otherResult.open = otherResult.open || pendingSkipId === step.id || ["blocked", "failed", "skipped"].includes(statusOf(step.id)) || Boolean(step.launch && progress.run.mode === "rehearsal");
+    otherResult.open = otherResult.open || pendingSkipId === step.id || (["blocked", "failed"].includes(statusOf(step.id)) || (statusOf(step.id) === "skipped" && !practiceEnd));
     otherResult.append(control);
     appendEvidence(otherResult, step.id);
     confirmation.append(otherResult);
     const reason = blockingReason(step);
     list.append(card);
     $("transition-back").disabled = currentIndex === 0;
-    $("transition-next").textContent = currentIndex === TRANSITION_STEPS.length - 1 ? "Review what remains" : "Read next step";
+    $("transition-next").textContent = "Preview next step";
     const mockMode = progress.run.mode === "rehearsal";
     dialog.dataset.mockMode = String(mockMode);
-    $("transition-next").hidden = preparing;
+    $("transition-next").hidden = preparing || step.launch;
     $("transition-next").disabled = preparing;
-    $("transition-next").setAttribute("aria-disabled", "false");
-    $("transition-next-reason").hidden = !reason;
+    $("transition-next").setAttribute("aria-disabled", String(preparing));
+    $("transition-next-reason").hidden = !reason || step.launch;
     $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? mockMode ? "Record cleanup and reviewer acceptance here. Rehearsal activation stays skipped." : "Record incoming acceptance and the President’s separate launch decision. Finish review shows anything still needed." : "You may read the next step and record its own result.");
   }
   function go(index) {
@@ -1272,6 +1360,7 @@ if (section) {
     if (Array.isArray(event.detail.defaults) && Array.isArray(event.detail.records)) guideResourceSnapshot = event.detail;
     const resources = list.querySelector(".transition-resources");
     if (resources) appendStepResources(resources, TRANSITION_STEPS[currentIndex]);
+    workLinkRefreshers.forEach(refresh => refresh());
   });
   readYear();
 }

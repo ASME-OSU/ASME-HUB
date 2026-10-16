@@ -122,3 +122,7 @@ production PASS claims.
 ### Step 1 progress selection
 
 The main Start/Continue action resumes validated progress for the selected year and purpose, using the currently selected or last selected matching attempt before a deterministic most-recent fallback. It creates an attempt only if none matches. More options contains the explicit separate-attempt action and genuine saved alternatives; in-memory placeholders are not listed as saved. Legacy progress is preserved and migrated through the existing save guards. Purpose/year changes select progress rather than relabel it. Access questions appear after Start/Continue; their required confirmations and launch gates remain unchanged.
+
+### Task groups and finishing
+
+Steps 3 and 4 group actions with their applicable manual checks. Primary file buttons use the selected attempt’s links; chapter buttons follow the same shared-resource resolver as the optional list and refresh without rebuilding unsaved notes. Save and continue advances only after the existing guarded progress save succeeds. Finish practice requires every applicable review and earlier step, records T05 as skipped with an explicit no-launch reason, and preserves existing evidence. The real Finish handoff action retains production launch eligibility. The final summary keeps the full pending list expandable.
