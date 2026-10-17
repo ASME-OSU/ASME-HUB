@@ -714,6 +714,7 @@ test("connected setup preserves concurrent saved links and unsaved field edits",
 
 test("connected setup blocks mismatched workspace and keeps existing annual goals readonly", async()=>{
  const mismatch=connectedFixture({config:{workspaceMode:"rehearsal"}});const ui=browser(new Map(),[],false,mismatch.client);await ui.go("T02");await connectSetup(ui);
+ assert.match(connectedPanel(ui).textContent,/Google sign-in succeeded.*workspace purpose does not match.*Signing in again will not change/s);
  assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,true);await runSetup(ui);assert.equal(mismatch.calls.filter(c=>c.name==="runAnnualSetup").length,0);
  assert.match(connectedPanel(ui).textContent,/workspace purpose does not match/);
  const existing=connectedFixture({config:{existing:true,engagementGoal:88}});const resumed=browser(new Map(),[],false,existing.client);await resumed.go("T02");await connectSetup(resumed);
@@ -981,4 +982,20 @@ test("storage write failures retain note drafts and never advance completion",as
  const faults={},ui=browser(new Map(),[],false,null,faults);await startRun(ui);await ui.choose("V20","passed");const input=observation(ui,"V20");input.value="Recoverable note draft";await input.emit("input");
  faults.failProgress=true;await finishAction(ui).click();assert.equal(ui.$("transition-step-picker").value,"T01");assert.equal(observation(ui,"V20").value,"Recoverable note draft");assert.notEqual(ui.saved().steps.T01,"complete");assert.equal(ui.saved().notes.V20,undefined);assert.match(ui.$("transition-status").textContent,/quota exceeded/);
  faults.failProgress=false;await finishAction(ui).click();assert.equal(ui.saved().notes.V20,"Recoverable note draft");assert.equal(ui.$("transition-step-picker").value,"T02");
+});
+
+
+test("failed reconnect clears the previously approved workspace before creating files", async()=>{
+ const fixture=connectedFixture();let connections=0;
+ fixture.client.connect=async()=>{if(++connections===2)throw new Error("Google sign-in expired");};
+ const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");await connectSetup(ui);
+ assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);
+ await connectSetup(ui);
+ assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,true);
+ assert.equal(setupButton(ui,"Create or reopen this year’s files").hidden,true);
+ assert.equal(connectedPanel(ui).find(n=>n.tagName==="input").disabled,true);
+ assert.match(connectedPanel(ui).textContent,/Google sign-in expired.*Sign in again/s);
+ await runSetup(ui);assert.equal(fixture.calls.filter(c=>c.name==="runAnnualSetup").length,0);
+ await connectSetup(ui);assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);
+ await runSetup(ui);assert.equal(fixture.calls.filter(c=>c.name==="runAnnualSetup").length,1);
 });
