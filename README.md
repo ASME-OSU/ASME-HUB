@@ -50,11 +50,16 @@ navigation labels remain visible. Section links update the URL hash, preserve
 one active highlight throughout smooth scrolling, and support browser
 back/forward navigation.
 
-Phone layouts use safe-area spacing, 16-pixel form controls to prevent iOS
+Phone headers align navigation, academic year, search, and meeting view in one
+row, with the year selector’s chevron kept inside its border. Phone layouts use
+safe-area spacing, 16-pixel form controls to prevent iOS
 Safari from zooming the page when a selector or settings field receives focus,
 larger touch targets, and stacked event-performance cards instead of a wide
-desktop table. The mobile drawer locks background scrolling, closes with
-Escape, and includes theme control when the compact top bar hides that button.
+desktop table. The mobile drawer keeps its close button, compact role and year controls, and
+labeled utility buttons visible. Navigation scrolls independently on short
+screens. It locks background scrolling, closes with Escape or its close button,
+returns keyboard focus to the menu button, and includes theme control when the
+compact top bar hides that button.
 The unlock screen is also safe-area aware and vertically scrollable when a
 phone keyboard reduces the viewport. Its theme control is available before
 sign-in, and the saved theme follows the officer into the dashboard.
