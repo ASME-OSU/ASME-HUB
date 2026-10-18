@@ -130,3 +130,12 @@ Steps 3 and 4 group actions with their applicable manual checks. Primary file bu
 ### Note drafts
 
 Evidence drafts stay in memory by year, attempt and review while controls redraw or officers navigate. Save note commits one draft; completing a step or finishing the handoff/practice also commits drafts for that attempt through the existing concurrency guard. Reloading/leaving with unsaved drafts prompts the browser warning. Drafts do not enter exports until saved. A draft based on evidence changed in another tab cannot overwrite that evidence after reload; copy the draft, discard it and reconcile against the saved version.
+
+
+## Chapter sign-in and Practice workspace recovery
+
+If Step 2 reports that the workspace purpose does not match, Google sign-in has succeeded. Continue a separate Practice checklist for a Practice workspace. A Real handoff requires a separately approved Real handoff workspace; signing in again does not change the saved workspace purpose.
+
+If an existing run stops at a chapter-ownership or private-file check, inspect the configured Control Center and annual workspace folder in Drive. A file in Trash can produce these older errors even when the chapter owns it. Restore the same approved Practice resources, then reopen the same year. Preserve the existing receipt and file IDs; do not replace the workspace merely to clear an error. Keep ownership and privacy checks enabled.
+
+The browser recovery fixes and the clearer Apps Script Trash errors have separate release steps: publish the Hub assets, and install/version the reviewed provisioner source in the chapter-owned API deployment. A repository merge alone does not update Apps Script.

@@ -2,7 +2,7 @@ import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECK
 import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015o";
 import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015o";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261015o";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261017a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -708,6 +708,7 @@ if (section) {
       if (annualSetupPending || !client?.ready) return;
       try {
         const context = captureSetupContext();
+        session.config = null; session.receipt = ""; session.goal = undefined;
         annualSetupPending = true; session.error = false; session.message = "Connecting to Google and loading the approved workspace…"; render();
         await client.connect();
         assertSetupContext(context);
@@ -715,7 +716,10 @@ if (section) {
         assertSetupContext(context);
         if (!loaded || typeof loaded !== "object" || Array.isArray(loaded)) throw new Error("Google returned an unreadable workspace. Ask the maintainer to check setup.");
         session.config = loaded; session.goal = loaded.engagementGoal; session.receipt = "";
-        if (loaded.workspaceMode !== context.mode) throw new Error(`The President must confirm a separate ${runModeLabel(context.mode)} workspace before continuing. The saved workspace purpose does not match this checklist.`);
+        if (loaded.workspaceMode !== context.mode) {
+          session.message = `Google sign-in succeeded. The saved workspace is ${runModeLabel(loaded.workspaceMode)}, but this checklist is ${runModeLabel(context.mode)}. The workspace purpose does not match. For a mock run, use a separate Practice checklist under Change year. For a real handoff, ask the President to configure the approved Real handoff workspace. Signing in again will not change the workspace.`;
+          session.error = true; say(session.message, true); return;
+        }
         if (!/^[\w-]+$/.test(loaded.rootFolderId || "") || !/^[\w-]+$/.test(loaded.controlCenterId || "") || !loaded.configRevision) { session.config = null; throw new Error("The saved workspace is incomplete. Ask the President or maintainer to confirm the folder and Control Center."); }
         session.message = loaded.existing ? "This year already has files. Reopen them using the saved member goal." : "Workspace loaded. Check the approved member goal, then create this year’s files.";
       } catch (error) { session.error = true; session.message = `${error.message || "Could not connect."} Choose Sign in again to reload the workspace, or retry after the maintainer resolves the issue.`; say(session.message, true); }
