@@ -5223,6 +5223,12 @@
   elements.mobileMenuButton.addEventListener("click", () => {
     const opening = !document.body.classList.contains("nav-open");
     setMobileNavigation(opening);
+    if (opening) document.getElementById("sidebar-close")?.focus();
+  });
+
+  document.getElementById("sidebar-close")?.addEventListener("click", () => {
+    setMobileNavigation(false);
+    elements.mobileMenuButton.focus();
   });
 
   if (elements.searchButton) {

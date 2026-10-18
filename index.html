@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261016a">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261017d">
   <link rel="stylesheet" href="assets/css/transition.css?v=20261015o">
 </head>
 <body>
@@ -108,6 +108,7 @@
             <small>Officer Hub</small>
           </span>
         </a>
+        <button class="sidebar-close" id="sidebar-close" type="button" aria-label="Close navigation" aria-controls="sidebar"><span aria-hidden="true">×</span></button>
       </div>
 
       <div class="sidebar-stack">
@@ -163,6 +164,7 @@
         <div class="sidebar-footer">
           <a href="https://org.osu.edu/asme/" target="_blank" rel="noopener" aria-label="View public website" title="View public website">
             <span class="sidebar-footer-label">View public website</span>
+            <span class="sidebar-mobile-label" aria-hidden="true">Website</span>
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-external"></use></svg>
           </a>
           <button id="sidebar-settings" type="button" aria-label="Year settings" title="Year settings">
@@ -206,7 +208,10 @@
         </label>
         <div class="topbar-actions">
           <label class="year-select-label" for="academic-year">Academic year</label>
-          <select id="academic-year" class="year-select"></select>
+          <div class="year-select-wrap">
+            <select id="academic-year" class="year-select" aria-label="Academic year"></select>
+            <svg class="ui-icon year-select-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
           <button class="icon-button search-button" id="search-button" type="button" aria-label="Search the Officer Hub" title="Search (Command or Control + K)">
             <svg class="ui-icon" aria-hidden="true"><use href="#icon-search"></use></svg>
           </button>
@@ -1112,7 +1117,7 @@
   <script src="assets/js/config.js?v=20261015o"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261015o"></script>
+  <script src="assets/js/app.js?v=20261017a"></script>
   <script type="module" src="assets/js/transition.js?v=20261017a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
