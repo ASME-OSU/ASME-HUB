@@ -166,8 +166,13 @@ function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
     if (!Object.keys(state.ids || {}).length) state.workspaceMode = cfg.workspaceMode || '';
     state.runKey=key;
     function save(){properties.setProperty(key,JSON.stringify(state));}
-    function privateOwned(file){if(file.getOwner().getEmail().toLowerCase()!==owner||file.getSharingAccess()!==DriveApp.Access.PRIVATE||file.isTrashed()||file.getEditors().concat(file.getViewers()).some(function(user){return user.getEmail().toLowerCase()!==owner;}))throw new Error('Expected private chapter-owned file/folder: '+file.getName());}
-    var centerFile=DriveApp.getFileById(cfg.controlCenterId);if(centerFile.isTrashed()||centerFile.getOwner().getEmail().toLowerCase()!==owner)throw new Error('Control Center must be chapter-owned.');
+    function privateOwned(file){
+      if(file.isTrashed())throw new Error('File/folder is in Google Drive Trash: '+file.getName()+'. Restore that same file/folder, then reopen the same year to resume.');
+      if(file.getOwner().getEmail().toLowerCase()!==owner||file.getSharingAccess()!==DriveApp.Access.PRIVATE||file.getEditors().concat(file.getViewers()).some(function(user){return user.getEmail().toLowerCase()!==owner;}))throw new Error('Expected private chapter-owned file/folder: '+file.getName());
+    }
+    var centerFile=DriveApp.getFileById(cfg.controlCenterId);
+    if(centerFile.isTrashed())throw new Error('The configured Control Center is in Google Drive Trash. Restore that same Control Center, then reopen the same year to resume.');
+    if(centerFile.getOwner().getEmail().toLowerCase()!==owner)throw new Error('Control Center must be chapter-owned.');
     var root=DriveApp.getFolderById(cfg.rootFolderId);privateOwned(root);
     Object.keys(ASME_ANNUAL_TEMPLATES).forEach(function(k){privateOwned(DriveApp.getFileById(ASME_ANNUAL_TEMPLATES[k]));});
     var rows=settings.getLastRow()>1?settings.getRange(2,1,settings.getLastRow()-1,20).getValues():[];

@@ -130,6 +130,30 @@ test('preflight accepts native quoted/unquoted proxy refs but leaves actual scor
 test('preflight detects warning-only protection, renamed response refs, public output and open intake',()=>{const h=harness();h.run();const master=h.books.get(h.state().ids.pointsMaster),form=h.forms.get(h.state().ids.attendanceForm);master.getSheetByName('_Raw_Ingest').protected='warning';master.getSheetByName('Roster').formulas[0].push("=INDEX('Observed response 8'!C:C,2)");master.getSheetByName('Website Staging').values=[[],['Private person']];form.accepting=true;const failures=clone(h.ctx.asmeSanityReport_(master)).filter(r=>!r.pass).map(r=>r.test);for(const label of ['Protected raw proxy uses exact Config pointer','Roster and Point Log use only stable proxy references','Public member output suppressed','Form intake closed for pre-flight'])assert.ok(failures.includes(label));});
 
 test('private access cannot hide explicitly shared external viewers',()=>{const h=harness();h.files.get('root').viewers=[{getEmail:()=> 'external@example.com'}];assert.throws(h.run,/private chapter-owned/);assert.equal(h.writes.length,0);});
+test('a trashed Control Center gives restore guidance and resumes the same files after restoration',()=>{
+  const h=harness(),first=h.run().receipt,saved=h.props.get(h.runKey()),center=h.files.get('center');
+  h.writes.length=0;center.trashed=true;
+  assert.throws(h.run,/Control Center is in Google Drive Trash.*Restore that same Control Center.*same year/s);
+  assert.equal(h.writes.length,0);
+  const rejected=h.state();assert.match(rejected.lastError,/Google Drive Trash/);delete rejected.lastError;
+  assert.deepEqual(rejected,JSON.parse(saved));
+  center.trashed=false;
+  assert.deepEqual(clone(h.run().receipt.ids),clone(first.ids));assert.equal(h.writes.length,0);
+});
+test('a Control Center owned by another account still rejects without writes',()=>{
+  const h=harness();h.files.get('center').owner='personal@example.com';
+  assert.throws(h.run,/Control Center must be chapter-owned/);assert.equal(h.writes.length,0);
+});
+test('trashed annual root and copied files name the resource to restore without making replacements',()=>{
+  for(const resource of ['root','pointsMaster']){
+    const h=harness(),first=h.run().receipt,file=h.files.get(resource==='root'?'root':first.ids[resource]);
+    h.writes.length=0;file.trashed=true;
+    assert.throws(h.run,error=>error.message.includes('Google Drive Trash: '+file.getName())&&/Restore that same file\/folder.*same year/s.test(error.message));
+    assert.equal(h.writes.length,0);
+    file.trashed=false;
+    assert.deepEqual(clone(h.run().receipt.ids),clone(first.ids));assert.equal(h.writes.length,0);
+  }
+});
 test('copied response schema failure prevents Config updates and settings append',()=>{const h=harness();h.loseCopy();assert.throws(h.run);// Alter the copied Form link result before setup can update Config.
   const source=h.files.get(h.ctx.ASME_ANNUAL_TEMPLATES.attendanceForm),copy=source.makeCopy.bind(source);source.makeCopy=(...args)=>{const f=copy(...args),form=h.forms.get(f.id),link=form.setDestination;form.setDestination=(...a)=>{link(...a);const sheet=h.books.get(a[1]).getSheetByName('Observed response 8');sheet.values[0][0]='Wrong';};return f;};
   assert.throws(h.run,/exact twelve headers/);const state=h.state(),config=h.books.get(state.ids.pointsMaster).getSheetByName('Config');assert.equal(config.getRange('B7').getValue(),'Form Responses 1');assert.equal(h.settings.values.length,1);});
