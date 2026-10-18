@@ -20,6 +20,7 @@ bundler or framework.
 - A year-to-date, Fall/Spring, and monthly review selector with prior-period KPI comparisons
 - An automatic chapter-health summary for quick officer-meeting discussion
 - Attendance, engagement-goal, and event-type visualizations
+- Uncluttered turnout trend with tappable numbered points and a full-name event picker; selected event details show date, type, and check-ins
 - A participation funnel and selected-period event performance table
 - Green/yellow/red engagement-goal pace indicators
 - A print-ready meeting snapshot that can be printed or saved as a PDF

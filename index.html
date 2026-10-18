@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261017d">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261017e">
   <link rel="stylesheet" href="assets/css/transition.css?v=20261015o">
 </head>
 <body>
@@ -461,11 +461,23 @@
               <span class="panel-chip" id="trend-summary">Recent events</span>
             </div>
             <div class="chart-wrap">
-              <svg id="attendance-chart" class="attendance-chart" role="img" aria-labelledby="attendance-chart-title attendance-chart-desc"></svg>
+              <svg id="attendance-chart" class="attendance-chart" role="group" aria-labelledby="attendance-chart-title attendance-chart-desc"></svg>
               <p class="sr-only" id="attendance-chart-title">Attendance by recent event</p>
               <p class="sr-only" id="attendance-chart-desc">A line chart showing attendance totals for the most recent events.</p>
             </div>
             <div class="chart-legend" id="attendance-chart-legend"></div>
+            <div class="attendance-chart-controls" id="attendance-chart-controls" hidden>
+              <label for="attendance-event-picker">Choose an event</label>
+              <select id="attendance-event-picker" aria-controls="attendance-event-detail"></select>
+              <div class="attendance-event-detail" id="attendance-event-detail" aria-live="polite" aria-atomic="true">
+                <div>
+                  <p class="eyebrow" id="attendance-event-position"></p>
+                  <h3 id="attendance-event-name"></h3>
+                  <p id="attendance-event-meta"></p>
+                </div>
+                <div class="attendance-event-total"><strong id="attendance-event-count"></strong><span>check-ins</span></div>
+              </div>
+            </div>
           </section>
 
           <section class="panel goal-panel">
@@ -1117,7 +1129,7 @@
   <script src="assets/js/config.js?v=20261015o"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261017a"></script>
+  <script src="assets/js/app.js?v=20261017e"></script>
   <script type="module" src="assets/js/transition.js?v=20261015o"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>

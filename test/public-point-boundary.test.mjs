@@ -106,7 +106,7 @@ test('clearing a previous dashboard removes member-derived display and state', (
     return nodes.get(id);
   };
   const context = {
-    attendanceChartItems: [{}], attendanceChartPeriodLabel: "old year", selectedPeriod: "fall",
+    attendanceChartItems: [{}], attendanceChartPeriodLabel: "old year", attendanceChartSelectedKey: "old event", selectedPeriod: "fall",
     activeDashboardData: { kpis: { uniqueAttendees: 10 } },
     activeUpcomingEvents: [{ title: 'Old event' }], activeOperations: [{}], activeBudget: {}, activeHealth: [{}],
     elements: {
@@ -121,11 +121,16 @@ test('clearing a previous dashboard removes member-derived display and state', (
     setText: (id, value) => { node(id).textContent = value; },
     renderBudget() {}, setReportControlsDisabled() {},
   };
-  const clear = vm.runInNewContext(`${source.slice(clearStart, clearEnd)}\nclearDashboardState`, context);
+  const detailsStart = source.indexOf('  function clearAttendanceChartDetails(');
+  const detailsEnd = source.indexOf('\n  function renderAttendanceChart(', detailsStart);
+  const clear = vm.runInNewContext(`${source.slice(detailsStart, detailsEnd)}\n${source.slice(clearStart, clearEnd)}\nclearDashboardState`, context);
   clear('Loading next year…');
   assert.equal(context.activeDashboardData, null);
   assert.equal(node('kpi-unique-attendees').textContent, '—');
   assert.equal(node('hero-briefing-title').textContent, 'Dashboard loading');
+  assert.equal(context.attendanceChartSelectedKey, '');
+  assert.equal(node('attendance-chart-controls').hidden, true);
+  assert.equal(node('attendance-event-name').textContent, '');
   assert.deepEqual(node('operations-list').children, []);
   assert.deepEqual(node('health-grid').children, []);
   assert.deepEqual(node('briefing-role-metrics').children, []);
