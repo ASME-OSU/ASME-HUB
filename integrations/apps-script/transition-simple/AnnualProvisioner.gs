@@ -135,6 +135,17 @@ function asmeVerifyCompletedAnnual_(state,master,form,year){
   var budget=SpreadsheetApp.openById(state.ids.budgetTracker),setup=budget.getSheetByName('Setup & Lists'),dates=[year.start+'-08-01',year.end+'-07-31',year.start+'-08-01',year.start+'-12-31',year.end+'-01-01',year.end+'-05-31'];
   if(!setup||['B4','B5','B11','B12','B13','B14'].some(function(a,i){var actual=setup.getRange(a).getValue(),expected=Utilities.parseDate(dates[i],budget.getSpreadsheetTimeZone(),'yyyy-MM-dd');return actual instanceof Date&&expected instanceof Date?actual.getTime()!==expected.getTime():actual!==expected;}))throw new Error('Completed annual budget dates changed; no files were changed.');
 }
+// Google may create the destination tab after setDestination returns. Poll only
+// the binding; do not replay provisioning or infer a tab from its display name.
+function asmeObserveResponseBinding_(master,form){
+  for(var attempt=0;attempt<30;attempt++){
+    var linked=master.getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});
+    if(linked.length===1)return linked;
+    if(linked.length>1)throw new Error('More than one response tab is linked to this Form. Ask the maintainer to review; no tab was guessed.');
+    if(attempt<29)Utilities.sleep(2000);
+  }
+  throw new Error('Google response tab not uniquely observed yet; retry this same run. No name was guessed.');
+}
 function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
   var year=asmeAnnualYear_(targetYear,fallTerm),owner='asmeohiostate@gmail.com';
   if(Session.getEffectiveUser().getEmail().toLowerCase()!==owner||Session.getActiveUser().getEmail().toLowerCase()!==owner)throw new Error('Run as the chapter Google account.');
@@ -225,9 +236,7 @@ function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
     var destination=null;try{destination=form.getDestinationId();}catch(e){if(!/^(?:Exception: )?The form currently has no response destination\.$/.test(String(e.message)))throw e;}
     if(destination&&destination!==master.getId())throw new Error('Copied Form points at another workbook.');
     if(!destination)form.setDestination(FormApp.DestinationType.SPREADSHEET,master.getId());
-    var linked=[];
-    for(var retry=0;retry<8;retry++){linked=master.getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});if(linked.length)break;Utilities.sleep(1000);}
-    if(linked.length!==1)throw new Error('Google response tab not uniquely observed yet; retry this same run. No name was guessed.');
+    var linked=asmeObserveResponseBinding_(master,form);
     if(JSON.stringify(linked[0].getRange(1,1,1,12).getValues()[0])!==JSON.stringify(ASME_RESPONSE_HEADERS)||linked[0].getLastRow()>1)throw new Error('Observed response tab must have the exact twelve headers and no data.');
     config.getRange('B2').setValue(fallTerm);config.getRange('B3').setValue(year.short);config.getRange('B5').setValue('TESTING');config.getRange('B7').setValue(linked[0].getName());config.getRange('B16').setValue(form.getId());
     var proxy=master.getSheetByName('_Raw_Ingest');if(!proxy||proxy.getRange('A1').getFormula()!==ASME_RAW_INGEST_FORMULA)throw new Error('Canonical raw proxy architecture is missing.');
