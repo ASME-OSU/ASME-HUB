@@ -47,7 +47,7 @@
   </svg>
   <a class="skip-link" href="#main-content">Skip to dashboard</a>
 
-  <section class="access-gate" id="access-gate" aria-labelledby="access-title">
+  <section class="access-gate" id="access-gate" aria-labelledby="access-title" hidden>
     <div class="gate-backdrop" aria-hidden="true">
       <span class="gate-orbit gate-orbit-one"></span>
       <span class="gate-orbit gate-orbit-two"></span>
@@ -870,9 +870,9 @@
     </div>
   </div>
 
-  <div class="loading-layer" id="loading-layer" hidden>
+  <div class="loading-layer" id="loading-layer" role="status" aria-live="polite">
     <div class="spinner" aria-hidden="true"></div>
-    <p>Loading chapter data…</p>
+    <p>Loading Officer Hub…</p>
   </div>
 
   <dialog class="settings-dialog" id="year-settings-dialog" aria-labelledby="settings-title">
@@ -1129,7 +1129,7 @@
   <script src="assets/js/config.js?v=20261015o"></script>
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
-  <script src="assets/js/app.js?v=20261017e"></script>
+  <script src="assets/js/app.js?v=20261017f"></script>
   <script type="module" src="assets/js/transition.js?v=20261017a"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
