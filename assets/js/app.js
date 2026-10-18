@@ -1461,6 +1461,7 @@
     const emptyGuide = document.getElementById("attendance-empty-guide");
     if (emptyGuide) emptyGuide.hidden = false;
     document.body.classList.add("attendance-data-empty");
+    clearAttendanceChartDetails();
     document.getElementById("attendance-chart")?.replaceChildren();
     document.getElementById("attendance-chart-legend")?.replaceChildren();
     document.getElementById("event-type-list")?.replaceChildren();
@@ -3336,6 +3337,9 @@
 
   function renderEventMetricsUnavailable() {
     attendanceChartItems = [];
+    clearAttendanceChartDetails();
+    document.getElementById("attendance-chart")?.replaceChildren();
+    document.getElementById("attendance-chart-legend")?.replaceChildren();
     const message = "Event metrics unavailable. Check the public export and retry.";
     setText("attendance-chart-desc", message);
     document.getElementById("attendance-chart")?.setAttribute("aria-label", message);
@@ -3797,6 +3801,19 @@
   let attendanceChartItems = [];
   let attendanceChartPeriodLabel = "";
   let attendanceChartSize = { width: 0, height: 0 };
+  let attendanceChartSelectedKey = "";
+
+  function clearAttendanceChartDetails() {
+    attendanceChartSelectedKey = "";
+    const controls = document.getElementById("attendance-chart-controls");
+    if (controls) controls.hidden = true;
+    const picker = document.getElementById("attendance-event-picker");
+    if (picker) {
+      picker.replaceChildren();
+      picker.onchange = null;
+    }
+    ["attendance-event-position", "attendance-event-name", "attendance-event-meta", "attendance-event-count"].forEach((id) => setText(id, ""));
+  }
 
   function renderAttendanceChart(items, periodLabel = "") {
     attendanceChartItems = items;
@@ -3815,6 +3832,7 @@
     legend.replaceChildren();
 
     if (!items.length) {
+      clearAttendanceChartDetails();
       chartWrap?.classList.add("is-empty");
       chartPanel?.classList.add("is-chart-empty");
       const width = Math.round(svg.getBoundingClientRect().width) || 700;
@@ -3860,7 +3878,7 @@
     const width = Math.round(svg.getBoundingClientRect().width) || 760;
     const height = Math.round(svg.getBoundingClientRect().height) || 285;
     attendanceChartSize = { width, height };
-    const margin = { top: 27, right: 18, bottom: 47, left: 38 };
+    const margin = { top: 27, right: 26, bottom: 36, left: 38 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const values = items.map((item) => Number(item.attendance) || 0);
@@ -3933,45 +3951,95 @@
       svgElement("path", { d: linePath, class: "chart-line" }),
     );
 
+    const picker = document.getElementById("attendance-event-picker");
+    const controls = document.getElementById("attendance-chart-controls");
+    const pointButtons = [];
+    const valueLabels = [];
+    const eventKey = (item) => JSON.stringify([item.label, item.date || ""]);
+    const dateLabel = (item) => {
+      const date = item.date ? new Date(item.date) : null;
+      return date && !Number.isNaN(date.getTime())
+        ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: calendarDisplayTimeZone }).format(date)
+        : "Date unavailable";
+    };
+    picker?.replaceChildren(...items.map((item, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = `${index + 1}. ${item.label} · ${dateLabel(item)}`;
+      return option;
+    }));
+
+    const selectEvent = (index) => {
+      const item = items[index];
+      if (!item) return;
+      attendanceChartSelectedKey = eventKey(item);
+      if (picker) picker.value = String(index);
+      setText("attendance-event-position", `Event ${index + 1} of ${items.length}`);
+      setText("attendance-event-name", item.label);
+      setText("attendance-event-meta", [dateLabel(item), item.type].filter(Boolean).join(" · "));
+      setText("attendance-event-count", formatNumber(values[index]));
+      pointButtons.forEach((button, pointIndex) => {
+        button.setAttribute("aria-pressed", String(pointIndex === index));
+        valueLabels[pointIndex].setAttribute("visibility", pointIndex === index ? "visible" : "hidden");
+      });
+    };
+
     points.forEach((point, index) => {
       const valueLabel = svgElement("text", {
         x: point.x,
-        y: point.y - 12,
+        y: point.y - 14,
         "text-anchor": "middle",
         class: "chart-point-label",
+        "aria-hidden": "true",
       });
       valueLabel.textContent = String(values[index]);
+      valueLabels.push(valueLabel);
 
       const xLabel = svgElement("text", {
         x: point.x,
-        y: height - 14,
+        y: height - 12,
         "text-anchor": "middle",
         class: "chart-axis-label",
+        "aria-hidden": "true",
       });
-      xLabel.textContent = items[index].shortLabel || items[index].label;
+      xLabel.textContent = String(index + 1);
 
-      const circle = svgElement("circle", {
-        cx: point.x,
-        cy: point.y,
-        r: 4.5,
-        class: "chart-point",
+      const button = svgElement("g", {
+        role: "button",
+        tabindex: "0",
+        class: "chart-event-point",
+        "aria-label": `Event ${index + 1}: ${items[index].label}, ${dateLabel(items[index])}, ${formatNumber(values[index])} check-ins`,
+        "aria-pressed": "false",
       });
-      const title = svgElement("title");
-      title.textContent = `${items[index].label}: ${values[index]} attendees`;
-      circle.append(title);
-
-      svg.append(valueLabel, xLabel, circle);
+      const hitWidth = Math.min(44, xStep);
+      button.append(
+        svgElement("rect", { x: point.x - hitWidth / 2, y: point.y - 22, width: hitWidth, height: 44, fill: "transparent" }),
+        svgElement("circle", { cx: point.x, cy: point.y, r: 5, class: "chart-point" }),
+      );
+      button.addEventListener("click", () => selectEvent(index));
+      button.addEventListener("pointerenter", () => selectEvent(index));
+      button.addEventListener("focus", () => selectEvent(index));
+      button.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectEvent(index);
+        } else if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1
+            : Math.max(0, Math.min(items.length - 1, index + (event.key === "ArrowRight" ? 1 : -1)));
+          selectEvent(next);
+          pointButtons[next].focus();
+        }
+      });
+      pointButtons.push(button);
+      svg.append(valueLabel, xLabel, button);
     });
 
-    const eventTypes = [...new Set(items.map((item) => item.type).filter(Boolean))];
-    const colors = chartPalette.slice(0, 5);
-    eventTypes.forEach((type, index) => {
-      const item = document.createElement("span");
-      const dot = document.createElement("i");
-      dot.style.backgroundColor = colors[index % colors.length];
-      item.append(dot, document.createTextNode(type));
-      legend.append(item);
-    });
+    if (picker) picker.onchange = () => selectEvent(Number(picker.value));
+    const previousIndex = items.findIndex((item) => eventKey(item) === attendanceChartSelectedKey);
+    selectEvent(previousIndex >= 0 ? previousIndex : items.length - 1);
+    if (controls) controls.hidden = false;
+    legend.textContent = "Events in date order. Tap a point or choose an event below for details.";
 
     summary.textContent = periodLabel
       ? `${items.length} event${items.length === 1 ? "" : "s"} · ${periodLabel}`

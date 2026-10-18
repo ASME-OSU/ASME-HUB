@@ -2388,6 +2388,88 @@ main {
   border-radius: var(--radius-round);
 }
 
+.chart-event-point {
+  cursor: pointer;
+  outline: none;
+}
+
+.chart-event-point[aria-pressed="true"] .chart-point {
+  fill: var(--scarlet);
+  stroke-width: 4;
+}
+
+.chart-event-point:focus-visible .chart-point {
+  stroke: var(--ink);
+  stroke-width: 5;
+}
+
+.attendance-chart-controls {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.attendance-chart-controls > label {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.attendance-chart-controls > select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 1rem;
+}
+
+.attendance-event-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.attendance-event-detail h3 {
+  margin: 5px 0 8px;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.attendance-event-detail p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.attendance-event-total {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+}
+
+.attendance-event-total strong {
+  color: var(--scarlet);
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.attendance-event-total span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .goal-panel {
   display: flex;
   min-height: 390px;

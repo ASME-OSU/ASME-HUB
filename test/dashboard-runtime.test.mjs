@@ -74,7 +74,7 @@ function runtime(feeds = {}) {
   sandbox.globalThis = sandbox;
   vm.runInNewContext(sharedSource, sandbox);
   window.ASME_SHARED_RESOURCES = sandbox.ASME_SHARED_RESOURCES;
-  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
+  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
   vm.runInNewContext(source, sandbox, { filename: 'app.js' });
   return { api: sandbox.testApi, node, nodes, requests, feeds, failures, config, listeners, window, dispatched };
 }
@@ -391,4 +391,53 @@ test('Hub search includes the transition guide by its title and common handoff t
   run.api.renderHubSearchResults(query);const results=run.node('hub-search-results').children;
   assert.equal(results.length,1,query);assert.equal(results[0].children[1].children[0].textContent,'Transition to New Year',query);assert.equal(typeof results[0].events.click,'function');
  }
+});
+
+
+test('turnout inspection keeps full names and exact counts when selecting points or the event picker', () => {
+  const run = runtime();
+  const items = [
+    { label: 'A very long engineering workshop name that must remain readable', date: '2027-09-15T16:00:00Z', attendance: 0, type: 'Technical Workshop' },
+    { label: 'Company information session', date: '2027-09-16T16:00:00Z', attendance: 27, type: 'Company Info Session' },
+  ];
+  run.api.renderAttendanceChart(items);
+  const picker = run.node('attendance-event-picker');
+  const points = run.node('attendance-chart').children.filter(child => child.attributes.role === 'button');
+  assert.equal(run.node('attendance-chart-controls').hidden, false);
+  assert.match(picker.children[0].textContent, /A very long engineering workshop name that must remain readable/);
+  assert.equal(run.node('attendance-event-name').textContent, items[1].label);
+  assert.equal(run.node('attendance-event-count').textContent, '27');
+  points[0].events.click();
+  assert.equal(run.node('attendance-event-name').textContent, items[0].label);
+  assert.equal(run.node('attendance-event-count').textContent, '0');
+  assert.match(run.node('attendance-event-meta').textContent, /Sep 15, 2027.*Technical Workshop/);
+  assert.equal(points[0].attributes['aria-pressed'], 'true');
+  picker.value = '1'; picker.onchange();
+  assert.equal(run.node('attendance-event-name').textContent, items[1].label);
+  assert.equal(points[0].attributes['aria-pressed'], 'false');
+  let prevented = false;
+  points[1].events.keydown({ key: 'ArrowLeft', preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  assert.equal(picker.value, '0');
+});
+
+test('turnout selection survives resizing but cannot leak into a different period, empty result, or unavailable feed', () => {
+  const run = runtime();
+  const items = [{ label: 'Workshop A', attendance: 12 }, { label: 'Workshop B', attendance: 8 }];
+  run.api.renderAttendanceChart(items);
+  run.node('attendance-event-picker').value = '0'; run.node('attendance-event-picker').onchange();
+  run.api.renderAttendanceChart(items);
+  assert.equal(run.node('attendance-event-name').textContent, 'Workshop A');
+  run.api.renderAttendanceChart([{ label: 'Different year event', attendance: 3 }]);
+  assert.equal(run.node('attendance-event-name').textContent, 'Different year event');
+  run.api.renderAttendanceChart([]);
+  assert.equal(run.node('attendance-chart-controls').hidden, true);
+  assert.equal(run.node('attendance-event-name').textContent, '');
+  assert.equal(run.node('attendance-event-picker').children.length, 0);
+  run.api.renderAttendanceChart(items);
+  run.api.renderEventMetricsUnavailable();
+  assert.equal(run.node('attendance-chart-controls').hidden, true);
+  assert.equal(run.node('attendance-event-count').textContent, '');
+  assert.equal(run.node('attendance-chart').children.length, 0);
+  assert.equal(run.node('attendance-event-picker').onchange, null);
 });
