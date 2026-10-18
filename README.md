@@ -41,6 +41,10 @@ calculates unique attendees, total check-ins, events with attendance, average
 turnout, repeat attendance, recent-event turnout, and attendance by event type
 without reading emails or raw form responses.
 
+Reloading with an unexpired browser session keeps the access screen hidden while
+settings and chapter data load. Missing or expired sessions show the access screen
+immediately; remote settings refresh does not delay sign-in or steal focus.
+
 The desktop sidebar uses a 216-pixel navigation column and can collapse to a
 68-pixel icon rail; that preference is saved in the browser. The academic year
 appears as a single line above a compact utility footer, with labeled tooltips

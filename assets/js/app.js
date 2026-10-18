@@ -1410,6 +1410,7 @@
     sessionStorage.removeItem(unlockStorageKey);
     elements.appShell.hidden = true;
     elements.gate.hidden = false;
+    showLoading(false);
     setMobileNavigation(false);
     window.setTimeout(() => elements.password.focus(), 50);
   }
@@ -5474,6 +5475,9 @@
   });
 
   async function initialize() {
+    // Decide from local session state before any remote settings/resource waits.
+    // The initial HTML keeps sign-in hidden behind a neutral loading screen.
+    if (!isUnlocked()) showGate();
     showRandomMeetingQuote();
     populateOfficerRoles();
     populatePersonalRoleControls();
@@ -5519,7 +5523,7 @@
         hashTarget.scrollIntoView({ behavior: "auto", block: "start" });
       }
       refreshNavigation();
-    } else {
+    } else if (elements.gate.hidden) {
       showGate();
     }
   }
