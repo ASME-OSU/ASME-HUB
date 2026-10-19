@@ -139,7 +139,8 @@ function asmeVerifyCompletedAnnual_(state,master,form,year){
 // the binding; do not replay provisioning or infer a tab from its display name.
 function asmeObserveResponseBinding_(master,form){
   for(var attempt=0;attempt<30;attempt++){
-    var linked=master.getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});
+    // Reopen the same workbook so each observation reads current sheet metadata.
+    var linked=SpreadsheetApp.openById(master.getId()).getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});
     if(linked.length===1)return linked;
     if(linked.length>1)throw new Error('More than one response tab is linked to this Form. Ask the maintainer to review; no tab was guessed.');
     if(attempt<29)Utilities.sleep(2000);
@@ -235,7 +236,12 @@ function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
     form.setAcceptingResponses(false);form.setTitle('ASME OSU Attendance '+targetYear);
     var destination=null;try{destination=form.getDestinationId();}catch(e){if(!/^(?:Exception: )?The form currently has no response destination\.$/.test(String(e.message)))throw e;}
     if(destination&&destination!==master.getId())throw new Error('Copied Form points at another workbook.');
-    if(!destination)form.setDestination(FormApp.DestinationType.SPREADSHEET,master.getId());
+    if(!destination){
+      form.setDestination(FormApp.DestinationType.SPREADSHEET,master.getId());
+      // Binding metadata becomes visible in a fresh execution. Saved artifact
+      // identities and the destination are retained for the one-time UI resume.
+      throw new Error("Google response tab not uniquely observed yet; retry this same run. No name was guessed.");
+    }
     var linked=asmeObserveResponseBinding_(master,form);
     if(JSON.stringify(linked[0].getRange(1,1,1,12).getValues()[0])!==JSON.stringify(ASME_RESPONSE_HEADERS)||linked[0].getLastRow()>1)throw new Error('Observed response tab must have the exact twelve headers and no data.');
     config.getRange('B2').setValue(fallTerm);config.getRange('B3').setValue(year.short);config.getRange('B5').setValue('TESTING');config.getRange('B7').setValue(linked[0].getName());config.getRange('B16').setValue(form.getId());
