@@ -35,7 +35,7 @@ function pointFeeds(year, events = [], status = 'LIVE') {
   };
 }
 const sourceFor = year => ({ label: year.replace('-', '–'), attendanceSheetUrl: `https://docs.google.com/spreadsheets/d/points-${year}-123456789012345/edit`, pointsMasterUrl: `https://docs.google.com/spreadsheets/d/master-${year}-123456789012345/edit`, budgetTrackerUrl: `https://docs.google.com/spreadsheets/d/budget-${year}-123456789012345/edit`, engagementGoal: 100 });
-function runtime(feeds = {}) {
+function runtime(feeds = {}, socialFeed = null) {
   const nodes = new Map();
   const requests = [];
   const failures = [];
@@ -70,8 +70,11 @@ function runtime(feeds = {}) {
   } };
   function Option(text, value) { const option = element("option"); option.textContent = text; option.value = value; return option; }
   class CustomEvent extends Event { constructor(type, options) { super(type); this.detail = options.detail; } }
-  const sandbox = { CustomEvent, Option, window, document, sessionStorage: storage, localStorage: storage, AbortController, DOMException, URL, URLSearchParams, Date, Intl, Math, Promise, Event, setTimeout, clearTimeout, queueMicrotask, console: { warn(...items) { failures.push(items); }, error(...items) { failures.push(items); }, log() {} } };
+  const fetch = async url => { if (String(url).includes("posting-health.json") && socialFeed) return {ok:true,json:async()=>socialFeed}; throw new Error("Fixture feed unavailable"); };
+  const sandbox = { fetch, CustomEvent, Option, window, document, sessionStorage: storage, localStorage: storage, AbortController, DOMException, URL, URLSearchParams, Date, Intl, Math, Promise, Event, setTimeout, clearTimeout, queueMicrotask, console: { warn(...items) { failures.push(items); }, error(...items) { failures.push(items); }, log() {} } };
   sandbox.globalThis = sandbox;
+  vm.runInNewContext(readFileSync(new URL("../assets/js/social-health.js", import.meta.url), "utf8"), sandbox);
+  window.ASME_SOCIAL_HEALTH = sandbox.ASME_SOCIAL_HEALTH;
   vm.runInNewContext(sharedSource, sandbox);
   window.ASME_SHARED_RESOURCES = sandbox.ASME_SHARED_RESOURCES;
   const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
@@ -440,4 +443,23 @@ test('turnout selection survives resizing but cannot leak into a different perio
   assert.equal(run.node('attendance-event-count').textContent, '');
   assert.equal(run.node('attendance-chart').children.length, 0);
   assert.equal(run.node('attendance-event-picker').onchange, null);
+});
+
+
+test('social monitor failure remains visible with otherwise loaded attendance and when attendance fails', async () => {
+  for (const feeds of [{ '2026-2027': pointFeeds('2026-2027') }, { '2026-2027': { System_Status: new Error('unavailable') } }]) {
+    const r = runtime(feeds);
+    await r.api.loadDashboard('2026-2027');
+    const cards = r.node('health-attention-grid').children;
+    assert.ok(cards.some(card => card.children[0].children[0].textContent === 'Social posting'));
+    assert.ok(r.node('operations-list').children.some(card => JSON.stringify(card).includes('Social posting needs attention')));
+  }
+});
+
+test('real Social Hub feed reaches production health rendering with actionable missing receipts', async () => {
+  const timestamp = new Date().toISOString();
+  const r = runtime({ '2026-2027': pointFeeds('2026-2027') }, {schemaVersion:1,generatedAt:timestamp,activeYear:'2026-27',calendar:{generatedAt:timestamp,feedUrl:'',candidates:[]},campaigns:[],tokenWarning:{status:'unknown',configured:true,checkedAt:timestamp}});
+  await r.api.loadDashboard('2026-2027');
+  const card = r.node('health-attention-grid').children.find(card => card.children[0].children[0].textContent === 'Social posting');
+  assert.match(card.children[1].textContent,/token expiry need verification/);
 });

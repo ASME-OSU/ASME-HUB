@@ -44,7 +44,7 @@
       savedConfig = config;
       fields.forEach(key => document.getElementById(key).value = config[key] || '');
       document.getElementById('annualGoal').value = config.engagementGoal;
-      document.getElementById('goal-source').textContent = (config.goalSource || 'Saved chapter setup') + ': ' + config.engagementGoal + ' members. You can change the goal for a new year.';
+      document.getElementById('goal-source').textContent = (config.goalSource || 'Saved chapter setup') + ': ' + config.engagementGoal + (config.existing ? ' members. This goal is saved for this year. Ask the President to review any changes.' : ' members. You can change the goal for a new year.');
       document.getElementById('workspace-summary').textContent = 'Using ' + (config.workspaceMode === 'production' ? 'Real handoff' : config.workspaceMode === 'rehearsal' ? 'Practice only' : 'an unconfirmed workspace') + '. We will keep the saved chapter folder and settings sheet. Calendar: ' + (config.calendarIcalUrl ? 'saved chapter calendar' : 'no feed saved') + '.';
       document.getElementById('configuration').open = !config.rootFolderId || config.workspaceMode !== mode;
       document.getElementById('create').disabled = config.workspaceMode !== mode || !config.rootFolderId;
@@ -80,6 +80,7 @@
         try { assertContext(); if (result.targetYear !== year) throw new Error('Google returned a different year. Reopen the original year to resume.'); }
         catch(error) { failed(error); return; }
         setBusy(false); receipt = result.readableReceipt; receiptYear = result.targetYear;
+        showConfig({...approvedConfig, existing:true, engagementGoal:answers.engagementGoal, goalSource:'This year’s saved setup'});
         const links = document.getElementById('links'); links.replaceChildren();
         const targets = [['Annual folder', result.folderUrl], ['Points Master', result.links.pointsMaster], ['Attendance Form editor', result.formEditUrl], ['Attendance Form respondent', result.links.formRespondent], ['Points Export', result.links.pointsExport], ['Budget Tracker', result.links.budgetTracker], ['Budget Export', result.links.budgetExport]];
         targets.forEach(([title, url]) => { const li = document.createElement('li'), a = document.createElement('a'); a.textContent = title; a.href = url; a.rel = 'noopener noreferrer'; li.append(a); links.append(li); });

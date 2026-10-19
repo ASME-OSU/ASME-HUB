@@ -26,6 +26,7 @@ if (stylelint.status !== 0) {
 for (const path of [
   "assets/js/config.js",
   "assets/js/app.js",
+  "assets/js/social-health.js",
   "assets/js/settings-readback.js",
   "assets/js/pwa.js",
   "assets/js/transition.js",

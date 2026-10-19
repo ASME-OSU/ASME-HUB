@@ -53,6 +53,7 @@ window.ASME_HUB_CONFIG = {
     "Leave the chapter stronger than you found it.",
     "Finish the year with momentum to pass on.",
   ],
+  socialPosting: { feedUrl: "https://asme-osu.github.io/ASME-Social-Hub/data/posting-health.json" },
   sharedSettings: {
     spreadsheetUrl:
       "https://docs.google.com/spreadsheets/d/156HoZkWmqjUghT3dXHRhepi7QahsqDvDgcQVs705oRM/edit",
@@ -273,6 +274,15 @@ window.ASME_HUB_CONFIG = {
       url: "https://org.osu.edu/asme/member-points-page/",
       category: "Members",
       icon: "users",
+    },
+    {
+      id: "social-hub",
+      title: "Social Hub",
+      description: "Schedule event promotion and reconcile Instagram and GroupMe publication receipts.",
+      label: "Open Social Hub",
+      url: "https://asme-osu.github.io/ASME-Social-Hub/",
+      category: "Communications",
+      icon: "mail",
     },
     {
       id: "newsletter-builder",

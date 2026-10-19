@@ -125,7 +125,7 @@
         "Event Operations",
         "Events Calendar",
         "Attendance Check-In",
-        "Newsletter Builder",
+        "Social Hub",
       ],
       resourceCategories: ["Events", "Attendance", "Communications"],
       priorityTerms: ["event", "calendar", "location", "social", "attendance"],
@@ -2516,6 +2516,19 @@
     }
   }
 
+  async function loadSocialSnapshot({ signal } = {}) {
+    const url = new URL(config.socialPosting?.feedUrl || "https://asme-osu.github.io/ASME-Social-Hub/data/posting-health.json");
+    url.searchParams.set("refresh", String(Date.now()));
+    return fetchJsonWithTimeout(url.href, { signal, timeoutMs: 6000 });
+  }
+
+  function socialPostingResult(outcome, calendar, source, year) {
+    const monitor = window.ASME_SOCIAL_HEALTH;
+    if (!monitor) return { health: { label: "Social posting", status: "ACTION", detail: "Posting monitor could not initialize. Reload the Hub." }, operations: [] };
+    if (outcome.status !== "fulfilled") return monitor.unavailable("Social Hub posting monitor could not refresh; publication is unverified");
+    return monitor.evaluate(outcome.value, { year, calendarEvents: calendar.events, calendarHealthy: calendar.health.status === "LIVE", calendarUrl: source.calendarIcalUrl });
+  }
+
   function calendarSnapshotRequestUrl() {
     const url = new URL(calendarSnapshotUrl, window.location.href);
     // The snapshot changes without a new commit during scheduled Pages runs.
@@ -2981,15 +2994,17 @@
             : Promise.reject(new Error("No attendance data source is configured."));
       // These sources deliberately begin together.  Attendance failures must
       // not suppress the current year's calendar or aggregate budget display.
-      const [attendanceResult, calendarOutcome, budgetResult] = await Promise.allSettled([
+      const [attendanceResult, calendarOutcome, budgetResult, socialOutcome] = await Promise.allSettled([
         attendanceTask,
         loadCalendarEvents(source, year, { signal: controller.signal }),
         loadBudgetSummary(source, { signal: controller.signal }),
+        loadSocialSnapshot({ signal: controller.signal }),
       ]);
       if (!isCurrent()) return;
       const calendar = calendarOutcome.status === "fulfilled"
         ? calendarOutcome.value
         : calendarResult([], "ACTION", "Calendar request unavailable");
+      const social = socialPostingResult(socialOutcome, calendar, source, year);
       const budget = budgetResult.status === "fulfilled"
         ? budgetResult.value
         : { available: false, error: "The sanitized budget feed could not be loaded." };
@@ -3012,11 +3027,11 @@
         activeBudget = budget;
         renderUpcomingEvents(calendar.events.slice(0, 5));
         renderBudget(budget, source);
-        renderHealth([{ label: "Dashboard data", status: "ACTION", detail: message }, calendar.health, {
+        renderHealth([{ label: "Dashboard data", status: "ACTION", detail: message }, calendar.health, social.health, {
           label: "Budget feed", status: budgetNeedsAttention ? "ACTION" : "LIVE",
           detail: budgetHealthDetail,
         }]);
-        renderOperations([{ severity: "warning", title: "Attendance data unavailable", detail: `${message} Check export sharing, System_Status and import authorization, then Retry.`, actionLabel: "Open public export", actionUrl: source.attendanceSheetUrl }, ...calendar.operations]);
+        renderOperations([{ severity: "warning", title: "Attendance data unavailable", detail: `${message} Check export sharing, System_Status and import authorization, then Retry.`, actionLabel: "Open public export", actionUrl: source.attendanceSheetUrl }, ...calendar.operations, ...social.operations]);
         return;
       }
       const data = attendanceResult.value;
@@ -3025,6 +3040,7 @@
       data.health = [
         ...(data.health || []),
         calendar.health,
+        social.health,
         {
           label: "Budget feed",
           status: budgetNeedsAttention ? "ACTION" : "LIVE",
@@ -3033,6 +3049,7 @@
       ];
       data.operations = [
         ...(data.operations || []),
+        ...social.operations,
         ...calendar.operations.map((item) => ({
           ...item,
           actionUrl:

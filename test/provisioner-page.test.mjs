@@ -54,6 +54,15 @@ test('setup page explains the single-account Chrome requirement and summary',()=
 
 
 const bindingPending = 'Google response tab not uniquely observed yet; retry this same run. No name was guessed.';
+test('fallback locks the created annual goal for reopening and unlocks a different new year',()=>{
+ const p=page();p.calls[0].success({...config,existing:false});p.get('year').value='2027-2028';p.get('annualGoal').value='60';
+ p.get('annual-form').submit();p.calls[1].failure({message:bindingPending});
+ p.calls[2].success({success:true,targetYear:'2027-2028',folderUrl:'https://drive.google.com/drive/folders/annual',formEditUrl:'https://docs.google.com/forms/d/form/edit',links:{pointsMaster:'https://docs.google.com/spreadsheets/d/master/edit',formRespondent:'https://docs.google.com/forms/d/e/form/viewform',pointsExport:'https://docs.google.com/spreadsheets/d/points/edit',budgetTracker:'https://docs.google.com/spreadsheets/d/budget/edit',budgetExport:'https://docs.google.com/spreadsheets/d/export/edit'},readableReceipt:'receipt',hubHandoff:'handoff',next:'Enable automatic event sync'});
+ assert.equal(p.get('annualGoal').readOnly,true);assert.equal(p.get('annualGoal').value,'60');assert.match(p.get('goal-source').textContent,/This year’s saved setup: 60 members/);assert.doesNotMatch(p.get('goal-source').textContent,/You can change/);assert.equal(p.get('result').hidden,false);
+ p.get('annual-form').submit();assert.equal(p.calls[3].arg,'2027-2028');assert.equal(p.calls[3].answers.engagementGoal,'60');p.calls[3].failure({message:'Network failed'});
+ p.get('year').value='2028-2029';p.get('year').handlers.change();assert.equal(p.calls[4].arg,'2028-2029');p.calls[4].success({...config,existing:false,engagementGoal:75});
+ assert.equal(p.get('annualGoal').readOnly,false);assert.equal(p.get('annualGoal').value,75);assert.match(p.get('goal-source').textContent,/You can change/);
+});
 test('fallback retries only exact pending binding once with captured year and answers',()=>{
  const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();p.calls[1].failure({message:bindingPending});
  assert.equal(p.calls.length,3);assert.equal(p.get('year').disabled,true);assert.equal(p.calls[2].arg,p.calls[1].arg);assert.deepEqual(p.calls[2].answers,p.calls[1].answers);
