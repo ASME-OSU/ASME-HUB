@@ -51,3 +51,25 @@ test('setup page explains the single-account Chrome requirement and summary',()=
  assert.match(html,/Setup summary:[\s\S]*seven links/);
  assert.ok(html.indexOf('id="account-warning"')<html.indexOf('id="annual-form"'));
 });
+
+
+const bindingPending = 'Google response tab not uniquely observed yet; retry this same run. No name was guessed.';
+test('fallback retries only exact pending binding once with captured year and answers',()=>{
+ const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();p.calls[1].failure({message:bindingPending});
+ assert.equal(p.calls.length,3);assert.equal(p.get('year').disabled,true);assert.equal(p.calls[2].arg,p.calls[1].arg);assert.deepEqual(p.calls[2].answers,p.calls[1].answers);
+ p.calls[2].failure({message:bindingPending});assert.equal(p.calls.length,3);assert.equal(p.get('year').disabled,false);assert.equal(p.get('status').dataset.error,'true');
+});
+test('fallback does not retry auth network or ambiguous binding failures',()=>{
+ for(const message of ['Authorization expired','Network failed','More than one response tab is linked to this Form.']){
+ const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();p.calls[1].failure({message});assert.equal(p.calls.length,2);assert.equal(p.get('year').disabled,false);
+ }
+});
+test('fallback recognizes the Google ScriptError wrapper for pending binding',()=>{
+ const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();p.calls[1].failure({message:'Error: '+bindingPending});assert.equal(p.calls.length,3);assert.deepEqual(p.calls[2].answers,p.calls[1].answers);
+});
+test('fallback does not resume when captured year or goal changed',()=>{
+ for(const field of ['year','annualGoal']){const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();p.get(field).value='changed';p.calls[1].failure({message:bindingPending});assert.equal(p.calls.length,2);assert.equal(p.get('status').dataset.error,'true');}
+});
+test('fallback rejects stale success after the automatic resume',()=>{
+ const p=page();p.calls[0].success(config);p.get('year').value='2027-2028';p.get('annual-form').submit();p.calls[1].failure({message:bindingPending});p.get('year').value='2028-2029';p.calls[2].success({targetYear:'2027-2028'});assert.equal(p.get('result').hidden,true);assert.equal(p.get('status').dataset.error,'true');
+});

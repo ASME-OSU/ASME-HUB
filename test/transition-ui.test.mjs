@@ -999,3 +999,28 @@ test("failed reconnect clears the previously approved workspace before creating 
  await connectSetup(ui);assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);
  await runSetup(ui);assert.equal(fixture.calls.filter(c=>c.name==="runAnnualSetup").length,1);
 });
+
+
+const bindingPending = 'Google response tab not uniquely observed yet; retry this same run. No name was guessed.';
+test('connected setup resumes exact binding-pending once with identical captured arguments',async()=>{
+ let count=0;const fixture=connectedFixture({run:()=>{if(++count===1)throw new Error(bindingPending);return fixture.result;}});
+ const ui=browser(new Map(),[],false,fixture.client);await ui.go('T02');await connectSetup(ui);await runSetup(ui);
+ const calls=fixture.calls.filter(c=>c.name==='runAnnualSetup');assert.equal(calls.length,2);assert.deepEqual(calls[0].parameters,calls[1].parameters);
+ assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey('2027-2028'))).length,1);
+});
+test('connected setup does not retry other errors and stops after one pending resume',async()=>{
+ for(const [message,expected] of [['Authorization expired',1],['Network failed',1],['More than one response tab is linked to this Form.',1],[bindingPending,2]]){
+ const fixture=connectedFixture({run:()=>{throw new Error(message);}});const ui=browser(new Map(),[],false,fixture.client);await ui.go('T02');await connectSetup(ui);await runSetup(ui);
+ assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,expected);assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,false);
+ }
+});
+test('connected setup refuses binding resume when checklist changed during first request',async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise});const ui=browser(new Map(),[],false,fixture.client);await ui.go('T02');await connectSetup(ui);const running=runSetup(ui);
+ ui.$('transition-run-name').value='Changed checklist';await startRun(ui);pending.resolve(Promise.reject(new Error(bindingPending)));await running;
+ assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,1);assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey('2027-2028'))).length,0);
+});
+test('connected setup rejects changed context after successful binding resume',async()=>{
+ let count=0;const pending=deferredSetup(),fixture=connectedFixture({run:()=>{if(++count===1)throw new Error(bindingPending);return pending.promise;}});const ui=browser(new Map(),[],false,fixture.client);await ui.go('T02');await connectSetup(ui);const running=runSetup(ui);
+ for(let i=0;i<10;i++)await Promise.resolve();ui.$('transition-run-name').value='Changed after resume';await startRun(ui);pending.resolve(fixture.result);await running;
+ assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,2);assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey('2027-2028'))).length,0);
+});

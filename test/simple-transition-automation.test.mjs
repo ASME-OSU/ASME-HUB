@@ -46,7 +46,9 @@ function harness(){
   const sourceSheets=[cfg,new Sheet('_Raw_Ingest',[],[[ctx.ASME_RAW_INGEST_FORMULA]]),events,new Sheet('Roster',[],[["=INDEX('_Raw_Ingest'!C:C,ROW())"]]),new Sheet('Point Log',[],[['=INDEX(_Raw_Ingest!K:K,ROW())']]),new Sheet('Website Staging')];
   for(const [k,id]of Object.entries(ctx.ASME_ANNUAL_TEMPLATES)){new File(id,k,null,false,k==='attendanceForm'?'form':'sheet');if(k==='pointsMaster')book(id,sourceSheets);else if(k==='attendanceForm')form(id);else if(k==='budgetTracker')book(id,[new Sheet('Setup & Lists'),new Sheet('Start Here',[['ASME Budget Tracker — TEMPLATE — MAKE A COPY']]),new Sheet('Dashboard',[['ASME Budget Tracker — TEMPLATE — COPY BEFORE SETUP']])]);else book(id,[new Sheet('Config')]);}
   props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({rootFolderId:'root',controlCenterId:'center',engagementGoal:25,workspaceMode:'rehearsal',calendarIcalUrl:'https://example.org/calendar.ics'}));writes.length=0;
-  return {delayObservation:n=>{observationDelay=n;},ctx,files,books,forms,props,triggers,writes,settings,Sheet,File,book,form,events,eventHeaders,setActor:v=>{actor=v;},setActiveActor:v=>{activeActor=v;},loseCopy:()=>{failCopy=true;},loseAppend:()=>{failAppend=true;},run:()=>ctx.provisionAnnualYear('2027-2028','Fall 2027'),runKey:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId);},state:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return JSON.parse(props.get(ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId)));}};
+  // Model the UI's one-time fresh-execution resume, never generic retries.
+  function resumeOnce(call){try{return call();}catch(error){if(error.message!=='Google response tab not uniquely observed yet; retry this same run. No name was guessed.')throw error;return call();}}
+  return {delayObservation:n=>{observationDelay=n;},ctx,files,books,forms,props,triggers,writes,settings,Sheet,File,book,form,events,eventHeaders,setActor:v=>{actor=v;},setActiveActor:v=>{activeActor=v;},loseCopy:()=>{failCopy=true;},loseAppend:()=>{failAppend=true;},runOnce:()=>ctx.provisionAnnualYear('2027-2028','Fall 2027'),run:()=>resumeOnce(()=>ctx.provisionAnnualYear('2027-2028','Fall 2027')),runSetup:(...args)=>resumeOnce(()=>ctx.runAnnualSetup(...args)),runKey:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId);},state:()=>{const cfg=JSON.parse(props.get('ANNUAL_PROVISIONER_CONFIG'));return JSON.parse(props.get(ctx.asmeAnnualRunKey_('2027-2028',cfg.rootFolderId,cfg.controlCenterId)));}};
 }
 test('actual provisioner creates five private copies, observed pointer, six dates and exact inactive row',()=>{
   const h=harness(),r=h.run(),s=r.receipt;
@@ -164,7 +166,7 @@ test('malformed saved receipt rejects without creating copies',()=>{const h=harn
 
 test('closed-row duplicate IDs and string checkbox values cannot silently corrupt dropdown eligibility',()=>{const h=harness(),rows=clone(h.events.values);rows.push([...rows[1].slice(0,7),false,false]);assert.throws(()=>h.ctx.asmeEventChoices_(rows),/Duplicate event ID/);const invalid=clone(h.events.values);invalid[1][7]='TRUE';assert.throws(()=>h.ctx.asmeEventChoices_(invalid),/boolean checkboxes/);});
 
-test('one-argument UI route and fixed editor entry require no per-year target property',()=>{const h=harness();assert.equal(h.props.has('ANNUAL_PROVISIONER_TARGET'),false);assert.equal(h.ctx.provision2027_2028().success,true);assert.equal(h.ctx.provisionReviewedAnnualYear('2027-2028').success,true);assert.throws(()=>h.ctx.provisionReviewedAnnualYear('2027-2029'),/consecutive/);assert.equal(h.settings.values.length,2);});
+test('one-argument UI route and fixed editor entry require no per-year target property',()=>{const h=harness();assert.equal(h.props.has('ANNUAL_PROVISIONER_TARGET'),false);assert.throws(()=>h.ctx.provision2027_2028(),error=>error.message==='Google response tab not uniquely observed yet; retry this same run. No name was guessed.');assert.equal(h.ctx.provision2027_2028().success,true);assert.equal(h.ctx.provisionReviewedAnnualYear('2027-2028').success,true);assert.throws(()=>h.ctx.provisionReviewedAnnualYear('2027-2029'),/consecutive/);assert.equal(h.settings.values.length,2);});
 
 test('execute-as-owner invocation still refuses another active account or unknown active identity',()=>{for(const account of ['personal@example.com','']){const h=harness();h.setActiveActor(account);assert.throws(()=>h.ctx.provisionReviewedAnnualYear('2027-2028'),/chapter/);assert.equal(h.writes.length,0);}});
 
@@ -173,14 +175,14 @@ test('setup screen saves validated chapter links without editing properties manu
   const cfg=h.ctx.saveAnnualSetupConfig({rootFolderId:'https://drive.google.com/drive/folders/root?usp=sharing',controlCenterId:'https://docs.google.com/spreadsheets/d/center/edit',engagementGoal:'25',workspaceMode:'rehearsal',calendarIcalUrl:'https://example.org/calendar.ics'});
   assert.equal(cfg.rootFolderId,'root');assert.equal(cfg.controlCenterId,'center');assert.equal(cfg.engagementGoal,25);
   assert.equal(h.ctx.getAnnualSetupConfig().rootFolderId,'root');
-  const r=h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(r.success,true);assert.equal(Object.keys(r.links).length,5);assert.match(r.readableReceipt,/inactive|FALSE/);
-  const before=h.writes.length;h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(h.writes.length,before);
+  const r=h.runSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(r.success,true);assert.equal(Object.keys(r.links).length,5);assert.match(r.readableReceipt,/inactive|FALSE/);
+  const before=h.writes.length;h.runSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(h.writes.length,before);
 });
 test('setup screen rejects wrong account, invalid goal, resource links and headers before saving',()=>{
   const h=harness(),valid={rootFolderId:'root',controlCenterId:'center',engagementGoal:25,workspaceMode:'rehearsal'},before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
   for(const delta of [{engagementGoal:0},{engagementGoal:1.5},{rootFolderId:'https://evil.example/root'},{calendarIcalUrl:'http://example.org/feed'},{rootFolderId:h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster}])assert.throws(()=>h.ctx.saveAnnualSetupConfig({...valid,...delta}));
   h.settings.values[0][0]='wrong';assert.throws(()=>h.ctx.saveAnnualSetupConfig(valid),/headers/);
-  h.setActiveActor('someone@example.com');assert.throws(()=>h.ctx.getAnnualSetupConfig(),/chapter/);assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/chapter/);
+  h.setActiveActor('someone@example.com');assert.throws(()=>h.ctx.getAnnualSetupConfig(),/chapter/);assert.throws(()=>h.runSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/chapter/);
   assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);assert.equal(h.writes.length,0);
 });
 function cleanupFixture(){
@@ -244,43 +246,43 @@ test('canceling cleanup confirmation changes neither store',()=>{
 
 test('annual questions use a per-year goal, preserve saved chapter defaults and resume with saved goal',()=>{
  const h=harness(),before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
- const r=h.ctx.runAnnualSetup('2027-2028',{engagementGoal:'50',mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});
+ const r=h.runSetup('2027-2028',{engagementGoal:'50',mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});
  assert.equal(r.receipt,undefined);assert.equal(JSON.parse(r.hubHandoff).year,'2027-2028');assert.equal(Object.keys(JSON.parse(r.hubHandoff).links).length,7);
  assert.match(JSON.parse(r.hubHandoff).mock.controlCenterUrl,/center/);
  assert.equal(h.state().plan.engagementGoal,50);assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);
  assert.equal(h.ctx.getAnnualSetupConfig('2027-2028').engagementGoal,50);assert.equal(h.ctx.getAnnualSetupConfig('2027-2028').existing,true);
- const writes=h.writes.length;h.ctx.runAnnualSetup('2027-2028',{engagementGoal:50,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(h.writes.length,writes);
- assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{engagementGoal:51,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/configuration changed/);assert.equal(h.writes.length,writes);
+ const writes=h.writes.length;h.runSetup('2027-2028',{engagementGoal:50,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.equal(h.writes.length,writes);
+ assert.throws(()=>h.runSetup('2027-2028',{engagementGoal:51,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/configuration changed/);assert.equal(h.writes.length,writes);
 });
 
 test('goal suggestion reads last year without copying old annual destinations or approving the goal',()=>{
  const h=harness();const previous=Array(20).fill('');previous[0]='2026-2027';previous[2]=65;previous[3]='old-export';h.settings.values.push(previous);
  const before=h.props.get('ANNUAL_PROVISIONER_CONFIG'),view=h.ctx.getAnnualSetupConfig('2027-2028');
  assert.equal(view.engagementGoal,65);assert.match(view.goalSource,/2026-2027/);assert.equal(view.existing,false);assert.equal(h.writes.length,0);assert.equal(h.props.get('ANNUAL_PROVISIONER_CONFIG'),before);
- const result=h.ctx.runAnnualSetup('2027-2028',{engagementGoal:70,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.notEqual(result.links.pointsExport,'old-export');assert.equal(h.state().plan.engagementGoal,70);
+ const result=h.runSetup('2027-2028',{engagementGoal:70,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});assert.notEqual(result.links.pointsExport,'old-export');assert.equal(h.state().plan.engagementGoal,70);
 });
 
 test('real handoff cannot silently reuse Practice or unconfirmed workspace; invalid goal writes nothing',()=>{
  for(const answers of [{engagementGoal:25,mode:'production',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'},{engagementGoal:0,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'},{engagementGoal:1.5,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}]){
-  const h=harness();assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',answers));assert.equal(h.writes.length,0);
+  const h=harness();assert.throws(()=>h.runSetup('2027-2028',answers));assert.equal(h.writes.length,0);
  }
  const h=harness();const cfg=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG'));delete cfg.workspaceMode;h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify(cfg));
- assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/confirm/);assert.equal(h.writes.length,0);
+ assert.throws(()=>h.runSetup('2027-2028',{engagementGoal:25,mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'}),/confirm/);assert.equal(h.writes.length,0);
 });
 
 test('workspace purpose is immutable and stored on created runs',()=>{
- const h=harness(),cfg=h.ctx.getAnnualSetupConfig();h.ctx.runAnnualSetup('2027-2028',{...cfg,mode:'rehearsal'});
+ const h=harness(),cfg=h.ctx.getAnnualSetupConfig();h.runSetup('2027-2028',{...cfg,mode:'rehearsal'});
  assert.equal(h.state().workspaceMode,'rehearsal');const writes=h.writes.length;
  assert.throws(()=>h.ctx.saveAnnualSetupConfig({...cfg,workspaceMode:'production'}),/Do not change/);assert.equal(h.writes.length,writes);
  // Even external property changes cannot reclassify the previously created files.
  h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({...JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG')),workspaceMode:'production'}));
- const changed=h.ctx.getAnnualSetupConfig();assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{...changed,mode:'production'}),/Existing files/);assert.equal(h.writes.length,writes);
+ const changed=h.ctx.getAnnualSetupConfig();assert.throws(()=>h.runSetup('2027-2028',{...changed,mode:'production'}),/Existing files/);assert.equal(h.writes.length,writes);
 });
 
 test('stale page refuses changed workspace or calendar before writing files',()=>{
  for(const change of [{rootFolderId:'other-root'},{calendarIcalUrl:'https://example.org/new.ics'}]) {
   const h=harness(),shown=h.ctx.getAnnualSetupConfig();h.props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({...JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG')),...change}));
-  assert.throws(()=>h.ctx.runAnnualSetup('2027-2028',{...shown,mode:'rehearsal'}),/confirm/);assert.equal(h.writes.length,0);
+  assert.throws(()=>h.runSetup('2027-2028',{...shown,mode:'rehearsal'}),/confirm/);assert.equal(h.writes.length,0);
  }
 });
 
@@ -290,7 +292,7 @@ test('old workspace with existing unclassified files cannot be relabeled real',(
 });
 
 test('Real and Practice cannot share either root or settings sheet even after changing current config',()=>{
- const h=harness();h.ctx.runAnnualSetup('2027-2028',{...h.ctx.getAnnualSetupConfig(),mode:'rehearsal'});
+ const h=harness();h.runSetup('2027-2028',{...h.ctx.getAnnualSetupConfig(),mode:'rehearsal'});
  new h.File('newroot','New root',null,true);new h.File('newcenter','New center',null);h.book('newcenter',[new h.Sheet('Hub_Settings_Public',[h.ctx.ASME_ANNUAL_HEADERS])]);
  const cfg=JSON.parse(h.props.get('ANNUAL_PROVISIONER_CONFIG')),before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
  for(const change of [{rootFolderId:'newroot'},{controlCenterId:'newcenter'}]) assert.throws(()=>h.ctx.saveAnnualSetupConfig({...cfg,...change,workspaceMode:'production'}),/separate folder and settings sheet/);
@@ -325,4 +327,20 @@ test('annual setup observes a fresh spreadsheet handle when the original sheet l
   const writes=h.writes.length;
   assert.equal(h.run().receipt.ids.pointsMaster,result.receipt.ids.pointsMaster);
   assert.equal(h.writes.length,writes);
+});
+
+
+test('new destination returns pending before configuration and fresh execution resumes same artifacts',()=>{
+ const h=harness();
+ assert.throws(()=>h.runOnce(),error=>error.message==='Google response tab not uniquely observed yet; retry this same run. No name was guessed.');
+ const pending=h.state(),master=h.books.get(pending.ids.pointsMaster),form=h.forms.get(pending.ids.attendanceForm);
+ assert.equal(pending.phase,'new');assert.equal(form.destination,master.getId());assert.equal(form.accepting,false);
+ assert.equal(master.getSheetByName('Config').getRange('B7').getValue(),'Form Responses 1');assert.equal(h.settings.values.length,1);
+ assert.equal(h.writes.filter(x=>x==='copy').length,5);assert.equal(h.writes.filter(x=>x==='destination').length,1);
+ const result=h.runOnce();
+ assert.equal(result.success,true);assert.equal(result.receipt.ids.pointsMaster,pending.ids.pointsMaster);
+ assert.equal(master.getSheetByName('Config').getRange('B7').getValue(),'Observed response 8');
+ assert.equal(h.writes.filter(x=>x==='copy').length,5);assert.equal(h.writes.filter(x=>x==='destination').length,1);assert.equal(h.settings.values.length,2);
+ assert.equal(form.accepting,false);assert.equal(h.settings.values[1][10],false);assert.equal(h.settings.values[1][11],false);
+ const before=h.writes.length;h.runOnce();assert.equal(h.writes.length,before);
 });

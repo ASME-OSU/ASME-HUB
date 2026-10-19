@@ -69,9 +69,16 @@
       event.preventDefault(); if (busy) return;
       if (!savedConfig || savedConfig.workspaceMode !== mode) { say('The President must confirm this workspace first.', true); return; }
       document.getElementById('result').hidden = true;
-      const year = document.getElementById('year').value.trim();
+      const year = document.getElementById('year').value.trim(), approvedConfig = savedConfig;
+      const answers = {engagementGoal:document.getElementById('annualGoal').value, mode:mode, rootFolderId:approvedConfig.rootFolderId, controlCenterId:approvedConfig.controlCenterId, configRevision:approvedConfig.configRevision};
+      function assertContext() {
+        if (document.getElementById('year').value.trim() !== year || savedConfig !== approvedConfig || document.getElementById('annualGoal').value !== answers.engagementGoal) throw new Error('The year, workspace or goal changed during setup. Reopen the original year to resume.');
+      }
       setBusy(true); say('Creating annual files. Keep this page open. If setup stops, run the same year again to resume.');
+      function run(retried) {
       google.script.run.withSuccessHandler(result => {
+        try { assertContext(); if (result.targetYear !== year) throw new Error('Google returned a different year. Reopen the original year to resume.'); }
+        catch(error) { failed(error); return; }
         setBusy(false); receipt = result.readableReceipt; receiptYear = result.targetYear;
         const links = document.getElementById('links'); links.replaceChildren();
         const targets = [['Annual folder', result.folderUrl], ['Points Master', result.links.pointsMaster], ['Attendance Form editor', result.formEditUrl], ['Attendance Form respondent', result.links.formRespondent], ['Points Export', result.links.pointsExport], ['Budget Tracker', result.links.budgetTracker], ['Budget Export', result.links.budgetExport]];
@@ -79,7 +86,16 @@
         document.getElementById('hub-results').value = result.hubHandoff || ''; document.getElementById('copy-status').textContent = 'Next: copy these results, return to Step 2 in the Hub, paste them and choose Save setup results.';
         document.getElementById('receipt').textContent = receipt; document.getElementById('next').textContent = result.next; document.getElementById('result').hidden = false;
         say('Annual setup ready. Intake is closed, Points is TESTING and the year is inactive.');
-      }).withFailureHandler(failed).runAnnualSetup(year, {engagementGoal:document.getElementById('annualGoal').value, mode:mode, rootFolderId:savedConfig.rootFolderId, controlCenterId:savedConfig.controlCenterId, configRevision:savedConfig.configRevision});
+      }).withFailureHandler(error => {
+        const message = String(error && error.message || '').replace(/^Error: /, '');
+        if (!retried && message === "Google response tab not uniquely observed yet; retry this same run. No name was guessed.") {
+          try { assertContext(); } catch(changed) { failed(changed); return; }
+          say('Google is finishing the response connection. Reopening the same annual files…');
+          run(true);
+        } else failed(error);
+      }).runAnnualSetup(year, answers);
+      }
+      run(false);
     });
     document.getElementById('copy').addEventListener('click', async () => {
       const text = document.getElementById('hub-results'); text.focus(); text.select();

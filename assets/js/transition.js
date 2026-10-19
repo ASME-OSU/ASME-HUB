@@ -734,7 +734,14 @@ if (section) {
         if (!Number.isInteger(approvedGoal) || approvedGoal <= 0) throw new Error("Enter a positive whole-number member goal approved by the President.");
         const answers = { engagementGoal: approvedGoal, mode: context.mode, rootFolderId: approved.rootFolderId, controlCenterId: approved.controlCenterId, configRevision: approved.configRevision };
         annualSetupPending = true; session.error = false; session.receipt = ""; session.message = "Creating or reopening annual files. Keep the Hub open. If this stops, retry the same year to resume; do not create a second workspace."; render();
-        const result = await client.call("runAnnualSetup", [context.year, answers]);
+        let result;
+        try { result = await client.call("runAnnualSetup", [context.year, answers]); }
+        catch (error) {
+          if (error.message !== "Google response tab not uniquely observed yet; retry this same run. No name was guessed.") throw error;
+          assertSetupContext(context);
+          session.message = "Google is finishing the response connection. Reopening the same annual files…"; render();
+          result = await client.call("runAnnualSetup", [context.year, answers]);
+        }
         assertSetupContext(context);
         if (!result || result.success !== true || result.targetYear !== context.year) throw new Error("Google did not confirm setup for the selected year. Reconnect and reopen the same year before retrying.");
         saveSetupResults(result.hubHandoff);
