@@ -55,7 +55,7 @@ function runtime(feeds = {}, socialFeed = null) {
   const document = { title: 'Fixture', body: element(), getElementById: node, createElement: element, createTextNode(text) { return { textContent: text }; }, createElementNS: (_ns, tag) => element(tag), querySelector() { return null; }, querySelectorAll() { return []; }, addEventListener() {}, dispatchEvent(event) { dispatched.push(event); return true; } };
   const config = { currentAcademicYear: '2026-2027', access: {}, dataSources: { '2026-2027': sourceFor('2026-2027'), '2027-2028': sourceFor('2027-2028') }, resources: [{ id: 'budget-tracker', title: '2026–2027 Budget Tracker', label: 'Open budget', category: 'Finance', settingKey: 'budgetTrackerUrl', quickAction: { label: 'Budget tracker', detail: '2026–2027 workbook' } }] };
   const storage = { getItem() { return null; }, setItem() {}, removeItem() {} };
-  const window = { ASME_HUB_CONFIG: config, location: { protocol: 'https:', hash: '' }, setTimeout, clearTimeout, matchMedia() { return { matches: false, addEventListener() {} }; }, addEventListener(name, callback) { listeners[name] = callback; }, removeEventListener() {}, requestAnimationFrame(callback) { callback(); }, scrollTo() {} };
+  const window = { ASME_HUB_CONFIG: config, location: { protocol: 'https:', hash: '', href:'https://example.test/' }, setTimeout, clearTimeout, matchMedia() { return { matches: false, addEventListener() {} }; }, addEventListener(name, callback) { listeners[name] = callback; }, removeEventListener() {}, requestAnimationFrame(callback) { callback(); }, scrollTo() {} };
   document.head = { appendChild(script) {
     const url = new URL(script.src), sheet = url.searchParams.get('sheet');
     const callbackName = url.searchParams.get('tqx').match(/responseHandler:([^;]+)/)[1];
@@ -70,7 +70,7 @@ function runtime(feeds = {}, socialFeed = null) {
   } };
   function Option(text, value) { const option = element("option"); option.textContent = text; option.value = value; return option; }
   class CustomEvent extends Event { constructor(type, options) { super(type); this.detail = options.detail; } }
-  const fetch = async url => { if (String(url).includes("posting-health.json") && socialFeed) return {ok:true,json:async()=>socialFeed}; throw new Error("Fixture feed unavailable"); };
+  const fetch = async url => { if (String(url).includes("social-automation.json") && socialFeed?.automation) return {ok:true,json:async()=>socialFeed.automation}; if (String(url).includes("posting-health.json") && socialFeed) return {ok:true,json:async()=>socialFeed}; throw new Error("Fixture feed unavailable"); };
   const sandbox = { fetch, CustomEvent, Option, window, document, sessionStorage: storage, localStorage: storage, AbortController, DOMException, URL, URLSearchParams, Date, Intl, Math, Promise, Event, setTimeout, clearTimeout, queueMicrotask, console: { warn(...items) { failures.push(items); }, error(...items) { failures.push(items); }, log() {} } };
   sandbox.globalThis = sandbox;
   vm.runInNewContext(readFileSync(new URL("../assets/js/social-health.js", import.meta.url), "utf8"), sandbox);
@@ -456,10 +456,13 @@ test('social monitor failure remains visible with otherwise loaded attendance an
   }
 });
 
-test('real Social Hub feed reaches production health rendering with actionable missing receipts', async () => {
+test('social follow-up stays in role priorities without making healthy publishing unhealthy', async () => {
   const timestamp = new Date().toISOString();
-  const r = runtime({ '2026-2027': pointFeeds('2026-2027') }, {schemaVersion:1,generatedAt:timestamp,activeYear:'2026-27',calendar:{generatedAt:timestamp,feedUrl:'',candidates:[]},campaigns:[],tokenWarning:{status:'unknown',configured:true,checkedAt:timestamp}});
+  const r = runtime({ '2026-2027': pointFeeds('2026-2027') }, {schemaVersion:1,generatedAt:timestamp,activeYear:'2026-27',calendar:{generatedAt:timestamp,feedUrl:'',candidates:[]},campaigns:[],tokenWarning:{status:'unknown',configured:true,checkedAt:timestamp},automation:{schemaVersion:1,generatedAt:timestamp,workflows:['Posting dispatcher','Calendar import','Social Hub deployment'].map(label=>({label,available:true,maxAgeHours:6,latest:{startedAt:timestamp,status:'completed'},completed:{conclusion:'success'}}))}});
   await r.api.loadDashboard('2026-2027');
-  const card = r.node('health-attention-grid').children.find(card => card.children[0].children[0].textContent === 'Social posting');
-  assert.match(card.children[1].textContent,/token expiry need verification/);
+  const card = r.node('health-grid').children.find(card => card.children[0].children[0].textContent === 'Social posting');
+  assert.equal(card.children[0].children[1].textContent,'LIVE');
+  assert.ok(r.api.state().activeDashboardData.rolePriorities.some(p=>/token expiry/.test(p.detail)));
+  assert.ok(JSON.stringify(r.node('briefing-priorities').children).includes('Social posting follow-up'));
+  assert.ok(!JSON.stringify(r.node('operations-list').children).includes('Social posting follow-up'));
 });

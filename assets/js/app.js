@@ -190,6 +190,7 @@
   const sharedResourcesCacheKey = "asmeHubSharedResourcesV1";
   let activeUpcomingEvents = [];
   let activeOperations = [];
+  let activeRolePriorities = [];
   let activeBudget = {};
   let activeHealth = [];
   let selectedOfficerRole = "all";
@@ -793,7 +794,7 @@
 
   function prioritizedOperations() {
     const role = officerRole();
-    return activeOperations
+    return [...activeOperations, ...activeRolePriorities]
       .filter((item) => item.severity !== "success")
       .map((item, index) => ({
         item,
@@ -1420,6 +1421,7 @@
     activeDashboardData = null;
     activeUpcomingEvents = [];
     activeOperations = [];
+    activeRolePriorities = [];
     activeBudget = {};
     activeHealth = [];
     attendanceChartItems = [];
@@ -2519,7 +2521,12 @@
   async function loadSocialSnapshot({ signal } = {}) {
     const url = new URL(config.socialPosting?.feedUrl || "https://asme-osu.github.io/ASME-Social-Hub/data/posting-health.json");
     url.searchParams.set("refresh", String(Date.now()));
-    return fetchJsonWithTimeout(url.href, { signal, timeoutMs: 6000 });
+    const [posting, automation] = await Promise.allSettled([
+      fetchJsonWithTimeout(url.href, { signal, timeoutMs: 6000 }),
+      fetchJsonWithTimeout(new URL(`data/social-automation.json?refresh=${Date.now()}`, window.location.href).href, { signal, timeoutMs: 6000 }),
+    ]);
+    if (posting.status !== "fulfilled") throw new Error("Posting monitor unavailable");
+    return {...posting.value, automation: automation.status === "fulfilled" ? automation.value : null};
   }
 
   function socialPostingResult(outcome, calendar, source, year) {
@@ -3031,10 +3038,13 @@
           label: "Budget feed", status: budgetNeedsAttention ? "ACTION" : "LIVE",
           detail: budgetHealthDetail,
         }]);
+        activeRolePriorities = social.priorities || [];
         renderOperations([{ severity: "warning", title: "Attendance data unavailable", detail: `${message} Check export sharing, System_Status and import authorization, then Retry.`, actionLabel: "Open public export", actionUrl: source.attendanceSheetUrl }, ...calendar.operations, ...social.operations]);
+        renderRoleExperience();
         return;
       }
       const data = attendanceResult.value;
+      data.rolePriorities = social.priorities || [];
       data.upcomingEvents = calendar.events;
       data.budget = budget;
       data.health = [
@@ -3128,6 +3138,7 @@
     activeDashboardData = data;
     activeUpcomingEvents = data.upcomingEvents || [];
     activeOperations = data.operations || [];
+    activeRolePriorities = data.rolePriorities || [];
     activeBudget = data.budget || {};
     activeHealth = data.health || [];
     elements.periodFilter.disabled = false;
