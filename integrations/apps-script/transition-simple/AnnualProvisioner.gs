@@ -139,7 +139,8 @@ function asmeVerifyCompletedAnnual_(state,master,form,year){
 // the binding; do not replay provisioning or infer a tab from its display name.
 function asmeObserveResponseBinding_(master,form){
   for(var attempt=0;attempt<30;attempt++){
-    var linked=master.getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});
+    // Reopen the same workbook so each observation reads current sheet metadata.
+    var linked=SpreadsheetApp.openById(master.getId()).getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});
     if(linked.length===1)return linked;
     if(linked.length>1)throw new Error('More than one response tab is linked to this Form. Ask the maintainer to review; no tab was guessed.');
     if(attempt<29)Utilities.sleep(2000);

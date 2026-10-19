@@ -300,3 +300,29 @@ test('Real and Practice cannot share either root or settings sheet even after ch
 });
 
 test('delayed Google response binding completes initial setup once and retry reuses the same five files',()=>{const h=harness();h.delayObservation(12);const first=h.run();assert.equal(first.success,true);assert.equal(h.writes.filter(x=>x==='copy').length,5);assert.equal(h.settings.values.length,2);assert.equal(h.books.get(first.receipt.ids.pointsMaster).getSheetByName('Config').getRange('B7').getValue(),'Observed response 8');const writes=h.writes.length;assert.equal(h.run().receipt.ids.pointsMaster,first.receipt.ids.pointsMaster);assert.equal(h.writes.length,writes);});
+
+
+test('annual setup observes a fresh spreadsheet handle when the original sheet list stays stale',()=>{
+  const h=harness(),open=h.ctx.SpreadsheetApp.openById;
+  let masterOpens=0,staleReads=0;
+  h.ctx.SpreadsheetApp.openById=id=>{
+    const book=open(id);
+    if(id!==JSON.parse(h.props.get(h.runKey())||'{}').ids?.pointsMaster)return book;
+    masterOpens++;
+    // The first handle was acquired before Google attached the response tab.
+    // It never refreshes; later opens return current metadata for the same ID.
+    if(masterOpens===1)return {...book,getSheets(){staleReads++;return [];}};
+    return book;
+  };
+  const result=h.run();
+  assert.equal(result.success,true);
+  assert.ok(masterOpens>=2,'binding observation must reopen the same master');
+  assert.equal(staleReads,0,'the stale initial sheet list must never be polled');
+  assert.equal(h.writes.filter(x=>x==='copy').length,5);
+  assert.equal(h.writes.filter(x=>x==='destination').length,1);
+  assert.equal(h.settings.values.length,2);
+  assert.equal(h.books.get(result.receipt.ids.pointsMaster).getSheetByName('Config').getRange('B7').getValue(),'Observed response 8');
+  const writes=h.writes.length;
+  assert.equal(h.run().receipt.ids.pointsMaster,result.receipt.ids.pointsMaster);
+  assert.equal(h.writes.length,writes);
+});
