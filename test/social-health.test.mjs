@@ -56,5 +56,38 @@ test('unknown, stale, malformed or wrong-year/source data cannot appear healthy'
 test('academic all-day notices excluded, unmatched timed events and ambiguous campaigns require review',()=>{
  const feed=fixture();const event={id:'unknown',title:'Classes begin',date:'2026-10-20T00:00:00Z',allDay:true};assert.equal(evaluate(feed,{...options,calendarEvents:[event]}).health.status,'LIVE');
  event.allDay=false;assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/missing from Social Hub/);
- const c=campaign();c.channels.story.enabled=false;c.source={uid:event.id};feed.campaigns=[c,{...c,id:'duplicate'}];assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/multiple campaigns/);
+ const c=campaign();c.channels.story.enabled=false;c.source={uid:event.id};event.date=c.start;feed.campaigns=[c,{...c,id:'duplicate'}];assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/multiple campaigns/);
+});
+test('actual Hub and Social occurrence formats match imported campaigns even after title changes',()=>{
+ const feed=fixture();const c=campaign();c.channels.story.enabled=false;c.source={uid:'weekly@google.com::2026-10-22T21:30:00.000Z',calendarUid:'weekly@google.com'};feed.campaigns=[c];
+ const event={id:'weekly@google.com:2026-10-22T17:30:00',title:'Renamed Workshop',startAt:'2026-10-22T21:30:00.000Z',allDay:false};
+ // Used imports disappear from candidates; the retained campaign must match.
+ assert.equal(feed.calendar.candidates.length,0);assert.equal(evaluate(feed,{...options,calendarEvents:[event]}).health.status,'LIVE');
+ delete c.source.calendarUid;assert.equal(evaluate(feed,{...options,calendarEvents:[event]}).health.status,'LIVE');
+ event.id='weekly@google.com:2026-10-29T17:30:00';event.startAt='2026-10-29T21:30:00.000Z';assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/missing from Social Hub/);
+});
+test('source-linked campaigns cannot satisfy a different calendar UID with the same title and time',()=>{
+ const feed=fixture();const c=campaign();c.channels.story.enabled=false;c.source={uid:'one@google.com::2026-10-22T21:30:00.000Z',calendarUid:'one@google.com'};feed.campaigns=[c];
+ const event={id:'two@google.com:2026-10-22T17:30:00',title:c.title,startAt:c.start,allDay:false};
+ feed.calendar.candidates=[{id:'two@google.com::2026-10-22T21:30:00.000Z',title:c.title,start:c.start,source:{calendarUid:'two@google.com'},dueAt:{feed:'2026-10-15T16:00:00Z'}}];
+ assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/no real campaign/);
+ delete c.source;assert.equal(evaluate(feed,{...options,calendarEvents:[event]}).health.status,'LIVE');
+});
+test('candidate matching bridges real occurrence formats without relying on titles or other UIDs',()=>{
+ const feed=fixture();const event={id:'chapter:event@google.com:2026-10-22T17:30:00',title:'Updated title',startAt:'2026-10-22T21:30:00Z',allDay:false};
+ const candidate={id:'chapter:event@google.com::2026-10-22T21:30:00.000Z',title:'Old title',start:event.startAt,dueAt:{feed:'2026-10-15T16:00:00Z'}};feed.calendar.candidates=[candidate];
+ assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/no real campaign/);
+ candidate.id='other@google.com::2026-10-22T21:30:00.000Z';candidate.title=event.title;assert.match(evaluate(feed,{...options,calendarEvents:[event]}).health.detail,/missing from Social Hub/);
+});
+
+
+test('native GroupMe event receipt does not mask a missing or uncertain announcement',()=>{
+ const feed=fixture();feed.config.groupme.mode='native';const c=campaign();c.channels.story.enabled=false;c.channels.groupme={enabled:true,immediate:true,status:'done',eventId:'native',syncedRevision:1,schedule:{announce:true}};feed.campaigns=[c];
+ assert.match(evaluate(feed,options).health.detail,/without a publication receipt/);
+ c.channels.groupme.status='pending';c.channels.groupme.botAttemptedAt=stamp;assert.match(evaluate(feed,options).health.detail,/outcome is unconfirmed/);
+ c.channels.groupme.botSentAt=stamp;assert.equal(evaluate(feed,options).health.status,'LIVE');
+});
+test('one manual campaign cannot satisfy distinct calendar occurrences with the same title and time',()=>{
+ const feed=fixture();const c=campaign();c.channels.story.enabled=false;feed.campaigns=[c];const events=['one','two'].map(id=>({id,title:c.title,startAt:c.start,allDay:false}));
+ assert.match(evaluate(feed,{...options,calendarEvents:events}).health.detail,/manual campaign matches multiple/);
 });

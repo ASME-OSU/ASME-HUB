@@ -4,6 +4,18 @@
   const day = 24 * hour;
   const labels = { feed: "Instagram feed", story: "Instagram story", groupme: "GroupMe" };
   const validDate = value => typeof value === "string" && Number.isFinite(Date.parse(value));
+  function calendarUid(occurrenceId) {
+    // Hub IDs append the ICS recurrence time with ':', while Social Hub IDs
+    // append the UTC start with '::'. Compare the master UID and actual start.
+    return typeof occurrenceId === "string" ? occurrenceId.match(/^(.+?)(?:::|:)(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)$/)?.[1] || null : null;
+  }
+  function sameOccurrence(record, event, start, candidate = false) {
+    if (Date.parse(record.start) !== Date.parse(start)) return false;
+    const occurrenceId = record.source?.uid || (candidate ? record.id : null);
+    if (occurrenceId && occurrenceId === event.id) return true;
+    const master = record.source?.calendarUid || calendarUid(occurrenceId);
+    return Boolean(master && master === calendarUid(event.id));
+  }
   function unavailable(detail) {
     return result([detail]);
   }
@@ -39,11 +51,12 @@
           ? Boolean(record.mediaId && validDate(record.postedAt) && Date.parse(record.postedAt) <= now + 5 * 60000)
           : feed.config?.groupme?.mode === "bot"
             ? validDate(record.botSentAt) && Date.parse(record.botSentAt) <= now + 5 * 60000
-            : Boolean(record.eventId && !record.deletedAt && record.syncedRevision === c.revision);
+            : Boolean(record.eventId && !record.deletedAt && record.syncedRevision === c.revision && (!record.schedule?.announce || (validDate(record.botSentAt) && Date.parse(record.botSentAt) <= now + 5 * 60000)));
         if (record.status === "failed") issues.push(`${prefix} failed or needs reconciliation`);
         else if (receipt) receipts++;
         else if (record.status === "done") issues.push(`${prefix} is marked done without a publication receipt`);
         else if (record.publishAttemptedAt || record.createAttemptedAt || record.botAttemptedAt) issues.push(`${prefix} outcome is unconfirmed; reconcile before retrying`);
+        else if (channel === "groupme" && record.schedule?.announce && !record.botSentAt) issues.push(`${prefix} announcement has no send acknowledgement`);
         else if (record.immediate) issues.push(`${prefix} needs native event creation or an update receipt`);
         else if (now >= Date.parse(record.dueAt) + 2 * hour) issues.push(`${prefix} is overdue without a publication receipt${record.status === "skipped" ? " (publishing window skipped)" : ""}`);
         else scheduled++;
@@ -53,10 +66,14 @@
     for (const event of calendarEvents) {
       const start = event.startAt || event.date;
       if (event.allDay || !validDate(start) || Date.parse(start) < now || Date.parse(start) > now + 14 * day) continue;
-      const matches = campaigns.filter(c => c.source?.uid === event.id || (Date.parse(c.start) === Date.parse(start) && c.title.trim().toLowerCase() === String(event.title).trim().toLowerCase()));
+      const matches = campaigns.filter(c => sameOccurrence(c, event, start) || (!c.source?.uid && !c.source?.calendarUid && Date.parse(c.start) === Date.parse(start) && c.title.trim().toLowerCase() === String(event.title).trim().toLowerCase()));
       if (matches.length > 1) { issues.push(`${event.title}: multiple campaigns need review`); continue; }
-      if (matches.length === 1) continue;
-      const candidate = feed.calendar.candidates.find(c => c.id === event.id || (Date.parse(c.start) === Date.parse(start) && c.title === event.title));
+      if (matches.length === 1) {
+        const match = matches[0];
+        if (!match.source?.uid && !match.source?.calendarUid && calendarEvents.filter(other => !other.allDay && Date.parse(other.startAt || other.date) === Date.parse(start) && String(other.title).trim().toLowerCase() === String(event.title).trim().toLowerCase()).length > 1) issues.push(`${event.title}: manual campaign matches multiple calendar events; link the exact occurrence`);
+        continue;
+      }
+      const candidate = feed.calendar.candidates.find(c => sameOccurrence(c, event, start, true));
       if (!candidate) { issues.push(`${event.title}: calendar event is missing from Social Hub's import`); continue; }
       const due = candidate.dueAt?.feed;
       if (!validDate(due)) issues.push(`${event.title}: promotion deadline cannot be verified`);
