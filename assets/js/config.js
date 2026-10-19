@@ -135,6 +135,15 @@ window.ASME_HUB_CONFIG = {
       },
     },
     {
+      id: "student-organization-management",
+      title: "Student Organization Management System",
+      description: "Sign in to Ohio State's Student Organization Management System.",
+      label: "Log in to student org management",
+      url: "http://activities.osu.edu/secure/studentorgs",
+      category: "Operations",
+      icon: "settings",
+    },
+    {
       id: "officer-tasks",
       title: "Officer Task Tracker",
       description: "Review assigned work, due dates, priorities, and chapter follow-ups.",
@@ -277,7 +286,7 @@ window.ASME_HUB_CONFIG = {
     },
     {
       id: "social-hub",
-      title: "Social Hub",
+      title: "ASME Social Hub",
       description: "Schedule event promotion and reconcile Instagram and GroupMe publication receipts.",
       label: "Open Social Hub",
       url: "https://asme-osu.github.io/ASME-Social-Hub/",
