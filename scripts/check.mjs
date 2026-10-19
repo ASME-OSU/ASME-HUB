@@ -36,6 +36,8 @@ for (const path of [
   "assets/js/annual-setup-api.js",
   "assets/js/annual-settings-input.js",
   "scripts/sync-calendar.mjs",
+  "scripts/sync-social-automation.mjs",
+  "scripts/lib/social-automation.mjs",
   "sw.js",
 ]) {
   const result = spawnSync(process.execPath, ["--check", resolve(root, path)], {

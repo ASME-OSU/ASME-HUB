@@ -574,7 +574,7 @@ The October 12 student walkthrough resolves setup ownership, Google profile sele
 
 ### Social posting health
 
-System health reads the Social Hub's public, allowlisted `data/posting-health.json` on each dashboard load, independently of attendance and budget. It checks the selected academic year and exact calendar feed, reports snapshots older than six hours, calendar imports older than 48 hours, and unverified Instagram token expiry. Refresh the Hub to fetch current status.
+System health reads the Social Hub's public, allowlisted `data/posting-health.json` on each dashboard load, independently of attendance and budget. It checks the selected academic year and exact calendar feed, keeps missing campaigns, coverage concerns, and unverified Instagram token expiry in Role priorities. System health is reserved for actual failed, overdue or uncertain scheduled publishing and failed, stalled or stopped GitHub Actions. An hourly server-side snapshot reads actual dispatcher, calendar and deployment workflow runs; manual dispatcher previews do not count as scheduled automation. Unavailable runtime monitoring is reported explicitly. Refresh the Hub to fetch current status.
 
 For upcoming timed calendar events within 14 days, a real campaign must exist once the configured default feed deadline plus two hours has passed. All-day academic notices are excluded. Matching uses calendar occurrence identity or an exact title/start match for manually created campaigns; multiple matches require review. Examples, cancelled campaigns, archived campaigns, and other years never supply publication proof.
 

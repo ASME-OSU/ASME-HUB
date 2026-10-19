@@ -33,6 +33,10 @@ jobs:
         run: npm test
       - name: Synchronize the public calendar
         run: node scripts/sync-calendar.mjs
+      - name: Check Social Hub automation
+        run: node scripts/sync-social-automation.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Build the Pages artifact
         run: |
           mkdir _site
