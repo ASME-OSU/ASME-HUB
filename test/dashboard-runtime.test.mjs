@@ -77,7 +77,7 @@ function runtime(feeds = {}, socialFeed = null) {
   window.ASME_SOCIAL_HEALTH = sandbox.ASME_SOCIAL_HEALTH;
   vm.runInNewContext(sharedSource, sandbox);
   window.ASME_SHARED_RESOURCES = sandbox.ASME_SHARED_RESOURCES;
-  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
+  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { setActionItems(operations, rolePriorities = [], role = "president") { activeOperations = operations; activeRolePriorities = rolePriorities; selectedOfficerRole = role; activeDashboardData = { kpis: {} }; renderOperations(operations); renderRoleExperience(); }, renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
   vm.runInNewContext(source, sandbox, { filename: 'app.js' });
   return { api: sandbox.testApi, node, nodes, requests, feeds, failures, config, listeners, window, dispatched };
 }
@@ -465,4 +465,30 @@ test('social follow-up stays in role priorities without making healthy publishin
   assert.ok(r.api.state().activeDashboardData.rolePriorities.some(p=>/token expiry/.test(p.detail)));
   assert.ok(JSON.stringify(r.node('briefing-priorities').children).includes('Social posting follow-up'));
   assert.ok(!JSON.stringify(r.node('operations-list').children).includes('Social posting follow-up'));
+});
+
+
+test('hero and all action counters share operational items while role reminders retain their own label', () => {
+  const r = runtime();
+  const actions = [{ severity:'warning', title:'Review attendance' }, { severity:'warning', title:'Calendar follow-up' }, { severity:'success', title:'Resolved item' }];
+  const reminders = [{ severity:'info', title:'Social posting follow-up' }];
+  for (const role of ['president','secretary','webmaster','ecouncil','all']) {
+    r.api.setActionItems(actions, reminders, role);
+    assert.equal(r.node('hero-briefing-title').textContent,'2 action items need attention.');
+    assert.equal(r.node('operations-count').textContent,'2 open items');
+    assert.equal(r.node('overview-attention-count').textContent,'2 open items');
+    assert.equal(r.node('nav-alert-count').textContent,'2');
+    assert.equal(r.node('briefing-priority-count').textContent,'3 priorities');
+    assert.ok(JSON.stringify(r.node('briefing-priorities').children).includes('Social posting follow-up'));
+  }
+  r.api.setActionItems(actions.slice(0,1),reminders);
+  assert.equal(r.node('hero-briefing-title').textContent,'1 action item needs attention.');
+  assert.equal(r.node('operations-count').textContent,'1 open item');
+  assert.equal(r.node('nav-alert-count').textContent,'1');
+  r.api.setActionItems([],reminders);
+  assert.equal(r.node('operations-count').textContent,'0 open items');
+  assert.equal(r.node('overview-attention-count').textContent,'All clear');
+  assert.equal(r.node('nav-alert-count').textContent,'0');
+  assert.equal(r.node('briefing-priority-count').textContent,'1 priority');
+  assert.doesNotMatch(r.node('hero-briefing-title').textContent,/need.*attention/);
 });
