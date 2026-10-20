@@ -792,6 +792,10 @@
     return termScore + severityScore;
   }
 
+  function actionableOperations(items) {
+    return items.filter((item) => item.severity !== "success");
+  }
+
   function prioritizedOperations() {
     const role = officerRole();
     return [...activeOperations, ...activeRolePriorities]
@@ -980,7 +984,7 @@
     const count = priorities.length;
     if (elements.briefingPriorityCount) {
       elements.briefingPriorityCount.textContent = count
-        ? `${count} open`
+        ? `${count} priorit${count === 1 ? "y" : "ies"}`
         : "All clear";
       elements.briefingPriorityCount.classList.toggle(
         "panel-chip-alert",
@@ -1026,7 +1030,7 @@
   function renderRoleBriefing() {
     const role = officerRole();
     const kpis = activeDashboardData?.kpis || {};
-    const priorities = prioritizedOperations();
+    const priorities = actionableOperations(activeOperations);
     const nextEvent = activeUpcomingEvents[0];
     const participantCount = Number(kpis.uniqueAttendees) || 0;
     const eventCount = Number(kpis.eventsHeld) || 0;
@@ -1050,7 +1054,7 @@
         : "The sanitized budget summary is unavailable; the private tracker, banking, and fundraising tools remain one click away.";
     } else if (selectedOfficerRole === "secretary") {
       title = priorities.length
-        ? `${priorities.length} record or operations item${priorities.length === 1 ? " needs" : "s need"} follow-through.`
+        ? `${priorities.length} action item${priorities.length === 1 ? " needs" : "s need"} attention.`
         : "Chapter records and operations are clear.";
       copy = `${formatNumber(checkIns)} check-ins across ${formatNumber(eventCount)} events. Tasks, shared documents, attendance, and reporting tools are pinned below.`;
     } else if (selectedOfficerRole === "social_chair") {
@@ -1062,12 +1066,12 @@
         : "No upcoming events are listed, so the planning, calendar, and promotion tools are ready below.";
     } else if (selectedOfficerRole === "webmaster") {
       title = priorities.length
-        ? `${priorities.length} connected-system item${priorities.length === 1 ? " needs" : "s need"} review.`
+        ? `${priorities.length} action item${priorities.length === 1 ? " needs" : "s need"} attention.`
         : "The chapter’s digital toolkit is ready.";
       copy = "Website, source code, newsletter, and calendar tools are pinned below, with feed health prioritized for review.";
     } else if (selectedOfficerRole === "ecouncil") {
       title = priorities.length
-        ? `${priorities.length} council-facing item${priorities.length === 1 ? " needs" : "s need"} follow-through.`
+        ? `${priorities.length} action item${priorities.length === 1 ? " needs" : "s need"} attention.`
         : "Council coordination is clear.";
       copy = "Activity reporting, funding context, officer tasks, and shared documentation are prioritized for this view.";
     } else if (selectedOfficerRole === "advisor") {
@@ -1075,13 +1079,13 @@
       copy = `${formatNumber(checkIns)} check-ins across ${formatNumber(eventCount)} events, with chapter health and continuity signals kept at the top.`;
     } else if (selectedOfficerRole === "president") {
       title = priorities.length
-        ? `${priorities.length} chapter priorit${priorities.length === 1 ? "y needs" : "ies need"} follow-through.`
+        ? `${priorities.length} action item${priorities.length === 1 ? " needs" : "s need"} attention.`
         : "The chapter is ready for its next decision.";
       copy = nextEvent
         ? `${nextEvent.title} is next on ${formatBriefingDate(nextEvent.date)}. Review chapter pulse, ownership, and finance from one view.`
         : "Review chapter pulse, ownership, and finance from one leadership view.";
     } else if (priorities.length) {
-      title = `${priorities.length} item${priorities.length === 1 ? " needs" : "s need"} follow-through.`;
+      title = `${priorities.length} action item${priorities.length === 1 ? " needs" : "s need"} attention.`;
       copy = nextEvent
         ? `${nextEvent.title} is next on ${formatBriefingDate(nextEvent.date)}. The team’s most-used tools are pinned below.`
         : "Start with the open items, then use the team’s most-used tools pinned below.";
@@ -4443,7 +4447,7 @@
 
   function renderOperations(items) {
     const container = document.getElementById("operations-list");
-    const actionableItems = items.filter((item) => item.severity !== "success");
+    const actionableItems = actionableOperations(items);
     const actionable = actionableItems.length;
     setText(
       "operations-count",
