@@ -31,4 +31,4 @@ Progress also has `run.mode`, `steps` and check results. Private links has `link
 
 ## Practice calendar closeout
 
-For assigned **Practice only** calendar previews, enter the full selected year (for example 2027-2028). After **Remove fictional events**, choose **Upcoming** in Newsletter Builder or **Upcoming dates** in the public generated list. Confirm the fictional label disappears and chapter status returns; **Refresh chapter snapshot** retries a failed load. The embedded Google calendar is a separate live view. These previews create no Google events or invitations.
+For an assigned **Practice only** calendar preview, enter the full selected year (for example 2027-2028) in Newsletter Builder. After **Remove fictional events**, choose **Upcoming** there. Confirm the fictional label disappears and chapter status returns; **Refresh chapter snapshot** retries a failed load. This preview creates no Google events or invitations. Check the public Calendar separately as a live chapter display; it has no fictional preview controls.

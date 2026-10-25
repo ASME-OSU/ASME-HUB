@@ -109,7 +109,7 @@ The authorized Webmaster uses **WordPress Admin Login → Pages → Leadership**
 
 ### Practice only
 
-Use a clearly labeled MOCK newsletter and preserve the existing draft before edits. In Newsletter **Calendar**, enter your full selected year and choose **Load fictional Fall/Spring**. Check both semesters, the **FICTIONAL REHEARSAL** label and Desktop/Mobile previews. Finish with **Remove fictional events → Upcoming**. Repeat the fictional preview on the **Public Events Calendar** generated list, then **Remove fictional events → Upcoming dates**. Verify the fictional label disappears and chapter status returns; **Refresh chapter snapshot** retries a failed load. These previews create no Google events; the embedded Google calendar is a separate live view. Keep the practice issue unsent.
+Use a clearly labeled MOCK newsletter and preserve the existing draft before edits. In Newsletter **Calendar**, enter your full selected year and choose **Load fictional Fall/Spring**. Check both semesters, the **FICTIONAL REHEARSAL** label and Desktop/Mobile previews. Finish with **Remove fictional events → Upcoming**. Verify the fictional label disappears and chapter status returns; **Refresh chapter snapshot** retries a failed load. This preview creates no Google events. Separately check the **Public Events Calendar** on desktop and phone for the chapter's live upcoming cards and embedded Google calendar; record missing or mismatched approved events. The public page has no fictional preview controls. Keep the practice issue unsent.
 
 ### Shared backup and recovery instructions
 
