@@ -11,6 +11,7 @@ export const MIN_TRANSITION_START_YEAR = 2000;
 export const MAX_TRANSITION_START_YEAR = 2199;
 const record = value => value && typeof value === "object" && !Array.isArray(value);
 const runIdPattern = /^[A-Za-z0-9_-]{1,100}$/;
+const validSavedAt = value => value === null || (typeof value === "string" && value.length <= 128 && !Number.isNaN(Date.parse(value)));
 
 export function transitionYear(start) {
   const text = String(start).trim();
@@ -98,7 +99,7 @@ export function parseProgress(value, year, steps, checks) {
   for (const [id, status] of [...Object.entries(next.steps), ...Object.entries(next.checks)]) if (status === "skipped" && !next.reasons[id]) throw new Error(`Skipped ${id} needs a reason.`);
   for (const step of steps) if (next.steps[step.id] === "complete" && checks.some(check => check.step === step.id && checkApplies(check, next.run.mode) && next.checks[check.id] !== "passed")) throw new Error(`Completed ${step.id} has an unchecked manual check.`);
   if (next.steps.T05 === "complete" && !launchEligibility(next, steps, checks).eligible) throw new Error("Completed T05 has incomplete production prerequisites or belongs to a rehearsal.");
-  if (value.savedAt !== null && (typeof value.savedAt !== "string" || Number.isNaN(Date.parse(value.savedAt)))) throw new Error("This progress file has an invalid save time.");
+  if (!validSavedAt(value.savedAt)) throw new Error("This progress file has an invalid save time.");
   next.savedAt = value.savedAt;
   return next;
 }
@@ -150,7 +151,7 @@ export function migrateProgress(value, year, steps, checks) {
     for (const [id, text] of Object.entries(value[field])) if ((!oldSteps.has(id) && !oldChecks.has(id)) || typeof text !== 'string' || text.length > 2000) throw new Error('Invalid legacy evidence.');
   }
   if (value.version === TRANSITION_STATE_VERSION && (!record(value.run) || typeof value.run.id !== 'string' || typeof value.run.name !== 'string' || !['rehearsal', 'production'].includes(value.run.mode))) throw new Error('Invalid legacy run identity.');
-  if (value.savedAt !== null && (typeof value.savedAt !== 'string' || Number.isNaN(Date.parse(value.savedAt)))) throw new Error('Invalid legacy save time.');
+  if (!validSavedAt(value.savedAt)) throw new Error('Invalid legacy save time.');
   for (const [id, status] of [...Object.entries(value.steps), ...Object.entries(value.checks)]) if (status === 'skipped' && !value.reasons?.[id]?.trim()) throw new Error(`Skipped ${id} needs a reason.`);
   const base = value.version === 1 ? emptyProgress(year) : emptyProgress(year, value.run);
   const groups = isFiveStepGuide

@@ -8,7 +8,7 @@ function loadIdentity() {
     const script = document.createElement("script");
     script.src = GIS_URL; script.async = true;
     script.onload = () => {
-      if (globalThis.google?.accounts?.oauth2) resolve();
+      if (globalThis.google?.accounts?.oauth2) { identityLoading = null; resolve(); }
       else { script.remove(); identityLoading = null; reject(new Error("Google sign-in could not initialize. Check your connection and try again.")); }
     };
     script.onerror = () => { script.remove(); identityLoading = null; reject(new Error("Google sign-in could not load. Check your connection and try again.")); };
@@ -27,7 +27,12 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
     if (!ready) return Promise.reject(new Error("The maintainer must finish connecting Google Annual Setup first."));
     if (pending) return Promise.reject(new Error("Google sign-in is already open."));
     if (!identity()) {
-      if (loadError) { loadError = null; loadIdentity().catch(error => { loadError = error; }); }
+      if (loadError) {
+        const error = loadError;
+        loadError = null;
+        loadIdentity().catch(nextError => { loadError = nextError; });
+        return Promise.reject(error);
+      }
       return Promise.reject(new Error("Google sign-in is loading. Wait a moment, then choose Sign in again."));
     }
     token = ""; expiresAt = 0; pending = true;

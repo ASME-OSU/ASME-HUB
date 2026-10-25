@@ -44,7 +44,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const tools = $("transition-progress-tools"); tools.className = "transition-tools";
   dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
   $("transition-run-mode").value = "production";
-  const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (faults.failProgress && key.startsWith(state.TRANSITION_STORAGE_PREFIX)) throw new Error("Audit storage quota exceeded"); if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
+  const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (faults.failAnnual && key.startsWith("asmeHubAnnualLinksV1:")) throw new Error("Annual link storage quota exceeded"); if (faults.failProgress && key.startsWith(state.TRANSITION_STORAGE_PREFIX)) throw new Error("Audit storage quota exceeded"); if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
   const windowListeners = new Map();
   const dispatched = [];
@@ -1098,4 +1098,72 @@ test("changing a pending skip to passed does not skip it again when a note is sa
  const ui=browser();await startRun(ui);await ui.choose("V20","skipped");await ui.choose("V20","passed");
  await ui.reason("V20","Old skip explanation retained as a note on the review.");
  assert.equal(ui.saved().checks.V20,"passed");
+});
+
+const annualField=(ui,name="Points Master (officer edit link)")=>ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.attrs["aria-label"]===name);
+const annualButton=(ui,name)=>ui.$("transition-dialog").find(n=>n.tagName==="button"&&n.textContent===name);
+
+test("private link drafts survive checklist switches and warn before leaving",async()=>{
+ const ui=browser();await startRun(ui);const first=ui.saved();
+ const input=annualField(ui);input.value="https://docs.google.com/spreadsheets/d/unsaved_points_1234567890123456/edit";await input.emit("input");
+ let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,true);
+ ui.$("transition-run-name").value="Other private-link draft";await startRun(ui);assert.equal(annualField(ui).value,"");
+ ui.$("transition-run").value=first.run.id;await ui.$("transition-run").emit("change");assert.match(annualField(ui).value,/unsaved_points/);
+ await annualButton(ui,"Discard link edits").click();assert.equal(annualField(ui).value,"");
+ warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
+});
+
+test("restored link drafts cannot overwrite a newer save from another tab",async()=>{
+ const a=browser();await startRun(a);const original=a.saved();const b=browser(a.existing);
+ annualField(a).value="https://docs.google.com/spreadsheets/d/older_draft_points_1234567890123456/edit";await annualField(a).emit("input");
+ annualField(b).value="https://docs.google.com/spreadsheets/d/newer_saved_points_1234567890123456/edit";
+ await b.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ a.$("transition-run-name").value="Temporary checklist";await startRun(a);a.$("transition-run").value=original.run.id;await a.$("transition-run").emit("change");
+ await a.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ const key=links.annualLinkStorageKey(original.year)+":"+original.run.id;
+ assert.match(a.existing.get(key),/newer_saved_points/);assert.match(annualField(a).value,/older_draft_points/);
+ await annualButton(a,"Discard link edits").click();assert.match(annualField(a).value,/newer_saved_points/);
+});
+
+test("backups and print explain unsaved edits instead of silently omitting them",async()=>{
+ const ui=browser();await startRun(ui);const note=observation(ui,"V20");note.value="Draft not yet saved";await note.emit("input");
+ await ui.$("transition-export").click();assert.match(ui.$("transition-status").textContent,/Save.*notes.*before/i);
+ await ui.$("transition-print").click();assert.match(ui.$("transition-status").textContent,/Save.*notes.*before/i);
+ assert.equal(ui.$("transition-print-sheet").children.length,0);
+ await evidenceForm(ui,"V20").emit("submit");
+ annualField(ui).value="https://docs.google.com/spreadsheets/d/saved_points_1234567890123456/edit";await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ annualField(ui).value="https://docs.google.com/spreadsheets/d/unsaved_replacement_1234567890123456/edit";await annualField(ui).emit("input");
+ await annualButton(ui,"Download private links backup").click();assert.match(ui.$("transition-saved-tools").textContent,/Save or discard.*before downloading/i);
+});
+
+test("imported link drafts survive switches and saving clears the unload warning",async()=>{
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);const original=ui.saved();await importMock(ui);
+ ui.$("transition-run-name").value="Import isolation";await startRun(ui);assert.equal(annualField(ui).value,"");
+ ui.$("transition-run").value=original.run.id;await ui.$("transition-run").emit("change");assert.match(annualField(ui).value,/annual_points/);
+ await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ assert.equal(annualButton(ui,"Discard link edits").hidden,true);
+ let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
+ const key=links.annualLinkStorageKey(original.year)+":"+original.run.id;assert.match(ui.existing.get(key),/annual_points/);
+});
+
+test("a selection-preference warning does not block opening readable saved progress",async()=>{
+ const a=state.emptyProgress("2027-2028",state.createTransitionRun("Checklist A","production","a"));
+ const b=state.emptyProgress("2027-2028",state.createTransitionRun("Checklist B","production","b"));b.notes.T01="B evidence";
+ const existing=new Map([[state.storageKey(a.year,"a"),JSON.stringify(a)],[state.storageKey(b.year,"b"),JSON.stringify(b)]]);
+ const ui=browser(existing,[],true);ui.$("transition-run").value="b";await ui.$("transition-run").emit("change");
+ assert.match(ui.$("transition-run-context").textContent,/Checklist B/);
+ assert.equal(observation(ui,"T01").value,"B evidence");
+ assert.match(ui.$("transition-status").textContent,/selection.*remembered/i);
+});
+
+test("legacy clear can be retried after its storage write fails",async()=>{
+ const year="2027-2028",legacy=JSON.stringify({version:1,guideVersion:"officer-transition-guide-5",year,savedAt:null,steps:{},checks:{}});
+ const original=JSON.stringify({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year,links:{pointsMaster:"https://docs.google.com/spreadsheets/d/legacyAnnualPointsMaster1234567890/edit"}});
+ const existing=new Map([[`${state.TRANSITION_LEGACY_STORAGE_PREFIX}${year}`,legacy],[links.annualLinkStorageKey(year),original]]),faults={};
+ const ui=browser(existing,[],false,null,faults);await ui.go("T02");
+ faults.failAnnual=true;await annualButton(ui,"Clear saved links for this run").click();
+ assert.equal(existing.get(links.annualLinkStorageKey(year)),original);
+ assert.match(ui.$("transition-saved-tools").textContent,/Annual link storage quota exceeded/);
+ faults.failAnnual=false;await annualButton(ui,"Clear saved links for this run").click();
+ assert.equal(annualField(ui).value,"");assert.match(ui.$("transition-saved-tools").textContent,/Annual links cleared/);
 });

@@ -128,11 +128,49 @@ test('identity script that loads without the Google client can be retried',async
   const client=createAnnualSetupClient(config);
   scripts[0].onload();
   await Promise.resolve();await Promise.resolve();
-  await assert.rejects(client.connect(),/sign-in is loading/);
+  await assert.rejects(client.connect(),/could not initialize/);
   assert.equal(scripts.length,2);
   globalThis.google={accounts:{oauth2:{hasGrantedAllScopes:()=>true,initTokenClient:({callback})=>({requestAccessToken:()=>callback({access_token:'ephemeral-test-token',expires_in:3600})})}}};
   scripts[1].onload();
   await client.connect();
+ }finally{
+  if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
+  if(originalGoogle===undefined)delete globalThis.google;else globalThis.google=originalGoogle;
+ }
+});
+test('identity load failure is shown while starting a retry',async()=>{
+ const originalDocument=globalThis.document,originalGoogle=globalThis.google;
+ const scripts=[];
+ try{
+  delete globalThis.google;
+  globalThis.document={createElement:()=>({remove(){}}),head:{append:script=>scripts.push(script)}};
+  const client=createAnnualSetupClient(config);
+  scripts[0].onerror();
+  await Promise.resolve();await Promise.resolve();
+  await assert.rejects(client.connect(),/could not load.*connection.*try again/);
+  assert.equal(scripts.length,2);
+  globalThis.google={accounts:{oauth2:{hasGrantedAllScopes:()=>true,initTokenClient:({callback})=>({requestAccessToken:()=>callback({access_token:'ephemeral-test-token',expires_in:3600})})}}};
+  scripts[1].onload();
+  await client.connect();
+ }finally{
+  if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
+  if(originalGoogle===undefined)delete globalThis.google;else globalThis.google=originalGoogle;
+ }
+});
+test('identity loader starts a fresh request if the Google client disappears after loading',async()=>{
+ const originalDocument=globalThis.document,originalGoogle=globalThis.google;
+ const scripts=[];
+ try{
+  delete globalThis.google;
+  globalThis.document={createElement:()=>({remove(){}}),head:{append:script=>scripts.push(script)}};
+  createAnnualSetupClient(config);
+  globalThis.google={accounts:{oauth2:{}}};
+  scripts[0].onload();
+  delete globalThis.google;
+  createAnnualSetupClient(config);
+  assert.equal(scripts.length,2);
+  globalThis.google={accounts:{oauth2:{}}};
+  scripts[1].onload();
  }finally{
   if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
   if(originalGoogle===undefined)delete globalThis.google;else globalThis.google=originalGoogle;
