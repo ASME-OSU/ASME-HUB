@@ -794,7 +794,8 @@ if (section) {
         let result;
         try { result = await client.call("runAnnualSetup", [context.year, answers]); }
         catch (error) {
-          if (error.message !== "Google response tab not uniquely observed yet; retry this same run. No name was guessed.") throw error;
+          const bindingPending = "Google response tab not uniquely observed yet; retry this same run. No name was guessed.";
+          if (error?.message !== bindingPending && error?.message !== `Error: ${bindingPending}`) throw error;
           assertSetupContext(context);
           session.message = "Google is finishing the response connection. Reopening the same annual files…"; render();
           result = await client.call("runAnnualSetup", [context.year, answers]);
