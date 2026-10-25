@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20261009b";
+import { validTransitionYear } from "./transition-state.js?v=20261024a";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
@@ -182,7 +182,7 @@ export function reopenAnnualChecks(progress, changedKeys = [], previousLinks = {
 // unchanged so the officer can correct an old ambiguous record without data loss.
 export function reviewAnnualLinkImport(draft) {
   const url = draft.records?.handoffUrl ? new URL(draft.records.handoffUrl) : null;
-  if (url?.hostname === "drive.google.com" && !/^\/drive\/(?:u\/\d+\/)?folders\//.test(url.pathname)) {
+  if (url && (url.hostname === "docs.google.com" || (url.hostname === "drive.google.com" && !/^\/drive\/(?:u\/\d+\/)?folders\/[A-Za-z0-9_-]{20,200}\/?$/.test(url.pathname)))) {
     throw new Error("Private handoff folder must be a folder URL. Ask the President for the corrected packet; the JSON links backup file belongs in Import automation links, not the handoff folder field.");
   }
   return draft;

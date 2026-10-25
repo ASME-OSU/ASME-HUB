@@ -101,7 +101,11 @@ test("new packet import rejects bundle files as handoff folders while historical
  const loaded = importAnnualLinkDraft(JSON.stringify(historical), year);
  assert.equal(loaded.records.handoffUrl, historical.records.handoffUrl);
  assert.throws(() => reviewAnnualLinkImport(loaded), /folder URL/);
+ for (const handoffUrl of [`https://docs.google.com/document/d/${id}/edit`, "https://drive.google.com/drive/folders/", `https://drive.google.com/drive/folders/${id}/file`]) {
+  assert.throws(() => reviewAnnualLinkImport(importAnnualLinkDraft(JSON.stringify({...handoff(),records:{handoffUrl}}), year)), /folder URL/);
+ }
  const corrected = {...handoff(), records:{handoffUrl:`https://drive.google.com/drive/folders/${id}`}};
  assert.deepEqual(reviewAnnualLinkImport(importAnnualLinkDraft(JSON.stringify(corrected), year)), corrected);
+ assert.doesNotThrow(() => reviewAnnualLinkImport(importAnnualLinkDraft(JSON.stringify({...handoff(),records:{handoffUrl:`https://drive.google.com/drive/u/0/folders/${id}?usp=sharing`}}), year)));
  assert.deepEqual(reviewAnnualLinkImport(handoff()), handoff());
 });

@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {TRANSITION_STEPS as steps,TRANSITION_CHECKS as checks} from '../assets/js/transition-steps.js';
-import {checkApplies,rehearsalEligibility,emptyProgress,createTransitionRun,parseProgress,exportProgress,importProgress,migrateProgress,launchEligibility,reconcileProgress,storageKey,progressSummary,transitionYear} from '../assets/js/transition-state.js';
+import {checkApplies,rehearsalEligibility,emptyProgress,createTransitionRun,parseProgress,exportProgress,importProgress,migrateProgress,launchEligibility,reconcileProgress,storageKey,progressSummary,transitionYear,MAX_TRANSITION_PROGRESS_BYTES} from '../assets/js/transition-state.js';
 const year='2027-2028',run=(mode='rehearsal',id='a')=>emptyProgress(year,createTransitionRun(id,mode,id));
 const read=v=>parseProgress(v,year,steps,checks);
 const ready=()=>({...run('production'),steps:Object.fromEntries(steps.filter(s=>!s.launch).map(s=>[s.id,'complete'])),checks:Object.fromEntries(checks.map(c=>[c.id,'passed']))});
@@ -52,6 +52,16 @@ test('failed review reopens its completed step and downstream evidence before sa
  assert.equal(repaired.steps.T03,'in_progress');assert.equal(repaired.checks.V19,'needs_recheck');assert.equal(launchEligibility(repaired,steps,checks).eligible,false);
 });
 test('imported production completion requires fresh checks',()=>{const p=ready();p.steps.T05='complete';const n=importProgress(exportProgress(p,steps,checks),year,steps,checks);assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');});
+test('maximum valid evidence exports remain importable after JSON escaping',()=>{
+ const p=run();
+ for(const {id} of [...steps,...checks]) {p.notes[id]='\u0001'.repeat(2000);p.reasons[id]='R'.repeat(2000);}
+ const exported=exportProgress(p,steps,checks);
+ const exportedBytes=new TextEncoder().encode(exported).length;
+ assert.ok(exportedBytes>100_000);
+ assert.ok(exportedBytes<MAX_TRANSITION_PROGRESS_BYTES);
+ assert.deepEqual(importProgress(exported,year,steps,checks),p);
+ assert.throws(()=>importProgress(' '.repeat(MAX_TRANSITION_PROGRESS_BYTES+1),year,steps,checks),/at most 1 MB/);
+});
 test('16-step versions2-6 migrate without changing original or carrying launch readiness',()=>{for(const v of [2,3,4,5,6]){const p={version:v===6?2:1,guideVersion:'officer-transition-guide-'+v,year,run:run().run,savedAt:null,reasons:{},notes:{},steps:{T03:'blocked',T15:'complete',T16:'complete'},checks:{V01:'unable',V10:'passed'}};const before=structuredClone(p),n=migrateProgress(p,year,steps,checks);assert.deepEqual(p,before);assert.equal(n.steps.T02,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');assert.match(n.notes.T02,/T03: blocked/);assert.deepEqual(read(n),n);assert.throws(()=>migrateProgress({...p,checks:{V99:'passed'}},year,steps,checks),/Unknown check/);}});
 test('five-step guide 7 migration keeps each step in place and new checks unverified',()=>{
  const old={version:2,guideVersion:'officer-transition-guide-7',year,run:run('production').run,savedAt:null,

@@ -4,7 +4,7 @@ import {createAnnualSetupClient} from '../assets/js/annual-setup-api.js';
 const config = {clientId:'123-test.apps.googleusercontent.com',deploymentId:'API-deployment',scopes:['https://www.googleapis.com/auth/drive']};
 function harness(options={}) {
  let stamp=0, sent, init, fetchCount=0;
- const identity={hasGrantedAllScopes:()=>options.granted!==false,initTokenClient(value){init=value;return {requestAccessToken(){value.callback(options.oauth || {access_token:'ephemeral-test-token',expires_in:3600});}};}};
+ const identity={hasGrantedAllScopes:()=>{if(options.scopeThrows)throw new Error('GIS scope checker failed');return options.granted!==false;},initTokenClient(value){init=value;return {requestAccessToken(){value.callback(Object.hasOwn(options,'oauth') ? options.oauth : {access_token:'ephemeral-test-token',expires_in:3600});}};}};
  const client=createAnnualSetupClient(config,{identity:()=>identity,now:()=>stamp,fetch:async(url,request)=>{fetchCount++;sent={url,request};return options.response || {ok:true,status:200,json:async()=>({done:true,response:{result:{example:true}}})};}});
  return {client,get sent(){return sent;},get init(){return init;},get fetchCount(){return fetchCount;},expire(){stamp=3300000;}};
 }
@@ -59,5 +59,33 @@ test('OAuth failures distinguish declined consent, account policy and client con
  for(const [error,message]of [['access_denied',/cancelled or permission was declined/],['admin_policy_enforced',/account policy blocked.*administrator/s],['invalid_client',/configured correctly.*OAuth client/s],['unauthorized_client',/not authorized.*OAuth configuration/s],['unexpected_error',/did not return authorization.*maintainer/s]]){
   const h=harness({oauth:{error}});await assert.rejects(h.client.connect(),message);
   await assert.rejects(h.client.call('getAnnualSetupConfig',[]),/Sign in again/);assert.equal(h.fetchCount,0);
+ }
+});
+test('malformed OAuth callbacks and scope-check failures reject without leaving sign-in pending',async()=>{
+ for(const options of [{oauth:null},{oauth:undefined},{oauth:{access_token:'ephemeral-test-token',expires_in:3600},scopeThrows:true}]){
+  const h=harness(options);
+  await assert.rejects(h.client.connect(),/did not return authorization|could not confirm Annual Setup permissions/);
+  await assert.rejects(h.client.connect(),/did not return authorization|could not confirm Annual Setup permissions/);
+  await assert.rejects(h.client.call('runAnnualSetup',[]),/Sign in again/);
+  assert.equal(h.fetchCount,0);
+ }
+});
+test('identity script that loads without the Google client can be retried',async()=>{
+ const originalDocument=globalThis.document,originalGoogle=globalThis.google;
+ const scripts=[];
+ try{
+  delete globalThis.google;
+  globalThis.document={createElement:()=>({remove(){}}),head:{append:script=>scripts.push(script)}};
+  const client=createAnnualSetupClient(config);
+  scripts[0].onload();
+  await Promise.resolve();await Promise.resolve();
+  await assert.rejects(client.connect(),/sign-in is loading/);
+  assert.equal(scripts.length,2);
+  globalThis.google={accounts:{oauth2:{hasGrantedAllScopes:()=>true,initTokenClient:({callback})=>({requestAccessToken:()=>callback({access_token:'ephemeral-test-token',expires_in:3600})})}}};
+  scripts[1].onload();
+  await client.connect();
+ }finally{
+  if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
+  if(originalGoogle===undefined)delete globalThis.google;else globalThis.google=originalGoogle;
  }
 });

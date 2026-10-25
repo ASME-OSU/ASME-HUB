@@ -1,8 +1,8 @@
 import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015o";
-import { checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261015o";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261015o";
+import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261024a";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261024a";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261017a";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261024a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -278,13 +278,21 @@ if (section) {
   function assertAnnualDraftUnchanged() {
     if (localStorage.getItem(annualRunKey()) !== observedAnnualRaw || (observedLegacyAnnualRaw !== null && localStorage.getItem(annualLinkStorageKey(selectedYear)) !== observedLegacyAnnualRaw)) throw new Error("Annual links changed in another tab. Reload saved run and review the newer draft before changing it.");
   }
+  function annualReviewBaseline() {
+    // Corrupt saved data may have contained any reference. Treat recovery as a
+    // replacement of every reference so old confirmations cannot survive it.
+    return corruptAnnualRaw !== null
+      ? Object.fromEntries([...ANNUAL_LINK_FIELDS, ...MOCK_ANNUAL_FIELDS, ...PRIVATE_RECORD_FIELDS].map(([key]) => [key, true]))
+      : savedAnnualLinks;
+  }
   function saveAnnualLinks() {
     assertAnnualDraftUnchanged();
     if (unreadableAnnualLinks) throw new Error("Existing saved links are unreadable. Import a valid handoff or remove saved links before saving.");
     const draft = annualDraft();
     const references = draftReferences(draft);
-    const changedKeys = [...ANNUAL_LINK_FIELDS, ...MOCK_ANNUAL_FIELDS, ...PRIVATE_RECORD_FIELDS].map(([key]) => key).filter((key) => (references[key] || "") !== (savedAnnualLinks[key] || ""));
-    const candidate = reconcileProgress(reopenAnnualChecks(progress, changedKeys, savedAnnualLinks), TRANSITION_STEPS, TRANSITION_CHECKS, progress);
+    const previousReferences = annualReviewBaseline();
+    const changedKeys = [...ANNUAL_LINK_FIELDS, ...MOCK_ANNUAL_FIELDS, ...PRIVATE_RECORD_FIELDS].map(([key]) => key).filter((key) => (references[key] || "") !== (previousReferences[key] || ""));
+    const candidate = reconcileProgress(reopenAnnualChecks(progress, changedKeys, previousReferences), TRANSITION_STEPS, TRANSITION_CHECKS, progress);
     const reopened = Object.entries(progress.steps).some(([id, state]) => state === "complete" && candidate.steps[id] === "in_progress") ||
       Object.entries(progress.checks).some(([id, state]) => state === "passed" && candidate.checks[id] === "needs_recheck");
     if (changedKeys.length && !save(candidate)) throw new Error("Could not save the required manual recheck status. Annual links were not saved.");
@@ -333,8 +341,9 @@ if (section) {
   annualClear.addEventListener("click", () => {
     try {
       assertAnnualDraftUnchanged();
-      const removedKeys = Object.keys(savedAnnualLinks).filter((key) => savedAnnualLinks[key]);
-      if (removedKeys.length && !save(reconcileProgress(reopenAnnualChecks(progress, removedKeys, savedAnnualLinks), TRANSITION_STEPS, TRANSITION_CHECKS, progress))) throw new Error("Could not save required recheck status.");
+      const previousReferences = annualReviewBaseline();
+      const removedKeys = Object.keys(previousReferences).filter((key) => previousReferences[key]);
+      if (removedKeys.length && !save(reconcileProgress(reopenAnnualChecks(progress, removedKeys, previousReferences), TRANSITION_STEPS, TRANSITION_CHECKS, progress))) throw new Error("Could not save required recheck status.");
       if (corruptAnnualRaw !== null) localStorage.setItem(`${annualRunKey()}:corrupt-backup-${Date.now()}`, corruptAnnualRaw);
       if (selectedRunId === "legacy") {
         observedAnnualRaw = JSON.stringify({ schema: 1, type: ANNUAL_HANDOFF_TYPE, year: selectedYear, links: {} });
@@ -345,6 +354,7 @@ if (section) {
       fillAnnualLinks(null);
       savedAnnualLinks = {};
       unreadableAnnualLinks = false;
+      render();
       annualSay("Annual links cleared for this run. Any legacy original draft was preserved. Google files and settings were not changed.");
     } catch { annualSay("Could not remove local links. Check browser storage.", true); }
   });
@@ -1316,7 +1326,7 @@ if (section) {
     event.target.value = "";
     if (!file) return;
     try {
-      if (file.size > 100_000) throw new Error("Progress files must be under 100 KB.");
+      if (file.size > MAX_TRANSITION_PROGRESS_BYTES) throw new Error("Progress files must be at most 1 MB.");
       const intendedYear = selectedYear;
       const text = await file.text();
       if (selectedYear !== intendedYear) throw new Error("Selected year changed while reading. Import again.");

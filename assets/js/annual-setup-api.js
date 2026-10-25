@@ -7,7 +7,10 @@ function loadIdentity() {
   if (!identityLoading) identityLoading = new Promise((resolve, reject) => {
     const script = document.createElement("script");
     script.src = GIS_URL; script.async = true;
-    script.onload = () => resolve();
+    script.onload = () => {
+      if (globalThis.google?.accounts?.oauth2) resolve();
+      else { script.remove(); identityLoading = null; reject(new Error("Google sign-in could not initialize. Check your connection and try again.")); }
+    };
     script.onerror = () => { script.remove(); identityLoading = null; reject(new Error("Google sign-in could not load. Check your connection and try again.")); };
     document.head.append(script);
   });
@@ -36,16 +39,19 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
           hint: "asmeohiostate@gmail.com",
           callback: result => {
             pending = false;
-            if (result.error || !result.access_token) {
+            if (!result || typeof result !== "object" || result.error || !result.access_token) {
               const messages = {
                 access_denied: "Google sign-in was cancelled or permission was declined. Choose Sign in again when ready.",
                 admin_policy_enforced: "Google account policy blocked Annual Setup. Ask the account administrator to review access.",
                 invalid_client: "Google sign-in is not configured correctly. Ask the maintainer to check the OAuth client.",
                 unauthorized_client: "Google has not authorized this sign-in client. Ask the maintainer to check the OAuth configuration."
               };
-              reject(new Error(messages[result.error] || "Google sign-in did not return authorization. Try the chapter account again; if this repeats, ask the maintainer to check Google access.")); return;
+              reject(new Error(messages[result?.error] || "Google sign-in did not return authorization. Try the chapter account again; if this repeats, ask the maintainer to check Google access.")); return;
             }
-            if (!identity().hasGrantedAllScopes(result, ...config.scopes)) { reject(new Error("Annual Setup needs all listed Google permissions. Sign in again to approve them.")); return; }
+            let granted;
+            try { granted = identity().hasGrantedAllScopes(result, ...config.scopes); }
+            catch { reject(new Error("Google could not confirm Annual Setup permissions. Choose Sign in again.")); return; }
+            if (!granted) { reject(new Error("Annual Setup needs all listed Google permissions. Sign in again to approve them.")); return; }
             token = result.access_token; expiresAt = now() + Number(result.expires_in) * 1000; resolve();
           },
           error_callback: () => fail("Google sign-in closed or was blocked. Allow the sign-in popup, then try again.")
