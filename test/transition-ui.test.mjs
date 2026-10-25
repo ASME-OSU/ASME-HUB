@@ -1099,3 +1099,49 @@ test("changing a pending skip to passed does not skip it again when a note is sa
  await ui.reason("V20","Old skip explanation retained as a note on the review.");
  assert.equal(ui.saved().checks.V20,"passed");
 });
+
+const annualField=(ui,name="Points Master (officer edit link)")=>ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.attrs["aria-label"]===name);
+const annualButton=(ui,name)=>ui.$("transition-dialog").find(n=>n.tagName==="button"&&n.textContent===name);
+
+test("private link drafts survive checklist switches and warn before leaving",async()=>{
+ const ui=browser();await startRun(ui);const first=ui.saved();
+ const input=annualField(ui);input.value="https://docs.google.com/spreadsheets/d/unsaved_points_1234567890123456/edit";await input.emit("input");
+ let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,true);
+ ui.$("transition-run-name").value="Other private-link draft";await startRun(ui);assert.equal(annualField(ui).value,"");
+ ui.$("transition-run").value=first.run.id;await ui.$("transition-run").emit("change");assert.match(annualField(ui).value,/unsaved_points/);
+ await annualButton(ui,"Discard link edits").click();assert.equal(annualField(ui).value,"");
+ warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
+});
+
+test("restored link drafts cannot overwrite a newer save from another tab",async()=>{
+ const a=browser();await startRun(a);const original=a.saved();const b=browser(a.existing);
+ annualField(a).value="https://docs.google.com/spreadsheets/d/older_draft_points_1234567890123456/edit";await annualField(a).emit("input");
+ annualField(b).value="https://docs.google.com/spreadsheets/d/newer_saved_points_1234567890123456/edit";
+ await b.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ a.$("transition-run-name").value="Temporary checklist";await startRun(a);a.$("transition-run").value=original.run.id;await a.$("transition-run").emit("change");
+ await a.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ const key=links.annualLinkStorageKey(original.year)+":"+original.run.id;
+ assert.match(a.existing.get(key),/newer_saved_points/);assert.match(annualField(a).value,/older_draft_points/);
+ await annualButton(a,"Discard link edits").click();assert.match(annualField(a).value,/newer_saved_points/);
+});
+
+test("backups and print explain unsaved edits instead of silently omitting them",async()=>{
+ const ui=browser();await startRun(ui);const note=observation(ui,"V20");note.value="Draft not yet saved";await note.emit("input");
+ await ui.$("transition-export").click();assert.match(ui.$("transition-status").textContent,/Save.*notes.*before/i);
+ await ui.$("transition-print").click();assert.match(ui.$("transition-status").textContent,/Save.*notes.*before/i);
+ assert.equal(ui.$("transition-print-sheet").children.length,0);
+ await evidenceForm(ui,"V20").emit("submit");
+ annualField(ui).value="https://docs.google.com/spreadsheets/d/saved_points_1234567890123456/edit";await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ annualField(ui).value="https://docs.google.com/spreadsheets/d/unsaved_replacement_1234567890123456/edit";await annualField(ui).emit("input");
+ await annualButton(ui,"Download private links backup").click();assert.match(ui.$("transition-saved-tools").textContent,/Save or discard.*before downloading/i);
+});
+
+test("imported link drafts survive switches and saving clears the unload warning",async()=>{
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);const original=ui.saved();await importMock(ui);
+ ui.$("transition-run-name").value="Import isolation";await startRun(ui);assert.equal(annualField(ui).value,"");
+ ui.$("transition-run").value=original.run.id;await ui.$("transition-run").emit("change");assert.match(annualField(ui).value,/annual_points/);
+ await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ assert.equal(annualButton(ui,"Discard link edits").hidden,true);
+ let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
+ const key=links.annualLinkStorageKey(original.year)+":"+original.run.id;assert.match(ui.existing.get(key),/annual_points/);
+});

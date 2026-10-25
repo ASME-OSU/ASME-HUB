@@ -131,6 +131,8 @@ Steps 3 and 4 group actions with their applicable manual checks. Primary file bu
 
 Evidence drafts stay in memory by year, attempt and review while controls redraw or officers navigate. Save note commits one draft; completing a step or finishing the handoff/practice also commits drafts for that attempt through the existing concurrency guard. Reloading/leaving with unsaved drafts prompts the browser warning. Drafts do not enter exports until saved. A draft based on evidence changed in another tab cannot overwrite that evidence after reload; copy the draft, discard it and reconcile against the saved version.
 
+Private-link field drafts follow the same in-memory isolation by year and attempt, including imported links awaiting review. Switching checklists restores their pending fields; saving commits the link list and clears its draft. Discard link edits reloads the saved list. Preserved drafts retain their original saved-data baseline so loading newer storage cannot make stale edits eligible to overwrite it. Leaving warns for pending drafts in any checklist. Progress export and printing stop for pending notes in the selected checklist; private-link export stops for pending link edits. Each action explains how to save or discard the relevant edits.
+
 
 ## Chapter sign-in and Practice workspace recovery
 

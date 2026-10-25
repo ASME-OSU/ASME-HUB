@@ -1,6 +1,6 @@
 import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015o";
-import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261024b";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261024b";
+import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261025a";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261025a";
 
 import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261024b";
 
@@ -159,6 +159,8 @@ if (section) {
   let observedLegacyAnnualRaw = null;
   let corruptAnnualRaw = null;
   let savedAnnualLinks = {};
+  const annualDrafts = new Map();
+  let observedAnnualFields = "";
   const annualTools = node("details", "transition-tools");
   const annualSummary = node("summary", "", "Saved links");
   annualTools.append(annualSummary);
@@ -217,6 +219,7 @@ if (section) {
   annualExport.addEventListener("click", () => {
     try {
       assertAnnualDraftUnchanged();
+      if (setupFieldsSnapshot() !== observedAnnualFields) throw new Error("Save or discard your link edits before downloading a private links backup.");
       if (unreadableAnnualLinks || !observedAnnualRaw) throw new Error("Save and review this run’s link list first.");
       const draft = importAnnualLinkDraft(observedAnnualRaw, selectedYear, window.ASME_HUB_CONFIG);
       const url = URL.createObjectURL(new Blob([JSON.stringify(draft, null, 2)], { type: "application/json" }));
@@ -230,7 +233,12 @@ if (section) {
   let stepAnnualMessage = null;
   annualMessage.setAttribute("role", "status");
   annualMessage.setAttribute("aria-live", "polite");
-  annualTools.append(annualForm, annualActions, annualMessage);
+  const annualDraftHint = node("p", "transition-draft-hint");
+  annualDraftHint.setAttribute("role", "status");
+  const annualDiscard = node("button", "text-button", "Discard link edits"); annualDiscard.type = "button"; annualDiscard.hidden = true;
+  annualDiscard.addEventListener("click", () => { annualDrafts.delete(annualRunKey()); readAnnualLinks(); render(); });
+  for (const input of [...annualInputs.values(), ...mockInputs.values(), ...recordInputs.values()]) input.addEventListener("input", rememberAnnualDraft);
+  annualTools.append(annualForm, annualActions, annualDraftHint, annualDiscard, annualMessage);
   $("transition-progress-tools").before(annualTools);
   const currentTools = node("details", "transition-tools");
   const currentSummary = node("summary", "", "Current Hub reference");
@@ -259,6 +267,20 @@ if (section) {
     for (const [key, input] of annualInputs) input.value = draft?.links[key] || "";
     for (const [key, input] of mockInputs) input.value = draft?.mock?.[key] || "";
   }
+  function updateAnnualDraftHint() {
+    const dirty = annualDrafts.has(annualRunKey());
+    annualDraftHint.textContent = dirty ? "Unsaved link edits stay in this tab when you switch checklists. Save the link list to keep them after closing or reloading." : "";
+    annualDiscard.hidden = !dirty;
+  }
+  function rememberAnnualDraft() {
+    const fields = setupFieldsSnapshot(), key = annualRunKey();
+    if (fields === observedAnnualFields) annualDrafts.delete(key);
+    else {
+      const previous = annualDrafts.get(key);
+      annualDrafts.set(key, { fields, raw: previous ? previous.raw : observedAnnualRaw, legacyRaw: previous ? previous.legacyRaw : observedLegacyAnnualRaw, readable: !unreadableAnnualLinks });
+    }
+    updateAnnualDraftHint();
+  }
   function readAnnualLinks() {
     fillAnnualLinks(null);
     unreadableAnnualLinks = false;
@@ -274,8 +296,19 @@ if (section) {
       savedAnnualLinks = draftReferences(annualDraft());
       annualSay(text !== null ? "Annual link draft loaded from this device. Confirm the actual files and checks before use." : "No saved annual links for this year.");
     } catch (error) { unreadableAnnualLinks = true; corruptAnnualRaw = observedAnnualRaw ?? observedLegacyAnnualRaw; annualSay(`Saved links could not be read: ${error.message} Existing saved data is preserved. Import a valid handoff or explicitly remove saved links before saving.`, true); }
+    observedAnnualFields = setupFieldsSnapshot();
+    const pending = annualDrafts.get(annualRunKey());
+    if (pending) {
+      const values = new Map(JSON.parse(pending.fields));
+      for (const [key, input] of [...annualInputs, ...mockInputs, ...recordInputs]) input.value = values.get(key) || "";
+      if (pending.readable) unreadableAnnualLinks = false;
+      annualSay("Restored unsaved link edits for this checklist. Save them or choose Discard link edits to reload its saved list.");
+    }
+    updateAnnualDraftHint();
   }
   function assertAnnualDraftUnchanged() {
+    const pending = annualDrafts.get(annualRunKey());
+    if (pending && (pending.raw !== observedAnnualRaw || pending.legacyRaw !== observedLegacyAnnualRaw)) throw new Error("Saved links changed while these edits were pending. Copy your edits, then Discard link edits to load the newer saved list.");
     if (localStorage.getItem(annualRunKey()) !== observedAnnualRaw || (observedLegacyAnnualRaw !== null && localStorage.getItem(annualLinkStorageKey(selectedYear)) !== observedLegacyAnnualRaw)) throw new Error("Annual links changed in another tab. Reload saved run and review the newer draft before changing it.");
   }
   function annualReviewBaseline() {
@@ -304,6 +337,9 @@ if (section) {
     corruptAnnualRaw = null;
     savedAnnualLinks = references;
     fillAnnualLinks(draft);
+    observedAnnualFields = setupFieldsSnapshot();
+    annualDrafts.delete(annualRunKey());
+    updateAnnualDraftHint();
     annualSay(`${Object.values(references).some(Boolean) ? "Link format checked and draft saved on this device." : "Empty link list saved on this device. No links, access or readiness were verified."}${reopened ? " Affected completed steps and checks need review." : ""} Check Google access and connections in Google Drive and Forms.`);
     return draft;
   }
@@ -328,6 +364,7 @@ if (section) {
       assertAnnualDraftUnchanged();
       fillAnnualLinks(draft);
       unreadableAnnualLinks = false;
+      rememberAnnualDraft();
       annualSay("Imported draft replaces the displayed tool and record fields, including the private handoff folder. Review every replacement before saving; the JSON file is the importable link files, and the handoff folder is the folder containing your private records. Choose Save private link list on this device to retain it on this device. Creation results do not certify ownership, privacy or readiness; Form respondent links must come from the actual Form.");
     } catch (error) { annualSay(`Import failed: ${error.message} Existing fields and saved links were not changed.`, true); }
   });
@@ -359,6 +396,9 @@ if (section) {
       fillAnnualLinks(null);
       savedAnnualLinks = {};
       unreadableAnnualLinks = false;
+      observedAnnualFields = setupFieldsSnapshot();
+      annualDrafts.delete(annualRunKey());
+      updateAnnualDraftHint();
       render();
       annualSay("Annual links cleared for this run. Any legacy original draft was preserved. Google files and settings were not changed.");
     } catch { annualSay("Could not remove local links. Check browser storage.", true); }
@@ -1318,7 +1358,9 @@ if (section) {
       readYear();
     } catch (error) { yearInput.setCustomValidity(error.message); yearInput.reportValidity(); say(error.message, true); }
   });
+  const hasCurrentEvidenceDrafts = () => [...evidenceDrafts.values()].some(draft => draft.year === selectedYear && draft.runId === selectedRunId);
   $("transition-export").addEventListener("click", () => {
+    if (hasCurrentEvidenceDrafts()) { say("Save or discard your notes before exporting progress. The backup includes saved results and notes.", true); return; }
     const url = URL.createObjectURL(new Blob([exportProgress(progress, TRANSITION_STEPS, TRANSITION_CHECKS)], { type: "application/json" }));
     const link = node("a");
     link.href = url;
@@ -1402,13 +1444,14 @@ if (section) {
     }
   }
   $("transition-print").addEventListener("click", () => {
+    if (hasCurrentEvidenceDrafts()) { say("Save or discard your notes before printing. The checklist includes saved results and notes.", true); return; }
     buildPrintSheet();
     document.body.classList.add("transition-print");
     $("transition-print-sheet").hidden = false;
     window.print();
   });
   window.addEventListener("beforeunload", event => {
-    if (!evidenceDrafts.size) return;
+    if (!evidenceDrafts.size && !annualDrafts.size) return;
     event.preventDefault(); event.returnValue = "";
   });
   window.addEventListener("afterprint", () => {

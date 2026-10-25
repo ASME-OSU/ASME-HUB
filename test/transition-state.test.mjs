@@ -62,6 +62,13 @@ test('maximum valid evidence exports remain importable after JSON escaping',()=>
  assert.deepEqual(importProgress(exported,year,steps,checks),p);
  assert.throws(()=>importProgress(' '.repeat(MAX_TRANSITION_PROGRESS_BYTES+1),year,steps,checks),/at most 1 MB/);
 });
+test('parse and migration reject oversized parseable timestamps before export',()=>{
+ const savedAt='Sat, 24 Oct 2026 12:00:00 GMT'+' '.repeat(1_000_000);
+ assert.ok(Number.isFinite(Date.parse(savedAt)));
+ assert.throws(()=>read({...run(),savedAt}),/invalid save time/);
+ assert.throws(()=>migrateProgress({...run(),guideVersion:'officer-transition-guide-8',savedAt},year,steps,checks),/legacy save time/);
+ assert.doesNotThrow(()=>read({...run(),savedAt:'2026-10-24T12:00:00.000Z'}));
+});
 test('16-step versions2-6 migrate without changing original or carrying launch readiness',()=>{for(const v of [2,3,4,5,6]){const p={version:v===6?2:1,guideVersion:'officer-transition-guide-'+v,year,run:run().run,savedAt:null,reasons:{},notes:{},steps:{T03:'blocked',T15:'complete',T16:'complete'},checks:{V01:'unable',V10:'passed'}};const before=structuredClone(p),n=migrateProgress(p,year,steps,checks);assert.deepEqual(p,before);assert.equal(n.steps.T02,'in_progress');assert.equal(n.steps.T05,'in_progress');assert.equal(n.checks.V10,'needs_recheck');assert.match(n.notes.T02,/T03: blocked/);assert.deepEqual(read(n),n);assert.throws(()=>migrateProgress({...p,checks:{V99:'passed'}},year,steps,checks),/Unknown check/);}});
 test('five-step guide 7 migration keeps each step in place and new checks unverified',()=>{
  const old={version:2,guideVersion:'officer-transition-guide-7',year,run:run('production').run,savedAt:null,
