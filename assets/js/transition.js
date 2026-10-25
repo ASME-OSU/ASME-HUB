@@ -2,7 +2,7 @@ import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECK
 import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261025a";
 import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261025a";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261024b";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261025b";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -388,8 +388,9 @@ if (section) {
       if (removedKeys.length && !save(reconcileProgress(reopenAnnualChecks(progress, removedKeys, previousReferences), TRANSITION_STEPS, TRANSITION_CHECKS, progress))) throw new Error("Could not save required recheck status.");
       if (corruptAnnualRaw !== null) localStorage.setItem(`${annualRunKey()}:corrupt-backup-${Date.now()}`, corruptAnnualRaw);
       if (selectedRunId === "legacy") {
-        observedAnnualRaw = JSON.stringify({ schema: 1, type: ANNUAL_HANDOFF_TYPE, year: selectedYear, links: {} });
-        localStorage.setItem(annualRunKey(), observedAnnualRaw);
+        const clearedRaw = JSON.stringify({ schema: 1, type: ANNUAL_HANDOFF_TYPE, year: selectedYear, links: {} });
+        localStorage.setItem(annualRunKey(), clearedRaw);
+        observedAnnualRaw = clearedRaw;
       } else { localStorage.removeItem(annualRunKey()); observedAnnualRaw = null; }
       observedLegacyAnnualRaw = null;
       corruptAnnualRaw = null;
@@ -401,7 +402,7 @@ if (section) {
       updateAnnualDraftHint();
       render();
       annualSay("Annual links cleared for this run. Any legacy original draft was preserved. Google files and settings were not changed.");
-    } catch { annualSay("Could not remove local links. Check browser storage.", true); }
+    } catch (error) { annualSay(`Could not remove local links: ${error.message}. Check browser storage, then retry or reload the saved checklist.`, true); }
   });
 
   const disclosureState = new Map();
@@ -1298,7 +1299,16 @@ if (section) {
     go(firstIncomplete());
   });
   $("transition-run").addEventListener("change", event => {
-    try { localStorage.setItem(runSelectionKey(selectedYear), event.target.value); readYear(); localStorage.setItem(`${runSelectionKey(selectedYear)}:${progress.run.mode}`, selectedRunId); activeSetupRunId = ""; render(); } catch { say("Could not select the saved run. Check browser storage.", true); }
+    const requestedRun = event.target.value;
+    readYear(requestedRun);
+    activeSetupRunId = "";
+    render();
+    try {
+      localStorage.setItem(runSelectionKey(selectedYear), selectedRunId);
+      localStorage.setItem(`${runSelectionKey(selectedYear)}:${progress.run.mode}`, selectedRunId);
+    } catch {
+      if (!unreadableProgress) say("Opened the selected checklist, but this selection could not be remembered. Your saved progress is unchanged; choose the checklist again after reloading.", true);
+    }
   });
   function startOrContinue(forceNew = false) {
     try {

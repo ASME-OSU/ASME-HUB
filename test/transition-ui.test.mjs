@@ -44,7 +44,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const tools = $("transition-progress-tools"); tools.className = "transition-tools";
   dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
   $("transition-run-mode").value = "production";
-  const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (faults.failProgress && key.startsWith(state.TRANSITION_STORAGE_PREFIX)) throw new Error("Audit storage quota exceeded"); if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
+  const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (faults.failAnnual && key.startsWith("asmeHubAnnualLinksV1:")) throw new Error("Annual link storage quota exceeded"); if (faults.failProgress && key.startsWith(state.TRANSITION_STORAGE_PREFIX)) throw new Error("Audit storage quota exceeded"); if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
   const windowListeners = new Map();
   const dispatched = [];
@@ -1144,4 +1144,26 @@ test("imported link drafts survive switches and saving clears the unload warning
  assert.equal(annualButton(ui,"Discard link edits").hidden,true);
  let warned=false;ui.windowListeners.get("beforeunload")({preventDefault(){warned=true;}});assert.equal(warned,false);
  const key=links.annualLinkStorageKey(original.year)+":"+original.run.id;assert.match(ui.existing.get(key),/annual_points/);
+});
+
+test("a selection-preference warning does not block opening readable saved progress",async()=>{
+ const a=state.emptyProgress("2027-2028",state.createTransitionRun("Checklist A","production","a"));
+ const b=state.emptyProgress("2027-2028",state.createTransitionRun("Checklist B","production","b"));b.notes.T01="B evidence";
+ const existing=new Map([[state.storageKey(a.year,"a"),JSON.stringify(a)],[state.storageKey(b.year,"b"),JSON.stringify(b)]]);
+ const ui=browser(existing,[],true);ui.$("transition-run").value="b";await ui.$("transition-run").emit("change");
+ assert.match(ui.$("transition-run-context").textContent,/Checklist B/);
+ assert.equal(observation(ui,"T01").value,"B evidence");
+ assert.match(ui.$("transition-status").textContent,/selection.*remembered/i);
+});
+
+test("legacy clear can be retried after its storage write fails",async()=>{
+ const year="2027-2028",legacy=JSON.stringify({version:1,guideVersion:"officer-transition-guide-5",year,savedAt:null,steps:{},checks:{}});
+ const original=JSON.stringify({schema:1,type:links.ANNUAL_HANDOFF_TYPE,year,links:{pointsMaster:"https://docs.google.com/spreadsheets/d/legacyAnnualPointsMaster1234567890/edit"}});
+ const existing=new Map([[`${state.TRANSITION_LEGACY_STORAGE_PREFIX}${year}`,legacy],[links.annualLinkStorageKey(year),original]]),faults={};
+ const ui=browser(existing,[],false,null,faults);await ui.go("T02");
+ faults.failAnnual=true;await annualButton(ui,"Clear saved links for this run").click();
+ assert.equal(existing.get(links.annualLinkStorageKey(year)),original);
+ assert.match(ui.$("transition-saved-tools").textContent,/Annual link storage quota exceeded/);
+ faults.failAnnual=false;await annualButton(ui,"Clear saved links for this run").click();
+ assert.equal(annualField(ui).value,"");assert.match(ui.$("transition-saved-tools").textContent,/Annual links cleared/);
 });
