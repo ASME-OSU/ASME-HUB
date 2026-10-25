@@ -1063,3 +1063,39 @@ test("progress file picker accepts a full-size evidence backup", async () => {
  assert.equal(ui.saved().notes.T01,value.notes.T01.trim());
  assert.doesNotMatch(ui.$("transition-status").textContent,/Import failed/);
 });
+
+test("a pending skip cannot follow the officer into another checklist",async()=>{
+ const ui=browser();await startRun(ui);await ui.choose("V20","skipped");
+ ui.$("transition-run-name").value="Separate review";await startRun(ui);
+ await ui.reason("V20","Reviewed the folder access in this separate checklist.");
+ assert.notEqual(ui.saved().checks.V20,"skipped");
+});
+
+test("a delayed private-links import cannot erase edits made while reading",async()=>{
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);await ui.go("T02");
+ const input=ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.type==="file");
+ let resolveText;const text=JSON.stringify(mockHandoff());input.files=[{size:text.length,text:()=>new Promise(resolve=>{resolveText=resolve;})}];
+ const reading=input.emit("change");
+ const field=ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.attrs["aria-label"]==="Points Master (officer edit link)");
+ field.value="https://docs.google.com/spreadsheets/d/newer_manual_points_1234567890123456/edit";
+ resolveText(text);await reading;
+ assert.match(field.value,/newer_manual_points/);
+ assert.match(ui.$("transition-steps").textContent,/changed while reading/);
+});
+
+test("a delayed progress import cannot switch away from a newly selected checklist",async()=>{
+ const ui=browser();await startRun(ui);
+ const value=state.emptyProgress("2027-2028",state.createTransitionRun("Delayed backup","rehearsal","incoming"));
+ const text=state.exportProgress(value,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS),input=ui.$("transition-import");
+ let resolveText;input.files=[{size:text.length,text:()=>new Promise(resolve=>{resolveText=resolve;})}];const reading=input.emit("change");
+ ui.$("transition-run-name").value="Newly selected review";await startRun(ui);const current=ui.saved();
+ resolveText(text);await reading;
+ assert.equal(ui.saved().run.id,current.run.id);
+ assert.match(ui.$("transition-status").textContent,/changed while reading/);
+});
+
+test("changing a pending skip to passed does not skip it again when a note is saved",async()=>{
+ const ui=browser();await startRun(ui);await ui.choose("V20","skipped");await ui.choose("V20","passed");
+ await ui.reason("V20","Old skip explanation retained as a note on the review.");
+ assert.equal(ui.saved().checks.V20,"passed");
+});

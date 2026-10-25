@@ -104,6 +104,11 @@ export function parseProgress(value, year, steps, checks) {
 }
 export function migrateProgress(value, year, steps, checks) {
   if (value?.guideVersion === TRANSITION_GUIDE_VERSION) return parseProgress(value, year, steps, checks);
+  if ([9, 10, 11, 12].some(version => value?.guideVersion === `officer-transition-guide-${version}`)) {
+    // These named-run guides require all four maps. Spreading a missing or
+    // malformed map below would silently turn damaged evidence into {}.
+    for (const field of ["steps", "checks", "reasons", "notes"]) if (!record(value[field])) throw new Error(`This progress file has no valid ${field}.`);
+  }
   if (value?.guideVersion === "officer-transition-guide-12") {
     const candidate = { ...value, guideVersion: TRANSITION_GUIDE_VERSION, steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
     if (candidate.checks.V19 === "passed") candidate.checks.V19 = "needs_recheck";

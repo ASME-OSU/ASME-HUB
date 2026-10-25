@@ -103,6 +103,14 @@ test('legacy corruption is rejected before aggregation can hide it', () => {
  assert.doesNotThrow(()=>migrateProgress(missingEarlyEvidence,year,steps,checks));
 });
 
+test('named-run guide migrations reject malformed evidence maps before copying them',()=>{
+ for(const guideVersion of [9,10,11,12].map(number=>`officer-transition-guide-${number}`)) {
+  const old={...run('production'),guideVersion};
+  for(const field of ['steps','checks','reasons','notes'])for(const invalid of [null,[],undefined,''])
+   assert.throws(()=>migrateProgress({...old,[field]:invalid},year,steps,checks),new RegExp(`valid ${field}`),`${guideVersion} ${field}`);
+ }
+});
+
 test('task meter reaches full only after all reviews and steps, including reasoned practice closeout',()=>{
  const production=ready(); production.steps.T05='complete';
  const full=progressSummary(production,steps,checks); assert.equal(full.completedItems,full.totalItems);

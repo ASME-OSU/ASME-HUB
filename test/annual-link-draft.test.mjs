@@ -13,6 +13,7 @@ test("strict Google resource types, editor and actual respondent URLs", () => {
   assert.equal(googleAnnualLink("pointsMaster", id), sheet(id));
   assert.equal(googleAnnualLink("pointsMaster", sheet(id) + "?usp=sharing#gid=3"), sheet(id));
   assert.equal(googleAnnualLink("attendanceFormRespondent", `https://docs.google.com/forms/d/e/${id}/viewform`), `https://docs.google.com/forms/d/e/${id}/viewform`);
+  assert.equal(googleAnnualLink("annualFolder", `https://drive.google.com/drive/u/0/folders/${id}?usp=sharing`), `https://drive.google.com/drive/folders/${id}`);
   for (const url of ["https://docs.google.com.evil.test/spreadsheets/d/" + id + "/edit", "http://docs.google.com/spreadsheets/d/" + id + "/edit", "https://user@docs.google.com/spreadsheets/d/" + id + "/edit", `https://docs.google.com/forms/d/${id}/edit`, "javascript:alert(1)", "https://docs.google.com/spreadsheets/d/short/edit", `https://docs.google.com/spreadsheets/d/${id}/export`]) {
     assert.throws(() => googleAnnualLink("pointsMaster", url));
   }

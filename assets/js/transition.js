@@ -1,8 +1,8 @@
 import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261015o";
-import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261024a";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261024a";
+import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261024b";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261024b";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261024a";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261024b";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -317,10 +317,15 @@ if (section) {
     if (!file) return;
     const importedYear = selectedYear;
     const importedRunId = selectedRunId;
+    const importedFields = setupFieldsSnapshot();
+    const importedRaw = observedAnnualRaw;
+    const importedLegacyRaw = observedLegacyAnnualRaw;
     try {
       if (file.size > 100_000) throw new Error("Annual link files must be under 100 KB.");
       const draft = reviewAnnualLinkImport(importAnnualLinkDraft(await file.text(), importedYear, window.ASME_HUB_CONFIG));
       if (selectedYear !== importedYear || selectedRunId !== importedRunId) throw new Error("The selected year or run changed while reading this file. Import again for the intended run.");
+      if (importedFields !== setupFieldsSnapshot() || importedRaw !== observedAnnualRaw || importedLegacyRaw !== observedLegacyAnnualRaw) throw new Error("The links changed while reading this file. Review your current edits and import again if needed.");
+      assertAnnualDraftUnchanged();
       fillAnnualLinks(draft);
       unreadableAnnualLinks = false;
       annualSay("Imported draft replaces the displayed tool and record fields, including the private handoff folder. Review every replacement before saving; the JSON file is the importable link files, and the handoff folder is the folder containing your private records. Choose Save private link list on this device to retain it on this device. Creation results do not certify ownership, privacy or readiness; Form respondent links must come from the actual Form.");
@@ -450,6 +455,7 @@ if (section) {
     readYear(match?.id || "", mode);
   }
   function readYear(preferredRunId = "", requestedMode = "") {
+    pendingSkipId = null;
     observedProgressRaw = null;
     observedLegacyRaw = null;
     previousGuideRaw = null;
@@ -1103,6 +1109,7 @@ if (section) {
       select.value = checkOf(check.id);
       select.addEventListener("change", () => {
         const value = select.value;
+        if (value !== "skipped" && pendingSkipId === check.id) pendingSkipId = null;
         const missing = unmet(step);
         if (value === "passed" && missing.length) {
           say(`Independent observation recorded with incomplete prerequisites: ${missing.join(", ")}. It does not establish launch readiness.`);
@@ -1136,6 +1143,7 @@ if (section) {
     select.value = statusOf(step.id);
     const recordStepResult = () => {
       const value = select.value;
+      if (value !== "skipped" && pendingSkipId === step.id) pendingSkipId = null;
       if (value === "complete") {
         const missing = unmet(step);
         const pending = unchecked(step);
@@ -1328,8 +1336,9 @@ if (section) {
     try {
       if (file.size > MAX_TRANSITION_PROGRESS_BYTES) throw new Error("Progress files must be at most 1 MB.");
       const intendedYear = selectedYear;
+      const intendedRunId = selectedRunId;
       const text = await file.text();
-      if (selectedYear !== intendedYear) throw new Error("Selected year changed while reading. Import again.");
+      if (selectedYear !== intendedYear || selectedRunId !== intendedRunId) throw new Error("Selected year or checklist changed while reading. Import again.");
       const imported = importProgress(text, selectedYear, TRANSITION_STEPS, TRANSITION_CHECKS);
       const migrated = TRANSITION_PREVIOUS_GUIDE_VERSIONS.includes(JSON.parse(text).guideVersion);
       const candidate = { ...imported, run: createTransitionRun(`${imported.run.name.slice(0, 100)} (import)`, imported.run.mode), savedAt: new Date().toISOString() };
@@ -1342,6 +1351,7 @@ if (section) {
       observedProgressRaw = JSON.stringify(candidate);
       observedLegacyRaw = null;
       selectedRunId = candidate.run.id;
+      pendingSkipId = null;
       readAnnualLinks();
       currentIndex = firstIncomplete();
       render();

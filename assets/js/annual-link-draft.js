@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20261024a";
+import { validTransitionYear } from "./transition-state.js?v=20261024b";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
@@ -59,7 +59,7 @@ export function googleAnnualLink(key, value) {
   try { url = new URL(text); } catch { throw new Error(`Use a full Google link for ${key}.`); }
   if (url.protocol !== "https:" || url.username || url.password || url.port) throw new Error("Use an HTTPS Google link without credentials or a port.");
   const path = sheet ? /^\/spreadsheets\/d\/([A-Za-z0-9_-]{20,200})(?:\/(?:edit|view))?\/?$/
-    : key === "annualFolder" ? /^\/drive\/folders\/([A-Za-z0-9_-]{20,200})\/?$/
+    : key === "annualFolder" ? /^\/drive\/(?:u\/\d+\/)?folders\/([A-Za-z0-9_-]{20,200})\/?$/
     : key === "attendanceFormEditor" ? /^\/forms\/d\/([A-Za-z0-9_-]{20,200})\/edit\/?$/
     : /^\/forms\/d\/(?:e\/)?([A-Za-z0-9_-]{20,200})\/viewform\/?$/;
   const match = url.pathname.match(path);
