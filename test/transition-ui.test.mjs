@@ -1024,3 +1024,78 @@ test('connected setup rejects changed context after successful binding resume',a
  for(let i=0;i<10;i++)await Promise.resolve();ui.$('transition-run-name').value='Changed after resume';await startRun(ui);pending.resolve(fixture.result);await running;
  assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,2);assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey('2027-2028'))).length,0);
 });
+
+
+test("clearing saved links immediately removes copied-file actions", async () => {
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);await importMock(ui);await reviewMock(ui);await ui.go("T03");
+ const master=JSON.parse(ui.existing.get(links.annualLinkStorageKey("2027-2028")+":"+ui.saved().run.id)).links.pointsMaster;
+ assert.ok(ui.$("transition-steps").find(n=>n.href===master));
+ await ui.$("transition-dialog").find(n=>n.tagName==="button"&&n.textContent==="Clear saved links for this run").click();
+ assert.equal(ui.$("transition-steps").find(n=>n.href===master),null);
+ assert.match(ui.$("transition-steps").textContent,/Your links are missing/);
+});
+
+for (const action of ["clear", "replace"]) test(`${action} of corrupt saved links reopens prior confirmations`, async () => {
+ const value=completedReviews("production"),key=links.annualLinkStorageKey(value.year)+":"+value.run.id;
+ value.steps.T05="complete";
+ const ui=browser(new Map([[state.storageKey(value.year,value.run.id),JSON.stringify(value)],[key,"broken JSON"]]));
+ await ui.go("T02");
+ if(action==="clear") await ui.$("transition-dialog").find(n=>n.tagName==="button"&&n.textContent==="Clear saved links for this run").click();
+ else {
+  await importMock(ui,{schema:1,type:links.ANNUAL_HANDOFF_TYPE,year:value.year,links:{}});
+  await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");
+ }
+ const saved=ui.saved();
+ assert.equal(saved.checks.V20,"needs_recheck");
+ assert.equal(saved.checks.V21,"needs_recheck");
+ assert.equal(saved.steps.T01,"in_progress");
+ assert.equal(saved.steps.T05,"in_progress");
+ assert.equal(state.launchEligibility(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).eligible,false);
+ assert.ok([...ui.existing].some(([k,v])=>k.startsWith(key+":corrupt-backup-")&&v==="broken JSON"));
+});
+
+test("progress file picker accepts a full-size evidence backup", async () => {
+ const value=completedReviews("rehearsal");
+ for(const {id} of [...definitions.TRANSITION_STEPS,...definitions.TRANSITION_CHECKS]) {value.notes[id]="Detailed evidence. ".repeat(100);value.reasons[id]="Detailed reason. ".repeat(100);}
+ const text=state.exportProgress(value,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS);
+ assert.ok(Buffer.byteLength(text)>100_000);
+ const ui=browser(),input=ui.$("transition-import");input.files=[{size:Buffer.byteLength(text),text:async()=>text}];await input.emit("change");
+ assert.equal(ui.saved().notes.T01,value.notes.T01.trim());
+ assert.doesNotMatch(ui.$("transition-status").textContent,/Import failed/);
+});
+
+test("a pending skip cannot follow the officer into another checklist",async()=>{
+ const ui=browser();await startRun(ui);await ui.choose("V20","skipped");
+ ui.$("transition-run-name").value="Separate review";await startRun(ui);
+ await ui.reason("V20","Reviewed the folder access in this separate checklist.");
+ assert.notEqual(ui.saved().checks.V20,"skipped");
+});
+
+test("a delayed private-links import cannot erase edits made while reading",async()=>{
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);await ui.go("T02");
+ const input=ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.type==="file");
+ let resolveText;const text=JSON.stringify(mockHandoff());input.files=[{size:text.length,text:()=>new Promise(resolve=>{resolveText=resolve;})}];
+ const reading=input.emit("change");
+ const field=ui.$("transition-dialog").find(n=>n.tagName==="input"&&n.attrs["aria-label"]==="Points Master (officer edit link)");
+ field.value="https://docs.google.com/spreadsheets/d/newer_manual_points_1234567890123456/edit";
+ resolveText(text);await reading;
+ assert.match(field.value,/newer_manual_points/);
+ assert.match(ui.$("transition-steps").textContent,/changed while reading/);
+});
+
+test("a delayed progress import cannot switch away from a newly selected checklist",async()=>{
+ const ui=browser();await startRun(ui);
+ const value=state.emptyProgress("2027-2028",state.createTransitionRun("Delayed backup","rehearsal","incoming"));
+ const text=state.exportProgress(value,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS),input=ui.$("transition-import");
+ let resolveText;input.files=[{size:text.length,text:()=>new Promise(resolve=>{resolveText=resolve;})}];const reading=input.emit("change");
+ ui.$("transition-run-name").value="Newly selected review";await startRun(ui);const current=ui.saved();
+ resolveText(text);await reading;
+ assert.equal(ui.saved().run.id,current.run.id);
+ assert.match(ui.$("transition-status").textContent,/changed while reading/);
+});
+
+test("changing a pending skip to passed does not skip it again when a note is saved",async()=>{
+ const ui=browser();await startRun(ui);await ui.choose("V20","skipped");await ui.choose("V20","passed");
+ await ui.reason("V20","Old skip explanation retained as a note on the review.");
+ assert.equal(ui.saved().checks.V20,"passed");
+});

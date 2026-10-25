@@ -6,6 +6,7 @@ export const TRANSITION_LEGACY_STORAGE_PREFIX = "asmeHubTransitionProgressV1:";
 export const TRANSITION_STORAGE_PREFIX = "asmeHubTransitionProgressV2:";
 export const TRANSITION_STATUSES = ["not_started", "in_progress", "blocked", "failed", "skipped", "complete"];
 export const TRANSITION_CHECK_STATUSES = ["not_checked", "checking", "passed", "failed", "unable", "skipped", "needs_recheck"];
+export const MAX_TRANSITION_PROGRESS_BYTES = 1_000_000;
 export const MIN_TRANSITION_START_YEAR = 2000;
 export const MAX_TRANSITION_START_YEAR = 2199;
 const record = value => value && typeof value === "object" && !Array.isArray(value);
@@ -103,6 +104,11 @@ export function parseProgress(value, year, steps, checks) {
 }
 export function migrateProgress(value, year, steps, checks) {
   if (value?.guideVersion === TRANSITION_GUIDE_VERSION) return parseProgress(value, year, steps, checks);
+  if ([9, 10, 11, 12].some(version => value?.guideVersion === `officer-transition-guide-${version}`)) {
+    // These named-run guides require all four maps. Spreading a missing or
+    // malformed map below would silently turn damaged evidence into {}.
+    for (const field of ["steps", "checks", "reasons", "notes"]) if (!record(value[field])) throw new Error(`This progress file has no valid ${field}.`);
+  }
   if (value?.guideVersion === "officer-transition-guide-12") {
     const candidate = { ...value, guideVersion: TRANSITION_GUIDE_VERSION, steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
     if (candidate.checks.V19 === "passed") candidate.checks.V19 = "needs_recheck";
@@ -171,7 +177,9 @@ export function migrateProgress(value, year, steps, checks) {
 }
 export function exportProgress(progress, steps, checks) { return JSON.stringify({ kind: "asme-officer-transition-progress", ...parseProgress(progress, progress.year, steps, checks) }, null, 2); }
 export function importProgress(text, year, steps, checks) {
-  if (typeof text !== "string" || text.length > 100_000) throw new Error("Progress files must be under 100 KB.");
+  // A valid export can contain a 2,000-character note and reason for every
+  // step and review. JSON escaping can expand each character to six bytes.
+  if (typeof text !== "string" || text.length > MAX_TRANSITION_PROGRESS_BYTES || new TextEncoder().encode(text).length > MAX_TRANSITION_PROGRESS_BYTES) throw new Error("Progress files must be at most 1 MB.");
   let value; try { value = JSON.parse(text); } catch { throw new Error("Choose a valid JSON progress file."); }
   if (value?.kind !== "asme-officer-transition-progress") throw new Error("This is not an ASME transition progress file.");
   const next = migrateProgress(value, year, steps, checks);
