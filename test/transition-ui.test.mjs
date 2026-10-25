@@ -630,6 +630,11 @@ test("selected-year Practice dates and explicit communications tasks match scree
   }
   await ui.go("T04");const procedure=ui.$("transition-steps").find(n=>n.className==="transition-procedure");
   assert.deepEqual(procedure.children.map(n=>n.textContent),definitions.TRANSITION_STEPS.find(s=>s.id==="T04").instructions);
+  assert.match(procedure.textContent,/Newsletter Builder.*Load fictional Fall\/Spring/s);
+  assert.match(procedure.textContent,/Public Events Calendar.*live chapter display/s);
+  assert.doesNotMatch(procedure.textContent,/Upcoming dates|repeat its local fictional preview/);
+  assert.match(ui.$("transition-steps").textContent,/Newsletter fictional preview.*live public calendar/s);
+  await ui.$("transition-print").click();assert.match(ui.$("transition-print-sheet").textContent,/Public Events Calendar.*live chapter display/s);
   const title=definitions.TRANSITION_STEPS.find(s=>s.id==="T05").title;
   await ui.go("T05");assert.equal(ui.$("transition-steps").find(n=>n.tagName==="h3").textContent,title);
   assert.ok(ui.$("transition-step-picker").children.find(n=>n.value==="T05").textContent.includes(title));

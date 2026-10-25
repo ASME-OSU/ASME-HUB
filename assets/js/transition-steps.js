@@ -129,11 +129,11 @@ export const TRANSITION_STEPS = [
     ],
     "title": "Check calendar and messages",
     "productionTitle": "Check calendar and messages",
-    "quickStart": "Check and remove local fictional previews, review an unsent MOCK newsletter, and verify three private backups in a separate recovery profile.",
+    "quickStart": "Check and remove the Newsletter Builder’s local fictional preview, inspect the live public calendar, review an unsent MOCK newsletter, and verify three private backups in a separate recovery profile.",
     "productionQuickStart": "Compare approved events, review the editable newsletter and website draft, retain three private backups and obtain dated recovery readiness evidence.",
     "instructions": [
       "Open Newsletter Builder → Calendar. Enter the full academic year selected in this checklist and choose Load fictional Fall/Spring. Confirm both semesters and FICTIONAL REHEARSAL. These events stay local and create no Google events or invitations.",
-      "Open Public Events Calendar and repeat its local fictional preview in the generated list above the embedded Google calendar. Check desktop and phone. Then choose Remove fictional events, Upcoming in Newsletter Builder, and Upcoming dates on the public page. Confirm the fictional label is gone and the chapter snapshot returns; use Refresh chapter snapshot and record any error.",
+      "Check the Public Events Calendar on desktop and phone as a live chapter display: inspect its upcoming event cards and embedded Google calendar, and record any missing or mismatched approved events. It has no fictional preview controls. In Newsletter Builder choose Remove fictional events, then Upcoming. Confirm the fictional label is gone and the chapter snapshot returns; use Refresh chapter snapshot and record any error.",
       "Before changing an existing newsletter, choose Templates → Export Draft .json and preserve it privately. Use a clearly labeled MOCK issue. In Settings edit Email Subject Line and Preheader Text (preview line in inbox); use Links for quick links, Design for footer/address, and Announce → Author Attribution for the officer signature. Review Desktop and Mobile previews; keep the draft unsent.",
       "Keep three private backups: newsletter draft, Hub progress, and private links. Use Saved links and backup tools → Progress backup and print for progress; use Saved links for Download private links backup. Compare each downloaded file with the working screens using the recovery guide below.",
       "In a separate browser profile, restore the three backups and compare the restored checklist, seven links and newsletter content. Preserve the original profile and any existing recovery-profile work before imports. Record observed results and limits; downloads alone do not prove restoration."
@@ -406,7 +406,7 @@ export const TRANSITION_CHECKS = [
   {
     "id": "V25",
     "step": "T04",
-    "title": "Do both local fictional calendar previews work on desktop and phone, then return to Upcoming?",
+    "title": "Did the Newsletter fictional preview work on desktop and phone and return to Upcoming, and did you check the live public calendar?",
     "modes": [
       "rehearsal"
     ]
@@ -489,7 +489,7 @@ export const TRANSITION_OFFICER_COPY = {
       "Save your backups. Get approval before sending or publishing."
     ],
     "practice": [
-      "Try the fictional calendar preview in both tools. Switch back to Upcoming afterward.",
+      "Try the fictional calendar preview in Newsletter Builder, then return to Upcoming. Check the public calendar’s live chapter display.",
       "Preview an unsent MOCK newsletter on desktop and phone.",
       "Follow the backup practice below with your maintainer."
     ]
@@ -547,6 +547,6 @@ export const TRANSITION_OFFICER_QUESTIONS = {
   },
   "V23": "Are member rows hidden in both test modes?",
   "V24": "Do the sample budget totals match the expected amounts?",
-  "V25": "Did both calendar previews work and return to Upcoming?",
+  "V25": "Did the Newsletter fictional preview work and return to Upcoming, and did you check the live public calendar?",
   "V26": "Did all five sample check-ins arrive?"
 };
