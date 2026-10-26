@@ -575,7 +575,7 @@ test('choose Practice before changing the year preserves the intended new-checkl
 
  test('completion button records the step only after its reviews and navigation does not advance progress',async()=>{
  const ui=browser();await startRun(ui);
- const finish=()=>ui.$('transition-steps').find(n=>n.tagName==='button'&&n.textContent==='Save and continue');
+ const finish=()=>ui.$('transition-steps').find(n=>n.tagName==='button'&&n.textContent==='Continue to file setup');
  assert.equal(finish().disabled,true);const before=ui.$('transition-progress').value;
  await ui.$('transition-next').emit('click');assert.equal(ui.$('transition-progress').value,before);await ui.go('T01');
  await ui.choose('V20','passed');assert.equal(finish().disabled,false);const reviews=ui.$('transition-progress').value;
@@ -789,7 +789,7 @@ test('short action copy supports every mode without replacing detailed instructi
 
 test("Step 1 starts with only setup choices and reveals access after Start", async () => {
  const ui=browser();await ui.go("T01");
- assert.equal(ui.$("transition-start-continue").textContent,"Start");
+ assert.equal(ui.$("transition-start-continue").textContent,"Continue to access check");
  assert.equal(ui.$("transition-run").children.length,0);
  assert.equal(ui.$("transition-other-progress").hidden,true);
  assert.equal(ui.$("transition-setup-fields").hidden,false);
@@ -802,6 +802,29 @@ test("Step 1 starts with only setup choices and reveals access after Start", asy
  assert.deepEqual(ui.saved().checks,{});
 });
 
+test("first-step access checkbox is explicit and keeps navigation and link editing out of the main path",async()=>{
+ const ui=browser();await startRun(ui);
+ const ready=()=>ui.$("transition-steps").find(n=>n.className==="transition-start-confirmation").find(n=>n.tagName==="input");
+ const finish=()=>ui.$("transition-steps").find(n=>n.className.includes("transition-finish-step"));
+ assert.equal(ready().checked,false);assert.equal(finish().disabled,true);
+ assert.equal(ui.$("transition-navigation").hidden,true);assert.equal(ui.$("transition-saved-tools").hidden,true);
+ const help=ui.$("transition-steps").find(n=>n.className.includes("transition-detailed-help"));
+ assert.ok(help.find(n=>n===ui.$("transition-more-options")));
+ assert.ok(help.find(n=>n.dataset.transitionControl==="V20"));
+ ready().checked=true;await ready().emit("change");assert.equal(ui.saved().checks.V20,"passed");assert.equal(finish().disabled,false);
+ ready().checked=false;await ready().emit("change");assert.equal(ui.saved().checks.V20,undefined);assert.equal(finish().disabled,true);
+ ready().checked=true;await ready().emit("change");await finish().click();
+ assert.equal(ui.saved().steps.T01,"complete");assert.equal(ui.$("transition-step-picker").value,"T02");
+ assert.equal(ui.$("transition-navigation").hidden,false);
+});
+
+test("failed access-confirmation save leaves its checkbox unconfirmed",async()=>{
+ const faults={},ui=browser(new Map(),[],false,null,faults);await startRun(ui);faults.failProgress=true;
+ const ready=ui.$("transition-steps").find(n=>n.className==="transition-start-confirmation").find(n=>n.tagName==="input");
+ ready.checked=true;await ready.emit("change");assert.equal(ready.checked,false);assert.equal(ui.saved().checks.V20,undefined);
+ assert.equal(ui.$("transition-steps").find(n=>n.className.includes("transition-finish-step")).disabled,true);
+});
+
 test("primary Continue resumes the same attempt with notes and private links without duplicates", async () => {
  const ui=browser();await ui.$("transition-run-form").emit("submit");
  await ui.choose("V20","checking");await ui.reason("V20","Account request pending");
@@ -809,7 +832,7 @@ test("primary Continue resumes the same attempt with notes and private links wit
  const privateKey=links.annualLinkStorageKey(before.year)+":"+before.run.id;
  ui.existing.set(privateKey,JSON.stringify({...mockHandoff(),mock:undefined}));
  await ui.$("transition-edit-setup").click();
- assert.equal(ui.$("transition-start-continue").textContent,"Continue");
+ assert.equal(ui.$("transition-start-continue").textContent,"Continue to access check");
  await ui.$("transition-run-form").emit("submit");
  assert.equal(ui.saved().run.id,before.run.id);assert.equal(ui.saved().notes.V20,before.notes.V20);
  assert.equal(ui.existing.get(state.storageKey(before.year,before.run.id)),raw);
@@ -820,10 +843,10 @@ test("primary Continue resumes the same attempt with notes and private links wit
 test("year and purpose select matching progress and never relabel another attempt", async () => {
  const ui=browser();await ui.$("transition-run-form").emit("submit");const real=ui.saved();
  ui.$("transition-run-mode").value="rehearsal";await ui.$("transition-run-mode").emit("change");
- assert.equal(ui.$("transition-start-continue").textContent,"Start");
+ assert.equal(ui.$("transition-start-continue").textContent,"Continue to access check");
  await ui.$("transition-run-form").emit("submit");const practice=ui.saved();assert.notEqual(practice.run.id,real.run.id);
  ui.$("transition-run-mode").value="production";await ui.$("transition-run-mode").emit("change");
- assert.equal(ui.$("transition-start-continue").textContent,"Continue");
+ assert.equal(ui.$("transition-start-continue").textContent,"Continue to access check");
  await ui.$("transition-run-form").emit("submit");assert.equal(ui.saved().run.id,real.run.id);
  assert.equal(JSON.parse(ui.existing.get(state.storageKey(practice.year,practice.run.id))).run.mode,"rehearsal");
 });
@@ -839,7 +862,7 @@ test("separate attempts require the explicit action and last selected matching a
 
 test("automatic matching ignores unreadable progress and preserves its bytes", async () => {
  const key=state.storageKey("2027-2028","broken"),raw='{broken';
- const ui=browser(new Map([[key,raw]]));assert.equal(ui.$("transition-start-continue").textContent,"Start");
+ const ui=browser(new Map([[key,raw]]));assert.equal(ui.$("transition-start-continue").textContent,"Continue to access check");
  await ui.$("transition-run-form").emit("submit");assert.equal(ui.existing.get(key),raw);assert.notEqual(ui.saved().run.id,"broken");
 });
 

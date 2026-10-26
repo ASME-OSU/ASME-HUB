@@ -1,4 +1,4 @@
-import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261025c";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261026c";
 import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261025a";
 import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261025a";
 
@@ -12,6 +12,7 @@ if (section) {
   const yearInput = $("transition-year");
   const yearSetup = $("transition-year-setup");
   const setupOptions = $("transition-checklist-options");
+  const moreOptions = $("transition-more-options");
   const setupHome = $("transition-setup-home");
   // Step 1 owns setup; the header links back to it from later steps.
   const yearOptions = $("transition-year-options");
@@ -951,7 +952,7 @@ if (section) {
     $("transition-setup-ready").hidden = !started;
     $("transition-ready-context").textContent = `${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}`;
     const resume = matchingRun(progress.run.mode) || (observedLegacyRaw ? progress.run : null);
-    $("transition-start-continue").textContent = resume ? "Continue" : "Start";
+    $("transition-start-continue").textContent = resume && statusOf("T01") === "complete" ? "Resume saved progress" : "Continue to access check";
     $("transition-start-context").textContent = resume ? `Your ${selectedYear.replace("-", "–")} ${runModeLabel(progress.run.mode)} progress is saved on this device.` : "Progress will be saved on this device.";
     $("transition-readiness").textContent = progress.run.mode === "rehearsal" ? summary.rehearsal.reason : summary.launch.eligible ? "The required handoff reviews are recorded. Obtain the President’s launch approval before switching the year." : `Officer handoff: ${summary.launch.missing.length} setup steps and ${summary.launch.unchecked.length} reviews remain. Follow the steps below; record any access problem or error and ask the President for help.`;
     $("transition-step-picker").replaceChildren(...TRANSITION_STEPS.map(entry => new Option(`${entry.id} · ${stepTitle(entry)} · ${statusLabels[statusOf(entry.id)]}`, entry.id)));
@@ -991,6 +992,7 @@ if (section) {
     annualSettings.hidden = step.id === "T02";
     yearSetup.hidden = false;
     setupHome.append(setupOptions);
+    setupOptions.append(moreOptions);
     list.replaceChildren();
     const card = node("article", "transition-step");
     card.id = `transition-${step.id}`;
@@ -1011,8 +1013,8 @@ if (section) {
     card.append(heading);
     if (step.id === "T01") card.append(setupOptions);
     const preparing = step.id === "T01" && activeSetupRunId !== selectedRunId;
-    $("transition-navigation").hidden = preparing;
-    $("transition-saved-tools").hidden = preparing;
+    $("transition-navigation").hidden = step.id === "T01";
+    $("transition-saved-tools").hidden = step.id === "T01";
     const hasAnnualFiles = ANNUAL_LINK_FIELDS.every(([key]) => savedAnnualLinks[key]);
     const officerCopy = TRANSITION_OFFICER_COPY[step.id];
     const intro = node("p", "transition-step-intro", step.id === "T02" && hasAnnualFiles ? "Your links are saved. Open your files, then confirm the results." : progress.run.mode === "rehearsal" ? officerCopy.practiceIntro || officerCopy.intro : officerCopy.intro); intro.hidden = preparing; card.append(intro);
@@ -1022,7 +1024,8 @@ if (section) {
       for (const action of shortActions) actions.append(node("li", "", action));
       card.append(actions);
     }
-    const detail = disclosure(step.id === "T03" && progress.run.mode === "rehearsal" ? "Practice instructions — with your maintainer" : "Detailed instructions & troubleshooting", "transition-tools transition-detailed-help", "instructions");
+    const detail = disclosure(step.id === "T01" ? "Help, notes and saved progress" : step.id === "T03" && progress.run.mode === "rehearsal" ? "Practice instructions — with your maintainer" : "Detailed instructions & troubleshooting", "transition-tools transition-detailed-help", "instructions");
+    if (step.id === "T01") detail.append(moreOptions);
     detail.append(node("p", "transition-owner", `Team: ${step.roles.map(role => roleLabels[role] || role).join(", ")}.`));
     detail.append(node("p", "", `Before this step: ${step.needs.length ? step.needs.map(id => stepTitle(byId.get(id))).join("; ") : "Nothing else needed"}.`));
     appendGlossary(detail, step);
@@ -1095,7 +1098,8 @@ if (section) {
       card.append(files);
     } else if (["T03", "T04", "T05"].includes(step.id)) {
       const extra = disclosure(step.id === "T05" ? "Supporting records and help" : "More links and help", "transition-tools", "extra-links"); extra.append(resources); card.append(extra);
-    } else card.append(resources);
+    } else if (step.id === "T01") detail.append(resources);
+    else card.append(resources);
     if (stepLinks[step.id] || step.id === "T02") {
       const panel = node("details", "transition-inline-links");
       panel.append(node("summary", "", "Optional: edit or restore links manually"));
@@ -1126,7 +1130,7 @@ if (section) {
     const confirmation = node("section", "transition-confirmation");
     confirmation.hidden = preparing || (step.id === "T02" && !hasAnnualFiles);
     card.append(confirmation);
-    confirmation.append(node("h4", "", checksFor(step).some(check => checkApplies(check, progress.run.mode) && !workTargets.has(check.id)) ? "Did this work?" : "Finish this step"));
+    confirmation.append(node("h4", "", step.id === "T01" ? "Confirm access before setting up files" : checksFor(step).some(check => checkApplies(check, progress.run.mode) && !workTargets.has(check.id)) ? "Did this work?" : "Finish this step"));
     const teamChecks = disclosure("", "transition-tools transition-team-checks", "team");
     const teamIds = new Set(["V01", "V02", "V03", "V05", "V07", "V11", "V12", "V13", "V14", "V15", "V19", "V22", "V23"]);
     const applicableTeam = checksFor(step).filter(check => teamIds.has(check.id) && checkApplies(check, progress.run.mode));
@@ -1145,14 +1149,14 @@ if (section) {
         continue;
       }
       const work = workTargets.get(check.id);
-      const checkTarget = work ? (teamIds.has(check.id) ? work.team : work.section) : teamIds.has(check.id) ? teamChecks : confirmation;
+      const checkTarget = step.id === "T01" ? detail : work ? (teamIds.has(check.id) ? work.team : work.section) : teamIds.has(check.id) ? teamChecks : confirmation;
       const label = node("label", "transition-check-control", questionFor(check));
       const select = node("select");
       select.dataset.transitionControl = check.id;
       select.setAttribute("aria-label", `Manual check: ${questionFor(check)}`);
       TRANSITION_CHECK_STATUSES.forEach((value) => select.add(new Option(checkLabels[value], value)));
       select.value = checkOf(check.id);
-      select.addEventListener("change", () => {
+      const recordCheck = () => {
         const value = select.value;
         if (value !== "skipped" && pendingSkipId === check.id) pendingSkipId = null;
         const missing = unmet(step);
@@ -1164,10 +1168,18 @@ if (section) {
         const checks = { ...progress.checks };
         if (value === "not_checked") delete checks[check.id]; else checks[check.id] = value;
         save(reconcileProgress({ ...progress, checks, reasons }, TRANSITION_STEPS, TRANSITION_CHECKS, progress), check.id);
-      });
+      };
+      select.addEventListener("change", recordCheck);
       label.append(select);
       checkTarget.append(label);
       appendEvidence(checkTarget, check.id, titleFor(check));
+      if (step.id === "T01" && check.id === "V20") {
+        const ready = node("label", "transition-start-confirmation", progress.run.mode === "rehearsal" ? "I have the approved test account, private Practice folder and reviewer." : "I have the approved chapter account, officer folder and a contact for help.");
+        const checkbox = node("input"); checkbox.type = "checkbox"; checkbox.checked = checkOf(check.id) === "passed";
+        checkbox.setAttribute("aria-label", ready.textContent);
+        checkbox.addEventListener("change", () => { select.value = checkbox.checked ? "passed" : "not_checked"; recordCheck(); checkbox.checked = checkOf(check.id) === "passed"; });
+        ready.prepend(checkbox); confirmation.append(ready);
+      }
     }
     for (const work of new Set(workTargets.values())) {
       const required = applicableTeam.filter(check => work.checks.includes(check.id));
@@ -1205,7 +1217,7 @@ if (section) {
     };
     select.addEventListener("change", recordStepResult);
     const practiceEnd = step.launch && progress.run.mode === "rehearsal";
-    const finish = node("button", "primary-button transition-finish-step", practiceEnd ? summary.rehearsal.eligible ? "Practice finished" : "Finish practice" : step.launch ? statusOf(step.id) === "complete" ? "Handoff recorded" : "Finish handoff" : statusOf(step.id) === "complete" ? "Continue" : "Save and continue");
+    const finish = node("button", "primary-button transition-finish-step", step.id === "T01" ? "Continue to file setup" : practiceEnd ? summary.rehearsal.eligible ? "Practice finished" : "Finish practice" : step.launch ? statusOf(step.id) === "complete" ? "Handoff recorded" : "Finish handoff" : statusOf(step.id) === "complete" ? "Continue" : "Save and continue");
     finish.type = "button";
     finish.disabled = practiceEnd ? summary.rehearsal.eligible || summary.rehearsal.missing.length > 0 || summary.rehearsal.unchecked.length > 0 : unchecked(step).length > 0 || Boolean(step.launch && (statusOf(step.id) === "complete" || !launchEligibility(progress, TRANSITION_STEPS, TRANSITION_CHECKS).eligible));
     finish.addEventListener("click", () => {
@@ -1220,22 +1232,23 @@ if (section) {
         if (recordStepResult() && !step.launch) go(currentIndex + 1);
       }
     });
-    confirmation.append(finish, node("p", "transition-control-help", practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and reviewer checks first." : unchecked(step).length ? `${unchecked(step).length} confirmations left, including team checks.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
+    confirmation.append(finish, node("p", "transition-control-help", step.id === "T01" ? "Next: sign in with the chapter Google account and prepare this year’s files. No tool links need to be pasted here." : practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and reviewer checks first." : unchecked(step).length ? `${unchecked(step).length} confirmations left, including team checks.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
     control.append(select);
     const otherResult = disclosure("Need help, skip, or add a note", "transition-tools", "step-result");
     otherResult.open = otherResult.open || pendingSkipId === step.id || (["blocked", "failed"].includes(statusOf(step.id)) || (statusOf(step.id) === "skipped" && !practiceEnd));
     otherResult.append(control);
     appendEvidence(otherResult, step.id);
-    confirmation.append(otherResult);
+    if (step.id === "T01") detail.append(otherResult);
+    else confirmation.append(otherResult);
     const reason = blockingReason(step);
     list.append(card);
     $("transition-back").disabled = currentIndex === 0;
     $("transition-next").textContent = "Preview next step";
     const mockMode = progress.run.mode === "rehearsal";
     dialog.dataset.mockMode = String(mockMode);
-    $("transition-next").hidden = preparing || step.launch;
-    $("transition-next").disabled = preparing;
-    $("transition-next").setAttribute("aria-disabled", String(preparing));
+    $("transition-next").hidden = step.id === "T01" || step.launch;
+    $("transition-next").disabled = step.id === "T01";
+    $("transition-next").setAttribute("aria-disabled", String(step.id === "T01"));
     $("transition-next-reason").hidden = !reason || step.launch;
     $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? mockMode ? "Record cleanup and reviewer acceptance here. Rehearsal activation stays skipped." : "Record incoming acceptance and the President’s separate launch decision. Finish review shows anything still needed." : "You may read the next step and record its own result.");
   }

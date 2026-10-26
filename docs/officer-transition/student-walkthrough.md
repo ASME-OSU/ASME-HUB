@@ -4,7 +4,9 @@ Open the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to
 
 ## 1. Choose your year
 
-Enter the first year, such as **2027** for 2027–2028, choose **Real handoff** or **Practice**, then **Start** or **Continue**. Continue reopens matching progress on this device. Other saved attempts and the explicit separate-attempt action are under **More options**. Your progress and the private **Officer checklist document** are separate records.
+Enter the first year, such as **2027** for 2027–2028, choose **Real handoff** or **Practice**, then **Continue to access check**. Confirm the approved account, folder and help contact (or Practice reviewer) using the checkbox, then **Continue to file setup**. A completed saved checklist can be reopened with **Resume saved progress**. Other attempts, notes and troubleshooting are under **Help, notes and saved progress**. Your progress and the private **Officer checklist document** are separate records.
+
+No standard tool links need to be pasted in Step 1. Annual Setup saves the new Points Master, check-in form and budget connections; the Hub uses that year's settings automatically when the approved year becomes current. Shared tools such as Newsletter Builder, Social Hub and the officer workspace keep their existing links. Additional resources are optional and managed separately in Resources.
 
 Ask the President which chapter account to use and who can help with access. Confirm the shared officer workspace and filled private checklist open with your approved role access. Record missing permissions with the owner and next action. The **Annual Setup access check is in Step 2**, where its link and profile instructions are available. Annual files are created or reopened there.
 
