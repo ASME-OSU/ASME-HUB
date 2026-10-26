@@ -13,13 +13,13 @@ export const TRANSITION_STEPS = [
     "quickStart": "Start this Practice checklist, then confirm the approved workspace, test account and access/recovery contact.",
     "productionQuickStart": "Start this Real handoff checklist, then confirm the approved workspace, chapter account and access/recovery contact.",
     "instructions": [
-      "Choose your year and Practice, then Start or Continue. Other saved attempts are under More options. Practice keeps your results separate from the real handoff.",
+      "Choose your year and Practice, then Continue to access check. Confirm the approved test account, private folder and reviewer, then Continue to file setup. Help, notes and saved progress contains other saved attempts. Practice keeps your results separate from the real handoff.",
       "Ask the President which approved test account, private folder and copied Control Center to use. Record the practice lead and access/recovery contact in the private checklist.",
       "Open the approved private workspace with that account. Missing workspace approval or permission stays Blocked; give the President the URL and access problem.",
       "Annual Setup access is checked in Step 2, where its link and account warning appear. Step 2 creates or reopens the practice files; Step 3 checks the reviewer’s access to them."
     ],
     "productionInstructions": [
-      "Choose your year and Real handoff, then Start or Continue. Other saved attempts are under More options.",
+      "Choose your year and Real handoff, then Continue to access check. Confirm the approved chapter account, officer folder and help contact, then Continue to file setup. Help, notes and saved progress contains other saved attempts.",
       "Ask the President who leads the handoff, which chapter account to use, and who helps with access and recovery. Keep the approved instructions and role/access table in the current private checklist.",
       "Open the shared officer workspace using the approved account. Missing workspace approval or permission stays Blocked; give the President the URL and access problem. Annual Setup access is checked in Step 2, where its link and account warning appear.",
       "Step 2 creates or reopens the annual files; Step 3 checks access to them. Keep outgoing officers’ access until the incoming team accepts the handoff."

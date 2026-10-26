@@ -15,7 +15,7 @@
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
   <link rel="stylesheet" href="assets/css/styles.css?v=20261021a">
-  <link rel="stylesheet" href="assets/css/transition.css?v=20261015o">
+  <link rel="stylesheet" href="assets/css/transition.css?v=20261026c">
 </head>
 <body>
   <svg class="svg-sprite" aria-hidden="true">
@@ -799,19 +799,23 @@
                 <div id="transition-setup-fields">
               <section id="transition-year-setup" class="transition-checklist-setup">
 
-                <p id="transition-dialog-description">Choose a year and purpose to get started.</p>
+                <p id="transition-dialog-description">Choose the year you are preparing. Next, we’ll check access and set up its files.</p>
                 <div class="transition-controls">
                   <div id="transition-year-form"><label>Which year are you preparing? <input id="transition-year" form="transition-run-form" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" list="transition-year-options" required placeholder="2027" aria-describedby="transition-year-help"></label><datalist id="transition-year-options"></datalist></div>
                 </div>
-                <p id="transition-year-help">Use the first year: 2027 means 2027–2028.</p>
+                <p id="transition-year-help">Enter the first year: 2027 means 2027–2028. This does not switch the live Hub.</p>
               </section>
               <section class="transition-run-controls" aria-label="Start or continue a checklist">
                 <form id="transition-run-form">
                   <label>What are you doing? <select id="transition-run-mode" aria-describedby="transition-mode-help"><option value="production">Real handoff</option><option value="rehearsal">Practice</option></select></label>
-                  <button id="transition-start-continue" class="primary-button" type="submit">Start</button>
-                  <p id="transition-mode-help" class="transition-control-help">Real handoff prepares for next year. Practice lets you try the steps separately.</p>
+                  <button id="transition-start-continue" class="primary-button" type="submit">Continue to access check</button>
+                  <p id="transition-mode-help" class="transition-control-help">Real handoff prepares next year’s files. Practice uses separate test files.</p>
                 </form>
                 <p id="transition-start-context" class="transition-control-help"></p>
+                <div class="transition-start-summary">
+                  <p><strong>Updates with the year</strong><br>When the approved new year becomes current, the Hub automatically uses its Points Master, check-in form and budget connections.</p>
+                  <p><strong>Stays the same</strong><br>Newsletter Builder, Social Hub, officer workspace and other shared tools. Extra resource links are optional under Resources.</p>
+                </div>
               </section></div>
               <div id="transition-setup-ready"><p id="transition-ready-context"></p><button id="transition-edit-setup" class="text-button" type="button">Change year or purpose</button></div>
               <details id="transition-more-options" class="transition-run-advanced"><summary>More options</summary>
@@ -1131,7 +1135,7 @@
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
   <script src="assets/js/social-health.js?v=20261019b"></script>
   <script src="assets/js/app.js?v=20261020a"></script>
-  <script type="module" src="assets/js/transition.js?v=20261026a"></script>
+  <script type="module" src="assets/js/transition.js?v=20261026c"></script>
   <script src="assets/js/pwa.js?v=20260802f"></script>
 </body>
 </html>

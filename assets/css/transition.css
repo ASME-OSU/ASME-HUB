@@ -213,6 +213,11 @@ body[data-theme="dark"] .transition-dialog {
 .transition-progress-panel .transition-status:empty { display: none; }
 .transition-progress-panel .transition-status { margin: 6px 0 0; }
 .transition-finish-step { margin-top: 12px; }
+.transition-start-summary { display: grid; gap: 4px; padding-top: 4px; border-top: 1px solid var(--flow-border); }
+.transition-start-summary p { margin: 8px 0 0; color: var(--flow-secondary); font-size: 13px; line-height: 1.6; }
+.transition-start-summary strong { color: var(--flow-text); }
+.transition-start-confirmation { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; color: var(--flow-text); font-size: 14px; line-height: 1.6; cursor: pointer; }
+.transition-start-confirmation input[type="checkbox"] { flex: 0 0 18px; width: 18px; height: 18px; min-height: 18px; padding: 0; margin: 3px 0 0; accent-color: var(--accent); }
 @media (max-width: 640px) { .transition-progress-panel { padding: 0 12px 8px; } }
 
 .transition-glossary { margin: 16px 0; padding: 12px; border: 1px solid var(--flow-border, #aab3c0); border-radius: 10px; font-size: 13px; line-height: 1.6; }

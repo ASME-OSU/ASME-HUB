@@ -278,6 +278,30 @@ test('annual URL and year labels survive global/year-specific shared overrides',
   assert.equal(run.api.resolveYearResources(source)[0].title, 'MOCK RUN — 2027–2028 Target Treasurer ledger');
 });
 
+test('changing the Hub year updates annual tools while shared and additional resources keep their links',()=>{
+ const run=runtime();
+ run.config.resources=[
+  {id:'attendance-check-in',title:'Check-in',settingKey:'attendanceFormUrl'},
+  {id:'points-master',title:'Points Master',settingKey:'pointsMasterUrl'},
+  {id:'budget-tracker',title:'Budget Tracker',settingKey:'budgetTrackerUrl'},
+  {id:'newsletter-builder',title:'Newsletter Builder',url:'https://shared.example/newsletter'},
+  {id:'social-hub',title:'Social Hub',url:'https://shared.example/social'},
+  {id:'officer-workspace',title:'Officer workspace',url:'https://shared.example/officers'}
+ ];
+ run.api.setResources([{resource_id:'extra-resource',label:'Additional chapter resource',url:'https://shared.example/extra',category:'Operations',roles:'all',sort_order:500,enabled:true,academic_year:''}]);
+ for(const year of ['2026-2027','2027-2028']){
+  run.node('academic-year').value=year;
+  const source={...sourceFor(year),attendanceFormUrl:`https://forms.example/${year}`};
+  const resources=new Map(run.api.resolveYearResources(source).map(r=>[r.id,r]));
+  for(const [id,key] of [['attendance-check-in','attendanceFormUrl'],['points-master','pointsMasterUrl'],['budget-tracker','budgetTrackerUrl']]){
+   assert.equal(resources.get(id).url,source[key]);assert.match(resources.get(id).title,new RegExp(year.replace('-','–')));
+  }
+  for(const [id,path] of [['newsletter-builder','newsletter'],['social-hub','social'],['officer-workspace','officers'],['extra-resource','extra']])assert.equal(resources.get(id).url,`https://shared.example/${path}`);
+ }
+ run.node('academic-year').value='2027-2028';
+ assert.equal(run.api.resolveYearResources({...sourceFor('2027-2028'),pointsMasterUrl:''}).find(r=>r.id==='points-master').url,'');
+});
+
 for (const [categories, confirmed, expected, total] of [
   [[{ label: 'Food', actual: 0, planned: 0 }], false, /Treasurer review required/, '$0'],
   [[{ label: 'Food', actual: 0, planned: 0 }], true, /Zero category allocations reviewed/, '$0'],
