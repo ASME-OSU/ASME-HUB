@@ -1,4 +1,4 @@
-import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261026c";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261026f";
 import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261025a";
 import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261025a";
 
@@ -723,11 +723,11 @@ if (section) {
     if (!annualSetupClient && apiConfig) annualSetupClient = createAnnualSetupClient(apiConfig);
     const client = annualSetupClient;
     const key = `${selectedYear}:${selectedRunId}:${progress.run.mode}`;
-    if (!annualSetupSessions.has(key)) annualSetupSessions.set(key, { config: null, message: "Use the chapter Google account to get started.", error: false, receipt: "" });
+    if (!annualSetupSessions.has(key)) annualSetupSessions.set(key, { config: null, message: progress.run.mode === "rehearsal" ? "The test account is asmeohiostate@gmail.com." : "Use the chapter Google account to get started.", error: false, receipt: "" });
     const session = annualSetupSessions.get(key);
     const panel = node("section", "transition-connected-setup");
     panel.dataset.annualSetup = "connected";
-    panel.append(node("h4", "", "Prepare this year’s files here"), node("p", "", `${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}`));
+    panel.append(node("h4", "", "Connect your Google account"), node("p", "", `${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}`));
     const connect = node("button", "secondary-button", "Sign in with chapter Google account"); connect.type = "button";
     connect.disabled = annualSetupPending || !client?.ready;
     const goalLabel = node("label", "transition-check-control", "Member goal for this year");
@@ -828,7 +828,7 @@ if (section) {
       { key: "attendance", title: "Attendance", text: practice ? "Start on the Points Master’s README tab. Try five sample check-ins with your maintainer, then compare the Points Export. Use the form editor to check events and close intake." : "Start on the Points Master’s README tab. Add this year’s events, check the form editor’s event list, and compare the Points Export.", links: [["Open Points Master", savedAnnualLinks.pointsMaster], ["Open attendance form editor", savedAnnualLinks.attendanceFormEditor], ...(practice ? [["Open check-in form", savedAnnualLinks.attendanceFormRespondent]] : []), ["Open Points Export", savedAnnualLinks.pointsExport]], checks: ["V03", "V04", "V05", "V19", "V23", "V26"] },
       { key: "budget", title: "Budget", text: practice ? "Begin on the Budget Tracker’s Start Here tab. Try the sample entries in the Practice instructions, then compare the Budget Export." : "Begin on the Budget Tracker’s Start Here tab. Confirm balances and the spending plan with the Treasurer, then compare the Budget Export.", links: [["Open Budget Tracker", savedAnnualLinks.budgetTracker], ["Open Budget Export", savedAnnualLinks.budgetExport]], checks: ["V06", "V12", "V13", "V24"] }
     ] : step.id === "T04" ? [
-      { key: "events", title: "Check events", text: practice ? "Try the fictional preview in Newsletter Builder, then return to Upcoming. Check live chapter events on the public calendar." : "Check the same event’s date, time and location in the Hub, website and newsletter.", links: [["Open calendar", () => urlFor("events-calendar") || "https://org.osu.edu/asme/calendar/"], ["Open Newsletter Builder", () => urlFor("newsletter-builder")]], hub: true, checks: ["V08", "V14", "V25"] },
+      { key: "events", title: "Check events", text: practice ? "Try the fictional preview, then return to Upcoming. Compare live event titles and descriptions with the public calendar before importing." : "Compare event titles, dates, times and locations across the Hub, website and newsletter. Check descriptions before importing.", links: [["Open calendar", () => urlFor("events-calendar") || "https://org.osu.edu/asme/calendar/"], ["Open Newsletter Builder", () => urlFor("newsletter-builder")]], hub: true, checks: ["V08", "V14", "V25"] },
       { key: "newsletter", title: "Preview newsletter", text: practice ? "Preview an unsent MOCK draft on a phone and computer." : "Update the draft and approved website changes. Preview on a phone and computer; get approval before sharing.", links: [["Open Newsletter Builder", () => urlFor("newsletter-builder")], ...(practice ? [] : [["Open website editor", () => urlFor("website-editor")]])], checks: ["V09", "V11", "V15"] },
       { key: "backups", title: "Save backups", text: practice ? "With your maintainer, restore and compare progress, private links and the newsletter draft." : "Save progress, private links and the editable newsletter draft. Ask your maintainer to check recovery.", links: [], checks: ["V22"], backup: true }
     ] : [];
@@ -863,7 +863,17 @@ if (section) {
       section.append(actions);
       const missing = node("p", "transition-control-help", step.id === "T03" ? "Your links are missing or incomplete. Finish setup in Step 2 or ask the President for help." : "Ask the President for the chapter’s links.");
       section.append(missing);
-      const refresh = () => { updates.forEach(update => update()); missing.hidden = Boolean(group.backup) || (step.id === "T03" ? [...actions.children].every(link => !link.hidden) : [...actions.children].some(link => !link.hidden)); };
+      const returnToSetup = step.id === "T03" ? node("button", "secondary-button", "Go to Step 2: file setup") : null;
+      if (returnToSetup) {
+        returnToSetup.type = "button";
+        returnToSetup.addEventListener("click", () => go(TRANSITION_STEPS.findIndex(entry => entry.id === "T02")));
+        section.append(returnToSetup);
+      }
+      const refresh = () => {
+        updates.forEach(update => update());
+        missing.hidden = Boolean(group.backup) || (step.id === "T03" ? [...actions.children].every(link => !link.hidden) : [...actions.children].some(link => !link.hidden));
+        if (returnToSetup) returnToSetup.hidden = missing.hidden;
+      };
       refresh(); workLinkRefreshers.push(refresh);
       const team = disclosure("", "transition-tools transition-team-checks", `team-${group.key}`);
       const entry = { section, team, checks: group.checks };

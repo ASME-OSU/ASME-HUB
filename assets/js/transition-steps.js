@@ -521,7 +521,7 @@ export const TRANSITION_OFFICER_QUESTIONS = {
   "V11": "Has the owner approved what can be shown publicly?",
   "V12": "Has the authorized person approved the funding?",
   "V13": "Do the balances match the bank records?",
-  "V14": "Do the event dates, times and locations match after a refresh?",
+  "V14": "Do the event titles, descriptions, dates, times and locations match after a refresh?",
   "V15": "Has the owner approved the newsletter details and sending account?",
   "V16": {
     "production": "Are last year\u2019s records, test data and access changes accounted for?",
