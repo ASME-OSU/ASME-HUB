@@ -790,7 +790,7 @@ if (section) {
         const approvedGoal = Number(approved.existing ? approved.engagementGoal : goal.value);
         if (!Number.isInteger(approvedGoal) || approvedGoal <= 0) throw new Error("Enter a positive whole-number member goal approved by the President.");
         const answers = { engagementGoal: approvedGoal, mode: context.mode, rootFolderId: approved.rootFolderId, controlCenterId: approved.controlCenterId, configRevision: approved.configRevision };
-        annualSetupPending = true; session.error = false; session.receipt = ""; session.message = "Creating or reopening annual files. Keep the Hub open. If this stops, retry the same year to resume; do not create a second workspace."; render();
+        annualSetupPending = true; session.error = false; session.receipt = ""; session.message = "Creating or reopening annual files. Google can take a few minutes to connect them. Keep the Hub open. If this stops, retry the same year to resume; do not create a second workspace."; render();
         let result;
         try { result = await client.call("runAnnualSetup", [context.year, answers]); }
         catch (error) {
@@ -805,7 +805,9 @@ if (section) {
         saveSetupResults(result.hubHandoff);
         session.receipt = typeof result.readableReceipt === "string" ? result.readableReceipt : "";
         session.config = { ...approved, existing: true, engagementGoal: approvedGoal, goalSource: "This year’s saved setup" }; session.goal = approvedGoal;
-        session.message = "Files ready — all seven links are saved under Your files. The year stays inactive until approved.";
+        session.message = context.mode === "rehearsal"
+          ? "Practice files ready — all seven links are saved under Your files. These private copies stay inactive. The main dashboard still shows the chapter’s active year."
+          : "Files ready — all seven links are saved under Your files. The year stays inactive until approved.";
         say(session.message);
       } catch (error) { session.error = true; session.message = `${error.message || "Setup could not finish."} Setup may have created files: keep the same year and workspace when retrying. Sign in again if Google authorization expired.`; say(session.message, true); }
       finally { finish(); }
@@ -820,9 +822,10 @@ if (section) {
   function appendWorkGroups(card, step) {
     const practice = progress.run.mode === "rehearsal";
     const urlFor = id => resolvedGuideResources().find(item => item.id === id)?.url;
+    if (step.id === "T03") card.append(node("p", "transition-control-help", `${practice ? "Practice copies" : "Annual files"} · ${selectedYear.replace("-", "–")}. These buttons open this checklist’s files. Exports supply dashboard totals. ${practice ? "Practice does not change the active dashboard." : "The dashboard changes only after the real handoff is approved."}`));
     const groups = step.id === "T03" ? [
-      { key: "attendance", title: "Attendance", text: practice ? "With your maintainer, try the five sample check-ins and check their points. Close the test form afterward." : "Add this year’s events, then check that the attendance form lists them.", links: [["Open Points Master", savedAnnualLinks.pointsMaster], practice ? ["Open check-in form", savedAnnualLinks.attendanceFormRespondent] : ["Open attendance form editor", savedAnnualLinks.attendanceFormEditor]], checks: ["V03", "V04", "V05", "V19", "V23", "V26"] },
-      { key: "budget", title: "Budget", text: practice ? "Try the sample budget entries in the Practice instructions, then compare the totals." : "Fill in the approved balances and spending plan with the Treasurer.", links: [["Open Budget Tracker", savedAnnualLinks.budgetTracker]], checks: ["V06", "V12", "V13", "V24"] }
+      { key: "attendance", title: "Attendance", text: practice ? "Start on the Points Master’s README tab. Try five sample check-ins with your maintainer, then compare the Points Export. Use the form editor to check events and close intake." : "Start on the Points Master’s README tab. Add this year’s events, check the form editor’s event list, and compare the Points Export.", links: [["Open Points Master", savedAnnualLinks.pointsMaster], ["Open attendance form editor", savedAnnualLinks.attendanceFormEditor], ...(practice ? [["Open check-in form", savedAnnualLinks.attendanceFormRespondent]] : []), ["Open Points Export", savedAnnualLinks.pointsExport]], checks: ["V03", "V04", "V05", "V19", "V23", "V26"] },
+      { key: "budget", title: "Budget", text: practice ? "Begin on the Budget Tracker’s Start Here tab. Try the sample entries in the Practice instructions, then compare the Budget Export." : "Begin on the Budget Tracker’s Start Here tab. Confirm balances and the spending plan with the Treasurer, then compare the Budget Export.", links: [["Open Budget Tracker", savedAnnualLinks.budgetTracker], ["Open Budget Export", savedAnnualLinks.budgetExport]], checks: ["V06", "V12", "V13", "V24"] }
     ] : step.id === "T04" ? [
       { key: "events", title: "Check events", text: practice ? "Try the fictional preview in Newsletter Builder, then return to Upcoming. Check live chapter events on the public calendar." : "Check the same event’s date, time and location in the Hub, website and newsletter.", links: [["Open calendar", () => urlFor("events-calendar") || "https://org.osu.edu/asme/calendar/"], ["Open Newsletter Builder", () => urlFor("newsletter-builder")]], hub: true, checks: ["V08", "V14", "V25"] },
       { key: "newsletter", title: "Preview newsletter", text: practice ? "Preview an unsent MOCK draft on a phone and computer." : "Update the draft and approved website changes. Preview on a phone and computer; get approval before sharing.", links: [["Open Newsletter Builder", () => urlFor("newsletter-builder")], ...(practice ? [] : [["Open website editor", () => urlFor("website-editor")]])], checks: ["V09", "V11", "V15"] },
@@ -857,9 +860,9 @@ if (section) {
         }); actions.append(tools);
       }
       section.append(actions);
-      const missing = node("p", "transition-control-help", step.id === "T03" ? "Your links are missing. Finish setup in Step 2 or ask the President for help." : "Ask the President for the chapter’s links.");
+      const missing = node("p", "transition-control-help", step.id === "T03" ? "Your links are missing or incomplete. Finish setup in Step 2 or ask the President for help." : "Ask the President for the chapter’s links.");
       section.append(missing);
-      const refresh = () => { updates.forEach(update => update()); missing.hidden = Boolean(group.backup) || [...actions.children].some(link => !link.hidden); };
+      const refresh = () => { updates.forEach(update => update()); missing.hidden = Boolean(group.backup) || (step.id === "T03" ? [...actions.children].every(link => !link.hidden) : [...actions.children].some(link => !link.hidden)); };
       refresh(); workLinkRefreshers.push(refresh);
       const team = disclosure("", "transition-tools transition-team-checks", `team-${group.key}`);
       const entry = { section, team, checks: group.checks };

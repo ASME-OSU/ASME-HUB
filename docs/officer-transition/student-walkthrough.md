@@ -58,6 +58,8 @@ All mock events, five submissions, budget arithmetic and status changes below be
 
 Use the **Attendance** and **Budget** groups to open your saved files and record their checks. Technical team checks expand inside each group.
 
+These buttons open the selected checklist’s annual copies. **Open Points Export** and **Open Budget Export** show the approved results used by the dashboard; the working master and tracker hold the inputs. Practice never replaces the main dashboard’s active year. Use **Open attendance form editor** to manage events and intake, and **Open check-in form** to submit a sample response.
+
 Open the copied Points Master README. Enter only yellow input cells. In **Events**, enter **B event_name**, **C event_date**, **F event_type**, **H scoring_active** and **I form_open**:
 
 | Event | C event_date | F event_type | Calculated points |
@@ -68,6 +70,8 @@ Open the copied Points Master README. Enter only yellow input cells. In **Events
 For 2027–2028 these are September 15, 2027 and January 15, 2028; use your selected year. Set H and I TRUE only during the approved private test window. Preserve calculated **A event_id, D term, E academic_year and G points**. Event type determines points.
 
 Choose **ASME Tools → Enable automatic event sync** once in this annual copy. Complete approved owner authorization if requested. Edit a mock event name through Sheets, keeping `MOCK`, and confirm the copied Form’s Event ID dropdown changes. API edits alone do not exercise an edit trigger. **Sync Events to Google Form** is the manual retry/fallback; it preserves intake state.
+
+Each new annual copy can have its own Google script consent. The maintainer should review and complete this setup with the approved chapter owner before handing it to a new officer; approval for last year’s copy may not cover this one.
 
 Use the Form’s **Publish → Manage responders** to restrict access to approved testers. If unpublished, publish this private practice Form, explicitly enable **Accepting responses** for approved testers, then confirm the respondent questions open. Publishing and intake are separate; do not distribute the practice link. **name.number** means the OSU username-style identifier: **A = `rehearsala.999`; B = `rehearsalb.999`**. Use exactly the same identifier for each member in every case and the displayed **Yes/No** choices for **“Is this your first submission this academic year?”** Complete all required profile fields when specified. Preserve approved account/email collection rules.
 

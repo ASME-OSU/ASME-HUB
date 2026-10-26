@@ -886,10 +886,34 @@ test("task groups use the selected annual files and keep every applicable check 
  const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);await importMock(ui);await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");await ui.go("T03");
  const attendance=ui.$("transition-steps").find(n=>n.dataset.workGroup==="attendance"),budget=ui.$("transition-steps").find(n=>n.dataset.workGroup==="budget");
  assert.match(attendance.find(n=>n.tagName==="a"&&n.textContent==="Open Points Master").href,/annual_points/);
+ assert.match(attendance.find(n=>n.tagName==="a"&&n.textContent==="Open attendance form editor").href,/forms\/d\/annual_form.*\/edit/);
+ assert.match(attendance.find(n=>n.tagName==="a"&&n.textContent==="Open check-in form").href,/forms\/d\/e\/annual_respondent/);
+ assert.match(attendance.find(n=>n.tagName==="a"&&n.textContent==="Open Points Export").href,/annual_export/);
  assert.match(budget.find(n=>n.tagName==="a"&&n.textContent==="Open Budget Tracker").href,/annual_budget/);
+ assert.match(budget.find(n=>n.tagName==="a"&&n.textContent==="Open Budget Export").href,/budget_export/);
+ assert.match(ui.$("transition-steps").textContent,/Practice copies · 2027–2028/);
  assert.ok(attendance.find(n=>n.dataset.transitionControl==="V26"));assert.ok(budget.find(n=>n.dataset.transitionControl==="V24"));
  const counts=new Map();function walk(n){if(n.dataset.transitionControl)counts.set(n.dataset.transitionControl,(counts.get(n.dataset.transitionControl)||0)+1);for(const child of n.children)walk(child);}walk(ui.$("transition-steps"));
  for(const check of definitions.TRANSITION_CHECKS.filter(check=>check.step==="T03"&&state.checkApplies(check,"rehearsal")))assert.equal(counts.get(check.id),1,check.id);
+});
+
+test("partially saved annual links keep the missing-file guidance visible",async()=>{
+ const ui=browser();ui.$("transition-run-mode").value="rehearsal";await startRun(ui);
+ const handoff=mockHandoff();delete handoff.links.pointsExport;delete handoff.links.budgetExport;
+ await importMock(ui,handoff);await ui.$("transition-dialog").find(n=>n.id==="transition-annual-links-form").emit("submit");await ui.go("T03");
+ for(const name of ["attendance","budget"]){
+  const group=ui.$("transition-steps").find(n=>n.dataset.workGroup===name);
+  const help=group.find(n=>n.tagName==="p"&&n.textContent.startsWith("Your links are missing"));assert.equal(help.hidden,false);
+ }
+});
+
+test("connected Practice setup explains its copies do not change the active dashboard",async()=>{
+ const fixture=connectedFixture({config:{workspaceMode:"rehearsal"}}),ui=browser(new Map(),[],false,fixture.client);
+ fixture.result.hubHandoff=JSON.stringify(mockHandoff());
+ ui.$("transition-run-mode").value="rehearsal";await startRun(ui);await ui.go("T02");await connectSetup(ui);await runSetup(ui);
+ assert.match(connectedPanel(ui).textContent,/These private copies stay inactive/);
+ assert.match(ui.$("transition-status").textContent,/main dashboard still shows the chapter’s active year/);
+ assert.doesNotMatch(connectedPanel(ui).textContent,/inactive until approved/);
 });
 
 test("communications groups update chapter buttons without discarding entered notes",async()=>{
