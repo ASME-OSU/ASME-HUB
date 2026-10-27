@@ -56,6 +56,7 @@ organization-controlled backup.
 | `assets/js/transition-state.js` | Progress validation, prerequisites, migration and reconciliation |
 | `assets/css/transition.css` | Scoped light/dark design tokens, components and mobile layouts; follows the Hub theme |
 | `index.html`, `sw.js` | Accessible dialog/header/fixed footer and matching offline asset versions |
+| `assets/js/pwa.js` | Install prompts and a nonmodal update notice; service-worker replacement waits for an explicit reload |
 
 Visual changes must preserve the manual-check states, independent draft saves,
 local-progress meaning independent observations with incomplete prerequisites, reasoned skips and strict production T05 gating. Percent complete reflects
@@ -128,6 +129,17 @@ The main Start/Continue action resumes validated progress for the selected year 
 Steps 3 and 4 group actions with their applicable manual checks. Primary file buttons use the selected attempt’s links; chapter buttons follow the same shared-resource resolver as the optional list and refresh without rebuilding unsaved notes. Save and continue advances only after the existing guarded progress save succeeds. Finish practice requires every applicable review and earlier step, records T05 as skipped with an explicit no-launch reason, and preserves existing evidence. The real Finish handoff action retains production launch eligibility. The final summary keeps the full pending list expandable.
 
 ### Note drafts
+
+Leaving or reloading also warns while connected Annual Setup is pending,
+including sign-in, workspace loading and annual-file requests. This warning does
+not cancel Google server work. If a request is interrupted, preserve its year
+and workspace and reconcile the same run before retrying.
+
+Service-worker updates never reload the page automatically. After a controlled
+page receives a replacement worker, an update notice appears below the dashboard
+topbar. Finish the current work and save drafts before choosing **Reload Hub**.
+The notice remains available if the browser's leave/reload warning is canceled.
+An active modal can be finished and closed before using the notice.
 
 Evidence drafts stay in memory by year, attempt and review while controls redraw or officers navigate. Save note commits one draft; completing a step or finishing the handoff/practice also commits drafts for that attempt through the existing concurrency guard. Reloading/leaving with unsaved drafts prompts the browser warning. Drafts do not enter exports until saved. A draft based on evidence changed in another tab cannot overwrite that evidence after reload; copy the draft, discard it and reconcile against the saved version.
 

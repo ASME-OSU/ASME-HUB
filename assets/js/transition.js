@@ -1511,7 +1511,7 @@ if (section) {
     window.print();
   });
   window.addEventListener("beforeunload", event => {
-    if (!evidenceDrafts.size && !annualDrafts.size) return;
+    if (!annualSetupPending && !evidenceDrafts.size && !annualDrafts.size) return;
     event.preventDefault(); event.returnValue = "";
   });
   window.addEventListener("afterprint", () => {
