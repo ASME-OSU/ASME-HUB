@@ -244,6 +244,57 @@ test('canceling cleanup confirmation changes neither store',()=>{
   assert.equal(h.ctx.clearTestData().cleared,false);assert.equal(h.writes.length,0);assert.equal(h.form.responses.length,1);
 });
 
+test('empty cleanup reports both zero counts without confirmation, archives or writes',()=>{
+  const h=cleanupFixture();h.raw.values.length=1;h.form.responses=[];
+  const notices=[];h.master.toast=(...args)=>notices.push(args);
+  h.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>h.master;
+  h.ctx.SpreadsheetApp.getUi=()=>{throw Error('Empty cleanup must not request confirmation');};
+  const before=clone([...h.master.sheets.keys()]);
+  const result=h.ctx.clearTestData();
+  assert.deepEqual(clone(result),{cleared:true,rows:0,responses:0,archive:null});
+  assert.equal(notices.length,1);assert.match(notices[0][0],/0 response-sheet rows and 0 Form responses/);
+  assert.match(notices[0][0],/No backup was created or data changed/);
+  assert.deepEqual([...h.master.sheets.keys()],before);assert.equal(h.writes.length,0);
+});
+
+test('empty cleanup still refuses unsafe mode, intake, events, binding and account before reporting success',()=>{
+  for(const kind of ['live','intake','event','destination','responseLink','account']){
+    const h=cleanupFixture();h.raw.values.length=1;h.form.responses=[];
+    h.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>h.master;
+    h.ctx.SpreadsheetApp.getUi=()=>{throw Error('No confirmation expected');};
+    h.master.toast=()=>assert.fail('Unsafe cleanup must not report no data');
+    if(kind==='live')h.master.getSheetByName('Config').values[4][1]='LIVE';
+    if(kind==='intake')h.form.accepting=true;
+    if(kind==='event')h.master.getSheetByName('Events').values[1][8]=true;
+    if(kind==='destination')h.form.destination='another-workbook';
+    if(kind==='responseLink')h.raw.formUrl=null;
+    if(kind==='account')h.setActor('someone@example.com');
+    assert.throws(()=>h.ctx.clearTestData(),/TESTING|Close Form|form_open|annual copy|chapter/,kind);
+    assert.equal(h.writes.length,0,kind);
+  }
+});
+
+test('cleanup with data in either store still requires confirmation and changes nothing when canceled',()=>{
+  for(const kind of ['sheet','form','both']){
+    const h=cleanupFixture();if(kind==='sheet')h.form.responses=[];if(kind==='form')h.raw.values.length=1;
+    const previews=[];h.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>h.master;
+    h.ctx.SpreadsheetApp.getUi=()=>({Button:{YES:'yes'},ButtonSet:{YES_NO:'yesno'},alert:(...args)=>{previews.push(args);return 'no';}});
+    assert.equal(h.ctx.clearTestData().cleared,false);assert.equal(previews.length,1);
+    assert.match(previews[0][1],new RegExp('Archive and remove '+(kind==='form'?0:1)+' response-sheet rows and '+(kind==='sheet'?0:1)+' Form responses'));
+    assert.equal(h.writes.length,0);assert.equal(h.raw.getLastRow(),kind==='form'?1:2);assert.equal(h.form.responses.length,kind==='sheet'?0:1);
+  }
+});
+
+test('confirmed nonempty menu cleanup still archives both stores and reports the backup',()=>{
+  const h=cleanupFixture(),notices=[];h.master.toast=(...args)=>notices.push(args);
+  h.ctx.SpreadsheetApp.getActiveSpreadsheet=()=>h.master;
+  h.ctx.SpreadsheetApp.getUi=()=>({Button:{YES:'yes'},ButtonSet:{YES_NO:'yesno'},alert:()=> 'yes'});
+  const result=h.ctx.clearTestData();
+  assert.equal(result.rows,1);assert.equal(result.responses,1);assert.ok(h.master.getSheetByName(result.archive));
+  assert.equal(h.form.responses.length,0);assert.equal(h.raw.getLastRow(),1);
+  assert.equal(notices.length,1);assert.equal(notices[0][0],'Test attendance cleared. Backup: '+result.archive);
+});
+
 test('annual questions use a per-year goal, preserve saved chapter defaults and resume with saved goal',()=>{
  const h=harness(),before=h.props.get('ANNUAL_PROVISIONER_CONFIG');
  const r=h.runSetup('2027-2028',{engagementGoal:'50',mode:'rehearsal',rootFolderId:'root',controlCenterId:'center',configRevision:'["root","center","rehearsal","https://example.org/calendar.ics",25]'});

@@ -72,7 +72,12 @@ function asmeClearTestData_(ss, expected) {
   } finally { lock.releaseLock(); }
 }
 function clearTestData() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet(), plan = asmeTestCleanupPlan_(ss), ui = SpreadsheetApp.getUi();
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), plan = asmeTestCleanupPlan_(ss);
+  if (!plan.rowCount && !plan.formRecords.length) {
+    ss.toast('No test attendance to clear: 0 response-sheet rows and 0 Form responses. No backup was created or data changed.', 'ASME Tools', 8);
+    return {cleared: true, rows: 0, responses: 0, archive: null};
+  }
+  var ui = SpreadsheetApp.getUi();
   var expected = JSON.stringify({formId: plan.formId, responseName: plan.responseName, raw: plan.raw, formRecords: plan.formRecords});
   var choice = ui.alert('Clear Test Data', 'Archive and remove ' + plan.rowCount + ' response-sheet rows and ' + plan.formRecords.length + ' Form responses? All are marked MOCK. The backup stays in this workbook. Original Form response IDs cannot be restored. Formula tabs, event definitions and budget inputs are preserved.', ui.ButtonSet.YES_NO);
   if (choice !== ui.Button.YES) return {cleared: false};
