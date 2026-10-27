@@ -2923,7 +2923,6 @@
           ? document.createElement("a")
           : document.createElement("button");
         result.className = "hub-search-result";
-        result.setAttribute("role", "option");
         if (result.tagName === "BUTTON") result.type = "button";
         if (item.type === "resource" && item.url) {
           result.href = item.url;
@@ -5341,6 +5340,13 @@
   if (elements.searchInput) {
     elements.searchInput.addEventListener("input", () => {
       renderHubSearchResults(elements.searchInput.value);
+    });
+    elements.searchInput.addEventListener("keydown", (event) => {
+      if (event.defaultPrevented || event.isComposing || event.keyCode === 229 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat || !["Enter", "ArrowDown"].includes(event.key)) return;
+      const first = elements.searchResults?.querySelector(".hub-search-result");
+      if (!first) return;
+      event.preventDefault();
+      first.focus();
     });
   }
   [elements.officerRole, elements.sidebarOfficerRole].forEach((select) => {
