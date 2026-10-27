@@ -8,6 +8,26 @@ function harness(options={}) {
  const client=createAnnualSetupClient(config,{identity:()=>identity,now:()=>stamp,fetch:async(url,request)=>{fetchCount++;sent={url,request};return options.response || {ok:true,status:200,json:async()=>({done:true,response:{result:{example:true}}})};}});
  return {client,get sent(){return sent;},get init(){return init;},get fetchCount(){return fetchCount;},expire(){stamp=3300000;}};
 }
+function timedSignInHarness(options={}) {
+ const timers=new Map(),callbacks=[],cleared=[],authorizations=[];
+ let nextTimer=0;
+ const identity={
+  hasGrantedAllScopes:()=>{if(options.scopeThrows)throw Error('Scope check failed');return options.granted!==false;},
+  initTokenClient(value){
+   if(options.initThrows)throw Error('Popup initialization failed');
+   callbacks.push(value);
+   return {requestAccessToken(){if(options.requestThrows)throw Error('Popup request failed');}};
+  }
+ };
+ const client=createAnnualSetupClient(config,{
+  identity:()=>identity,
+  setTimeout:(callback,delay)=>{const id=++nextTimer;timers.set(id,{callback,delay});return id;},
+  clearTimeout:id=>{cleared.push(id);timers.delete(id);},
+  fetch:async(_url,request)=>{authorizations.push(request.headers.Authorization);return options.fetch?options.fetch(request):{ok:true,status:200,json:async()=>({done:true,response:{result:true}})};}
+ });
+ function expire(){assert.equal(timers.size,1);const [id,timer]=[...timers][0];timers.delete(id);timer.callback();}
+ return {client,timers,callbacks,cleared,authorizations,expire};
+}
 test('requires configured OAuth client and API executable',()=>{assert.equal(createAnnualSetupClient().ready,false);});
 test('calls the deployed API with transient token and plain parameters',async()=>{
  const h=harness(); await h.client.connect(); assert.deepEqual(await h.client.call('getAnnualSetupConfig',['2027-2028']),{example:true});
@@ -110,6 +130,73 @@ test('late and duplicate OAuth callbacks cannot finish another sign-in or replac
  callbacks[1].error_callback();
  assert.equal(await client.call('getAnnualSetupConfig',[]),true);
  assert.equal(authorization,'Bearer current-token');
+});
+test('silent Google popup times out, releases pending state and permits a fresh sign-in',async()=>{
+ const h=timedSignInHarness(),first=h.client.connect();
+ assert.equal(h.timers.size,1);assert.equal([...h.timers.values()][0].delay,120000);
+ await assert.rejects(h.client.connect(),/already open/);
+ const failure=assert.rejects(first,/two minutes.*Close any old sign-in popup.*allow popups.*Sign in again/);
+ h.expire();await failure;
+ assert.equal(h.timers.size,0);assert.equal(h.cleared.length,1);
+ await assert.rejects(h.client.call('getAnnualSetupConfig',[]),/Sign in again/);
+ const retry=h.client.connect();
+ h.callbacks[1].callback({access_token:'retry-token',expires_in:3600});await retry;
+ assert.equal(h.timers.size,0);assert.equal(await h.client.call('getAnnualSetupConfig',[]),true);
+ assert.deepEqual(h.authorizations,['Bearer retry-token']);
+});
+test('timed-out callbacks cannot authorize or disrupt the retry, even after it succeeds',async()=>{
+ const h=timedSignInHarness(),first=h.client.connect();
+ const failure=assert.rejects(first,/did not finish/);h.expire();await failure;
+ const retry=h.client.connect(),retryTimer=[...h.timers.keys()][0];
+ h.callbacks[0].callback({access_token:'stale-token',expires_in:3600});h.callbacks[0].error_callback();
+ assert.equal(h.timers.has(retryTimer),true);
+ await assert.rejects(h.client.call('getAnnualSetupConfig',[]),/Sign in again/);
+ await assert.rejects(h.client.connect(),/already open/);
+ h.callbacks[1].callback({access_token:'current-token',expires_in:3600});await retry;
+ h.callbacks[0].callback({access_token:'stale-token',expires_in:3600});h.callbacks[0].error_callback();
+ assert.equal(await h.client.call('getAnnualSetupConfig',[]),true);
+ assert.deepEqual(h.authorizations,['Bearer current-token']);assert.equal(h.timers.size,0);
+});
+test('all Google sign-in failure settlements cancel the timeout and permit retry',async()=>{
+ for(const kind of ['init','request','popup','oauth','scope','scopeThrows','token']){
+  const h=timedSignInHarness({initThrows:kind==='init',requestThrows:kind==='request',granted:kind!=='scope',scopeThrows:kind==='scopeThrows'});
+  for(let attempt=0;attempt<2;attempt++){
+   const pending=h.client.connect(),failure=assert.rejects(pending,/Google|Annual Setup/);
+   if(!['init','request'].includes(kind)){
+    const current=h.callbacks.at(-1);
+    if(kind==='popup')current.error_callback();
+    else current.callback(kind==='oauth'?{error:'access_denied'}:{access_token:'token',expires_in:kind==='token'?300:3600});
+   }
+   await failure;assert.equal(h.timers.size,0,kind);assert.equal(h.cleared.length,attempt+1,kind);
+  }
+ }
+});
+test('successful sign-in cancels its timer and a queued timeout cannot clear authorization',async()=>{
+ const h=timedSignInHarness(),pending=h.client.connect(),queuedTimeout=[...h.timers.values()][0].callback;
+ h.callbacks[0].callback({access_token:'current-token',expires_in:3600});await pending;
+ assert.equal(h.timers.size,0);assert.equal(h.cleared.length,1);
+ queuedTimeout();
+ assert.equal(await h.client.call('getAnnualSetupConfig',[]),true);
+ assert.deepEqual(h.authorizations,['Bearer current-token']);
+});
+for(const phase of ['fetch','body'])test(`390-second setup connection budget aborts pending ${phase} and permits a safe subsequent call`,async()=>{
+ let blocked=true,requestSignal;
+ const h=timedSignInHarness({fetch:request=>{
+  if(!blocked)return {ok:true,status:200,json:async()=>({done:true,response:{result:true}})};
+  requestSignal=request.signal;
+  const waitForAbort=()=>new Promise((_resolve,reject)=>request.signal.addEventListener('abort',()=>reject(new DOMException('Request aborted','AbortError')),{once:true}));
+  return phase==='fetch'?waitForAbort():{ok:true,status:200,json:waitForAbort};
+ }});
+ const signingIn=h.client.connect();h.callbacks[0].callback({access_token:'current-token',expires_in:3600});await signingIn;
+ const pending=h.client.call('runAnnualSetup',['2027-2028']);
+ const failure=assert.rejects(pending,/connection stopped.*Files may already exist.*same year/s);
+ for(let i=0;i<5;i++)await Promise.resolve();
+ assert.equal(h.timers.size,1);const [id,timer]=[...h.timers][0];assert.equal(timer.delay,390000);
+ h.timers.delete(id);timer.callback();await failure;
+ assert.equal(requestSignal.aborted,true);assert.equal(h.timers.size,0);
+ assert.equal(h.cleared.length,2);
+ blocked=false;assert.equal(await h.client.call('getAnnualSetupConfig',['2027-2028']),true);
+ assert.equal(h.timers.size,0);assert.deepEqual(h.authorizations,['Bearer current-token','Bearer current-token']);
 });
 test('unusable token values fail during sign-in and allow retry',async()=>{
  for(const oauth of [{access_token:42,expires_in:3600},{access_token:'token',expires_in:'unknown'},{access_token:'token',expires_in:300},{access_token:'token',expires_in:360}]){

@@ -1,6 +1,7 @@
 // OAuth credentials stay in this closure and are never included in saved Hub data.
 const GIS_URL = "https://accounts.google.com/gsi/client";
 const MIN_TOKEN_LIFETIME = 360000;
+const SIGN_IN_TIMEOUT = 120000;
 let identityLoading;
 function loadIdentity() {
   if (globalThis.google?.accounts?.oauth2) return Promise.resolve();
@@ -20,6 +21,8 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
   const identity = environment.identity || (() => globalThis.google?.accounts?.oauth2);
   const fetcher = environment.fetch || globalThis.fetch.bind(globalThis);
   const now = environment.now || Date.now;
+  const schedule = environment.setTimeout || globalThis.setTimeout;
+  const cancelTimer = environment.clearTimeout || globalThis.clearTimeout;
   const ready = /^[\w.-]+\.apps\.googleusercontent\.com$/.test(config.clientId || "") && /^[\w-]+$/.test(config.deploymentId || "") && Array.isArray(config.scopes) && config.scopes.length > 0 && config.scopes.every(scope => typeof scope === "string" && scope.startsWith("https://www.googleapis.com/auth/"));
   let token = "", expiresAt = 0, pending = false, loadError = null;
   if (ready && !environment.identity) loadIdentity().catch(error => { loadError = error; });
@@ -38,10 +41,12 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
     token = ""; expiresAt = 0; pending = true;
     return new Promise((resolve, reject) => {
       let settled = false;
+      let timer;
       const fail = message => {
         if (settled) return;
-        settled = true; pending = false; reject(new Error(message));
+        settled = true; cancelTimer(timer); pending = false; reject(new Error(message));
       };
+      timer = schedule(() => fail("Google sign-in did not finish within two minutes. Close any old sign-in popup, allow popups, then choose Sign in again."), SIGN_IN_TIMEOUT);
       try {
         const client = identity().initTokenClient({
           client_id: config.clientId, scope: config.scopes.join(" "), include_granted_scopes: false,
@@ -65,7 +70,7 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
             if (typeof result.access_token !== "string" || !result.access_token || !Number.isFinite(lifetime) || lifetime <= MIN_TOKEN_LIFETIME) {
               fail("Google returned an unusable sign-in token. Choose Sign in again."); return;
             }
-            settled = true; pending = false; token = result.access_token; expiresAt = now() + lifetime; resolve();
+            settled = true; cancelTimer(timer); pending = false; token = result.access_token; expiresAt = now() + lifetime; resolve();
           },
           error_callback: () => fail("Google sign-in closed or was blocked. Allow the sign-in popup, then try again.")
         });
@@ -78,7 +83,7 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
     if (!token || !Number.isFinite(expiresAt) || expiresAt - now() < MIN_TOKEN_LIFETIME) { token = ""; throw new Error("Choose Sign in again before continuing Annual Setup."); }
     const requestToken = token;
     const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(), 390000);
+    const timer = schedule(() => abort.abort(), 390000);
     try {
       const response = await fetcher(`https://script.googleapis.com/v1/scripts/${encodeURIComponent(config.deploymentId)}:run`, {
         method: "POST", headers: {Authorization: `Bearer ${requestToken}`, "Content-Type": "application/json"},
@@ -99,7 +104,7 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
     } catch (error) {
       if (error?.name === "AbortError" || error instanceof TypeError) throw new Error("The connection stopped before setup was confirmed. Files may already exist. Sign in and reopen the same year to resume.");
       throw error;
-    } finally { clearTimeout(timer); }
+    } finally { cancelTimer(timer); }
   }
   return {ready, connect, call};
 }
