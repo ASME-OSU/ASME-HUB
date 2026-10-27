@@ -1,6 +1,6 @@
 # Current implementation and verification status
 
-Updated October 14, 2026 for remediation of the October 13 student instruction review. Use [the student walkthrough](student-walkthrough.md) for the current five-step route and [Start here](README.md) for roles and required private records. This page describes source behavior; GitHub Pages publication, installed Google code and actual annual acceptance have separate evidence.
+Updated October 27, 2026 for connected setup recovery and current officer navigation. Use [the student walkthrough](student-walkthrough.md) for the current five-step route and [Start here](README.md) for roles and required private records. This page describes source behavior; GitHub Pages publication, installed Google code and actual annual acceptance have separate evidence.
 
 The President leads the handoff and names the setup operator, technical maintainer and recovery contact. A **maintainer** is the person who fixes and verifies the tools. A **readiness record** is that person's dated account of what was checked and what remains unresolved. Actual accounts, file IDs, approvals and evidence stay in the chapter-controlled private handoff.
 
@@ -14,9 +14,11 @@ The President leads the handoff and names the setup operator, technical maintain
 | 4 — Check calendar and messages | Compare approved events, review editable drafts, keep three backups and obtain recovery evidence | Check the Newsletter's local fictional preview and the live public calendar, restore backups in a separate profile and keep drafts unsent |
 | 5 | **Approve and start the year:** record acceptance separately; only the approved settings owner switches the year after launch approval | **Close and review your practice run:** record retention/cleanup and reviewer acceptance; skip activation with a reason |
 
-Step 1 contains **Start here**: choose the starting year and purpose, then **Start checklist**. To resume, choose **Saved checklist for this year → Continue checklist**. **Change year** returns to these controls from later steps. Each checklist is one attempt with separate notes and private links. Naming is optional. Exported mode values remain `production` and `rehearsal` for backup compatibility.
+Step 1 asks for the starting year and purpose, then **Continue to access check** opens the required account and workspace confirmation. A completed saved checklist can be reopened with **Resume saved progress**. **Change year** returns to these controls from later steps; other attempts and notes are under **Help, notes and saved progress**. Each checklist is one attempt with separate notes and private links. Naming is optional. Exported mode values remain `production` and `rehearsal` for backup compatibility.
 
-Step 2 uses **Open Annual Setup → Copy setup results → Paste setup results → Save setup results**. The setup operator first selects Chrome's ASME profile with only the approved chapter Google account signed in, and checks that the saved workspace purpose matches the checklist. Existing files are reopened, not copied again. The setup summary remains on the setup page under **Optional backup and detailed settings**; downloading it is optional. Other officers use the same annual files.
+Step 2 uses **Sign in with chapter Google account → Create or reopen this year’s files**. The operator checks the saved workspace purpose and approved member goal; the Hub saves all seven links under **Your files**. Existing files are reopened, not copied again. The setup summary is under **Optional backup and detailed settings**; downloading it is optional. Other officers use the same annual files.
+
+**Manual fallback**, under **Detailed instructions & troubleshooting**, opens the external Annual Setup page. Use Chrome’s ASME profile with only the approved chapter Google account signed in, then **Copy setup results → Paste setup results → Save setup results**. This fallback does not change the workspace purpose or approve any review.
 
 The four Step 2 reviews have a comparison aid naming the actual tool/cells, expected result and responsible person. Copying a summary supplies expected values; officers still open the actual Google files to compare them. The maintainer supplies clean-source and technical readiness evidence. No save, matching title or downloaded file automatically passes a review.
 

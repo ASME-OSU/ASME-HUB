@@ -16,12 +16,14 @@ Example request: “I am the incoming Secretary for 2027–2028. Please send the
 
 ## Step 2 Get this year's tools
 
-1. Use Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**, then choose **Open Annual Setup**. Missing workspace approval or permissions stays Blocked with the President; do not bypass it with another account.
+1. In Hub Step 2, choose **Sign in with chapter Google account** and select the approved chapter account. Missing workspace approval or permissions stays Blocked with the President; do not bypass it with another account.
 2. Confirm the selected year and workspace purpose. Real handoff and Practice only use separate folders/settings sheets. One designated operator chooses **Create or reopen this year’s files**; everyone reuses the same annual files. Resume a stopped setup in the same year/workspace instead of making duplicates.
-3. Choose **Copy setup results → Paste setup results → Save setup results** in Step 2. The detailed summary and downloads are optional backup/comparison tools, not an entry requirement.
+3. The Hub saves all seven links under **Your files**. Use **Reopen setup** to reconnect to existing files. The detailed summary and downloads are optional backup/comparison tools, not an entry requirement.
 4. Open the saved links and actual Google settings. Use the [four-review comparison map](student-walkthrough.md#compare-the-four-step-2-reviews) to compare destinations, dates, source IDs and inactive/noncurrent flags. A pasted summary supplies expected values, not fresh Google readback.
 
 The maintainer handles source cleanup, configuration, script installation and technical readiness evidence. Saving results does not pass reviews or activate the year. Missing evidence stays Blocked with a named owner.
+
+If connected setup is unavailable, use **Manual fallback** under Step 2’s **Detailed instructions & troubleshooting**. Its external Annual Setup page requires Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**. Choose **Copy setup results**, then return to the Hub and use **Paste setup results → Save setup results**. See the [full Step 2 instructions](student-walkthrough.md#2-prepare-this-years-files).
 
 ## Step 3 Prepare attendance and finances
 
