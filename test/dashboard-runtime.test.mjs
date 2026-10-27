@@ -35,7 +35,7 @@ function pointFeeds(year, events = [], status = 'LIVE') {
   };
 }
 const sourceFor = year => ({ label: year.replace('-', '–'), attendanceSheetUrl: `https://docs.google.com/spreadsheets/d/points-${year}-123456789012345/edit`, pointsMasterUrl: `https://docs.google.com/spreadsheets/d/master-${year}-123456789012345/edit`, budgetTrackerUrl: `https://docs.google.com/spreadsheets/d/budget-${year}-123456789012345/edit`, engagementGoal: 100 });
-function runtime(feeds = {}, socialFeed = null) {
+function runtime(feeds = {}, socialFeed = null, Clock = Date) {
   const nodes = new Map();
   const requests = [];
   const failures = [];
@@ -71,13 +71,13 @@ function runtime(feeds = {}, socialFeed = null) {
   function Option(text, value) { const option = element("option"); option.textContent = text; option.value = value; return option; }
   class CustomEvent extends Event { constructor(type, options) { super(type); this.detail = options.detail; } }
   const fetch = async url => { if (String(url).includes("social-automation.json") && socialFeed?.automation) return {ok:true,json:async()=>socialFeed.automation}; if (String(url).includes("posting-health.json") && socialFeed) return {ok:true,json:async()=>socialFeed}; throw new Error("Fixture feed unavailable"); };
-  const sandbox = { fetch, CustomEvent, Option, window, document, sessionStorage: storage, localStorage: storage, AbortController, DOMException, URL, URLSearchParams, Date, Intl, Math, Promise, Event, setTimeout, clearTimeout, queueMicrotask, console: { warn(...items) { failures.push(items); }, error(...items) { failures.push(items); }, log() {} } };
+  const sandbox = { fetch, CustomEvent, Option, window, document, sessionStorage: storage, localStorage: storage, AbortController, DOMException, URL, URLSearchParams, Date: Clock, Intl, Math, Promise, Event, setTimeout, clearTimeout, queueMicrotask, console: { warn(...items) { failures.push(items); }, error(...items) { failures.push(items); }, log() {} } };
   sandbox.globalThis = sandbox;
   vm.runInNewContext(readFileSync(new URL("../assets/js/social-health.js", import.meta.url), "utf8"), sandbox);
   window.ASME_SOCIAL_HEALTH = sandbox.ASME_SOCIAL_HEALTH;
   vm.runInNewContext(sharedSource, sandbox);
   window.ASME_SHARED_RESOURCES = sandbox.ASME_SHARED_RESOURCES;
-  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { setActionItems(operations, rolePriorities = [], role = "president") { activeOperations = operations; activeRolePriorities = rolePriorities; selectedOfficerRole = role; activeDashboardData = { kpis: {} }; renderOperations(operations); renderRoleExperience(); }, renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
+  const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { setActionItems(operations, rolePriorities = [], role = "president") { activeOperations = operations; activeRolePriorities = rolePriorities; selectedOfficerRole = role; activeDashboardData = { kpis: {} }; renderOperations(operations); renderRoleExperience(); }, normalizedCalendarEvents, parseIcalEvents, calendarResult, renderUpcomingEvents, setUpcomingEvents(events, role = "vice_president") { activeUpcomingEvents = events; selectedOfficerRole = role; renderOfficerCommandCenter(); renderRoleBriefing(); }, renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
   vm.runInNewContext(source, sandbox, { filename: 'app.js' });
   return { api: sandbox.testApi, node, nodes, requests, feeds, failures, config, listeners, window, document, dispatched };
 }
@@ -472,6 +472,63 @@ test('internal resource search links retain same-page native navigation',()=>{
  const run=runtime();run.api.configureHubSearch([{title:'Reviewed internal shortcut',description:'Fixture',url:'#events'}]);run.api.renderHubSearchResults('Reviewed internal');
  const result=run.node('hub-search-results').children[0];assert.equal(result.tagName,'A');assert.equal(result.href,'#events');assert.equal(result.target,'_self');assert.equal(result.rel,'');assert.equal(result.getAttribute('role'),null);
 });
+
+const calendarPolicyOccurrences = [
+ {id:'reference',title:'Reference date',allDay:true,startDate:'2026-11-01',endDate:'2026-11-02'},
+ {id:'chapter-day',title:'All-day chapter activity',allDay:true,startDate:'2026-11-02',endDate:'2026-11-03'},
+ {id:'timed',title:'Timed session',allDay:false,startAt:'2026-11-03T17:00:00Z',endAt:'2026-11-03T18:00:00Z'},
+ {id:'day-room',title:'All-day activity with room',allDay:true,startDate:'2026-11-04',endDate:'2026-11-05',location:'Chapter hall'},
+ {id:'timed-room',title:'Timed activity with room',allDay:false,startAt:'2026-11-05T17:00:00Z',endAt:'2026-11-05T18:00:00Z',location:'Engineering room'},
+];
+const calendarPolicyIcal = ['BEGIN:VCALENDAR',...calendarPolicyOccurrences.flatMap(item=>[
+ 'BEGIN:VEVENT',`UID:${item.id}`,`SUMMARY:${item.title}`,
+ item.allDay?`DTSTART;VALUE=DATE:${item.startDate.replaceAll('-','')}`:`DTSTART:${item.startAt.replace(/[-:]/g,'')}`,
+ ...(item.location?[`LOCATION:${item.location}`]:[]),'END:VEVENT',
+]),'END:VCALENDAR'].join('\r\n');
+const calendarPolicyClock = class extends Date {
+ constructor(...args){super(...(args.length?args:['2026-10-27T12:00:00Z']));}
+ static now(){return Date.parse('2026-10-27T12:00:00Z');}
+};
+
+for(const model of ['normalized snapshot','legacy iCal fallback']){
+ function calendarPolicyFixture(){
+  const run=runtime({},null,calendarPolicyClock);
+  const events=model==='normalized snapshot'?run.api.normalizedCalendarEvents(calendarPolicyOccurrences):run.api.parseIcalEvents(calendarPolicyIcal);
+  return {run,events};
+ }
+ test(`${model}: missing all-day locations are neutral and only timed missing locations enter the queue`,()=>{
+  const {run,events}=calendarPolicyFixture();assert.equal(events.length,5);
+  const byTitle=new Map(events.map(item=>[item.title,item]));
+  for(const title of ['Reference date','All-day chapter activity']){
+   assert.equal(byTitle.get(title).allDay,true);assert.equal(byTitle.get(title).status,'All-day item');assert.equal(byTitle.get(title).location,'');
+  }
+  assert.equal(byTitle.get('Timed session').allDay,false);assert.equal(byTitle.get('Timed session').status,'Needs location');
+  assert.equal(byTitle.get('All-day activity with room').status,'Confirmed');assert.equal(byTitle.get('All-day activity with room').location,'Chapter hall');
+  assert.equal(byTitle.get('Timed activity with room').status,'Confirmed');assert.equal(byTitle.get('Timed activity with room').location,'Engineering room');
+  const result=run.api.calendarResult(events,'LIVE','Reviewed fixture');
+  assert.equal(result.operations.length,1);assert.equal(result.operations[0].title,'Timed session needs a location');
+  assert.match(result.operations[0].detail,/Timed session.*Add its location in Google Calendar/s);
+  assert.doesNotMatch(result.operations[0].detail,/Reference date|All-day chapter activity/);
+  const onlyAllDay=run.api.calendarResult(events.filter(item=>item.allDay),'LIVE','Reviewed fixture');assert.equal(onlyAllDay.operations.length,0);
+ });
+
+ test(`${model}: upcoming cards and both role briefings omit absent all-day locations and preserve supplied rooms`,()=>{
+  const {run,events}=calendarPolicyFixture();run.api.renderUpcomingEvents(events);
+  const cards=run.node('upcoming-events').children;
+  for(const index of [0,1]){assert.equal(cards[index].children[1].children[1].textContent,'All day');assert.equal(cards[index].children[2].textContent,'All-day item');}
+  assert.match(cards[2].children[1].children[1].textContent,/Location TBD/);assert.equal(cards[2].children[2].textContent,'Needs location');
+  assert.equal(cards[3].children[1].children[1].textContent,'All day · Chapter hall');
+  assert.match(cards[4].children[1].children[1].textContent,/ · Engineering room$/);
+  for(const role of ['vice_president','social_chair']){
+   run.api.setUpcomingEvents(events,role);
+   const briefings=run.node('briefing-upcoming-events').children;
+   assert.equal(briefings[0].children[1].children[1].textContent,'All day');assert.equal(briefings[0].children[2].textContent,'All-day item');
+   assert.match(run.node('hero-briefing-copy').textContent,/All day/);assert.doesNotMatch(run.node('hero-briefing-copy').textContent,/Location TBD/);
+   run.api.setUpcomingEvents([events[3]],role);assert.match(run.node('hero-briefing-copy').textContent,/All day · Chapter hall/);
+   run.api.setUpcomingEvents([events[2]],role);assert.match(run.node('hero-briefing-copy').textContent,/Location TBD/);
+  }
+ });
+}
 
 
 test('turnout inspection keeps full names and exact counts when selecting points or the event picker', () => {
