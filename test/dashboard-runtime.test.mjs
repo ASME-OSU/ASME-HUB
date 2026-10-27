@@ -47,7 +47,7 @@ function runtime(feeds = {}, socialFeed = null) {
     append(...items) { this.children.push(...items); }, appendChild(item) { this.children.push(item); return item; },
     replaceChildren(...items) { this.children = items; },
     setAttribute(name, value) { this.attributes[name] = String(value); }, removeAttribute(name) { delete this.attributes[name]; }, getAttribute(name) { return this.attributes[name] ?? null; },
-    events: {}, addEventListener(name, callback) { this.events[name] = callback; }, removeEventListener() {}, setCustomValidity(message) { this.validationMessage = message; }, reportValidity() { this.validityReports = (this.validityReports || 0) + 1; return !this.validationMessage; }, querySelector() { return null; }, querySelectorAll() { return []; }, closest() { return null; }, contains() { return false; }, remove() {}, focus() {},
+    events: {}, addEventListener(name, callback) { this.events[name] = callback; }, removeEventListener() {}, setCustomValidity(message) { this.validationMessage = message; }, reportValidity() { this.validityReports = (this.validityReports || 0) + 1; return !this.validationMessage; }, querySelector(selector) { return selector === '.hub-search-result' ? this.children.find(child => child.className === 'hub-search-result') || null : null; }, querySelectorAll() { return []; }, closest() { return null; }, contains() { return false; }, remove() {}, focus() { document.activeElement = this; },
     getBoundingClientRect() { return { width: 760, height: 285 }; },
     parentElement: { setAttribute() {}, hidden: false, querySelector() { return null; }, append() {} },
   });
@@ -79,7 +79,7 @@ function runtime(feeds = {}, socialFeed = null) {
   window.ASME_SHARED_RESOURCES = sandbox.ASME_SHARED_RESOURCES;
   const source = appSource.replace(/\n  initialize\(\);\n\}\)\(\);\s*$/, `\n  globalThis.testApi = { setActionItems(operations, rolePriorities = [], role = "president") { activeOperations = operations; activeRolePriorities = rolePriorities; selectedOfficerRole = role; activeDashboardData = { kpis: {} }; renderOperations(operations); renderRoleExperience(); }, renderAttendanceChart, renderEventMetricsUnavailable, configureHubSearch, renderHubSearchResults, loadDashboard, loadLeaderboardDashboard, selectedYearPeriods, populatePeriodFilter, renderSelectedPeriod, renderBudget, loadBudgetSummary, resolveYearResources, renderResources, sheetTimestamp, reviewedAnnualSettingsInput, setAnnualBuilders(builder, transfer) { buildAnnualSettingsInput = builder; buildAnnualTransferUrl = transfer; }, queryPublicSheet, setPeriod(value) { selectedPeriod = value; }, setResources(records) { sharedResourceRecords = records; }, state() { return { activeDashboardData, attendanceChartItems, activeBudget }; } };\n})();`);
   vm.runInNewContext(source, sandbox, { filename: 'app.js' });
-  return { api: sandbox.testApi, node, nodes, requests, feeds, failures, config, listeners, window, dispatched };
+  return { api: sandbox.testApi, node, nodes, requests, feeds, failures, config, listeners, window, document, dispatched };
 }
 const allOptions = target => target.children.flatMap(child => child.tagName === 'OPTGROUP' ? child.children : [child]);
 const flush = async () => { for (let index = 0; index < 10; index++) await Promise.resolve(); };
@@ -418,6 +418,59 @@ test('Hub search includes the transition guide by its title and common handoff t
   run.api.renderHubSearchResults(query);const results=run.node('hub-search-results').children;
   assert.equal(results.length,1,query);assert.equal(results[0].children[1].children[0].textContent,'Transition to New Year',query);assert.equal(typeof results[0].events.click,'function');
  }
+});
+
+test('Hub search uses a labelled ordinary group with native result controls and keyboard guidance',()=>{
+ const markup=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(markup,/<input[^>]+id="hub-search-input"[^>]+aria-describedby="hub-search-help"/);
+ assert.match(markup,/<p[^>]+id="hub-search-help">Tab to a result, then Enter to open it\.<\/p>/);
+ assert.match(markup,/<div[^>]+id="hub-search-results"[^>]+role="group"[^>]+aria-label="Search results"/);
+ assert.doesNotMatch(markup,/<div[^>]+id="hub-search-results"[^>]+role="listbox"/);
+ const run=runtime();run.api.configureHubSearch([{title:'Reviewed external tool',description:'Fixture',url:'https://example.org/tool'}]);
+ const controls=run.node('hub-search-results').children;
+ assert.ok(controls.some(result=>result.tagName==='BUTTON'));assert.ok(controls.some(result=>result.tagName==='A'));
+ for(const result of controls){assert.equal(result.getAttribute('role'),null);assert.equal(result.getAttribute('aria-selected'),null);assert.equal(result.getAttribute('tabindex'),null);assert.equal(result.events.keydown,undefined);}
+});
+
+for(const key of ['Enter','ArrowDown'])test(`search input ${key} focuses the first internal result without activating it`,()=>{
+ const run=runtime();run.api.configureHubSearch([]);run.api.renderHubSearchResults('Transition');
+ let navigations=0;run.document.querySelector=selector=>{assert.equal(selector,'.nav-link[href="#transition"]');return {click(){navigations++;}};};
+ const input=run.node('hub-search-input'),dialog=run.node('hub-search-dialog'),result=run.node('hub-search-results').children[0];
+ input.focus();dialog.setAttribute('open','');let prevented=false;
+ input.events.keydown({key,preventDefault(){prevented=true;}});
+ assert.equal(prevented,true);assert.equal(run.document.activeElement,result);assert.equal(navigations,0);assert.equal(dialog.getAttribute('open'),'');
+ assert.equal(result.tagName,'BUTTON');assert.equal(result.type,'button');
+ result.events.click();assert.equal(navigations,1);assert.equal(dialog.getAttribute('open'),null);
+});
+
+test('focusing an external search result never opens it and retains explicit native link navigation',()=>{
+ const run=runtime();run.api.configureHubSearch([{title:'Reviewed external tool',description:'Fixture',url:'https://example.org/tool'}]);run.api.renderHubSearchResults('Reviewed external');
+ const input=run.node('hub-search-input'),dialog=run.node('hub-search-dialog'),result=run.node('hub-search-results').children[0];
+ dialog.setAttribute('open','');input.events.keydown({key:'Enter',preventDefault(){}});
+ assert.equal(run.document.activeElement,result);assert.equal(dialog.getAttribute('open'),'');
+ assert.equal(result.tagName,'A');assert.equal(result.href,'https://example.org/tool');assert.equal(result.target,'_blank');assert.equal(result.rel,'noopener');
+ assert.equal(result.events.keydown,undefined);assert.equal(run.window.location.href,'https://example.test/');
+ result.events.click();assert.equal(dialog.getAttribute('open'),null);assert.equal(result.href,'https://example.org/tool');
+});
+
+test('search input preserves native Tab and ignores modifiers, composing text, repeats and handled events',()=>{
+ const run=runtime();run.api.configureHubSearch([]);run.api.renderHubSearchResults('Transition');const input=run.node('hub-search-input');
+ for(const event of [{key:'Tab'},{key:'Tab',shiftKey:true},{key:'Escape'},{key:'Enter',isComposing:true},{key:'Enter',keyCode:229},{key:'ArrowDown',altKey:true},{key:'Enter',ctrlKey:true},{key:'Enter',metaKey:true},{key:'Enter',shiftKey:true},{key:'Enter',repeat:true},{key:'Enter',defaultPrevented:true}]){
+  input.focus();let prevented=false;input.events.keydown({...event,preventDefault(){prevented=true;}});
+  assert.equal(prevented,false,JSON.stringify(event));assert.equal(run.document.activeElement,input,JSON.stringify(event));
+ }
+});
+
+test('search input does not focus the empty-state message when there are no results',()=>{
+ const run=runtime();run.api.configureHubSearch([]);const input=run.node('hub-search-input');
+ input.value='no matching hub fixture';input.events.input();
+ const empty=run.node('hub-search-results').children[0];assert.equal(empty.tagName,'P');assert.match(empty.textContent,/No Hub results/);
+ for(const key of ['Enter','ArrowDown']){input.focus();let prevented=false;input.events.keydown({key,preventDefault(){prevented=true;}});assert.equal(prevented,false);assert.equal(run.document.activeElement,input);}
+});
+
+test('internal resource search links retain same-page native navigation',()=>{
+ const run=runtime();run.api.configureHubSearch([{title:'Reviewed internal shortcut',description:'Fixture',url:'#events'}]);run.api.renderHubSearchResults('Reviewed internal');
+ const result=run.node('hub-search-results').children[0];assert.equal(result.tagName,'A');assert.equal(result.href,'#events');assert.equal(result.target,'_self');assert.equal(result.rel,'');assert.equal(result.getAttribute('role'),null);
 });
 
 
