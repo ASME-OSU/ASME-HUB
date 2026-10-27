@@ -674,7 +674,7 @@ function connectedFixture(options = {}) {
 }
 const connectedPanel=ui=>ui.$("transition-steps").find(n=>n.dataset.annualSetup==="connected");
 const setupButton=(ui,label)=>connectedPanel(ui).find(n=>n.tagName==="button"&&n.textContent===label);
-const connectSetup=ui=>setupButton(ui,"Sign in with chapter Google account").click();
+const connectSetup=ui=>(setupButton(ui,"Sign in again")||setupButton(ui,"Sign in with chapter Google account")).click();
 const runSetup=ui=>setupButton(ui,"Create or reopen this year’s files").click();
 function deferredSetup() { let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve}; }
 function setupTimers() {
@@ -748,8 +748,8 @@ test('workspace failure clears the loading notice and stale timer cannot change 
  fixture.client.call=()=>workspace.promise;
  const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');const connecting=connectSetup(ui);await settleSetupStage();
  const stale=timers.fire();workspace.resolve(Promise.reject(new Error('Workspace unavailable')));await connecting;
- assert.equal(timers.pending.size,0);assert.equal(setupButton(ui,'Sign in with chapter Google account').disabled,false);
- const failed=connectedPanel(ui).textContent;assert.match(failed,/Workspace unavailable.*Sign in again/s);stale();assert.equal(connectedPanel(ui).textContent,failed);
+ assert.equal(timers.pending.size,0);assert.equal(setupButton(ui,'Sign in again').disabled,false);
+ const failed=connectedPanel(ui).textContent;assert.equal(connectedPanel(ui).querySelector('.transition-status').textContent,'Workspace unavailable');stale();assert.equal(connectedPanel(ui).textContent,failed);
 });
 
 test('binding resume replaces its stage timer and ignores callbacks from the first request',async()=>{
@@ -1141,10 +1141,53 @@ test("failed reconnect clears the previously approved workspace before creating 
  assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,true);
  assert.equal(setupButton(ui,"Create or reopen this year’s files").hidden,true);
  assert.equal(connectedPanel(ui).find(n=>n.tagName==="input").disabled,true);
- assert.match(connectedPanel(ui).textContent,/Google sign-in expired.*Sign in again/s);
+ assert.equal(connectedPanel(ui).querySelector('.transition-status').textContent,'Google sign-in expired');
+ assert.equal(setupButton(ui,'Sign in again').disabled,false);
  await runSetup(ui);assert.equal(fixture.calls.filter(c=>c.name==="runAnnualSetup").length,0);
  await connectSetup(ui);assert.equal(setupButton(ui,"Create or reopen this year’s files").disabled,false);
  await runSetup(ui);assert.equal(fixture.calls.filter(c=>c.name==="runAnnualSetup").length,1);
+});
+
+test('sign-in timeout keeps one recovery instruction, matches its retry button and clears after a successful retry',async()=>{
+ const message='Google sign-in did not finish within two minutes. Close any old sign-in popup, allow popups, then choose Sign in again.';
+ const retry=deferredSetup(),fixture=connectedFixture();let attempts=0;
+ fixture.client.connect=()=>++attempts===1?Promise.reject(new Error(message)):retry.promise;
+ const ui=browser(new Map(),[],false,fixture.client);await startRun(ui);await ui.go('T02');await connectSetup(ui);
+ const status=connectedPanel(ui).querySelector('.transition-status');
+ assert.equal(status.textContent,message);assert.equal((status.textContent.match(/Sign in again/g)||[]).length,1);
+ assert.equal(setupButton(ui,'Sign in again').disabled,false);assert.equal(ui.$('transition-status').textContent,message);
+ assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,true);assert.equal(fixture.calls.length,0);
+ const connecting=connectSetup(ui);
+ assert.equal(ui.$('transition-status').textContent,'');assert.match(connectedPanel(ui).textContent,/Complete Google sign-in in the popup/);
+ assert.equal(setupButton(ui,'Sign in again'),null);assert.equal(setupButton(ui,'Sign in with chapter Google account').disabled,true);
+ retry.resolve();await connecting;
+ assert.equal(setupButton(ui,'Sign in again'),null);assert.equal(setupButton(ui,'Sign in with chapter Google account').hidden,true);
+ assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,false);
+ assert.doesNotMatch(connectedPanel(ui).textContent,/did not finish within two minutes/);
+ assert.deepEqual(ui.saved().checks,{});assert.deepEqual(fixture.calls.map(c=>c.name),['getAnnualSetupConfig']);
+});
+
+test('workspace errors preserve full detail above collapsed Reopen setup and after navigation',async()=>{
+ const message='The approved Control Center is in Trash. Restore the same file, then reopen this year; do not create replacement files.';
+ const fixture=connectedFixture(),ui=browser(new Map(),[],false,fixture.client);await ui.go('T02');await connectSetup(ui);await runSetup(ui);
+ fixture.client.call=async()=>{throw new Error(message);};
+ await connectSetup(ui);
+ assert.equal(connectedPanel(ui).querySelector('.transition-status').textContent,message);
+ assert.equal(ui.$('transition-status').textContent,message);
+ assert.equal(connectedPanel(ui).parent.children[0].textContent,'Reopen setup');assert.equal(connectedPanel(ui).parent.open,false);
+ await ui.go('T03');assert.equal(ui.$('transition-status').textContent,message);
+ await ui.go('T02');assert.equal(connectedPanel(ui).querySelector('.transition-status').textContent,message);
+ assert.equal(setupButton(ui,'Sign in again').disabled,false);
+});
+
+test('retrying sign-in preserves an unrelated top-level status message',async()=>{
+ const fixture=connectedFixture();let attempts=0;
+ fixture.client.connect=async()=>{if(++attempts===1)throw new Error('Google sign-in closed. Allow popups and try again.');};
+ const ui=browser(new Map(),[],false,fixture.client);await ui.go('T02');await connectSetup(ui);
+ ui.$('transition-status').textContent='A separate officer observation remains unsaved.';
+ await connectSetup(ui);
+ assert.equal(ui.$('transition-status').textContent,'A separate officer observation remains unsaved.');
+ assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,false);
 });
 
 

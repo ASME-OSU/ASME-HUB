@@ -746,7 +746,7 @@ if (section) {
     const panel = node("section", "transition-connected-setup");
     panel.dataset.annualSetup = "connected";
     panel.append(node("h4", "", "Connect your Google account"), node("p", "", `${selectedYear.replace("-", "–")} · ${runModeLabel(progress.run.mode)}`));
-    const connect = node("button", "secondary-button", "Sign in with chapter Google account"); connect.type = "button";
+    const connect = node("button", "secondary-button", session.error ? "Sign in again" : "Sign in with chapter Google account"); connect.type = "button";
     connect.disabled = annualSetupPending || !client?.ready;
     const goalLabel = node("label", "transition-check-control", "Member goal for this year");
     const goal = node("input"); goal.type = "number"; goal.min = "1"; goal.step = "1"; goal.required = true;
@@ -784,6 +784,7 @@ if (section) {
       if (annualSetupPending || !client?.ready) return;
       try {
         const context = captureSetupContext();
+        if (session.error && statusLine.textContent === session.message) say("");
         session.config = null; session.receipt = ""; session.goal = undefined;
         annualSetupPending = true; session.error = false;
         showAnnualSetupStage(session, context, "Complete Google sign-in in the popup. Choose the chapter account and review the permissions.");
@@ -800,7 +801,7 @@ if (section) {
         }
         if (!/^[\w-]+$/.test(loaded.rootFolderId || "") || !/^[\w-]+$/.test(loaded.controlCenterId || "") || !loaded.configRevision) { session.config = null; throw new Error("The saved workspace is incomplete. Ask the President or maintainer to confirm the folder and Control Center."); }
         session.message = loaded.existing ? "This year already has files. Reopen them using the saved member goal." : "Workspace loaded. Check the approved member goal, then create this year’s files.";
-      } catch (error) { session.error = true; session.message = `${error.message || "Could not connect."} Choose Sign in again to reload the workspace, or retry after the maintainer resolves the issue.`; say(session.message, true); }
+      } catch (error) { session.error = true; session.message = error.message || "Could not connect. Choose Sign in again to reload the workspace."; say(session.message, true); }
       finally { finish(); }
     });
     create.addEventListener("click", async () => {
