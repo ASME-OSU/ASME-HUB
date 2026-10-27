@@ -970,7 +970,7 @@
           const title = document.createElement("strong");
           title.textContent = item.title || "Upcoming event";
           const detail = document.createElement("small");
-          detail.textContent = `${item.time || "Time TBD"} · ${item.location || "Location TBD"}`;
+          detail.textContent = calendarEventMetadata(item);
           copy.append(title, detail);
           const status = document.createElement("em");
           status.textContent = item.status || "Planning";
@@ -1043,7 +1043,7 @@
         ? `Next up: ${nextEvent.title}.`
         : "Move the next chapter program forward.";
       copy = nextEvent
-        ? `${formatBriefingDate(nextEvent.date)} · ${nextEvent.time || "Time TBD"} · ${nextEvent.location || "Location TBD"}. Program, task, and reporting tools are pinned below.`
+        ? `${formatBriefingDate(nextEvent.date)} · ${calendarEventMetadata(nextEvent)}. Program, task, and reporting tools are pinned below.`
         : "No upcoming events are listed, so program planning and corporate-liaison tools are ready below.";
     } else if (selectedOfficerRole === "treasurer") {
       title = activeBudget.available
@@ -1062,7 +1062,7 @@
         ? `Your next event is ${nextEvent.title}.`
         : "Build the next event plan.";
       copy = nextEvent
-        ? `${formatBriefingDate(nextEvent.date)} · ${nextEvent.time || "Time TBD"} · ${nextEvent.location || "Location TBD"}. Planning, attendance, calendar, and promotion tools are pinned below.`
+        ? `${formatBriefingDate(nextEvent.date)} · ${calendarEventMetadata(nextEvent)}. Planning, attendance, calendar, and promotion tools are pinned below.`
         : "No upcoming events are listed, so the planning, calendar, and promotion tools are ready below.";
     } else if (selectedOfficerRole === "webmaster") {
       title = priorities.length
@@ -2458,6 +2458,7 @@
       results.push({
         ...record.base,
         uid: record.uid,
+        allDay: record.isAllDay,
         date: date.toISOString(),
         time: record.isAllDay
           ? "All day"
@@ -2465,7 +2466,7 @@
               hour: "numeric",
               minute: "2-digit",
             }).format(date),
-        status: record.base.location ? "Confirmed" : "Needs location",
+        status: record.base.location ? "Confirmed" : record.isAllDay ? "All-day item" : "Needs location",
       });
     };
 
@@ -2581,7 +2582,7 @@
           if (!/^\d{4}-\d{2}-\d{2}$/.test(item.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(item.endDate) || item.endDate <= item.startDate) {
             throw new Error("The calendar all-day occurrence data is malformed.");
           }
-          return { id: item.id, title: item.title, location: item.location || "", allDay: true, startDate: item.startDate, endDate: item.endDate, date: `${item.startDate}T12:00:00-04:00`, time: "All day", status: item.location ? "Confirmed" : "Needs location" };
+          return { id: item.id, title: item.title, location: item.location || "", allDay: true, startDate: item.startDate, endDate: item.endDate, date: `${item.startDate}T12:00:00-04:00`, time: "All day", status: item.location ? "Confirmed" : "All-day item" };
         }
         const start = new Date(item.startAt);
         const end = item.endAt ? new Date(item.endAt) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
@@ -2681,7 +2682,7 @@
 
   function calendarResult(events, status, detail) {
     const missingLocation = events.filter(
-      (event) => !event.location || event.status === "Needs location",
+      (event) => !event.allDay && (!event.location || event.status === "Needs location"),
     ).slice(0, calendarLocationReviewLimit);
     const operations = [];
     if (missingLocation.length) {
@@ -4394,6 +4395,13 @@
     );
   }
 
+  function calendarEventMetadata(item) {
+    const parts = [item.time || (item.allDay ? "All day" : "Time TBD")];
+    if (item.location) parts.push(item.location);
+    else if (!item.allDay) parts.push("Location TBD");
+    return parts.join(" · ");
+  }
+
   function renderUpcomingEvents(items) {
     const container = document.getElementById("upcoming-events");
 
@@ -4428,7 +4436,7 @@
         const title = document.createElement("strong");
         title.textContent = item.title;
         const meta = document.createElement("span");
-        meta.textContent = `${item.time || "Time TBD"} · ${item.location || "Location TBD"}`;
+        meta.textContent = calendarEventMetadata(item);
         detail.append(title, meta);
 
         const status = document.createElement("span");

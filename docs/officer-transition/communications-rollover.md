@@ -132,6 +132,12 @@ Import a chapter meeting/workshop/social/outreach item only when its owner
 confirms date, start/end time, room, description and participation instructions.
 Import an academic date as an informational item only when useful, and label it
 as such. Academic dates earn no attendance points merely by being in a calendar.
+The Hub treats a missing location on any all-day item as neutral: it shows
+**All-day item**, omits a location placeholder and leaves it out of the automatic
+location action queue. The feed does not identify which all-day items are chapter
+activities, so this is not confirmation of readiness. Review chapter activity
+locations manually, including all-day activities; supplied locations remain visible.
+Timed items without locations still show **Needs location** and enter the queue.
 The selected annual period is **August 1–July 31**; **Fall is August–December,
 Spring January–May, Summer June–July**. Use that policy for event classification,
 Points reporting, finance and acceptance. The Points officer approves the
