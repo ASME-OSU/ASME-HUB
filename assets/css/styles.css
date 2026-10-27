@@ -970,6 +970,36 @@ main {
   padding: 36px clamp(22px, 3vw, 46px) 0;
 }
 
+.app-update-notice {
+  display: flex;
+  margin: 18px clamp(22px, 3vw, 46px) 0;
+  padding: 14px 16px;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.app-update-notice p {
+  margin: 0;
+  flex: 1;
+  font-size: var(--text-md);
+  line-height: 1.5;
+}
+
+.app-update-notice button {
+  flex: none;
+}
+
+@media (max-width: 600px) {
+  .app-update-notice {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* Dashboard panels */
 
 .dashboard-section {

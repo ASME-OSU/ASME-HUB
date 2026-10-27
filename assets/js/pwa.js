@@ -3,6 +3,9 @@
 
   const installButtons = Array.from(document.querySelectorAll("[data-install-app]"));
   const iosInstallHint = document.getElementById("ios-install-hint");
+  const updateNotice = document.getElementById("app-update-notice");
+  const updateMessage = document.getElementById("app-update-message");
+  const updateReload = document.getElementById("app-update-reload");
   let deferredInstallPrompt = null;
 
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches
@@ -17,13 +20,22 @@
   };
 
   if ("serviceWorker" in navigator) {
-    let refreshingForUpdate = false;
+    let currentController = navigator.serviceWorker.controller;
+    let updateNoticeShown = false;
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (refreshingForUpdate) return;
-      refreshingForUpdate = true;
-      window.location.reload();
+      const nextController = navigator.serviceWorker.controller;
+      if (!nextController || nextController === currentController) return;
+      const replacedController = Boolean(currentController);
+      currentController = nextController;
+      if (!replacedController || updateNoticeShown) return;
+      updateNoticeShown = true;
+      if (updateNotice && updateMessage) {
+        updateNotice.hidden = false;
+        updateMessage.textContent = "A Hub update is ready. Save your notes and finish Annual Setup before reloading.";
+      }
     });
+    updateReload?.addEventListener("click", () => window.location.reload());
 
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })

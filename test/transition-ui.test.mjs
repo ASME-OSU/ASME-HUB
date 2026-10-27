@@ -688,6 +688,41 @@ function setupTimers() {
 }
 async function settleSetupStage(){for(let i=0;i<10;i++)await Promise.resolve();}
 
+function leaveWarning(ui){
+ let warned=false;const event={preventDefault(){warned=true;}};
+ ui.windowListeners.get('beforeunload')(event);
+ return {warned,returnValue:event.returnValue};
+}
+
+for(const stage of ['sign-in','workspace','annual files'])for(const outcome of ['success','failure'])test(`leaving during pending ${stage} warns until ${outcome} settles the request`,async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise});
+ if(stage==='sign-in')fixture.client.connect=()=>pending.promise;
+ if(stage==='workspace'){
+  const call=fixture.client.call;fixture.client.call=(name,parameters)=>name==='getAnnualSetupConfig'?pending.promise:call(name,parameters);
+ }
+ const ui=browser(new Map(),[],false,fixture.client);await startRun(ui);await ui.go('T02');
+ assert.equal(leaveWarning(ui).warned,false);
+ let operation;
+ if(stage==='annual files'){await connectSetup(ui);assert.equal(leaveWarning(ui).warned,false);operation=runSetup(ui);}
+ else operation=connectSetup(ui);
+ await settleSetupStage();assert.deepEqual(leaveWarning(ui),{warned:true,returnValue:''});
+ if(outcome==='failure')pending.resolve(Promise.reject(new Error('Fixture request stopped')));
+ else pending.resolve(stage==='workspace'?fixture.config:stage==='annual files'?fixture.result:undefined);
+ await operation;
+ assert.equal(leaveWarning(ui).warned,false);
+});
+
+test('settling Annual Setup does not remove the leave warning for an unsaved officer note',async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise}),ui=browser(new Map(),[],false,fixture.client);
+ await startRun(ui);await ui.go('T02');await connectSetup(ui);const operation=runSetup(ui);
+ const note=observation(ui,'V01');note.value='Officer still needs to save this observation';await note.emit('input');
+ assert.equal(leaveWarning(ui).warned,true);
+ pending.resolve(fixture.result);await operation;
+ assert.equal(leaveWarning(ui).warned,true);assert.equal(observation(ui,'V01').value,'Officer still needs to save this observation');
+ await evidenceForm(ui,'V01').find(n=>n.tagName==='button'&&n.textContent==='Discard draft').click();
+ assert.equal(leaveWarning(ui).warned,false);
+});
+
 test('connected setup separates popup sign-in from workspace loading and gives a bounded slow notice',async()=>{
  const auth=deferredSetup(),workspace=deferredSetup(),fixture=connectedFixture(),timers=setupTimers();
  fixture.client.connect=()=>auth.promise;
