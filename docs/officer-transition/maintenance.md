@@ -141,3 +141,7 @@ If Step 2 reports that the workspace purpose does not match, Google sign-in has 
 If an existing run stops at a chapter-ownership or private-file check, inspect the configured Control Center and annual workspace folder in Drive. A file in Trash can produce these older errors even when the chapter owns it. Restore the same approved Practice resources, then reopen the same year. Preserve the existing receipt and file IDs; do not replace the workspace merely to clear an error. Keep ownership and privacy checks enabled.
 
 The browser recovery fixes and the clearer Apps Script Trash errors have separate release steps: publish the Hub assets, and install/version the reviewed provisioner source in the chapter-owned API deployment. A repository merge alone does not update Apps Script.
+
+### Waiting for connected setup
+
+Google sign-in waits for the popup for up to two minutes. If Google never returns an answer, close the old popup, allow popups for the Hub and sign in again. Late answers from an expired attempt cannot replace a newer sign-in. After authorization, the Hub separately reports workspace loading and annual-file creation; a longer wait displays same-year recovery guidance. Google setup can continue after a browser connection fails. Preserve the selected year, workspace and existing receipt when reopening; a client timeout does not prove that Google stopped or that no files were created.

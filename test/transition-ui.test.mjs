@@ -51,7 +51,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
   const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, location: {hash:""}, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener(name, callback) { windowListeners.set(name, callback); }, print() {} };
   if (setupClient) window.ASME_HUB_CONFIG.annualProvisioner = { api: { clientId: "fixture", deploymentId: "fixture", scopes: [] } };
-  const context = { ...state, ...definitions, ...links, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: () => {}, CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
+  const context = { ...state, ...definitions, ...links, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: faults.setTimeout || (() => {}), clearTimeout: faults.clearTimeout || (() => {}), CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
   const control = id => $("transition-steps").querySelector(`[data-transition-control="${id}"]`);
   const go = async id => { $("transition-step-picker").value = id; await $("transition-step-picker").emit("change"); };
@@ -677,6 +677,101 @@ const setupButton=(ui,label)=>connectedPanel(ui).find(n=>n.tagName==="button"&&n
 const connectSetup=ui=>setupButton(ui,"Sign in with chapter Google account").click();
 const runSetup=ui=>setupButton(ui,"Create or reopen this year’s files").click();
 function deferredSetup() { let resolve;const promise=new Promise(done=>{resolve=done;});return {promise,resolve}; }
+function setupTimers() {
+ const pending=new Map();let next=0;
+ return {
+  pending,
+  setTimeout(callback,delay){const id=++next;pending.set(id,{callback,delay});return id;},
+  clearTimeout(id){pending.delete(id);},
+  fire(){assert.equal(pending.size,1);const [id,timer]=[...pending][0];assert.equal(timer.delay,30000);pending.delete(id);timer.callback();return timer.callback;}
+ };
+}
+async function settleSetupStage(){for(let i=0;i<10;i++)await Promise.resolve();}
+
+test('connected setup separates popup sign-in from workspace loading and gives a bounded slow notice',async()=>{
+ const auth=deferredSetup(),workspace=deferredSetup(),fixture=connectedFixture(),timers=setupTimers();
+ fixture.client.connect=()=>auth.promise;
+ fixture.client.call=async(name,parameters)=>{fixture.calls.push({name,parameters});return workspace.promise;};
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');const connecting=connectSetup(ui);
+ assert.match(connectedPanel(ui).textContent,/Complete Google sign-in in the popup/);assert.equal(timers.pending.size,0);assert.equal(fixture.calls.length,0);
+ auth.resolve();await settleSetupStage();
+ assert.match(connectedPanel(ui).textContent,/Google sign-in complete. Loading the approved workspace/);
+ const stale=timers.fire();
+ assert.match(connectedPanel(ui).textContent,/Still loading.*2027–2028.*Google can take a few minutes.*wait.*this year and workspace/s);
+ assert.equal(setupButton(ui,'Sign in with chapter Google account').disabled,true);
+ await connectSetup(ui);assert.equal(fixture.calls.length,1);
+ workspace.resolve(fixture.config);await connecting;
+ assert.equal(timers.pending.size,0);assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,false);
+ const completed=connectedPanel(ui).textContent;stale();assert.equal(connectedPanel(ui).textContent,completed);
+});
+
+test('slow create notice keeps controls locked until success without retrying or passing reviews',async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise}),timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');await connectSetup(ui);
+ assert.equal(timers.pending.size,0);const running=runSetup(ui),stale=timers.fire();
+ assert.match(connectedPanel(ui).textContent,/Still waiting for Google to confirm the 2027–2028 files.*few minutes.*wait.*reopen this year in the same workspace/s);
+ assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,true);
+ await runSetup(ui);assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,1);
+ pending.resolve(fixture.result);await running;
+ assert.equal(timers.pending.size,0);assert.match(connectedPanel(ui).textContent,/Files ready/);assert.deepEqual(ui.saved().checks,{});
+ const completed=connectedPanel(ui).textContent;stale();assert.equal(connectedPanel(ui).textContent,completed);
+});
+
+test('slow notice updates only status and preserves the current panel, goal and officer note elements',async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise}),timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');await connectSetup(ui);const running=runSetup(ui);
+ const panel=connectedPanel(ui),goal=panel.find(n=>n.tagName==='input'),status=panel.querySelector('.transition-status'),note=observation(ui,'V01');
+ note.value='Officer is still writing this observation';await note.emit('input');note.selectionStart=11;note.selectionEnd=16;ui.document.activeElement=note;
+ timers.fire();
+ assert.equal(connectedPanel(ui),panel);assert.equal(connectedPanel(ui).find(n=>n.tagName==='input'),goal);
+ assert.equal(panel.querySelector('.transition-status'),status);assert.match(status.textContent,/Still waiting for Google to confirm/);
+ assert.equal(observation(ui,'V01'),note);assert.equal(ui.document.activeElement,note);
+ assert.equal(note.value,'Officer is still writing this observation');assert.equal(note.selectionStart,11);assert.equal(note.selectionEnd,16);
+ pending.resolve(fixture.result);await running;
+ assert.equal(observation(ui,'V01').value,'Officer is still writing this observation');
+});
+
+test('slow request failure clears its notice timer and stale callbacks cannot overwrite a retry',async()=>{
+ let pending=deferredSetup();const fixture=connectedFixture({run:()=>pending.promise}),timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');await connectSetup(ui);
+ const first=runSetup(ui),stale=[...timers.pending.values()][0].callback;
+ pending.resolve(Promise.reject(new Error('Connection failed')));await first;
+ assert.equal(timers.pending.size,0);assert.match(connectedPanel(ui).textContent,/Connection failed.*same year and workspace/s);
+ pending=deferredSetup();const retry=runSetup(ui),before=connectedPanel(ui).textContent;
+ stale();assert.equal(connectedPanel(ui).textContent,before);assert.equal(timers.pending.size,1);
+ pending.resolve(fixture.result);await retry;assert.equal(timers.pending.size,0);
+ const calls=fixture.calls.filter(c=>c.name==='runAnnualSetup');assert.equal(calls.length,2);assert.deepEqual(calls[0].parameters,calls[1].parameters);
+});
+
+test('workspace failure clears the loading notice and stale timer cannot change the error',async()=>{
+ const workspace=deferredSetup(),fixture=connectedFixture(),timers=setupTimers();
+ fixture.client.call=()=>workspace.promise;
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');const connecting=connectSetup(ui);await settleSetupStage();
+ const stale=timers.fire();workspace.resolve(Promise.reject(new Error('Workspace unavailable')));await connecting;
+ assert.equal(timers.pending.size,0);assert.equal(setupButton(ui,'Sign in with chapter Google account').disabled,false);
+ const failed=connectedPanel(ui).textContent;assert.match(failed,/Workspace unavailable.*Sign in again/s);stale();assert.equal(connectedPanel(ui).textContent,failed);
+});
+
+test('binding resume replaces its stage timer and ignores callbacks from the first request',async()=>{
+ const first=deferredSetup(),second=deferredSetup();let count=0;
+ const fixture=connectedFixture({run:()=>++count===1?first.promise:second.promise}),timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');await connectSetup(ui);const running=runSetup(ui);
+ const stale=[...timers.pending.values()][0].callback;
+ first.resolve(Promise.reject(new Error('Google response tab not uniquely observed yet; retry this same run. No name was guessed.')));await settleSetupStage();
+ assert.equal(timers.pending.size,1);const resumed=connectedPanel(ui).textContent;assert.match(resumed,/finishing the response connection/);
+ stale();assert.equal(connectedPanel(ui).textContent,resumed);
+ second.resolve(fixture.result);await running;assert.equal(timers.pending.size,0);
+ const calls=fixture.calls.filter(c=>c.name==='runAnnualSetup');assert.equal(calls.length,2);assert.deepEqual(calls[0].parameters,calls[1].parameters);
+});
+
+test('slow notice cannot overwrite a different checklist while a request is pending',async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise}),timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');await connectSetup(ui);const running=runSetup(ui);
+ ui.$('transition-run-name').value='Another checklist';await startRun(ui);await ui.go('T02');
+ const current=connectedPanel(ui).textContent;timers.fire();assert.equal(connectedPanel(ui).textContent,current);
+ pending.resolve(fixture.result);await running;assert.equal(timers.pending.size,0);
+ assert.equal([...ui.existing.keys()].filter(k=>k.startsWith(links.annualLinkStorageKey('2027-2028'))).length,0);
+});
 
 test("connected Annual Setup saves seven links and preserves manual review gating", async()=>{
  const fixture=connectedFixture();const ui=browser(new Map(),[],false,fixture.client);await ui.go("T02");

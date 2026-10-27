@@ -2,7 +2,7 @@ import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECK
 import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261025a";
 import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261025a";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261025b";
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261027a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -83,6 +83,7 @@ if (section) {
   const annualRunKey = () => `${annualLinkStorageKey(selectedYear)}:${selectedRunId}`;
   let annualSetupClient = null;
   let annualSetupPending = false;
+  let annualSetupStage = null;
   const annualSetupSessions = new Map();
   let currentIndex = 0;
   let opener = null;
@@ -718,6 +719,23 @@ if (section) {
     if (context.raw !== observedAnnualRaw || context.legacyRaw !== observedLegacyAnnualRaw || context.fields !== setupFieldsSnapshot()) throw new Error("This checklist’s links changed during setup. No returned links were saved. Review the newer links before retrying the same year.");
     assertAnnualDraftUnchanged();
   }
+  function clearAnnualSetupStage() {
+    if (annualSetupStage) clearTimeout(annualSetupStage.timer);
+    annualSetupStage = null;
+  }
+  function showAnnualSetupStage(session, context, message, slowMessage = "") {
+    clearAnnualSetupStage();
+    const stage = {};
+    annualSetupStage = stage;
+    session.message = message;
+    if (slowMessage) stage.timer = setTimeout(() => {
+      if (annualSetupStage !== stage || !annualSetupPending || context.year !== selectedYear || context.runId !== selectedRunId || context.mode !== progress.run.mode) return;
+      session.message = slowMessage;
+      const status = list.querySelector(".transition-connected-setup")?.querySelector(".transition-status");
+      if (status) status.textContent = slowMessage;
+    }, 30000);
+    render();
+  }
   function appendConnectedSetup(card) {
     const apiConfig = window.ASME_HUB_CONFIG?.annualProvisioner?.api;
     if (!annualSetupClient && apiConfig) annualSetupClient = createAnnualSetupClient(apiConfig);
@@ -761,15 +779,17 @@ if (section) {
       receipt.append(node("summary", "", "Optional backup and detailed settings"), node("p", "", "Compare this setup summary with the actual files below. It does not certify permissions, clean sources or completed reviews."), node("pre", "", session.receipt));
       panel.append(receipt);
     }
-    const finish = () => { annualSetupPending = false; render(); };
+    const finish = () => { clearAnnualSetupStage(); annualSetupPending = false; render(); };
     connect.addEventListener("click", async () => {
       if (annualSetupPending || !client?.ready) return;
       try {
         const context = captureSetupContext();
         session.config = null; session.receipt = ""; session.goal = undefined;
-        annualSetupPending = true; session.error = false; session.message = "Connecting to Google and loading the approved workspace…"; render();
+        annualSetupPending = true; session.error = false;
+        showAnnualSetupStage(session, context, "Complete Google sign-in in the popup. Choose the chapter account and review the permissions.");
         await client.connect();
         assertSetupContext(context);
+        showAnnualSetupStage(session, context, "Google sign-in complete. Loading the approved workspace…", `Still loading the approved workspace for ${context.year.replace("-", "–")}. Google can take a few minutes. Keep the Hub open and wait; keep this year and workspace if you need to retry after the request finishes.`);
         const loaded = await client.call("getAnnualSetupConfig", [context.year]);
         assertSetupContext(context);
         if (!loaded || typeof loaded !== "object" || Array.isArray(loaded)) throw new Error("Google returned an unreadable workspace. Ask the maintainer to check setup.");
@@ -791,14 +811,16 @@ if (section) {
         const approvedGoal = Number(approved.existing ? approved.engagementGoal : goal.value);
         if (!Number.isInteger(approvedGoal) || approvedGoal <= 0) throw new Error("Enter a positive whole-number member goal approved by the President.");
         const answers = { engagementGoal: approvedGoal, mode: context.mode, rootFolderId: approved.rootFolderId, controlCenterId: approved.controlCenterId, configRevision: approved.configRevision };
-        annualSetupPending = true; session.error = false; session.receipt = ""; session.message = "Creating or reopening annual files. Google can take a few minutes to connect them. Keep the Hub open. If this stops, retry the same year to resume; do not create a second workspace."; render();
+        annualSetupPending = true; session.error = false; session.receipt = "";
+        const slowSetupMessage = `Still waiting for Google to confirm the ${context.year.replace("-", "–")} files. This can take a few minutes. Keep the Hub open and wait. If this request fails, reopen this year in the same workspace.`;
+        showAnnualSetupStage(session, context, "Creating or reopening annual files. Keep the Hub open while Google connects them.", slowSetupMessage);
         let result;
         try { result = await client.call("runAnnualSetup", [context.year, answers]); }
         catch (error) {
           const bindingPending = "Google response tab not uniquely observed yet; retry this same run. No name was guessed.";
           if (error?.message !== bindingPending && error?.message !== `Error: ${bindingPending}`) throw error;
           assertSetupContext(context);
-          session.message = "Google is finishing the response connection. Reopening the same annual files…"; render();
+          showAnnualSetupStage(session, context, "Google is finishing the response connection. Reopening the same annual files…", slowSetupMessage);
           result = await client.call("runAnnualSetup", [context.year, answers]);
         }
         assertSetupContext(context);
