@@ -201,14 +201,32 @@ test('year switching refreshes metadata before reads, failed → successful read
   assert.match(run.node('attendance-chart-desc').textContent, /unavailable/);
   assert.match(run.node('period-detail').textContent, /unavailable/);
   assert.equal(run.node('period-filter').disabled, true);
+  const retry = run.node('operations-list').children[0].children.find(item => item.tagName === 'BUTTON' && item.textContent === 'Retry');
+  assert.ok(retry, 'attendance failure must retain its recovery action after operations render');
+  assert.ok(run.node('operations-list').children[0].children.some(item => item.tagName === 'A'), 'export troubleshooting link remains available');
   run.feeds['2027-2028'].System_Status = pointFeeds('2027-2028').System_Status;
-  await run.api.loadDashboard('2027-2028');
+  await retry.events.click();
   assert.equal(run.node('period-filter').disabled, false);
   assert.equal(run.node('kpi-total-checkins').textContent, '0');
   run.node('academic-year').value = '2026-2027';
   await run.api.loadDashboard('2026-2027');
   assert.deepEqual(allOptions(run.node('period-filter')).slice(1, 3).map(option => option.textContent), ['Fall 2026', 'Spring 2027']);
   assert.equal(run.node('kpi-total-checkins').textContent, '191');
+});
+
+test('attendance Retry reads the currently selected year rather than the failed year', async () => {
+  const run = runtime({ '2026-2027': { System_Status: new Error('temporarily unavailable') }, '2027-2028': pointFeeds('2027-2028') });
+  run.node('academic-year').value = '2026-2027';
+  await run.api.loadDashboard('2026-2027');
+  const retry = run.node('operations-list').children[0].children.find(item => item.tagName === 'BUTTON' && item.textContent === 'Retry');
+  assert.ok(retry);
+  run.node('academic-year').value = '2027-2028';
+  await retry.events.click();
+  assert.equal(run.node('sidebar-year-label').textContent, '2027–2028');
+  assert.equal(run.api.state().activeDashboardData.meta.academicYear, '2027–2028');
+  assert.equal(run.node('period-filter').disabled, false);
+  assert.equal(run.node('kpi-total-checkins').textContent, '0');
+  assert.equal(run.node('operations-list').children.some(article => article.children.some(item => item.tagName === 'BUTTON' && item.textContent === 'Retry')), false);
 });
 
 test('aborted JSONP late callbacks cannot overwrite the new selection or clear its loading state', async () => {
