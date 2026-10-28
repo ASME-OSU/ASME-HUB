@@ -1272,7 +1272,7 @@ if (section) {
         if (recordStepResult() && !step.launch) go(currentIndex + 1);
       }
     });
-    confirmation.append(finish, node("p", "transition-control-help", step.id === "T01" ? "Next: sign in with the chapter Google account and prepare this year’s files. No tool links need to be pasted here." : practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and reviewer checks first." : unchecked(step).length ? `${unchecked(step).length} confirmations left, including team checks.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
+    confirmation.append(finish, node("p", "transition-control-help", step.id === "T01" ? "Next: sign in with the chapter Google account and prepare this year’s files. No tool links need to be pasted here." : practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and reviewer checks first." : unchecked(step).length ? `${unchecked(step).length} ${unchecked(step).length === 1 ? "confirmation" : "confirmations"} left, including team checks.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
     control.append(select);
     const otherResult = disclosure("Need help, skip, or add a note", "transition-tools", "step-result");
     otherResult.open = otherResult.open || pendingSkipId === step.id || (["blocked", "failed"].includes(statusOf(step.id)) || (statusOf(step.id) === "skipped" && !practiceEnd));
