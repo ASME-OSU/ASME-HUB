@@ -12,7 +12,7 @@ export const ANNUAL_LINK_FIELDS = [
 ];
 export const MOCK_ANNUAL_FIELDS = [
   ["controlCenterUrl", "Private mock Control Center", "Use the copied Control Center from the provisioner summary; keep its permissions private."],
-  ["scriptProjectUrl", "Mock provisioner Apps Script project (optional)", "Open the maintainer-reviewed project; running a function still requires its configured private target."],
+  ["scriptProjectUrl", "Mock provisioner Apps Script project (optional)", "Optional technical recovery reference. Routine setup uses chapter sign-in in the Hub; editor functions require their exact configured private target."],
 ];
 // Optional private records belong to the selected local run, never public config.
 export const PRIVATE_RECORD_FIELDS = [
@@ -20,9 +20,9 @@ export const PRIVATE_RECORD_FIELDS = [
   ["handoffUrl", "Private handoff folder link", "T01", "Ask the President for this year's private handoff folder containing the checklist and contact instructions. Paste the folder URL, not the JSON links backup file URL."],
   ["accessOwnerUrl", "Access contact record link", "T01", "Ask the President for a document explaining how the President arranges access and recovery. Paste its link, not a name or email."],
   ["receiptUrl", "Setup summary document link (optional)", "T02", "Annual Setup shows the summary on screen. Add a saved private document link here only if you keep a separate copy."],
-  ["communicationsUrl", "Approved communications record link", "T04", "Ask the President for the approved facts and the maintainer's verified sending-service route."],
-  ["cleanupUrl", "Practice cleanup checklist link", "T05", "Ask the technical maintainer for the checklist naming only this attempt's test files and responses to remove."],
-  ["rollbackUrl", "Rollback record link", "T05", "Ask the technical maintainer for the launch rollback plan: previous year and settings, named restore operator, precise restore actions, failure/stop criteria and the decision/contact route."],
+  ["communicationsUrl", "Approved communications record link", "T04", "Record the approved facts and verified sending-service route with the communications officer."],
+  ["cleanupUrl", "Practice cleanup checklist link", "T05", "Keep a checklist identifying this attempt’s test files and the approved retain/remove decision for each; preserve real records."],
+  ["rollbackUrl", "Rollback record link", "T05", "Record the launch rollback plan with the President: previous year and settings, restore operator, precise restore actions, failure/stop criteria and decision/contact route."],
   ["acceptanceUrl", "Incoming officer acceptance record link", "T05", "Ask the President for the incoming officer's dated sign-off document, including any unresolved tasks."],
   ["approvalUrl", "Coordinator launch approval record link", "T05", "Ask the President for the coordinator's dated approval record before making the year live."]
 ];

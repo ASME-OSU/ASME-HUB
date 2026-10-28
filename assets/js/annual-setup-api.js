@@ -27,7 +27,7 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
   let token = "", expiresAt = 0, pending = false, loadError = null;
   if (ready && !environment.identity) loadIdentity().catch(error => { loadError = error; });
   function connect() {
-    if (!ready) return Promise.reject(new Error("The maintainer must finish connecting Google Annual Setup first."));
+    if (!ready) return Promise.reject(new Error("Google Annual Setup is not configured yet. Use the manual fallback and record the unavailable connection."));
     if (pending) return Promise.reject(new Error("Google sign-in is already open."));
     if (!identity()) {
       if (loadError) {
@@ -57,10 +57,10 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
               const messages = {
                 access_denied: "Google sign-in was cancelled or permission was declined. Choose Sign in again when ready.",
                 admin_policy_enforced: "Google account policy blocked Annual Setup. Ask the account administrator to review access.",
-                invalid_client: "Google sign-in is not configured correctly. Ask the maintainer to check the OAuth client.",
-                unauthorized_client: "Google has not authorized this sign-in client. Ask the maintainer to check the OAuth configuration."
+                invalid_client: "Google sign-in is not configured correctly. The Google OAuth client configuration needs correction before sign-in can work.",
+                unauthorized_client: "Google has not authorized this sign-in client. The Google OAuth configuration needs correction before sign-in can work."
               };
-              fail(messages[result?.error] || "Google sign-in did not return authorization. Try the chapter account again; if this repeats, ask the maintainer to check Google access."); return;
+              fail(messages[result?.error] || "Google sign-in did not return authorization. Try the chapter account again; if this repeats, record the Google access error."); return;
             }
             let granted;
             try { granted = identity().hasGrantedAllScopes(result, ...config.scopes); }
@@ -79,9 +79,10 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
     });
   }
   async function call(functionName, parameters) {
-    if (!["getAnnualSetupConfig", "runAnnualSetup"].includes(functionName)) throw new Error("Unsupported Annual Setup operation.");
+    if (!["getAnnualSetupConfig", "runAnnualSetup", "checkAnnualReadiness"].includes(functionName)) throw new Error("Unsupported Annual Setup operation.");
     if (!token || !Number.isFinite(expiresAt) || expiresAt - now() < MIN_TOKEN_LIFETIME) { token = ""; throw new Error("Choose Sign in again before continuing Annual Setup."); }
     const requestToken = token;
+    const connectionAction = !["getAnnualSetupConfig", "runAnnualSetup"].includes(functionName);
     const abort = new AbortController();
     const timer = schedule(() => abort.abort(), 390000);
     try {
@@ -90,7 +91,7 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
         body: JSON.stringify({function: functionName, parameters, devMode: false}), signal: abort.signal, credentials: "omit", redirect: "error"
       });
       if (response.status === 401) { if (token === requestToken) token = ""; throw new Error("Google sign-in expired. Choose Sign in again. If setup had started, reopen the same year to resume."); }
-      if (!response.ok) throw new Error(response.status === 403 ? "Google denied access. Use the chapter account. The maintainer may need to check the shared Cloud project, permissions and API deployment." : "Annual Setup could not be reached. Reopen the same year to resume if setup had started.");
+      if (!response.ok) throw new Error(response.status === 403 ? "Google denied access. Use the chapter account. Check the selected account; if access is still denied, record the error for the chapter configuration." : "Annual Setup could not be reached. Reopen the same year to resume if setup had started.");
       let payload;
       try { payload = await response.json(); }
       catch (error) {
@@ -102,7 +103,7 @@ export function createAnnualSetupClient(config = {}, environment = {}) {
       if (payload.done !== true || !Object.hasOwn(payload.response || {}, "result")) throw new Error("Google did not return a completed setup result. Reopen the same year to resume; do not create a different year.");
       return payload.response.result;
     } catch (error) {
-      if (error?.name === "AbortError" || error instanceof TypeError) throw new Error("The connection stopped before setup was confirmed. Files may already exist. Sign in and reopen the same year to resume.");
+      if (error?.name === "AbortError" || error instanceof TypeError) throw new Error(connectionAction ? "The connection stopped before the action was confirmed. Check connections again before retrying; sign in again if authorization expired." : "The connection stopped before setup was confirmed. Files may already exist. Sign in and reopen the same year to resume.");
       throw error;
     } finally { cancelTimer(timer); }
   }

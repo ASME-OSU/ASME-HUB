@@ -1,15 +1,15 @@
 # Officer transition: start here
 
-Use this guide for the real transfer of chapter responsibilities to incoming officers. Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**. In Step 1, enter the starting year, such as **2027** for 2027–2028, choose the purpose, then start or continue your checklist. **Real handoff** is the normal officer route. Optional **Practice (maintainer review)** is for a maintainer or team member deliberately trying the tools in separate private copies.
+Use this guide for the real transfer of chapter responsibilities to incoming officers. Start in the [Officer Hub](https://asme-osu.github.io/ASME-HUB/) → **Transition to New Year**. In Step 1, enter the starting year, such as **2027** for 2027–2028, choose the purpose, then start or continue your checklist. **Real handoff** is the normal officer route. Optional **Practice** is for an officer or team member deliberately trying the tools in separate private copies.
 
 Use the [student walkthrough](student-walkthrough.md) as the primary step-by-step guide. Real handoff has **20 applicable reviews**; Practice has **16**. The [words used here](student-walkthrough.md#words-used-here) explain settings, exports, readiness evidence and other terms.
 
-You do not need to run a fictional five-submission exercise to begin or complete ordinary officer handoff tasks. Review the current setup and the evidence the President supplies. If a technical result is missing, ask the maintainer to verify it and record the blocker; do not invent a pass or repeat fictional inputs in real member or financial records.
+You do not need to run a fictional five-submission exercise to begin or complete ordinary officer handoff tasks. Check the actual files using the comparison guide. Record errors as Blocked with the exact message and next action; do not invent a pass or repeat fictional inputs in real member or financial records.
 
 ## Step 1 Get access and materials
 
 1. Ask the President through [asme@osu.edu](mailto:asme@osu.edu) for the current private handoff folder and checklist for your year.
-2. Use the completed role access table in the private checklist: open each listed link with its approved account and confirm the listed view/edit permission. A missing table is a materials blocker for the President.
+2. Sign in with **asmeohiostate@gmail.com**, which owns the chapter Google resources, and open the workspace and required tools. Use your normal approved OSU login for Microsoft/shared university resources where required. Routine access requires no separate reviewer approval. Keep the role responsibilities in the private checklist.
 3. Record any missing access, the file link and the next action. Ask the President to coordinate help. Check the shared workspace here; Annual Setup access is checked in Step 2, where its link and approved-profile warning are available.
 
 Example request: “I am the incoming Secretary for 2027–2028. Please send the current handoff folder and annual tool links, and arrange the access I need.” A personal name is not required for the President contact. A dated example folder does not establish the current handoff.
@@ -21,15 +21,23 @@ Example request: “I am the incoming Secretary for 2027–2028. Please send the
 3. The Hub saves all seven links under **Your files**. Use **Reopen setup** to reconnect to existing files. The detailed summary and downloads are optional backup/comparison tools, not an entry requirement.
 4. Open the saved links and actual Google settings. Use the [four-review comparison map](student-walkthrough.md#compare-the-four-step-2-reviews) to compare destinations, dates, source IDs and inactive/noncurrent flags. A pasted summary supplies expected values, not fresh Google readback.
 
-The maintainer handles source cleanup, configuration, script installation and technical readiness evidence. Saving results does not pass reviews or activate the year. Missing evidence stays Blocked with a named owner.
+Inspect the copied inputs for unexplained old/test records, compare the actual destination and settings, and check both exports for import errors. Saving results does not pass these observations or activate the year. Record an unsupported action or persistent error as Blocked; preserve the file and its records.
 
 If connected setup is unavailable, use **Manual fallback** under Step 2’s **Detailed instructions & troubleshooting**. Its external Annual Setup page requires Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**. Choose **Copy setup results**, then return to the Hub and use **Paste setup results → Save setup results**. See the [full Step 2 instructions](student-walkthrough.md#2-prepare-this-years-files).
 
+### Check the annual connections
+
+After setup saves the seven links, choose **Check connections** in Hub Step 2 or 3. A fresh matching report reveals **Open event update controls**. Open that verified Google-hosted page and choose **Connect automatic event updates** there, then return to the Hub and check again. Google-hosted controls run the chapter-authorized standalone project; the Hub API only reads connection status. Routine officers do not authorize a new copied script. In each export, select Google’s import error cell and choose **Allow access** for its matching annual working source. Wait for calculation, then check connections again.
+
+The report checks the saved annual identities, eight Points structure checks, both exports’ reviewed six/35 import-cell map and source pointers, output headers/errors, and this project’s recorded automatic-update trigger. **Connected** means the trigger is installed. Make a normal approved **Events** edit in Google Sheets, compare the Form choices, then check again for **observed delivery**. API edits do not exercise a Sheets edit trigger. Other projects’ triggers are outside this report’s scope; do not enable a copied bound trigger as a second routine setup action.
+
+A successful report is a connection/structure result. It does not certify all source inputs, every scoring formula, bank balances, incoming access, public-field approval or launch. Inspect unexplained old/test inputs without clearing existing records, use actual annual data for Real handoff, and retain separate funding, reconciliation, public-sharing and launch decisions. Fictional scoring tests belong only in isolated Practice copies. A failed or unavailable check remains unresolved with its actual error; source changes require Google deployment before these actions become available.
+
 ## Step 3 Prepare attendance and finances
 
-1. The Points officer reviews the configured response tab, member results and exceptions using the current evidence. The maintainer separately verifies response wiring and other tabs in the same workbook.
+1. The Points officer reviews the configured response tab, member results and exceptions using the current evidence. Use Form editor → Responses → View in Sheets and compare Points Config B7/B16; inspect other response tabs when running Practice.
 2. The Treasurer reviews real approved funding, balances, pending items and bank reconciliation for the handoff.
-3. Record what was observed and what still needs technical or financial review. New controlled tests belong to an explicitly agreed maintainer verification plan, preferably in separate private copies.
+3. Record what was observed and what still needs technical or financial review. Use separate private Practice copies for controlled tests.
 
 An optional practice plan may use fictional attendance cases and budget arithmetic. Those results support that practice only; they do not constitute incoming access, real funding approval or annual launch acceptance.
 
@@ -39,7 +47,7 @@ An optional practice plan may use fictional attendance cases and budget arithmet
 2. Review the upcoming dates and current editable newsletter draft. Do not send or publish until the chapter's approval is recorded.
 3. Download Hub progress, private links and the editable Newsletter Draft separately. Record where they are kept and who can recover them.
 
-Use [the three-file recovery guide](recovery-practice.md) when verifying a restore. A downloaded backup is not proof that it restores successfully. A separate-profile restore is a maintainer recovery check, not the first action every incoming officer must take.
+Use [the three-file recovery guide](recovery-practice.md) when verifying a restore. A downloaded backup is not proof that it restores successfully. Use a separate persistent browser profile for the restore so the working checklist and newsletter remain intact.
 
 ## Step 5 Approve and start the year
 
@@ -47,7 +55,7 @@ Use [the three-file recovery guide](recovery-practice.md) when verifying a resto
 2. Ask the President and incoming holders to record handoff acceptance and assigned open work. They can accept the transfer while launch remains blocked.
 3. Use the separate launch record for approval, named operator, switch time and rollback. The rollback plan identifies the previous year/settings, named restore operator, exact restore actions, stop criteria and decision/contact route. At the approved time the settings owner sets the verified new row active/current and Points Config!B5 LIVE, sets the previous year’s is_current FALSE while preserving records, and rechecks Hub, website, Form and newsletter. Keep outgoing access until the agreed access change. An inactive settings row does not activate the year.
 
-For **Practice — Close and review your practice run**, keep TESTING, closed intake/events and inactive/noncurrent settings, skip activation with Rehearsal only, and obtain reviewer acceptance. If practice copies were used, inventory and retain or remove their fictional inputs under a reviewed cleanup decision. Ordinary real handoff does not require fictional-data cleanup when no fictional data was created.
+For **Practice — Close and review your practice run**, keep TESTING, closed intake/events and inactive/noncurrent settings, skip activation with Rehearsal only, and record the practice result and its limits. If practice copies were used, inventory and retain or remove their fictional inputs under a reviewed cleanup decision. Ordinary real handoff does not require fictional-data cleanup when no fictional data was created.
 
 ## Keep the records together
 
@@ -56,14 +64,14 @@ Step 1 contains the year and purpose questions. **Change year** returns there fr
 The President supplies a completed copy of the [private handoff checklist](private-run-checklist-template.md). Use the [practice cleanup template](selective-mock-cleanup-template.md) only if practice data needs disposition. Keep exact file inventories, member/test data and approvals in the chapter-controlled private folder. Credentials and recovery codes belong in the authorized credential system.
 
 <details>
-<summary>Optional role and maintainer references</summary>
+<summary>Optional role and technical references</summary>
 
 | Reference | Purpose |
 |---|---|
-| [Annual Points setup](annual-points-setup.md) | Maintainer setup and technical verification, with separately identified optional practice scenarios |
+| [Annual Points setup](annual-points-setup.md) | Detailed setup and technical verification, with separately identified optional practice scenarios |
 | [Finance and launch](finance-settings-launch.md) | Real funding, reconciliation, inactive settings, approval and rollback |
 | [Communications rollover](communications-rollover.md) | Calendar, newsletter and website sources and editors |
-| [Three-file recovery](recovery-practice.md) | Maintainer backup import, reload and comparison procedure |
+| [Three-file recovery](recovery-practice.md) | Officer backup import, reload and comparison procedure |
 | [System flow](system-flow.md) | Officer responsibilities, local/shared records and technical boundaries |
 | [Maintenance](maintenance.md) / [Script map](script-map.md) | Installed-source checks and ongoing technical support |
 

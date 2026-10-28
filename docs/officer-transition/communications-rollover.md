@@ -2,7 +2,7 @@
 
 Use this with **T04 — Update calendars and communications**; reviewed annual links/settings belong to T02 and activation/cleanup to T05. Ask the transition coordinator to record the
 actual people responsible for communications, the calendar and website in the
-private handoff checklist. A role listed here does not appoint a new officer. Contact the President through [asme@osu.edu](mailto:asme@osu.edu) with your role, target year and Practice/Real handoff purpose to obtain the filled current checklist, maintainer’s name, workspace approval and approved communications record. Step 2 creates or reopens the annual files and saves their setup results; a private links JSON is an optional backup. A receipt is the maintainer's list of copied files and verified settings; retain the record links supplied for this attempt. Missing materials stay Blocked.
+private handoff checklist. A role listed here does not appoint a new officer. Contact the President through [asme@osu.edu](mailto:asme@osu.edu) with your role, target year and Practice/Real handoff purpose to obtain the filled current checklist, workspace location and approved communications record. Step 2 creates or reopens the annual files and saves their setup results; a private links JSON is an optional backup. A setup summary lists the copied files and setup settings; retain the record links supplied for this attempt. Missing materials stay Blocked.
 
 ## Officer route: review real dates and editable communications
 
@@ -11,7 +11,7 @@ private handoff checklist. A role listed here does not appoint a new officer. Co
 3. In Newsletter Builder, choose **Templates → Export Draft .json** before editing. Keep this untouched editable backup in the private handoff folder.
 4. Update **Settings → Email Subject Line / Preheader Text** (inbox preview line), **Links** for annual quick links, **Design → Footer Org Name / Footer Address Line**, and **Announce → Message / Author Attribution** for issue text and officer signature. Use approved dates/facts; the responsible owner supplies sender, reply-to and full postal address. Missing approval remains Blocked. Obtain content-owner approval before sending or publishing.
 5. The authorized Webmaster uses **WordPress Admin Login → Pages → Leadership** or the intended page → preserve current content → approved draft → **Save Draft**, reload and **Preview** on desktop/phone. Annual links may belong to other pages; use the [page map](#webmaster-t04-public-page-source-and-publication-map).
-6. Keep **Export progress**, **Download private links backup** and the editable Newsletter Draft as three separate files. Reference the maintainer's dated recovery record; ask the maintainer to resolve missing restoration evidence.
+6. Keep **Export progress**, **Download private links backup** and the editable Newsletter Draft as three separate files. Reference the restore results from the three-file recovery guide; restore and compare the files in a separate browser profile before passing recovery.
 7. Save the observation locally in **Record results**, then give the note or exported progress to the President for the shared private checklist. Teammates do not see local checkmarks automatically.
 
 ### Practice only

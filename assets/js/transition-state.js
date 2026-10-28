@@ -1,7 +1,7 @@
 export const TRANSITION_STATE_VERSION = 2;
 // Changed meaning always reopens earlier confirmations.
-export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-13";
-export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(version => `officer-transition-guide-${version}`);
+export const TRANSITION_GUIDE_VERSION = "officer-transition-guide-14";
+export const TRANSITION_PREVIOUS_GUIDE_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(version => `officer-transition-guide-${version}`);
 export const TRANSITION_LEGACY_STORAGE_PREFIX = "asmeHubTransitionProgressV1:";
 export const TRANSITION_STORAGE_PREFIX = "asmeHubTransitionProgressV2:";
 export const TRANSITION_STATUSES = ["not_started", "in_progress", "blocked", "failed", "skipped", "complete"];
@@ -105,16 +105,27 @@ export function parseProgress(value, year, steps, checks) {
 }
 export function migrateProgress(value, year, steps, checks) {
   if (value?.guideVersion === TRANSITION_GUIDE_VERSION) return parseProgress(value, year, steps, checks);
-  if ([9, 10, 11, 12].some(version => value?.guideVersion === `officer-transition-guide-${version}`)) {
+  if ([9, 10, 11, 12, 13].some(version => value?.guideVersion === `officer-transition-guide-${version}`)) {
     // These named-run guides require all four maps. Spreading a missing or
     // malformed map below would silently turn damaged evidence into {}.
     for (const field of ["steps", "checks", "reasons", "notes"]) if (!record(value[field])) throw new Error(`This progress file has no valid ${field}.`);
   }
-  if (value?.guideVersion === "officer-transition-guide-12") {
+  if (value?.guideVersion === "officer-transition-guide-13") {
     const candidate = { ...value, guideVersion: TRANSITION_GUIDE_VERSION, steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
+    // These checks now use the officer's own observations and the managed
+    // connection workflow. Keep all unrelated results and every evidence note.
+    const changed = ["V01", "V10", "V19", "V20", "V22", ...(value.run?.mode === "rehearsal" ? ["V17"] : [])];
+    for (const id of changed) if (candidate.checks[id] && candidate.checks[id] !== "not_checked") candidate.checks[id] = "needs_recheck";
+    for (const step of steps) if (candidate.steps[step.id] === "complete" && checks.some(check => check.step === step.id && checkApplies(check, candidate.run?.mode) && candidate.checks[check.id] !== "passed")) candidate.steps[step.id] = "in_progress";
+    if (value.run?.mode === "rehearsal" && candidate.steps.T05 === "skipped" && candidate.checks.V17 === "needs_recheck") candidate.steps.T05 = "in_progress";
+    if (candidate.steps.T05 === "complete" && !launchEligibility(candidate, steps, checks).eligible) candidate.steps.T05 = "in_progress";
+    return reconcileProgress(parseProgress(candidate, year, steps, checks), steps, checks);
+  }
+  if (value?.guideVersion === "officer-transition-guide-12") {
+    const candidate = { ...value, guideVersion: "officer-transition-guide-13", steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };
     if (candidate.checks.V19 === "passed") candidate.checks.V19 = "needs_recheck";
     for (const id of ["T03", "T05"]) if (candidate.steps[id] === "complete") candidate.steps[id] = "in_progress";
-    return reconcileProgress(parseProgress(candidate, year, steps, checks), steps, checks);
+    return migrateProgress(candidate, year, steps, checks);
   }
   if (value?.guideVersion === "officer-transition-guide-11") {
     const candidate = { ...value, guideVersion: "officer-transition-guide-12", steps: { ...value.steps }, checks: { ...value.checks }, reasons: { ...value.reasons }, notes: { ...value.notes } };

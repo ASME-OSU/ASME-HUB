@@ -1,9 +1,8 @@
-# Maintainer repair: first complete profile and earlier attendance
+# Technical repair reference: first complete profile and earlier attendance
 
 Use this reference for an existing annual Points Master that fails the
 [skipped-profile recovery test](annual-points-setup.md#6-delivery-scoring-recovery-and-privacy-evidence).
-The coordinator names the Points maintainer in the private handoff. Routine
-officers contact that maintainer; they do not edit calculated rows themselves.
+This is a backed-up formula repair reference for an identified legacy defect, not an annual handoff step or a requirement to find a future technical contact. Complete required canonical repairs and regression checks before handoff. Routine officers preserve the response history, record the exact failed behavior and use the existing profile/Adjustments workflow described below; they do not replace calculated rows during normal setup. The Hub connection report checks structure and does not certify this scoring case.
 
 The October 4, 2026 repair selects the **first complete profile** for each member
 and matches attendance only to an ACTIVE profile on the **same or an earlier
@@ -103,4 +102,4 @@ do not reuse or reset old approvals/journals.
 If a check fails, keep intake closed and the file non-live. Preserve failure
 evidence and review changes since the named backup before restoring only the
 intended copy. Do not restore production or erase response history to repair a
-mock. Record the final observed result and recovery contact privately.
+mock. Record the final observed result, retained backup and next action privately.

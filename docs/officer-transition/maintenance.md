@@ -1,21 +1,21 @@
-# Maintenance, records and recovery
+# Technical reference, records and recovery
 
-Incoming officers follow [Start here](README.md). This page is for the maintainer and record owners. Real handoff uses supplied readiness evidence; optional practice stays in separate copies. The shared private checklist records team decisions; Hub observations stay on the officer's device until transferred.
+Incoming officers follow [Start here](README.md). This page preserves installation, recovery and source-change procedures. Complete one-time installation and any required canonical migrations before handing the tools to incoming officers. Normal Real handoff uses chapter sign-in, Hub connection checks and direct observations; optional practice stays in separate copies. The shared private checklist records team decisions; Hub observations stay on the officer's device until transferred.
 
 <details>
-<summary>Maintainer annual procedure and dated technical reference</summary>
+<summary>One-time installation, recovery and dated technical reference</summary>
 
-## Each annual handoff: five-step Guide 11
+## Each annual handoff: five-step guide
 
-1. The President leads; name the technical/recovery contact and participating team. For production, confirm incoming holders’ real access to
+1. The President leads; record the participating officers and recovery locations. For production, confirm incoming holders’ real access to
    chapter Google, ASME-OSU GitHub and each separate officer service. Record
    recovery ownership in the private tracker; keep credentials in the authorized
-   credential system. For rehearsal, record the approved test account and reviewer rather than treating access as real incoming-officer acceptance.
+   credential system. For Practice, use the chapter account and separate private copies; its results do not establish real incoming-officer acceptance.
 2. Review canonical templates, chosen year, annual folder and exact source
-   schemas/formulas. For the new reviewed helper, the maintainer installs/read backs the three scripts, canonical protected proxy/export pointers and one-time private chapter config. The earlier private baseline recorded installed, saved and reopened standalone helper files and canonical bound EventSync/SanityCheck sources with matching reviewed hashes. That dated receipt does not certify installation of later repository revisions, including the new readable-receipt formatter. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. The older fallback retains its separate verification rules/exclusions/ledger. Pasted Hub
+   schemas/formulas. Before handoff, install/read back the reviewed standalone scripts, canonical protected proxy/export pointers and one-time private chapter configuration. The earlier private baseline recorded installed, saved and reopened standalone helper files and canonical bound EventSync/SanityCheck sources with matching reviewed hashes. That dated receipt does not certify installation of later repository revisions, including the new readable-receipt formatter. The private 2030–2031 native rehearsal passed five-copy provisioning and unchanged retry, actual Form destination/tab and 5-point delivery/scoring, copied-menu pre-flight 8/8, one idempotent bound edit trigger, and both exports’ Allow access/resolved-output checks. No canonical trigger was created. These receipts certify the isolated private rehearsal; the actual production folder, Control Center, approved goal/calendar and incoming-officer acceptance still require review. Installing helpers does not update the older annual-save web deployment. Do not execute the older installed bundle until its retirement guard is updated/read back; never run legacy bulk setup against proxy templates. Saving new helper files does not update the existing deployed web version. The older fallback retains its separate verification rules/exclusions/ledger. Pasted Hub
    links cannot choose those trusted targets. Never connect rehearsal resources
    as the production route.
-3. Review the current maintainer readiness evidence. If a controlled practice is needed, agree its scope and use isolated copies, a closed Form and TESTING/PAUSED Points status. Fictional submissions and budget inputs are not mandatory for every incoming officer.
+3. Use the Hub’s current connection results and inspect actual annual inputs/outputs. If a controlled practice is needed, agree its scope and use isolated copies, a closed Form and TESTING/PAUSED Points status. Fictional submissions and budget inputs are not mandatory for every incoming officer.
    Check actual submissions/scoring, imports, export contents and finance totals
    in addition to automated structure verification.
 4. Save and independently compare an inactive/noncurrent row. Run acceptance
@@ -71,7 +71,7 @@ alone is not data. The Points template has one empty, unlinked **Form Responses 
 placeholder; its name preserves the reviewed processing/setup contract. Native
 copies can retain inherited Form associations, so check the actual Form
 destination rather than inferring linkage from an empty sheet or tab name.
-With the current proxy architecture, Config B7 points to the actual linked tab while protected _Raw_Ingest feeds stable Roster/Point Log formulas. Both exports use Config B1 for their matching private working master. Do not run annual bulk response/import replacements; one-time legacy/canonical migrations need separate maintainer review. Remove an empty obsolete placeholder only after checking that it
+With the current proxy architecture, Config B7 points to the actual linked tab while protected _Raw_Ingest feeds stable Roster/Point Log formulas. Both exports use Config B1 for their matching private working master. Do not run annual bulk response/import replacements; one-time legacy/canonical migrations require reviewed before/after source evidence and regression checks before handoff. Remove an empty obsolete placeholder only after checking that it
 is unlinked and has no remaining dependencies; preserve a before-change backup.
 
 For public changes, run `npm run check` and `npm test`, inspect the diff for
@@ -83,7 +83,7 @@ are not bundled into the Pages site.
 For Google changes, compare installed source with the reviewed snapshots,
 preserve properties/configuration and ledgers, rehearse privately and update the
 existing deployment deliberately. Confirm self-only access and accessing-user
-execution. Keep the older fallback engines together for their existing locks. The new provisioner is standalone with shared helper definitions; EventSync/SanityCheck are bound to the copied master. Enable automatic event sync once from its bound menu and verify the actual chapter-owned trigger, without a duplicate standalone trigger.
+execution. Keep the older fallback engines together for their existing locks. The new officer connection/update path runs in the authorized standalone provisioner project. Existing copied EventSync/SanityCheck menus are optional compatibility tools; avoid simultaneous standalone and bound triggers on the same workbook. Enabling a copied bound menu can request its own Google consent and is not part of the normal Real route.
 Record deployment version, source hashes and readback evidence privately.
 GitHub deployment success does not certify the Google deployment.
 

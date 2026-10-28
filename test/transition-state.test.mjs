@@ -17,7 +17,7 @@ test('launch summary counts nonlaunch prerequisites and applicable production re
 test('guide10 migration preserves evidence and reopens changed event-update review',()=>{
  const old={...ready(),guideVersion:'officer-transition-guide-10',steps:{...ready().steps,T05:'complete'},notes:{V19:'Prior automatic observation'}};
  const before=structuredClone(old),next=migrateProgress(old,year,steps,checks);
- assert.deepEqual(old,before);assert.equal(next.checks.V19,'needs_recheck');assert.equal(next.checks.V22,'passed');
+ assert.deepEqual(old,before);assert.equal(next.checks.V19,'needs_recheck');assert.equal(next.checks.V22,'needs_recheck');
  assert.equal(next.steps.T02,'in_progress');assert.equal(next.steps.T05,'in_progress');assert.equal(next.notes.V19,old.notes.V19);
  assert.equal(launchEligibility(next,steps,checks).eligible,false);
 });
@@ -111,7 +111,7 @@ test('legacy corruption is rejected before aggregation can hide it', () => {
 });
 
 test('named-run guide migrations reject malformed evidence maps before copying them',()=>{
- for(const guideVersion of [9,10,11,12].map(number=>`officer-transition-guide-${number}`)) {
+ for(const guideVersion of [9,10,11,12,13].map(number=>`officer-transition-guide-${number}`)) {
   const old={...run('production'),guideVersion};
   for(const field of ['steps','checks','reasons','notes'])for(const invalid of [null,[],undefined,''])
    assert.throws(()=>migrateProgress({...old,[field]:invalid},year,steps,checks),new RegExp(`valid ${field}`),`${guideVersion} ${field}`);
@@ -146,6 +146,19 @@ test('event sync review belongs to attendance work and guide12 migration preserv
  for(const mode of ['production','rehearsal'])for(const eventStatus of ['passed','not_checked']){
   const old={...ready(),run:run(mode).run,guideVersion:'officer-transition-guide-12',checks:{...ready().checks,V19:eventStatus},notes:{V19:'Earlier event method evidence'},steps:{T01:'complete',T02:eventStatus==='passed'?'complete':'in_progress',T03:'complete',T04:'complete',T05:mode==='rehearsal'?'skipped':'in_progress'},reasons:mode==='rehearsal'?{T05:'Practice only'}:{}};
   const before=structuredClone(old),next=migrateProgress(old,year,steps,checks);
-  assert.deepEqual(old,before);assert.equal(next.guideVersion,'officer-transition-guide-13');assert.equal(next.steps.T02,old.steps.T02);assert.equal(next.steps.T03,'in_progress');assert.equal(next.checks.V19,eventStatus==='passed'?'needs_recheck':undefined);assert.equal(next.notes.V19,old.notes.V19);assert.deepEqual(read(next),next);assert.equal(progressSummary(next,steps,checks).finished,false);
+  assert.deepEqual(old,before);assert.equal(next.guideVersion,'officer-transition-guide-14');assert.equal(next.steps.T01,'in_progress');assert.equal(next.steps.T02,'in_progress');assert.equal(next.checks.V02,'passed');assert.equal(next.steps.T03,'in_progress');assert.equal(next.checks.V19,eventStatus==='passed'?'needs_recheck':undefined);assert.equal(next.notes.V19,old.notes.V19);assert.deepEqual(read(next),next);assert.equal(progressSummary(next,steps,checks).finished,false);
  }
+});
+
+for(const mode of ['production','rehearsal'])test(`guide13 self-service migration preserves unrelated ${mode} observations and every note`,()=>{
+ const original={...ready(),run:run(mode).run,guideVersion:'officer-transition-guide-13',steps:{...ready().steps,T05:mode==='rehearsal'?'skipped':'complete'},reasons:{T05:'Preserved disposition'},notes:Object.fromEntries([...steps,...checks].map(x=>[x.id,'Original '+x.id]))};
+ const before=structuredClone(original),next=migrateProgress(original,year,steps,checks);
+ assert.deepEqual(original,before);assert.deepEqual(next.notes,original.notes);assert.deepEqual(next.reasons,original.reasons);assert.equal(next.run.id,original.run.id);assert.equal(next.savedAt,original.savedAt);
+ const changed=new Set(['V01','V10','V19','V20','V22',...(mode==='rehearsal'?['V17']:[])]);
+ for(const c of checks)assert.equal(next.checks[c.id],changed.has(c.id)?'needs_recheck':'passed',c.id);
+ assert.equal(next.steps.T01,'in_progress');for(const id of ['T02','T03','T04','T05'])assert.equal(next.steps[id],'in_progress',id);assert.deepEqual(read(next),next);assert.equal(progressSummary(next,steps,checks).finished,false);
+});
+test('changed expert-era failures and skips reopen for officer observations without erasing reasons',()=>{
+ const old={...run(),guideVersion:'officer-transition-guide-13',checks:{V01:'unable',V10:'failed',V19:'skipped',V22:'checking',V17:'passed',V02:'failed'},reasons:{V19:'Earlier approved manual method'},notes:{V01:'No technical person assigned',V02:'Actual destination mismatch'}};
+ const before=structuredClone(old),next=migrateProgress(old,year,steps,checks);assert.deepEqual(old,before);for(const id of ['V01','V10','V19','V22','V17'])assert.equal(next.checks[id],'needs_recheck',id);assert.equal(next.checks.V02,'failed');assert.deepEqual(next.notes,old.notes);assert.deepEqual(next.reasons,old.reasons);
 });

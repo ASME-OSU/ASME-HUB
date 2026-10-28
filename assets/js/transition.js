@@ -1,8 +1,10 @@
-import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261026f";
-import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261025a";
-import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261025a";
+import { TRANSITION_OFFICER_COPY, TRANSITION_OFFICER_QUESTIONS, TRANSITION_CHECKS, TRANSITION_STEPS, TRANSITION_TEST_CASES, TRANSITION_TEST_IDENTITIES } from "./transition-steps.js?v=20261028a";
+import { MAX_TRANSITION_PROGRESS_BYTES, checkApplies, createTransitionRun, progressSummary, launchEligibility, parseProgress, TRANSITION_LEGACY_STORAGE_PREFIX, emptyProgress, exportProgress, importProgress, migrateProgress, reconcileProgress, storageKey, transitionYear, transitionYearChoices, TRANSITION_STORAGE_PREFIX, TRANSITION_PREVIOUS_GUIDE_VERSIONS, validTransitionYear, TRANSITION_CHECK_STATUSES, TRANSITION_STATUSES } from "./transition-state.js?v=20261028a";
+import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_ANNUAL_FIELDS, annualLinkStorageKey, importAnnualLinkDraft, validateAnnualLinkDraft, reopenAnnualChecks, reviewAnnualLinkImport } from "./annual-link-draft.js?v=20261028a";
 
-import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261027a";
+import { validateAnnualReadiness, validAnnualRunKey, annualEventControlsUrl } from "./annual-readiness.js?v=20261028a";
+
+import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261028a";
 
 const section = document.getElementById("transition");
 if (section) {
@@ -102,16 +104,16 @@ if (section) {
     if (key === "checklistUrl") return "Officer checklist document";
     if (progress.run.mode === "production" && key === "cleanupUrl") return "Prior-year records and data review link";
     if (progress.run.mode === "rehearsal") {
-      if (key === "acceptanceUrl") return "Reviewer sign-off record link";
+      if (key === "acceptanceUrl") return "Practice results record link";
       if (key === "rollbackUrl") return "Recovery notes document link";
     }
     return title;
   }
   function privateRecordDescription(key) {
     if (progress.run.mode === "production" && key === "cleanupUrl") return "Ask the President for the record of prior-year archive, inherited test-data decisions and approved access changes.";
-    if (progress.run.mode === "rehearsal" && key === "acceptanceUrl") return "Ask the President or assigned practice reviewer for a dated sign-off. Example: ‘Alex reviewed the practice on October 9; access is still blocked.’";
-    if (progress.run.mode === "rehearsal" && key === "rollbackUrl") return "Ask the technical maintainer for the practice recovery notes. Example: which test files were removed, which backups were restored, and what still needs attention.";
-    return PRIVATE_RECORD_FIELDS.find(([id]) => id === key)?.[3] || "Ask the President or technical maintainer for this private record's link.";
+    if (progress.run.mode === "rehearsal" && key === "acceptanceUrl") return "Record your practice result, date and limits. A separate reviewer is not required.";
+    if (progress.run.mode === "rehearsal" && key === "rollbackUrl") return "Record your practice recovery notes. Example: which test files were removed, which backups were restored, and what still needs attention.";
+    return PRIVATE_RECORD_FIELDS.find(([id]) => id === key)?.[3] || "Keep this private record with the chapter’s handoff files.";
   }
   const annualInputs = new Map();
   const annualLabels = new Map();
@@ -166,7 +168,7 @@ if (section) {
   const annualTools = node("details", "transition-tools");
   const annualSummary = node("summary", "", "Saved links");
   annualTools.append(annualSummary);
-  annualTools.append(node("p", "", "Review this checklist's copied-tool and record links here. Paste full HTTPS document or folder links supplied by the President or technical maintainer, not names or email addresses."));
+  annualTools.append(node("p", "", "Review this checklist's copied-tool and record links here. Paste full HTTPS document or folder links supplied by the President, not names or email addresses."));
   annualTools.append(node("p", "", "Step 2 saves all seven links from connected Annual Setup automatically. Its manual fallback also lets you paste setup results. You can enter links here or import a saved backup. The setup summary explains the files and their settings. Saving links does not complete your checks."));
   annualTools.append(node("p", "", "Use a private officer browser profile: anyone using it can see saved links. Progress exports and printing exclude these links; download the private links backup separately. Only approved public values belong in the current Hub Control Center."));
   const annualForm = node("form", "settings-grid");
@@ -227,7 +229,7 @@ if (section) {
       const url = URL.createObjectURL(new Blob([JSON.stringify(draft, null, 2)], { type: "application/json" }));
       const link = node("a"); link.href = url; link.download = `asme-private-links-${selectedYear}-${selectedRunId}.json`; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      annualSay(progress.run.mode === "production" ? "Private links backup download requested. Keep the file with the Hub progress and newsletter backups. Ask the maintainer for the recovery readiness record." : "Private links backup download requested. Open the JSON text backup and compare year and all seven links with Saved links; restore it into an isolated rehearsal to verify recovery. This click is not recovery evidence.");
+      annualSay(progress.run.mode === "production" ? "Private links backup download requested. Keep the file with the Hub progress and newsletter backups. Restore the files in a separate profile and compare them with the originals." : "Private links backup download requested. Open the JSON text backup and compare year and all seven links with Saved links; restore it into an isolated rehearsal to verify recovery. This click is not recovery evidence.");
     } catch (error) { annualSay(error.message, true); }
   });
   annualActions.append(annualSave, annualImportLabel, annualExport, annualSettings, annualClear);
@@ -633,7 +635,7 @@ if (section) {
   }
   function appendGlossary(card, step) {
     const words = node("section", "transition-glossary");
-    words.append(node("h4", "", "Words used here"), node("p", "", "Maintainer: the person who fixes and verifies these tools. Readiness record: their dated record naming owners and evidence for this run."));
+    words.append(node("h4", "", "Words used here"), node("p", "", "Connection report: dated structural observations of this year’s files. It does not approve funding, public sharing or launch."));
     if (["T01", "T02"].includes(step.id)) words.append(node("p", "", "Control Center: the settings spreadsheet used by chapter tools. Export: a separate workbook of approved results; it is not automatically public or approved for sharing."));
     if (step.id === "T03") words.append(node("p", "", "Ledger: the current approved cash balance. Suppression: hiding member rows from the public leaderboard."));
     if (step.id === "T04") words.append(node("p", "", "Preheader: the preview line shown beside the subject in an email inbox."));
@@ -654,10 +656,10 @@ if (section) {
     head.append(heading); table.append(head);
     const body = node("tbody");
     const rows = [
-      ["V01", "Maintainer’s dated annual readiness record", "Correct annual copies and canonical source review; imports and event-update readiness evidenced. The setup summary leaves clean-source, access, imports and approvals unverified.", "Maintainer supplies; officer confirms it applies to this run."],
-      ["V02", "Form editor → Responses → View in Sheets; Points Master → Config B7 and B16", "Opens this year’s actual Points Master and tab; B7 matches that tab and B16 the Form ID. Fresh copy: zero responses, intake closed. Resumed copy: inventory preserved records; do not clear them.", "Officer compares; maintainer resolves mismatches and other-tab technical inspection."],
-      ["V07", `${progress.run.mode === "rehearsal" ? "Copied " : ""}Control Center → Hub_Settings_Public; selected-year row A:T`, "Reload actual Google row. Year A and row A:T match summary; goal C, calendar J; is_active K = FALSE and is_current L = FALSE before launch.", "Officer compares; approved settings owner or maintainer resolves mismatches."],
-      ["V21", "Annual Setup detailed summary; Points Config B2/B3/B5; both export Config B1; Budget Setup & Lists", `Seven links identify the actual copies. Points B2 = Fall ${start}; B3 = ${start}-${String(end).slice(-2)}; B5 = TESTING. Export B1 IDs match their working copies. Budget B4/B5 = ${start}-08-01 / ${end}-07-31; B11/B12 = ${start}-08-01 / ${start}-12-31; B13/B14 = ${end}-01-01 / ${end}-05-31.`, "Officer compares readable values; maintainer confirms technical evidence and errors."]
+      ["V01", "Hub Check connections; copied input areas and exports", "Matching annual connections and structure. Inspect copied inputs for unexplained old/test records. No blanket clean-source, scoring, access or approval certificate.", "Officer reviews the report and actual inputs."],
+      ["V02", "Form editor → Responses → View in Sheets; Points Master → Config B7 and B16", "Opens this year’s actual Points Master and tab; B7 matches that tab and B16 the Form ID. Fresh copy: zero responses, intake closed. Resumed copy: inventory preserved records; do not clear them.", "Officer compares; record any destination mismatch."],
+      ["V07", `${progress.run.mode === "rehearsal" ? "Copied " : ""}Control Center → Hub_Settings_Public; selected-year row A:T`, "Reload actual Google row. Year A and row A:T match summary; goal C, calendar J; is_active K = FALSE and is_current L = FALSE before launch.", "Officer compares; settings editor resolves approved input mismatches."],
+      ["V21", "Annual Setup detailed summary; Points Config B2/B3/B5; both export Config B1; Budget Setup & Lists", `Seven links identify the actual copies. Points B2 = Fall ${start}; B3 = ${start}-${String(end).slice(-2)}; B5 = TESTING. Export B1 IDs match their working copies. Budget B4/B5 = ${start}-08-01 / ${end}-07-31; B11/B12 = ${start}-08-01 / ${start}-12-31; B13/B14 = ${end}-01-01 / ${end}-05-31.`, "Officer compares actual readable values and records mismatches."]
     ];
     for (const [id, ...cells] of rows) {
       const check = TRANSITION_CHECKS.find(entry => entry.id === id);
@@ -666,7 +668,7 @@ if (section) {
       cells.forEach((value, index) => { const cell = node("td", "", value); cell.dataset.label = ["Where to check", "Expected result", "Who checks it"][index]; row.append(cell); });
       body.append(row);
     }
-    table.append(body); aid.append(table, node("p", "transition-warning", "Missing or conflicting evidence: leave the affected review unpassed, set Step result to Blocked and record the issue. Ask the President to obtain the maintainer’s dated evidence; ask the approved settings owner to resolve settings mismatches."));
+    table.append(body); aid.append(table, node("p", "transition-warning", "Missing or conflicting evidence: leave the affected review unpassed, set Step result to Blocked and record the issue. Use Check connections and record actual errors; the settings editor resolves approved input mismatches."));
     card.append(aid);
   }
   function appendBackupExamples(parent) {
@@ -674,17 +676,17 @@ if (section) {
     examples.append(node("h5", "", "Compare expected and observed backup values"), node("p", "", "JSON is a text backup. Open each file with TextEdit without changing it. These are illustrative excerpts using fictional values, not complete import files. Compare your actual values with your working screens."));
     const year = selectedYear;
     for (const [name, expected, excerpt] of [
-      ["Progress", "Expected: selected year, checklist name and one saved note. Observed: find year, run.name and notes.T01 in your downloaded file.", { year, run: { name: `Practice ${year} example` }, notes: { T01: "Practice reviewer confirmed folder access." } }],
+      ["Progress", "Expected: selected year, checklist name and one saved note. Observed: find year, run.name and notes.T01 in your downloaded file.", { year, run: { name: `Practice ${year} example` }, notes: { T01: "Chapter sign-in opened the Practice folder." } }],
       ["Private links", "Expected: the same year, all seven saved links and one full matching tool URL. Observed: compare every links entry with Saved links; this excerpt shows just one.", { year, links: { pointsMaster: "https://docs.google.com/spreadsheets/d/FICTIONAL_PRACTICE_MASTER/edit" } }],
       ["Newsletter draft", "Expected: Settings subject, preheader (inbox preview line) and one content item. Observed: compare state.fields and state.events with the editable draft.", { state: { fields: { "s-subject": "MOCK practice newsletter", "s-preheader": "Private practice preview" }, events: [{ title: "MOCK workshop" }] } }]
     ]) { examples.append(node("strong", "", name), node("p", "", expected), node("pre", "", JSON.stringify(excerpt, null, 2))); }
-    examples.append(node("p", "", "If something differs, stop and ask the maintainer. Deeper schema/version checks belong to the maintainer. A matching text excerpt alone is not restoration evidence."));
+    examples.append(node("p", "", "If something differs, preserve the backup unchanged and record the error; do not edit its fields to force an import. A matching text excerpt alone is not restoration evidence."));
     parent.append(examples);
   }
   function appendRecovery(card, step, printed = false) {
-    if (step.id !== "T04" || progress.run.mode !== "rehearsal") return;
+    if (step.id !== "T04") return;
     const recovery = node(printed ? "section" : "details", "transition-tools");
-    recovery.append(node(printed ? "h4" : "summary", "", "Practice restoring the three backup files"));
+    recovery.append(node(printed ? "h4" : "summary", "", "Restore and compare the three backup files"));
     const tasks = node("ol", "transition-procedure");
     for (const text of ["At the bottom of the Hub, open Saved links and backup tools. Under Progress backup and print, choose Export progress. Under Saved links, choose Download private links backup. In Newsletter Builder, choose Templates → Export Draft .json. Keep all three downloads.", "Open each JSON text backup and compare the expected and observed values below with your working screens.", "Chrome profile menu → Add → Continue without an account → name it ASME recovery practice. Open the same Hub and builder there; use your authorized dashboard password. Keep the original profile open.", "In the new profile select the same year and import progress into a separate Practice checklist. Choose the restored year and Practice, then Continue. Use More options → Other saved progress if several attempts exist. Under Saved links and backup tools → Saved links, choose Import private links backup, then Save private link list on this device. Check the returned year, notes and seven links. Changed links reopen checks; confirm only what you rechecked.", "In the new builder use Templates → Import Draft .json. Compare subject, preheader, content and Desktop/Mobile previews. Return to the original profile and confirm its checklist and issue are intact. Record what matched; do not send the practice issue."]) tasks.append(node("li", "", text));
     recovery.append(tasks); appendBackupExamples(recovery); card.append(recovery);
@@ -726,7 +728,7 @@ if (section) {
     if (annualSetupStage) clearTimeout(annualSetupStage.timer);
     annualSetupStage = null;
   }
-  function showAnnualSetupStage(session, context, message, slowMessage = "") {
+  function showAnnualSetupStage(session, context, message, slowMessage = "", panelSelector = ".transition-connected-setup") {
     clearAnnualSetupStage();
     const stage = {};
     annualSetupStage = stage;
@@ -734,7 +736,7 @@ if (section) {
     if (slowMessage) stage.timer = setTimeout(() => {
       if (annualSetupStage !== stage || !annualSetupPending || context.year !== selectedYear || context.runId !== selectedRunId || context.mode !== progress.run.mode) return;
       session.message = slowMessage;
-      const status = list.querySelector(".transition-connected-setup")?.querySelector(".transition-status");
+      const status = list.querySelector(panelSelector)?.querySelector(".transition-status");
       if (status) status.textContent = slowMessage;
     }, 30000);
     render();
@@ -774,7 +776,7 @@ if (section) {
     const create = node("button", "primary-button", "Create or reopen this year’s files"); create.type = "button";
     create.hidden = !config;
     create.disabled = annualSetupPending || !client?.ready || !config || config.workspaceMode !== progress.run.mode;
-    const status = node("p", "transition-status", !client?.ready ? "Connected setup is not configured yet. Ask the maintainer to enable it, or open the manual fallback below." : session.message);
+    const status = node("p", "transition-status", !client?.ready ? "Connected setup is not configured yet. Use the manual fallback and record the unavailable connection." : session.message);
     status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error);
     panel.append(create, status);
     if (session.receipt) {
@@ -796,13 +798,13 @@ if (section) {
         showAnnualSetupStage(session, context, "Google sign-in complete. Loading the approved workspace…", `Still loading the approved workspace for ${context.year.replace("-", "–")}. Google can take a few minutes. Keep the Hub open and wait; keep this year and workspace if you need to retry after the request finishes.`);
         const loaded = await client.call("getAnnualSetupConfig", [context.year]);
         assertSetupContext(context);
-        if (!loaded || typeof loaded !== "object" || Array.isArray(loaded)) throw new Error("Google returned an unreadable workspace. Ask the maintainer to check setup.");
+        if (!loaded || typeof loaded !== "object" || Array.isArray(loaded)) throw new Error("Google returned an unreadable workspace. Preserve the current files and retry the same year.");
         session.config = loaded; session.goal = loaded.engagementGoal; session.receipt = "";
         if (loaded.workspaceMode !== context.mode) {
           session.message = `Google sign-in succeeded. The saved workspace is ${runModeLabel(loaded.workspaceMode)}, but this checklist is ${runModeLabel(context.mode)}. The workspace purpose does not match. For a mock run, use a separate Practice checklist under Change year. For a real handoff, ask the President to configure the approved Real handoff workspace. Signing in again will not change the workspace.`;
           session.error = true; say(session.message, true); return;
         }
-        if (!/^[\w-]+$/.test(loaded.rootFolderId || "") || !/^[\w-]+$/.test(loaded.controlCenterId || "") || !loaded.configRevision) { session.config = null; throw new Error("The saved workspace is incomplete. Ask the President or maintainer to confirm the folder and Control Center."); }
+        if (!/^[\w-]+$/.test(loaded.rootFolderId || "") || !/^[\w-]+$/.test(loaded.controlCenterId || "") || !loaded.configRevision) { session.config = null; throw new Error("The saved workspace is incomplete. Confirm the correct folder and Control Center before retrying."); }
         session.message = loaded.existing ? "This year already has files. Reopen them using the saved member goal." : "Workspace loaded. Check the approved member goal, then create this year’s files.";
       } catch (error) { session.error = true; session.message = error.message || "Could not connect. Choose Sign in again to reload the workspace."; say(session.message, true); }
       finally { finish(); }
@@ -831,7 +833,7 @@ if (section) {
         if (!result || result.success !== true || result.targetYear !== context.year) throw new Error("Google did not confirm setup for the selected year. Reconnect and reopen the same year before retrying.");
         saveSetupResults(result.hubHandoff);
         session.receipt = typeof result.readableReceipt === "string" ? result.readableReceipt : "";
-        session.config = { ...approved, existing: true, engagementGoal: approvedGoal, goalSource: "This year’s saved setup" }; session.goal = approvedGoal;
+        session.config = { ...approved, runKey: result.runKey || "", existing: true, engagementGoal: approvedGoal, goalSource: "This year’s saved setup" }; session.goal = approvedGoal;
         session.message = context.mode === "rehearsal"
           ? "Practice files ready — all seven links are saved under Your files. These private copies stay inactive. The main dashboard still shows the chapter’s active year."
           : "Files ready — all seven links are saved under Your files. The year stays inactive until approved.";
@@ -840,6 +842,120 @@ if (section) {
       finally { finish(); }
     });
     card.append(panel);
+  }
+  function appendAnnualReadiness(card, step) {
+    const apiConfig = window.ASME_HUB_CONFIG?.annualProvisioner?.api;
+    if (!annualSetupClient && apiConfig) annualSetupClient = createAnnualSetupClient(apiConfig);
+    const client = annualSetupClient, key = `${selectedYear}:${selectedRunId}:${progress.run.mode}`;
+    if (!annualSetupSessions.has(key)) annualSetupSessions.set(key, {config: null, message: "Sign in with the chapter account to check this year’s connections.", error: false, receipt: ""});
+    const session = annualSetupSessions.get(key);
+    if (step.id === "T02" && !savedAnnualLinks.pointsMaster) return;
+    const panel = node("section", "transition-connected-setup transition-annual-readiness");
+    panel.dataset.annualReadiness = "connections";
+    panel.append(node("h4", "", "Check your annual connections"), node("p", "", "Sign in as asmeohiostate@gmail.com. Open each export and choose Allow access for its matching annual source if Google asks."));
+    for (const [label, field] of [["Open Points Export", "pointsExport"], ["Open Budget Export", "budgetExport"]]) if (savedAnnualLinks[field]) panel.append(resourceRow(savedAnnualLinks[field], label, "Select the import error cell, allow the matching source, then wait for calculation.", "sheet"));
+    const signIn = node("button", "secondary-button", session.error ? "Sign in again" : "Sign in with chapter Google account"); signIn.type = "button";
+    signIn.disabled = annualSetupPending || !client?.ready;
+    signIn.hidden = Boolean(session.config?.runKey) && !session.error;
+    const actionsRow = node("div", "transition-work-actions"); actionsRow.append(signIn); panel.append(actionsRow);
+    const check = node("button", "secondary-button", "Check connections");
+    check.type = "button"; check.disabled = annualSetupPending || !client?.ready || !session.config?.runKey; actionsRow.append(check);
+    panel.append(node("p", "", "Check connections, then open event update controls to connect automatic updates. Return here and check again."));
+    const status = node("p", "transition-status", !client?.ready ? "Connected checks are unavailable. Keep the current files and use the manual setup fallback if needed." : session.config && !session.config.runKey ? "This setup response has no saved connection identity. Sign in and reopen the same year in Step 2. Preserve the files if the updated chapter setup is unavailable." : session.message);
+    status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error); panel.append(status);
+    let visibleReport = null;
+    if (session.report && session.reportContext) {
+      try { assertSetupContext(session.reportContext); visibleReport = validateAnnualReadiness(session.report, {...readinessContext(session.config), ...(session.report.readScope === "retirement" ? {action: "stop"} : {})}); }
+      catch { /* A changed checklist or old report is never displayed as a current observation. */ }
+    }
+    if (visibleReport) {
+      panel.append(node("h5", "", visibleReport.readScope === "retirement" ? "Retired-year connection status" : visibleReport.ready ? "Connections checked" : "Connections need attention"), node("p", "", `Checked ${visibleReport.checkedAt}. This does not approve launch or pass checklist reviews.`));
+      const updates = visibleReport.eventUpdates;
+      panel.append(node("p", "", updates.stopPending === true ? `${updates.detail || "Google removed the trigger; finish recording the stopped status."} Open event update controls, confirm the retired year there and choose Finish stopping updates.` : updates.status === "observed" ? `Automatic event edit delivered: ${updates.lastObservedAt}. Compare the Form choices after each approved event change.` : updates.status === "installed" ? "Automatic updates connected. Make a normal approved Events edit in Google Sheets, compare the Form choices, then check again to observe delivery." : updates.status === "error" ? `Automatic updates need attention: ${updates.detail || "Review the event list and retry."}` : visibleReport.readScope === "retirement" ? "Automatic event updates are stopped for this retired year." : "Automatic event updates are not connected yet."));
+      const observations = node("ul");
+      for (const item of visibleReport.checks) {
+        const row = node("li", "", `${item.label}: ${item.status === "passed" ? "Checked" : item.status === "action_needed" ? "Action needed" : "Needs fixing"}. ${item.detail}`);
+        if (item.url) row.append(resourceRow(item.url, "Open this file", "Review the reported location."));
+        observations.append(row);
+      }
+      const actions = node("ul");
+      for (const item of visibleReport.checks.filter(item => item.status !== "passed")) {
+        const row = node("li", "", `${item.label}: ${item.detail}`);
+        if (item.url) row.append(resourceRow(item.url, "Open the reported file", "Follow the Google action, then check connections again."));
+        actions.append(row);
+      }
+      if (actions.childElementCount) panel.append(actions);
+      const limits = node("details", "transition-tools"); limits.append(node("summary", "", "Technical details and limits"), node("p", "", visibleReport.readyScope), node("p", "", updates.scope), observations);
+      for (const limit of visibleReport.limits) limits.append(node("p", "", limit));
+      panel.append(limits);
+    }
+    if (visibleReport && !annualSetupPending && !annualDrafts.has(annualRunKey())) {
+      try {
+        const controlsContext = {...readinessContext(session.config), configRevision: session.config.configRevision};
+        const href = annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, controlsContext);
+        const controls = resourceRow(href, "Open event update controls", "On the Google page, choose Connect automatic event updates or explicitly stop a closed, noncurrent year. Return here and Check connections. No copied-script editor is needed.");
+        controls.querySelector("a").addEventListener("click", event => {
+          try {
+            assertSetupContext(session.reportContext);
+            if (annualDrafts.has(annualRunKey())) throw Error("Save or discard your link edits before opening event controls.");
+            validateAnnualReadiness(session.report, {...readinessContext(session.config), ...(session.report.readScope === "retirement" ? {action: "stop"} : {})});
+            if (annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, {...readinessContext(session.config), configRevision: session.config.configRevision}) !== href) throw Error("The event-control setup changed. Check connections again.");
+          } catch (error) { event.preventDefault(); say(error.message, true); session.report = null; render(); }
+        });
+        panel.append(controls);
+      } catch (error) { panel.append(node("p", "transition-warning", error.message)); }
+    }
+    if (step.id === "T05") {
+      const retire = node("details", "transition-tools"); retire.append(node("summary", "", "Check a retired year’s event connection"), node("p", "", "For a closed, noncurrent year, read its retirement status here. After a matching check, open event update controls and explicitly confirm any stop on that Google page. Pending-stop recovery is completed there."));
+      const checkRetired = node("button", "secondary-button", "Check retired-year connection"); checkRetired.type = "button";
+      checkRetired.disabled = annualSetupPending || !client?.ready || !session.config?.runKey;
+      checkRetired.addEventListener("click", () => operate(true));
+      retire.append(checkRetired); panel.append(retire);
+    }
+    function readinessContext(config) {
+      return {year: selectedYear, mode: progress.run.mode, workspaceMode: config?.workspaceMode, runKey: config?.runKey, controlCenterId: config?.controlCenterId, rootFolderId: config?.rootFolderId, links: savedAnnualLinks};
+    }
+    const finish = () => { clearAnnualSetupStage(); annualSetupPending = false; render(); };
+    signIn.addEventListener("click", async () => {
+      if (annualSetupPending || !client?.ready) return;
+      try {
+        const context = captureSetupContext(); session.config = null; session.report = null; session.error = false; annualSetupPending = true;
+        showAnnualSetupStage(session, context, "Complete Google sign-in in the popup, then wait for this year’s saved workspace.");
+        await client.connect(); assertSetupContext(context);
+        const config = await client.call("getAnnualSetupConfig", [context.year]); assertSetupContext(context);
+        if (!config || config.workspaceMode !== context.mode || !/^[A-Za-z0-9_-]{20,200}$/.test(config.rootFolderId || "") || !/^[A-Za-z0-9_-]{20,200}$/.test(config.controlCenterId || "") || typeof config.configRevision !== "string" || !config.configRevision || !validAnnualRunKey(config.runKey, context.year, config.controlCenterId, config.rootFolderId)) throw Error("No matching completed annual run was loaded. Reopen this year’s files in Step 2; sign-in alone cannot match different saved links.");
+        session.config = config; session.message = "Chapter sign-in complete. Check connections to verify these files before opening Google-hosted event controls.";
+      } catch (error) { session.error = true; session.message = error.message || "Could not load connections. Sign in again if authorization expired."; say(session.message, true); }
+      finally { finish(); }
+    });
+    async function operate(retirement = false) {
+      if (annualSetupPending || !client?.ready || !session.config?.runKey) return;
+      try {
+        if (annualDrafts.has(annualRunKey())) throw Error("Save or discard your unsaved link edits before checking connections. Your draft is preserved.");
+        const context = captureSetupContext(), approved = {...session.config}, expected = {...readinessContext(approved), ...(retirement ? {action: "stop"} : {})};
+        if (context.mode === "rehearsal" && annualFileContextMismatch(approved)) throw Error("The copied Control Center does not match this saved Practice checklist. Review the links before continuing.");
+        const input = {year: context.year, mode: context.mode, expectedConfigRevision: approved.configRevision, expectedRunKey: approved.runKey, ...(retirement ? {action: "stop"} : {})};
+        annualSetupPending = true; session.error = false; session.report = null;
+        showAnnualSetupStage(session, context, "Checking the saved annual files and connections…", "Still checking these annual connections. Keep this checklist open and wait for the current request to finish.", ".transition-annual-readiness");
+        const result = await client.call("checkAnnualReadiness", [input]); assertSetupContext(context);
+        const report = validateAnnualReadiness(result, expected);
+        session.report = report; session.reportContext = context;
+        session.message = report.ready ? "Connections checked. Record your own observations and required approvals separately." : "Connections need attention. Follow the reported Google action, then check again.";
+        say(session.message);
+      } catch (error) { session.error = true; session.report = null; session.message = error.message || "Connection check could not finish. Sign in again if authorization expired."; say(session.message, true); }
+      finally { finish(); }
+    }
+    function annualFileContextMismatch(config) {
+      const url = savedAnnualLinks.controlCenterUrl;
+      return !url || !url.includes(`/spreadsheets/d/${config.controlCenterId}/edit`);
+    }
+    check.addEventListener("click", () => operate());
+    if (step.id === "T02") card.append(panel);
+    else {
+      const connections = disclosure("Annual connections and event updates", "transition-tools", "annual-connections");
+      connections.append(panel);
+      card.append(connections);
+    }
   }
   function resolvedGuideResources() {
     return guideResourceSnapshot && window.ASME_SHARED_RESOURCES?.resolve
@@ -851,12 +967,12 @@ if (section) {
     const urlFor = id => resolvedGuideResources().find(item => item.id === id)?.url;
     if (step.id === "T03") card.append(node("p", "transition-control-help", `${practice ? "Practice copies" : "Annual files"} · ${selectedYear.replace("-", "–")}. These buttons open this checklist’s files. Exports supply dashboard totals. ${practice ? "Practice does not change the active dashboard." : "The dashboard changes only after the real handoff is approved."}`));
     const groups = step.id === "T03" ? [
-      { key: "attendance", title: "Attendance", text: practice ? "Start on the Points Master’s README tab. Try five sample check-ins with your maintainer, then compare the Points Export. Use the form editor to check events and close intake." : "Start on the Points Master’s README tab. Add this year’s events, check the form editor’s event list, and compare the Points Export.", links: [["Open Points Master", savedAnnualLinks.pointsMaster], ["Open attendance form editor", savedAnnualLinks.attendanceFormEditor], ...(practice ? [["Open check-in form", savedAnnualLinks.attendanceFormRespondent]] : []), ["Open Points Export", savedAnnualLinks.pointsExport]], checks: ["V03", "V04", "V05", "V19", "V23", "V26"] },
+      { key: "attendance", title: "Attendance", text: practice ? "Start on the Points Master’s README tab. Try five sample check-ins in these private copies, then compare the Points Export. Use the form editor to check events and close intake." : "Start on the Points Master’s README tab. Add this year’s events, check the form editor’s event list, and compare the Points Export.", links: [["Open Points Master", savedAnnualLinks.pointsMaster], ["Open attendance form editor", savedAnnualLinks.attendanceFormEditor], ...(practice ? [["Open check-in form", savedAnnualLinks.attendanceFormRespondent]] : []), ["Open Points Export", savedAnnualLinks.pointsExport]], checks: ["V03", "V04", "V05", "V19", "V23", "V26"] },
       { key: "budget", title: "Budget", text: practice ? "Begin on the Budget Tracker’s Start Here tab. Try the sample entries in the Practice instructions, then compare the Budget Export." : "Begin on the Budget Tracker’s Start Here tab. Confirm balances and the spending plan with the Treasurer, then compare the Budget Export.", links: [["Open Budget Tracker", savedAnnualLinks.budgetTracker], ["Open Budget Export", savedAnnualLinks.budgetExport]], checks: ["V06", "V12", "V13", "V24"] }
     ] : step.id === "T04" ? [
       { key: "events", title: "Check events", text: practice ? "Try the fictional preview, then return to Upcoming. Compare live event titles and descriptions with the public calendar before importing." : "Compare event titles, dates, times and locations across the Hub, website and newsletter. Check descriptions before importing.", links: [["Open calendar", () => urlFor("events-calendar") || "https://org.osu.edu/asme/calendar/"], ["Open Newsletter Builder", () => urlFor("newsletter-builder")]], hub: true, checks: ["V08", "V14", "V25"] },
       { key: "newsletter", title: "Preview newsletter", text: practice ? "Preview an unsent MOCK draft on a phone and computer." : "Update the draft and approved website changes. Preview on a phone and computer; get approval before sharing.", links: [["Open Newsletter Builder", () => urlFor("newsletter-builder")], ...(practice ? [] : [["Open website editor", () => urlFor("website-editor")]])], checks: ["V09", "V11", "V15"] },
-      { key: "backups", title: "Save backups", text: practice ? "With your maintainer, restore and compare progress, private links and the newsletter draft." : "Save progress, private links and the editable newsletter draft. Ask your maintainer to check recovery.", links: [], checks: ["V22"], backup: true }
+      { key: "backups", title: "Save backups", text: practice ? "Restore and compare progress, private links and the newsletter draft." : "Save progress, private links and the editable newsletter draft. Restore in a separate profile and compare the original values.", links: [], checks: ["V22"], backup: true }
     ] : [];
     const targets = new Map();
     for (const group of groups) {
@@ -948,7 +1064,7 @@ if (section) {
     const missingLinks = [];
     for (const [key, title, stepId] of PRIVATE_RECORD_FIELDS.filter(([key, , id]) => id === step.id && privateRecordApplies(key))) {
       if (savedAnnualLinks[key]) resources.append(resourceRow(savedAnnualLinks[key], privateRecordTitle(key, title), "Check that this is the right year and you can open it."));
-      else if (key !== "receiptUrl") missingLinks.push(privateRecordTitle(key, title));
+      else if (key !== "receiptUrl" && !(progress.run.mode === "rehearsal" && key === "acceptanceUrl")) missingLinks.push(privateRecordTitle(key, title));
     }
     const annualResources = step.id === "T02" ? ANNUAL_LINK_FIELDS.map(([key,title]) => [key,title]) : step.id === "T03" ? [["pointsMaster", "Copied Points Master → README"], ["attendanceFormEditor", "Copied Form editor"], ["attendanceFormRespondent", progress.run.mode === "production" ? "Attendance check-in link" : "Respondent test link"], ["pointsExport", "Copied Points Export"], ["budgetTracker", "Copied Budget Tracker → Start Here"], ["budgetExport", "Copied Budget Export"]] : [];
     for (const [key, title] of annualResources) {
@@ -1011,7 +1127,7 @@ if (section) {
     $("transition-progress-help").textContent = "Saved automatically on this device.";
     $("transition-summary").hidden = true;
     $("transition-readiness").hidden = true;
-    $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps ${progress.run.mode === "rehearsal" ? "finished (including the activation skip when practice is complete)" : "complete"}. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Reviewer acceptance" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
+    $("transition-summary").textContent = `${progress.run.mode === "rehearsal" ? "Private rehearsal" : "Officer handoff"}: ${completed} of ${TRANSITION_STEPS.length} steps ${progress.run.mode === "rehearsal" ? "finished (including the activation skip when practice is complete)" : "complete"}. ${progress.run.mode === "rehearsal" ? "Cleanup" : "Records and access review"}: ${checkLabels[checkOf("V16")]}. ${progress.run.mode === "rehearsal" ? "Practice results" : "Incoming acceptance"}: ${checkLabels[checkOf("V17")]}. ${summary.stepCounts.blocked || summary.stepCounts.failed ? "Open the unfinished steps to resolve their blockers." : "Results are saved on this device."}`;
     $("transition-launch-summary").textContent = `${progress.run.name} · ${selectedYear.replace("-", "–")}: ${summary.completedItems}/${summary.totalItems} tasks complete · ${progress.run.mode === "rehearsal" ? summary.rehearsal.eligible ? "GO — private rehearsal complete; production activation excluded" : "Private rehearsal not complete" : summary.launch.eligible ? "production prerequisites reported passed; coordinator approval required" : "Handoff reviews incomplete"}.`;
     // One link editor stays at the bottom for the currently selected checklist.
     for (const label of annualLabels.values()) annualForm.append(label);
@@ -1060,7 +1176,7 @@ if (section) {
       for (const action of shortActions) actions.append(node("li", "", action));
       card.append(actions);
     }
-    const detail = disclosure(step.id === "T01" ? "Help, notes and saved progress" : step.id === "T03" && progress.run.mode === "rehearsal" ? "Practice instructions — with your maintainer" : "Detailed instructions & troubleshooting", "transition-tools transition-detailed-help", "instructions");
+    const detail = disclosure(step.id === "T01" ? "Help, notes and saved progress" : step.id === "T03" && progress.run.mode === "rehearsal" ? "Practice instructions" : "Detailed instructions & troubleshooting", "transition-tools transition-detailed-help", "instructions");
     if (step.id === "T01") detail.append(moreOptions);
     detail.append(node("p", "transition-owner", `Team: ${step.roles.map(role => roleLabels[role] || role).join(", ")}.`));
     detail.append(node("p", "", `Before this step: ${step.needs.length ? step.needs.map(id => stepTitle(byId.get(id))).join("; ") : "Nothing else needed"}.`));
@@ -1124,6 +1240,7 @@ if (section) {
       });
       fallback.append(transfer); detail.append(fallback);
     }
+    if (["T02", "T03", "T05"].includes(step.id)) appendAnnualReadiness(card, step);
     appendRecovery(detail, step);
     appendTestCases(detail, step);
     const resources = node("section", "transition-resources");
@@ -1174,13 +1291,13 @@ if (section) {
     const teamChecks = disclosure("", "transition-tools transition-team-checks", "team");
     const teamIds = new Set(["V01", "V02", "V03", "V05", "V07", "V11", "V12", "V13", "V14", "V15", "V19", "V22", "V23"]);
     const applicableTeam = checksFor(step).filter(check => teamIds.has(check.id) && checkApplies(check, progress.run.mode));
-    teamChecks.children[0].textContent = `Confirm with your team (${applicableTeam.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
+    teamChecks.children[0].textContent = `Record your checks (${applicableTeam.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
     if (applicableTeam.some(check => pendingSkipId === check.id)) teamChecks.open = true;
-    teamChecks.append(node("p", "", "Ask the President or maintainer to check these with you. Confirm only what has been checked."));
+    teamChecks.append(node("p", "", "Check the actual files and record what you observed. Keep financial, public-field and launch approvals separate."));
     const productionChecks = node("details", "transition-production-checks");
     productionChecks.append(node("summary", "", "Production checks — not part of this rehearsal"));
     let hasProductionChecks = false;
-    if (step.launch && progress.run.mode === "rehearsal") confirmation.append(node("p", "transition-control-help", "Finish practice records that no real year is launched. Complete cleanup and reviewer checks first."));
+    if (step.launch && progress.run.mode === "rehearsal") confirmation.append(node("p", "transition-control-help", "Finish practice records that no real year is launched. Complete cleanup and recorded practice results first."));
     for (const check of checksFor(step)) {
       if (!checkApplies(check, progress.run.mode)) {
         if (progress.run.mode === "production") continue;
@@ -1214,7 +1331,7 @@ if (section) {
       checkTarget.append(label);
       appendEvidence(checkTarget, check.id, titleFor(check));
       if (step.id === "T01" && check.id === "V20") {
-        const ready = node("label", "transition-start-confirmation", progress.run.mode === "rehearsal" ? "I have the approved test account, private Practice folder and reviewer." : "I have the approved chapter account, officer folder and a contact for help.");
+        const ready = node("label", "transition-start-confirmation", progress.run.mode === "rehearsal" ? "I have the chapter account and separate private Practice folder." : "I have the chapter account, officer folder and handoff responsibilities.");
         const checkbox = node("input"); checkbox.type = "checkbox"; checkbox.checked = checkOf(check.id) === "passed";
         checkbox.setAttribute("aria-label", ready.textContent);
         checkbox.addEventListener("change", () => { select.value = checkbox.checked ? "passed" : "not_checked"; recordCheck(); checkbox.checked = checkOf(check.id) === "passed"; });
@@ -1223,12 +1340,12 @@ if (section) {
     }
     for (const work of new Set(workTargets.values())) {
       const required = applicableTeam.filter(check => work.checks.includes(check.id));
-      work.team.children[0].textContent = `Confirm with your team (${required.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
+      work.team.children[0].textContent = `More checks (${required.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
       if (required.some(check => pendingSkipId === check.id)) work.team.open = true;
       if (required.length) work.section.append(work.team);
     }
     const otherTeam = applicableTeam.filter(check => !workTargets.has(check.id));
-    teamChecks.children[0].textContent = `Confirm with your team (${otherTeam.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
+    teamChecks.children[0].textContent = `Record your checks (${otherTeam.filter(check => checkOf(check.id) !== "passed").length} remaining)`;
     if (otherTeam.length) confirmation.append(teamChecks);
     if (hasProductionChecks) detail.append(productionChecks);
     detail.hidden = preparing; card.append(detail);
@@ -1272,7 +1389,7 @@ if (section) {
         if (recordStepResult() && !step.launch) go(currentIndex + 1);
       }
     });
-    confirmation.append(finish, node("p", "transition-control-help", step.id === "T01" ? "Next: sign in with the chapter Google account and prepare this year’s files. No tool links need to be pasted here." : practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and reviewer checks first." : unchecked(step).length ? `${unchecked(step).length} ${unchecked(step).length === 1 ? "confirmation" : "confirmations"} left, including team checks.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
+    confirmation.append(finish, node("p", "transition-control-help", step.id === "T01" ? "Next: sign in with the chapter Google account and prepare this year’s files. No tool links need to be pasted here." : practiceEnd ? summary.rehearsal.eligible ? "Your practice results are saved." : "Finish all practice steps, cleanup and recorded practice results first." : unchecked(step).length ? `${unchecked(step).length} ${unchecked(step).length === 1 ? "confirmation" : "confirmations"} left.` : step.launch ? "Keep the President’s approval and launch plan with your handoff records." : "Your answers will be saved before the next step opens."));
     control.append(select);
     const otherResult = disclosure("Need help, skip, or add a note", "transition-tools", "step-result");
     otherResult.open = otherResult.open || pendingSkipId === step.id || (["blocked", "failed"].includes(statusOf(step.id)) || (statusOf(step.id) === "skipped" && !practiceEnd));
@@ -1290,7 +1407,7 @@ if (section) {
     $("transition-next").disabled = step.id === "T01";
     $("transition-next").setAttribute("aria-disabled", String(step.id === "T01"));
     $("transition-next-reason").hidden = !reason || step.launch;
-    $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? mockMode ? "Record cleanup and reviewer acceptance here. Rehearsal activation stays skipped." : "Record incoming acceptance and the President’s separate launch decision. Finish review shows anything still needed." : "You may read the next step and record its own result.");
+    $("transition-next-reason").textContent = reason || (currentIndex === TRANSITION_STEPS.length - 1 ? mockMode ? "Record cleanup and your practice results here. Rehearsal activation stays skipped." : "Record incoming acceptance and the President’s separate launch decision. Finish review shows anything still needed." : "You may read the next step and record its own result.");
   }
   function go(index) {
     currentIndex = index;
@@ -1489,7 +1606,7 @@ if (section) {
     for (const step of TRANSITION_STEPS) {
       const card = node("article", "transition-print-step");
       card.append(node("h2", "", `${step.id} · ${stepTitle(step)} — ${statusLabels[statusOf(step.id)]}`));
-      card.append(node("p", "", `President leads; team checks: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
+      card.append(node("p", "", `President leads; officer responsibilities: ${step.roles.map((role) => roleLabels[role] || role).join(", ")}`));
       card.append(node("p", "", `Prerequisites: ${step.needs.join(", ") || "None"}`));
       appendGlossary(card, step);
       if (step.id === "T02") appendSetupComparison(card);
@@ -1497,7 +1614,7 @@ if (section) {
       if (quickStart) card.append(node("p", "", yearText(quickStart)));
       for (const instruction of instructionsFor(step)) card.append(node("p", "", instruction));
       if (step.id === "T02") card.append(node("p", "transition-manual-check", "Annual Setup creates or reopens the attendance and budget files for your year. Connected setup saves all seven links here automatically; its detailed summary is optional. Keep last year’s files as records."));
-    if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. The technical maintainer checks the other response tabs in the same copied workbook. Example note: Five MOCK rows arrived in the summary’s tab; [maintainer] confirmed the other response tabs contain none of these rows on [date]."));
+    if (step.id === "T03" && progress.run.mode === "rehearsal") card.append(node("p", "transition-manual-check", "Why two response checks? You check that all five submissions arrived in the named tab. Inspect the other response tabs yourself, including View → Hidden sheets. Record both the five arrivals and the absence of those submissions in other response tabs."));
     appendRecovery(card, step, true);
     appendTestCases(card, step);
       card.append(node("p", "", `Manual check: ${progress.run.mode === "production" ? step.productionCheck : step.check}`));
