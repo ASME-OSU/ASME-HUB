@@ -1090,11 +1090,80 @@ test("final review starts compact and sends officers to the next unfinished step
  await ui.$("transition-steps").find(n=>n.tagName==="button"&&n.textContent==="Go to next unfinished step").click();assert.equal(ui.$("transition-step-picker").value,"T01");
 });
 
+for(const [steps,checks,expected] of [
+ [[],['V17'],'1 check remains.'],
+ [['T04'],[],'1 earlier step remains.'],
+ [['T04'],['V17'],'1 earlier step and 1 check remain.'],
+ [[],['V16','V17'],'2 checks remain.'],
+ [['T03','T04'],[],'2 earlier steps remain.'],
+])test(`final review counts pending work as “${expected}” without zero-count groups`,async()=>{
+ const value=completedReviews('rehearsal');for(const id of steps)value.steps[id]='in_progress';for(const id of checks)value.checks[id]='checking';
+ const ui=readyBrowser(value);await ui.go('T05');const summary=ui.$('transition-steps').find(n=>n.className==='transition-final-summary');
+ assert.equal(summary.find(n=>n.tagName==='p').textContent,expected);assert.doesNotMatch(summary.textContent,/0 earlier|0 checks/);
+ assert.equal(finishAction(ui).disabled,true);
+});
+
+for(const mode of ['rehearsal','production'])test(`final review with no pending ${mode} work shows confirmation instead of zero counts`,async()=>{
+ const ui=readyBrowser(completedReviews(mode));await ui.go('T05');const summary=ui.$('transition-steps').find(n=>n.className==='transition-final-summary');
+ assert.match(summary.textContent,/Ready for final confirmation/);assert.doesNotMatch(summary.textContent,/0 earlier|0 checks|remain/);
+ assert.equal(finishAction(ui).disabled,false);
+});
+
 test("Finish practice requires all checks, records no-launch and preserves prior evidence",async()=>{
  const value=completedReviews("rehearsal");value.notes.T05="Reviewer evidence";value.reasons.T05="Earlier recovery note";
  const ui=readyBrowser(value);await ui.go("T05");assert.equal(finishAction(ui).textContent,"Finish practice");assert.equal(finishAction(ui).disabled,false);assert.match(ui.$("transition-steps").find(n=>n.className==="transition-step-intro").textContent,/finish your practice/);
- await finishAction(ui).click();const saved=ui.saved();assert.equal(saved.steps.T05,"skipped");assert.match(saved.reasons.T05,/Earlier recovery note/);assert.match(saved.reasons.T05,/Practice only — no launch/);assert.equal(saved.notes.T05,"Reviewer evidence");assert.equal(state.progressSummary(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).rehearsal.eligible,true);assert.deepEqual(saved.checks,value.checks);assert.equal(finishAction(ui).textContent,"Practice finished");
+ await finishAction(ui).click();const saved=ui.saved();assert.equal(saved.steps.T05,"skipped");assert.equal(saved.reasons.T05,"Earlier recovery note");assert.equal(saved.notes.T05,"Reviewer evidence");assert.equal(state.progressSummary(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).rehearsal.eligible,true);assert.equal(state.launchEligibility(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).eligible,false);assert.deepEqual(saved.checks,value.checks);assert.equal(finishAction(ui).textContent,"Practice finished");assert.match(ui.$('transition-status').textContent,/No real year was started/);
  const blocked=completedReviews("rehearsal");blocked.checks.V17="checking";const other=readyBrowser(blocked);await other.go("T05");assert.equal(finishAction(other).disabled,true);await finishAction(other).click();assert.notEqual(other.saved().steps.T05,"skipped");
+});
+
+const skipReason=(ui,id='T05')=>evidenceForm(ui,id).children.find(n=>n.tagName==='label'&&n.textContent==='Why are you skipping this?').find(n=>n.tagName==='textarea');
+for(const length of [1999,2000])for(const pending of [false,true])test(`Finish practice preserves ${pending?'pending':'saved'} ${length}-character reasons and notes without appending text`,async()=>{
+ const reason='R'.repeat(length),note='N'.repeat(2000),value=completedReviews('rehearsal');
+ value.reasons.T05=pending?'Earlier reason':reason;value.notes.T05=pending?'Earlier note':note;
+ const ui=readyBrowser(value);await ui.go('T05');
+ if(pending){skipReason(ui).value=reason;await skipReason(ui).emit('input');observation(ui,'T05').value=note;await observation(ui,'T05').emit('input');}
+ await finishAction(ui).click();const saved=ui.saved();
+ assert.equal(saved.reasons.T05,reason);assert.equal(saved.notes.T05,note);assert.equal(saved.steps.T05,'skipped');assert.equal(saved.run.mode,'rehearsal');
+ assert.equal(state.progressSummary(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).rehearsal.eligible,true);
+ assert.equal(state.launchEligibility(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).eligible,false);
+ assert.match(ui.$('transition-status').textContent,/No real year was started/);
+ const backup=state.exportProgress(saved,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS);
+ const restored=state.importProgress(backup,saved.year,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS);
+ assert.equal(restored.reasons.T05,reason);assert.equal(restored.notes.T05,note);assert.equal(restored.run.mode,'rehearsal');
+ const reload=browser(ui.existing);await reload.go('T05');assert.equal(skipReason(reload).value,reason);assert.equal(observation(reload,'T05').value,note);
+ await reload.choose('T05','in_progress');await finishAction(reload).click();assert.equal(reload.saved().reasons.T05,reason);
+});
+
+for(const blankDraft of [false,true])test(`Finish practice supplies a no-launch default for ${blankDraft?'a cleared pending':'an absent'} reason`,async()=>{
+ const value=completedReviews('rehearsal');if(blankDraft)value.reasons.T05='Earlier reason';
+ const ui=readyBrowser(value);await ui.go('T05');
+ if(blankDraft){skipReason(ui).value='';await skipReason(ui).emit('input');}
+ await finishAction(ui).click();assert.equal(ui.saved().reasons.T05,'Practice only — no launch.');assert.equal(ui.saved().steps.T05,'skipped');
+ assert.equal(state.launchEligibility(ui.saved(),definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS).eligible,false);
+});
+
+test('existing marker-bearing Practice backups remain unchanged and can be edited at the original reason limit',async()=>{
+ const suffix='\nPractice only — no launch.',reason='R'.repeat(2000-suffix.length)+suffix,value=completedReviews('rehearsal');
+ value.reasons.T05=reason;value.steps.T05='skipped';
+ const restored=state.importProgress(state.exportProgress(value,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS),value.year,definitions.TRANSITION_STEPS,definitions.TRANSITION_CHECKS);
+ const ui=readyBrowser(restored);await ui.go('T05');assert.equal(skipReason(ui).value,reason);assert.equal(skipReason(ui).maxLength,2000);
+ await ui.choose('T05','blocked');const edited='E'.repeat(2000);skipReason(ui).value=edited;await skipReason(ui).emit('input');
+ await finishAction(ui).click();assert.equal(ui.saved().reasons.T05,edited);assert.equal(ui.saved().steps.T05,'skipped');
+});
+
+test('Finish practice preserves the existing rejection of over-limit pending reasons without truncating the draft',async()=>{
+ const value=completedReviews('rehearsal');value.reasons.T05='Earlier reason';const ui=readyBrowser(value);await ui.go('T05');
+ const oversized='R'.repeat(2001);skipReason(ui).value=oversized;await skipReason(ui).emit('input');await finishAction(ui).click();
+ assert.equal(ui.saved().reasons.T05,'Earlier reason');assert.notEqual(ui.saved().steps.T05,'skipped');assert.equal(skipReason(ui).value,oversized);
+ assert.match(ui.$('transition-status').textContent,/invalid reasons/);
+});
+
+test('finishing with a full-length pending reason cannot overwrite newer evidence from another tab',async()=>{
+ const value=completedReviews('rehearsal');value.reasons.T05='Earlier reason';const ui=readyBrowser(value);await ui.go('T05');
+ const reason='R'.repeat(2000);skipReason(ui).value=reason;await skipReason(ui).emit('input');
+ const key=state.storageKey(value.year,value.run.id),newer=JSON.stringify({...value,reasons:{T05:'Newer reviewer evidence'}});ui.existing.set(key,newer);
+ await finishAction(ui).click();assert.equal(ui.existing.get(key),newer);assert.equal(skipReason(ui).value,reason);
+ assert.match(ui.$('transition-status').textContent,/changed in another browser tab/);
 });
 
 test("Finish handoff retains production approval gates",async()=>{

@@ -126,7 +126,7 @@ The main Start/Continue action resumes validated progress for the selected year 
 
 ### Task groups and finishing
 
-Steps 3 and 4 group actions with their applicable manual checks. Primary file buttons use the selected attempt’s links; chapter buttons follow the same shared-resource resolver as the optional list and refresh without rebuilding unsaved notes. Save and continue advances only after the existing guarded progress save succeeds. Finish practice requires every applicable review and earlier step, records T05 as skipped with an explicit no-launch reason, and preserves existing evidence. The real Finish handoff action retains production launch eligibility. The final summary keeps the full pending list expandable.
+Steps 3 and 4 group actions with their applicable manual checks. Primary file buttons use the selected attempt’s links; chapter buttons follow the same shared-resource resolver as the optional list and refresh without rebuilding unsaved notes. Save and continue advances only after the existing guarded progress save succeeds. Finish practice requires every applicable review and earlier step, records T05 as skipped in Practice and preserves the officer’s reason. An empty reason receives the default “Practice only — no launch.”; nonempty reasons retain the full 2,000-character allowance without added text. Practice mode always excludes production launch. The real Finish handoff action retains production launch eligibility. The final summary keeps the full pending list expandable.
 
 ### Note drafts
 

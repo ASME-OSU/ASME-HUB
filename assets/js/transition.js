@@ -538,6 +538,9 @@ if (section) {
     readAnnualLinks();
     render();
   }
+  function practiceCloseoutReason(reason) {
+    return reason?.trim() || "Practice only — no launch.";
+  }
   function includeEvidenceDrafts(next) {
     const candidate = { ...next, notes: { ...next.notes }, reasons: { ...next.reasons } };
     for (const draft of evidenceDrafts.values()) {
@@ -546,7 +549,7 @@ if (section) {
       candidate.notes[draft.id] = draft.note.trim();
       if (draft.reason !== draft.baseReason) candidate.reasons[draft.id] = draft.reason.trim();
     }
-    if (next.run.mode === "rehearsal" && next.steps.T05 === "skipped" && next.reasons.T05?.includes("Practice only — no launch.") && !candidate.reasons.T05?.includes("Practice only — no launch.")) candidate.reasons.T05 = [candidate.reasons.T05, "Practice only — no launch."].filter(Boolean).join("\n");
+    if (next.run.mode === "rehearsal" && next.steps.T05 === "skipped") candidate.reasons.T05 = practiceCloseoutReason(candidate.reasons.T05);
     return candidate;
   }
   function save(next, focusControl, saveDrafts = false) {
@@ -1069,9 +1072,13 @@ if (section) {
     if (step.id === "T05") {
       const remainingSteps = TRANSITION_STEPS.filter(entry => !entry.launch && statusOf(entry.id) !== "complete");
       const remainingChecks = TRANSITION_CHECKS.filter(check => checkApplies(check, progress.run.mode) && checkOf(check.id) !== "passed");
+      const remainingGroups = [];
+      if (remainingSteps.length) remainingGroups.push(`${remainingSteps.length} earlier ${remainingSteps.length === 1 ? "step" : "steps"}`);
+      if (remainingChecks.length) remainingGroups.push(`${remainingChecks.length} ${remainingChecks.length === 1 ? "check" : "checks"}`);
+      const remainingMessage = `${remainingGroups.join(" and ")} ${remainingSteps.length + remainingChecks.length === 1 ? "remains" : "remain"}.`;
       const ready = node("section", "transition-final-summary");
       ready.append(node("h4", "", summary.finished ? (progress.run.mode === "rehearsal" ? "Practice complete" : "Handoff recorded") : remainingSteps.length || remainingChecks.length ? "Finish remaining items" : "Ready for final confirmation"));
-      ready.append(node("p", "", summary.finished ? "Your results are saved on this device." : remainingSteps.length || remainingChecks.length ? `${remainingSteps.length} earlier steps and ${remainingChecks.length} checks remain.` : progress.run.mode === "rehearsal" ? "Finish practice below. No real year will be started." : "Record the approved handoff below. The President follows the launch plan."));
+      ready.append(node("p", "", summary.finished ? "Your results are saved on this device." : remainingGroups.length ? remainingMessage : progress.run.mode === "rehearsal" ? "Finish practice below. No real year will be started." : "Record the approved handoff below. The President follows the launch plan."));
       if (remainingSteps.length) {
         const next = node("button", "secondary-button", "Go to next unfinished step"); next.type = "button";
         next.addEventListener("click", () => go(TRANSITION_STEPS.indexOf(remainingSteps[0]))); ready.append(next);
@@ -1257,7 +1264,7 @@ if (section) {
       if (practiceEnd) {
         const current = progressSummary(progress, TRANSITION_STEPS, TRANSITION_CHECKS).rehearsal;
         if (current.missing.length || current.unchecked.length) { say("Finish the practice steps and checks before finishing.", true); return; }
-        const next = reconcileProgress({ ...progress, steps: { ...progress.steps, T05: "skipped" }, reasons: { ...progress.reasons, T05: progress.reasons.T05?.includes("Practice only — no launch.") ? progress.reasons.T05 : [progress.reasons.T05, "Practice only — no launch."].filter(Boolean).join("\n") } }, TRANSITION_STEPS, TRANSITION_CHECKS, progress);
+        const next = reconcileProgress({ ...progress, steps: { ...progress.steps, T05: "skipped" }, reasons: { ...progress.reasons, T05: practiceCloseoutReason(progress.reasons.T05) } }, TRANSITION_STEPS, TRANSITION_CHECKS, progress);
         if (save(next, "T05", true)) say("Practice finished. No real year was started.");
       } else if (statusOf(step.id) === "complete" && !step.launch) go(currentIndex + 1);
       else {
