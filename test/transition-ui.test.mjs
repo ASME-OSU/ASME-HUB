@@ -1090,6 +1090,25 @@ test("final review starts compact and sends officers to the next unfinished step
  await ui.$("transition-steps").find(n=>n.tagName==="button"&&n.textContent==="Go to next unfinished step").click();assert.equal(ui.$("transition-step-picker").value,"T01");
 });
 
+for(const [steps,checks,expected] of [
+ [[],['V17'],'1 check remains.'],
+ [['T04'],[],'1 earlier step remains.'],
+ [['T04'],['V17'],'1 earlier step and 1 check remain.'],
+ [[],['V16','V17'],'2 checks remain.'],
+ [['T03','T04'],[],'2 earlier steps remain.'],
+])test(`final review counts pending work as “${expected}” without zero-count groups`,async()=>{
+ const value=completedReviews('rehearsal');for(const id of steps)value.steps[id]='in_progress';for(const id of checks)value.checks[id]='checking';
+ const ui=readyBrowser(value);await ui.go('T05');const summary=ui.$('transition-steps').find(n=>n.className==='transition-final-summary');
+ assert.equal(summary.find(n=>n.tagName==='p').textContent,expected);assert.doesNotMatch(summary.textContent,/0 earlier|0 checks/);
+ assert.equal(finishAction(ui).disabled,true);
+});
+
+for(const mode of ['rehearsal','production'])test(`final review with no pending ${mode} work shows confirmation instead of zero counts`,async()=>{
+ const ui=readyBrowser(completedReviews(mode));await ui.go('T05');const summary=ui.$('transition-steps').find(n=>n.className==='transition-final-summary');
+ assert.match(summary.textContent,/Ready for final confirmation/);assert.doesNotMatch(summary.textContent,/0 earlier|0 checks|remain/);
+ assert.equal(finishAction(ui).disabled,false);
+});
+
 test("Finish practice requires all checks, records no-launch and preserves prior evidence",async()=>{
  const value=completedReviews("rehearsal");value.notes.T05="Reviewer evidence";value.reasons.T05="Earlier recovery note";
  const ui=readyBrowser(value);await ui.go("T05");assert.equal(finishAction(ui).textContent,"Finish practice");assert.equal(finishAction(ui).disabled,false);assert.match(ui.$("transition-steps").find(n=>n.className==="transition-step-intro").textContent,/finish your practice/);

@@ -1072,9 +1072,13 @@ if (section) {
     if (step.id === "T05") {
       const remainingSteps = TRANSITION_STEPS.filter(entry => !entry.launch && statusOf(entry.id) !== "complete");
       const remainingChecks = TRANSITION_CHECKS.filter(check => checkApplies(check, progress.run.mode) && checkOf(check.id) !== "passed");
+      const remainingGroups = [];
+      if (remainingSteps.length) remainingGroups.push(`${remainingSteps.length} earlier ${remainingSteps.length === 1 ? "step" : "steps"}`);
+      if (remainingChecks.length) remainingGroups.push(`${remainingChecks.length} ${remainingChecks.length === 1 ? "check" : "checks"}`);
+      const remainingMessage = `${remainingGroups.join(" and ")} ${remainingSteps.length + remainingChecks.length === 1 ? "remains" : "remain"}.`;
       const ready = node("section", "transition-final-summary");
       ready.append(node("h4", "", summary.finished ? (progress.run.mode === "rehearsal" ? "Practice complete" : "Handoff recorded") : remainingSteps.length || remainingChecks.length ? "Finish remaining items" : "Ready for final confirmation"));
-      ready.append(node("p", "", summary.finished ? "Your results are saved on this device." : remainingSteps.length || remainingChecks.length ? `${remainingSteps.length} earlier steps and ${remainingChecks.length} checks remain.` : progress.run.mode === "rehearsal" ? "Finish practice below. No real year will be started." : "Record the approved handoff below. The President follows the launch plan."));
+      ready.append(node("p", "", summary.finished ? "Your results are saved on this device." : remainingGroups.length ? remainingMessage : progress.run.mode === "rehearsal" ? "Finish practice below. No real year will be started." : "Record the approved handoff below. The President follows the launch plan."));
       if (remainingSteps.length) {
         const next = node("button", "secondary-button", "Go to next unfinished step"); next.type = "button";
         next.addEventListener("click", () => go(TRANSITION_STEPS.indexOf(remainingSteps[0]))); ready.append(next);
