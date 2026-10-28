@@ -3043,7 +3043,7 @@
           detail: budgetHealthDetail,
         }]);
         activeRolePriorities = social.priorities || [];
-        renderOperations([{ severity: "warning", title: "Attendance data unavailable", detail: `${message} Check export sharing, System_Status and import authorization, then Retry.`, actionLabel: "Open public export", actionUrl: source.attendanceSheetUrl }, ...calendar.operations, ...social.operations]);
+        renderOperations([{ severity: "warning", title: "Attendance data unavailable", detail: `${message} Try again. If the problem continues, check export sharing, System_Status and import authorization.`, actionLabel: "Open public export", actionUrl: source.attendanceSheetUrl, retryDashboard: true }, ...calendar.operations, ...social.operations]);
         renderRoleExperience();
         return;
       }
@@ -3098,6 +3098,15 @@
     }
   }
 
+  function createDashboardRetry() {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "text-button";
+    retry.textContent = "Retry";
+    retry.addEventListener("click", () => loadDashboard(elements.academicYear.value));
+    return retry;
+  }
+
   function showDataError(message) {
     // Replace every loading description together; no cached chart may reappear on resize.
     clearDashboardState(message, getYearSource() || {});
@@ -3110,12 +3119,7 @@
     const detail = document.createElement("p");
     detail.textContent = message;
     item.append(title, detail);
-    const retry = document.createElement("button");
-    retry.type = "button";
-    retry.className = "text-button";
-    retry.textContent = "Retry";
-    retry.addEventListener("click", () => loadDashboard(elements.academicYear.value));
-    item.append(retry);
+    item.append(createDashboardRetry());
     operations.replaceChildren(item);
     document.getElementById("operations-count").textContent = "1 item";
     document.getElementById("nav-alert-count").textContent = "1";
@@ -4508,6 +4512,7 @@
           article.append(action);
         }
 
+        if (item.retryDashboard) article.append(createDashboardRetry());
         return article;
       }),
     );
