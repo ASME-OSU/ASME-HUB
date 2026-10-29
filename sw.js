@@ -1,6 +1,6 @@
-const SHELL_CACHE = "asme-hub-shell-v146";
+const SHELL_CACHE = "asme-hub-shell-v147";
 const SHELL_ASSETS = [
-  "./assets/css/transition.css?v=20261029a",
+  "./assets/css/transition.css?v=20261029b",
   "./",
   "./index.html",
   "./manifest.webmanifest?v=20260919b",
@@ -13,7 +13,7 @@ const SHELL_ASSETS = [
   "./assets/js/settings-readback.js?v=20261002a",
   "./assets/js/social-health.js?v=20261019b",
   "./assets/js/app.js?v=20261028b",
-  "./assets/js/transition.js?v=20261029a",
+  "./assets/js/transition.js?v=20261029b",
   "./assets/js/annual-setup-api.js?v=20261028a",
   "./assets/js/annual-readiness.js?v=20261028a",
   "./assets/js/annual-link-draft.js?v=20261028a",

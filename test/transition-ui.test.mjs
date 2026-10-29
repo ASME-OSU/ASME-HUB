@@ -25,8 +25,8 @@ class Element {
   addEventListener(name, callback) { (this.listeners[name] ||= []).push(callback); }
   async emit(name, options = {}) { for (const callback of this.listeners[name] || []) await callback({ target: this, preventDefault() {}, ...options }); }
   click() { return this.emit("click"); }
-  setCustomValidity() {} reportValidity() {} focus() {} showModal() { this.open = true; } close() { this.open = false; }
-  querySelector(selector) { return this.find(element => selector.startsWith(".") ? element.className.split(" ").includes(selector.slice(1)) : selector.startsWith("[data-transition-control=") ? element.dataset.transitionControl === selector.match(/"([^"]+)"/)[1] : element.tagName === selector); }
+  setCustomValidity() {} reportValidity() {} focus() { this.focused = true; } showModal() { this.open = true; } close() { this.open = false; }
+  querySelector(selector) { return this.find(element => selector.startsWith(".") ? element.className.split(" ").includes(selector.slice(1)) : selector.startsWith("[data-transition-control=") ? element.dataset.transitionControl === selector.match(/"([^"]+)"/)[1] : selector.startsWith("[data-review-confirmation=") ? element.dataset.reviewConfirmation === selector.match(/"([^"]+)"/)[1] : element.tagName === selector); }
   find(predicate) { for (const child of this.children) { if (predicate(child)) return child; const found = child.find?.(predicate); if (found) return found; } return null; }
 }
 function browser(existing = new Map(), resourceSnapshot = [], failSelection = false, setupClient = null, faults = {}) {
@@ -43,7 +43,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   $("transition-reset-options").append($("transition-reset"));
   const body = new Element(); body.className = "transition-dialog-body";
   const tools = $("transition-progress-tools"); tools.className = "transition-tools";
-  dialog.append(body); body.append($("transition-saved-tools")); $("transition-saved-tools").append(tools);
+  dialog.append(body); body.append($("transition-steps"), $("transition-saved-tools")); $("transition-saved-tools").append(tools);
   $("transition-run-mode").value = "production";
   const localStorage = { get length() { return existing.size; }, key: index => [...existing.keys()][index], getItem: key => existing.get(key) ?? null, setItem: (key, value) => { if (faults.failAnnual && key.startsWith("asmeHubAnnualLinksV1:")) throw new Error("Annual link storage quota exceeded"); if (faults.failProgress && key.startsWith(state.TRANSITION_STORAGE_PREFIX)) throw new Error("Audit storage quota exceeded"); if (failSelection && key.startsWith("asmeHubTransitionSelectedRunV2:")) throw new Error("Selection storage unavailable"); existing.set(key, value); }, removeItem: key => existing.delete(key) };
   const documentListeners = new Map();
@@ -241,7 +241,9 @@ test("annual-link drafts stay isolated between same-year runs", async () => {
   const a = ui.saved().run.id;
   await ui.go("T02");
   const label = ui.$("transition-saved-tools").find(node => node.tagName === "label" && node.textContent.startsWith("Points Master (officer edit link)"));
-  assert.equal(ui.$("transition-steps").find(node => node === label), null);
+  const help = ui.$("transition-steps").find(node => node.className.includes("transition-step2-help"));
+  assert.equal(help.find(node => node === label), label);
+  assert.equal(help.open, false);
   const editor = label.parent;
   const details = editor.parent;
   assert.equal(editor.id, "transition-annual-links-form");
@@ -883,9 +885,9 @@ test('short officer view keeps technical procedures collapsed and every required
  assert.ok(detail.textContent.includes('Config B7 and B16'));
  assert.ok(detail.find(n=>n.className==='transition-review-map'));
  const team=card.find(n=>n.className.includes('transition-team-checks'));
- assert.equal(Boolean(team.open),false);
- assert.equal(control('V21').parent.parent.className,'transition-confirmation');
- for(const id of ['V01','V02','V07']) assert.equal(control(id).parent.parent,team);
+ assert.equal(team.tagName,"div");
+ assert.ok(ui.$('transition-steps').find(n=>n.dataset.reviewConfirmation==='V21'));
+ for(const id of ['V01','V02','V07']) assert.ok(team.find(n=>n.dataset.reviewConfirmation===id));
  assert.match(control('V21').attrs['aria-label'],/Do the new files and dates match this year/);
  assert.doesNotMatch(control('V21').attrs['aria-label'],/V\d\d|Config/);
  await ui.choose('V21','passed');
@@ -893,15 +895,16 @@ test('short officer view keeps technical procedures collapsed and every required
  assert.notEqual(ui.saved().steps.T02,'complete');
 });
 
-test('team review stays open across answers and exposes required skip reasons', async () => {
+test('inline file review remains visible across answers and exposes required skip reasons', async () => {
  const ui=browser(); await ui.go('T02');
  const team=ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks'));
- team.open=true;await team.emit('toggle');
+ assert.equal(team.tagName,'div');
  await ui.choose('V01','passed');
- assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).open,true);
+ assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).tagName,'div');
  await ui.choose('V02','skipped');
- assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).open,true);
+ assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).tagName,'div');
  assert.ok(ui.$('transition-steps').find(n=>n.className==='transition-evidence-details'&&n.open));
+ assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-step2-help')).open,true);
  assert.notEqual(ui.saved().checks.V02,'skipped');
 });
 
@@ -1553,4 +1556,32 @@ test('connection badges reflect matching outputs, suppress old green summaries w
  pending.resolve(Promise.reject(Error('MOCK read failed')));await running;
  for(const key of ['pointsExport','budgetExport','eventUpdates'])assert.equal(connectionState(ui,key),'unchecked');
  assert.equal(eventLink(ui),null);assert.equal(readinessPanel(ui).querySelector('.transition-status').dataset.working,'false');assert.deepEqual(ui.saved().checks,{});
+});
+
+
+test('Step2 keeps all required reviews outside help and persistent tools survive repeated step switches',async()=>{
+ const ui=browser();await importMock(ui);await ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form').emit('submit');const tools=ui.$('transition-saved-tools'),editor=ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form');
+ for(let i=0;i<3;i++){
+  await ui.go('T02');const help=ui.$('transition-steps').find(n=>n.className.includes('transition-step2-help'));
+  assert.equal(tools.parent,help);assert.equal(help.open,false);assert.equal(ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form'),editor);
+  for(const id of ['V01','V02','V07','V21']){const c=ui.$('transition-steps').find(n=>n.dataset.transitionControl===id);assert.ok(c);assert.equal(help.find(n=>n===c),c);const box=ui.$('transition-steps').find(n=>n.dataset.reviewConfirmation===id);assert.ok(box);assert.equal(help.find(n=>n===box),null);}
+  assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-team-checks')).tagName,'div');
+  await ui.go('T03');assert.equal(tools.parent.className,'transition-dialog-body');assert.equal(ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form'),editor);
+ }
+});
+test('Step2 reveals a link draft started on another step without losing the persistent editor',async()=>{
+ const ui=browser();await importMock(ui);await ui.go('T03');const editor=ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form'),input=annualField(ui);input.value='https://docs.google.com/spreadsheets/d/unsaved_review_link_12345678901234/edit';await input.emit('input');
+ await ui.go('T02');const help=ui.$('transition-steps').find(n=>n.className.includes('transition-step2-help'));
+ assert.equal(help.open,true);assert.equal(ui.$('transition-dialog').find(n=>n.id==='transition-annual-links-form'),editor);assert.equal(annualField(ui),input);assert.match(input.value,/unsaved_review_link/);
+});
+
+
+test('Step2 checkbox confirmations preserve existing results and require every review before continuing',async()=>{
+ const ui=browser();await importMock(ui);await ui.choose('V21','passed');
+ const checkbox=id=>ui.$('transition-steps').find(n=>n.dataset.reviewConfirmation===id);
+ assert.equal(checkbox('V21').checked,true);assert.equal(checkbox('V01').checked,false);
+ for(const id of ['V01','V02','V07']){checkbox(id).checked=true;await checkbox(id).emit('change');assert.equal(checkbox(id).focused,true);}
+ assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-finish-step')).disabled,false);
+ checkbox('V02').checked=false;await checkbox('V02').emit('change');
+ assert.equal(ui.saved().checks.V02,undefined);assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-finish-step')).disabled,true);
 });
