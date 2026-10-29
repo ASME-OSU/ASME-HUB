@@ -777,6 +777,7 @@ if (section) {
     create.hidden = !config;
     create.disabled = annualSetupPending || !client?.ready || !config || config.workspaceMode !== progress.run.mode;
     const status = node("p", "transition-status", !client?.ready ? "Connected setup is not configured yet. Use the manual fallback and record the unavailable connection." : session.message);
+    status.dataset.working = String(annualSetupPending);
     status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error);
     panel.append(create, status);
     if (session.receipt) {
@@ -852,24 +853,49 @@ if (section) {
     if (step.id === "T02" && !savedAnnualLinks.pointsMaster) return;
     const panel = node("section", "transition-connected-setup transition-annual-readiness");
     panel.dataset.annualReadiness = "connections";
-    panel.append(node("h4", "", "Check your annual connections"), node("p", "", "Sign in as asmeohiostate@gmail.com. Open each export and choose Allow access for its matching annual source if Google asks."));
-    for (const [label, field] of [["Open Points Export", "pointsExport"], ["Open Budget Export", "budgetExport"]]) if (savedAnnualLinks[field]) panel.append(resourceRow(savedAnnualLinks[field], label, "Select the import error cell, allow the matching source, then wait for calculation.", "sheet"));
+    let visibleReport = null;
+    if (session.report && session.reportContext) {
+      try { assertSetupContext(session.reportContext); visibleReport = validateAnnualReadiness(session.report, {...readinessContext(session.config), ...(session.report.readScope === "retirement" ? {action: "stop"} : {})}); }
+      catch { /* A changed checklist or old report is never displayed as a current observation. */ }
+    }
+    const retired = visibleReport?.readScope === "retirement";
+    panel.append(node("h4", "", retired ? "Review this closed year" : "Connect this year’s files"), node("p", "", retired ? "Use asmeohiostate@gmail.com. Review this year’s recorded event connection; no export reconnection is needed for retirement." : "Use asmeohiostate@gmail.com. Complete these three connections, then check them below."));
+    const importHelp = node("div", "transition-import-help");
+    importHelp.append(node("strong", "", "Inside each export sheet"), node("p", "", "Click a cell showing #REF! or another import error, then click Allow access if offered. Wait for calculation. If the sheet already shows values without errors, skip this approval."));
+    if (!retired) panel.append(importHelp);
+    const connectionCards = node("div", "transition-connection-cards"); panel.append(connectionCards);
+    function result(card, passed, message) {
+      const result = node("p", "transition-connection-result", annualSetupPending ? "Checking…" : message);
+      result.dataset.state = annualSetupPending ? "pending" : passed ? "passed" : "unchecked";
+      if (passed && !annualSetupPending) { const icon = node("span", "", "✓ "); icon.setAttribute("aria-hidden", "true"); result.prepend(icon); }
+      card.append(result);
+    }
+    for (const [label, field] of [["Open Points Export", "pointsExport"], ["Open Budget Export", "budgetExport"]]) if (!retired && savedAnnualLinks[field]) {
+      const item = node("section", "transition-connection-card"); item.dataset.connection = field;
+      item.append(resourceRow(savedAnnualLinks[field], label, "Approve its matching source inside Google Sheets if asked.", "sheet"));
+      const checks = ["pointer", "output"].map(part => visibleReport?.checks.find(check => check.id === `${field}_${part}`));
+      const passed = checks.every(check => check?.status === "passed");
+      result(item, passed, passed ? "Connected — source and import output checked." : checks.some(check => check && check.status !== "passed") ? "Needs attention — open this export and review the cell’s error message." : "Not checked yet.");
+      connectionCards.append(item);
+    }
+    const eventCard = node("section", "transition-connection-card"); eventCard.dataset.connection = "eventUpdates";
+    eventCard.append(node("h5", "", "Automatic event updates"), node("p", "", retired ? "Review the recorded connection for this closed year." : "Required once for each new year. Keeps the attendance Form’s event choices up to date when Events changes."));
+    const eventPassed = retired ? visibleReport.checks.find(check => check.id === "event_updates")?.status === "passed" : ["installed", "observed"].includes(visibleReport?.eventUpdates.status);
+    result(eventCard, eventPassed, eventPassed ? retired ? "Stopped for this retired year." : "Connected" : retired ? "Retirement needs attention — open controls to finish stopping updates." : visibleReport?.eventUpdates.status === "error" ? "Needs attention — review the Google event controls." : visibleReport ? "Not connected yet." : "Not checked yet.");
+    if (!visibleReport || annualSetupPending || annualDrafts.has(annualRunKey())) eventCard.append(node("p", "transition-control-help", annualSetupPending ? "Wait for the current check to finish." : annualDrafts.has(annualRunKey()) ? "Save or discard unsaved link edits, then check connections." : !session.config?.runKey ? "Sign in below, then choose Check connections to enable the Google setup button." : "Choose Check connections below to enable the Google setup button."));
+    connectionCards.append(eventCard);
     const signIn = node("button", "secondary-button", session.error ? "Sign in again" : "Sign in with chapter Google account"); signIn.type = "button";
     signIn.disabled = annualSetupPending || !client?.ready;
     signIn.hidden = Boolean(session.config?.runKey) && !session.error;
     const actionsRow = node("div", "transition-work-actions"); actionsRow.append(signIn); panel.append(actionsRow);
     const check = node("button", "secondary-button", "Check connections");
     check.type = "button"; check.disabled = annualSetupPending || !client?.ready || !session.config?.runKey; actionsRow.append(check);
-    panel.append(node("p", "", "Check connections, then open event update controls to connect automatic updates. Return here and check again."));
+    panel.append(node("p", "transition-control-help", retired ? "After reviewing or stopping updates, choose Check retired-year connection again." : "After allowing imports or connecting event updates in Google, return here and choose Check connections again."));
     const status = node("p", "transition-status", !client?.ready ? "Connected checks are unavailable. Keep the current files and use the manual setup fallback if needed." : session.config && !session.config.runKey ? "This setup response has no saved connection identity. Sign in and reopen the same year in Step 2. Preserve the files if the updated chapter setup is unavailable." : session.message);
+    status.dataset.working = String(annualSetupPending);
     status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error); panel.append(status);
-    let visibleReport = null;
-    if (session.report && session.reportContext) {
-      try { assertSetupContext(session.reportContext); visibleReport = validateAnnualReadiness(session.report, {...readinessContext(session.config), ...(session.report.readScope === "retirement" ? {action: "stop"} : {})}); }
-      catch { /* A changed checklist or old report is never displayed as a current observation. */ }
-    }
-    if (visibleReport) {
-      panel.append(node("h5", "", visibleReport.readScope === "retirement" ? "Retired-year connection status" : visibleReport.ready ? "Connections checked" : "Connections need attention"), node("p", "", `Checked ${visibleReport.checkedAt}. This does not approve launch or pass checklist reviews.`));
+    if (visibleReport && !annualSetupPending) {
+      panel.append(node("h5", visibleReport.ready && !annualSetupPending ? "transition-connection-summary is-passed" : "transition-connection-summary", visibleReport.readScope === "retirement" ? "Retired-year connection status" : visibleReport.ready ? "✓ Connections checked" : "Connections need attention"), node("p", "", `Checked ${visibleReport.checkedAt}. This does not approve launch or pass checklist reviews.`));
       const updates = visibleReport.eventUpdates;
       panel.append(node("p", "", updates.stopPending === true ? `${updates.detail || "Google removed the trigger; finish recording the stopped status."} Open event update controls, confirm the retired year there and choose Stop automatic event updates to finish its saved record.` : updates.status === "observed" ? `Automatic event edit delivered: ${updates.lastObservedAt}. Compare the Form choices after each approved event change.` : updates.status === "installed" ? "Automatic updates connected. Make a normal approved Events edit in Google Sheets, compare the Form choices, then check again to observe delivery." : updates.status === "error" ? `Automatic updates need attention: ${updates.detail || "Review the event list and retry."}` : visibleReport.readScope === "retirement" ? "Automatic event updates are stopped for this retired year." : "Automatic event updates are not connected yet."));
       const observations = node("ul");
@@ -893,7 +919,12 @@ if (section) {
       try {
         const controlsContext = {...readinessContext(session.config), configRevision: session.config.configRevision};
         const href = annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, controlsContext);
-        const controls = resourceRow(href, "Open event update controls", "Use Chrome’s ASME profile with only asmeohiostate@gmail.com signed in. On that page, connect updates or stop a closed, noncurrent year. Return here and Check connections.");
+        const controls = node("div", "transition-event-controls");
+        const controlsLink = node("a", "secondary-button", eventPassed || retired ? "Open controls ↗" : "Connect in Google ↗");
+        controlsLink.href = href; controlsLink.target = "_blank"; controlsLink.rel = "noopener noreferrer";
+        controlsLink.setAttribute("aria-label", eventPassed || retired ? "Open event update controls" : "Connect automatic event updates");
+        controlsLink.dataset.eventControls = "true";
+        controls.append(controlsLink, node("p", "transition-control-help", `Open in Chrome’s ASME profile (asmeohiostate@gmail.com only). ${retired ? "Review or stop this closed year’s updates." : eventPassed ? "Review this year’s connection." : "On the Google page, choose Connect automatic event updates."}`));
         controls.querySelector("a").addEventListener("click", event => {
           try {
             assertSetupContext(session.reportContext);
@@ -902,8 +933,8 @@ if (section) {
             if (annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, {...readinessContext(session.config), configRevision: session.config.configRevision}) !== href) throw Error("The event-control setup changed. Check connections again.");
           } catch (error) { event.preventDefault(); say(error.message, true); session.report = null; render(); }
         });
-        panel.append(controls);
-      } catch (error) { panel.append(node("p", "transition-warning", error.message)); }
+        eventCard.append(controls);
+      } catch (error) { eventCard.append(node("p", "transition-warning", error.message)); }
     }
     if (step.id === "T05") {
       const retire = node("details", "transition-tools"); retire.append(node("summary", "", "Check a retired year’s event connection"), node("p", "", "For a closed, noncurrent year, read its retirement status here. After a matching check, open event update controls and explicitly confirm any stop on that Google page. Pending-stop recovery is completed there."));

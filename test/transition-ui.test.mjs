@@ -1490,7 +1490,7 @@ for(const mode of ['production','rehearsal']) test('Guide 13 '+mode+' view prese
 });
 
 
-const eventLink=ui=>readinessPanel(ui).find(n=>n.tagName==='a'&&n.attrs['aria-label']==='Open event update controls');
+const eventLink=ui=>readinessPanel(ui).find(n=>n.tagName==='a'&&n.dataset.eventControls==='true');
 test('Hub exposes only a verified bound Google-hosted update link and readonly check',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);assert.equal(eventLink(ui),null);
  await readinessButton(ui,'Check connections').click();const url=new URL(eventLink(ui).href);
@@ -1516,8 +1516,41 @@ test('freshness is rechecked when opening a previously rendered Google link',asy
 });
 test('retirement pending-stop status links to Google confirmation without Hub mutations',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);await ui.go('T05');fixture.action=(name,input)=>{assert.equal(name,'checkAnnualReadiness');assert.equal(input[0].action,'stop');const value=fixture.report('not_connected');value.readScope='retirement';value.eventUpdates={status:'not_connected',scope:'This project.',triggerUid:'saved-uid',stopPending:true,detail:'Google removed the trigger; finish recording stopped status.'};return value;};await readinessButton(ui,'Check retired-year connection').click();
- assert.ok(eventLink(ui));assert.match(readinessPanel(ui).textContent,/Open event update controls.*Stop automatic event updates.*finish its saved record/s);assert.equal(readinessPanel(ui).find(n=>n.tagName==='input'&&n.type==='checkbox'),null);assert.equal(readinessButton(ui,'Stop event updates'),null);assert.deepEqual(ui.saved().checks,{});
+ assert.ok(eventLink(ui));assert.match(readinessPanel(ui).textContent,/Retirement needs attention/);assert.doesNotMatch(connectionCard(ui,'eventUpdates').textContent,/Not connected yet/);assert.equal(connectionCard(ui,'pointsExport'),null);assert.match(readinessPanel(ui).textContent,/Open event update controls.*Stop automatic event updates.*finish its saved record/s);assert.equal(readinessPanel(ui).find(n=>n.tagName==='input'&&n.type==='checkbox'),null);assert.equal(readinessButton(ui,'Stop event updates'),null);assert.deepEqual(ui.saved().checks,{});
 });
 test('reloaded Step3 signs in for readonly checks without recreating annual files',async()=>{
  const fixture=managedFixture(),first=browser(new Map(),[],false,fixture.client);await readyManaged(first);const ui=browser(new Map(first.existing),[],false,fixture.client);ui.window.ASME_HUB_CONFIG.annualProvisioner.url=first.window.ASME_HUB_CONFIG.annualProvisioner.url;await ui.go('T03');await readinessButton(ui,'Sign in with chapter Google account').click();await readinessButton(ui,'Check connections').click();assert.ok(eventLink(ui));assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,1);
+});
+
+
+test('setup working indicator spans slow stages and clears on settlement',async()=>{
+ const pending=deferredSetup(),fixture=connectedFixture({run:()=>pending.promise}),timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,timers);await ui.go('T02');await connectSetup(ui);
+ assert.equal(connectedPanel(ui).querySelector('.transition-status').dataset.working,'false');
+ const running=runSetup(ui);assert.equal(connectedPanel(ui).querySelector('.transition-status').dataset.working,'true');
+ timers.fire();assert.equal(connectedPanel(ui).querySelector('.transition-status').dataset.working,'true');
+ pending.resolve(Promise.reject(Error('MOCK interrupted request')));await running;
+ assert.equal(connectedPanel(ui).querySelector('.transition-status').dataset.working,'false');
+ assert.equal(setupButton(ui,'Create or reopen this year’s files').disabled,false);
+});
+const connectionCard=(ui,key)=>readinessPanel(ui).find(n=>n.dataset.connection===key);
+const connectionState=(ui,key)=>connectionCard(ui,key).find(n=>n.className==='transition-connection-result').dataset.state;
+test('three connection actions are visible before checks without claiming a reloaded connection is absent',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);
+ for(const key of ['pointsExport','budgetExport','eventUpdates'])assert.equal(connectionState(ui,key),'unchecked');
+ assert.match(connectionCard(ui,'eventUpdates').textContent,/Required once for each new year.*Not checked yet.*Check connections/s);
+ assert.equal(eventLink(ui),null);assert.match(readinessPanel(ui).textContent,/Click a cell showing #REF!.*click Allow access/s);
+});
+test('connection badges reflect matching outputs, suppress old green summaries while pending and clear after error',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);
+ const report=()=>{const value=fixture.report('installed');for(const key of ['pointsExport','budgetExport'])for(const part of ['pointer','output'])value.checks.push({id:key+'_'+part,label:key+' '+part,status:key==='budgetExport'&&part==='output'?'action_needed':'passed',detail:'MOCK check'});value.ready=false;return value;};
+ fixture.action=()=>report();await readinessButton(ui,'Check connections').click();
+ assert.equal(connectionState(ui,'pointsExport'),'passed');assert.equal(connectionState(ui,'budgetExport'),'unchecked');assert.equal(connectionState(ui,'eventUpdates'),'passed');
+ const pending=deferredSetup();fixture.action=()=>pending.promise;const running=readinessButton(ui,'Check connections').click();
+ for(const key of ['pointsExport','budgetExport','eventUpdates'])assert.equal(connectionState(ui,key),'pending');
+ assert.equal(readinessPanel(ui).find(n=>n.className.includes('transition-connection-summary')),null);
+ assert.equal(readinessPanel(ui).querySelector('.transition-status').dataset.working,'true');
+ pending.resolve(Promise.reject(Error('MOCK read failed')));await running;
+ for(const key of ['pointsExport','budgetExport','eventUpdates'])assert.equal(connectionState(ui,key),'unchecked');
+ assert.equal(eventLink(ui),null);assert.equal(readinessPanel(ui).querySelector('.transition-status').dataset.working,'false');assert.deepEqual(ui.saved().checks,{});
 });
