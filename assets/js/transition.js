@@ -893,7 +893,7 @@ if (section) {
       try {
         const controlsContext = {...readinessContext(session.config), configRevision: session.config.configRevision};
         const href = annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, controlsContext);
-        const controls = resourceRow(href, "Open event update controls", "On the Google page, choose Connect automatic event updates or explicitly stop a closed, noncurrent year. Return here and Check connections. No copied-script editor is needed.");
+        const controls = resourceRow(href, "Open event update controls", "Use Chrome’s ASME profile with only asmeohiostate@gmail.com signed in. On that page, connect updates or stop a closed, noncurrent year. Return here and Check connections.");
         controls.querySelector("a").addEventListener("click", event => {
           try {
             assertSetupContext(session.reportContext);
