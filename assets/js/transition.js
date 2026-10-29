@@ -871,7 +871,7 @@ if (section) {
     if (visibleReport) {
       panel.append(node("h5", "", visibleReport.readScope === "retirement" ? "Retired-year connection status" : visibleReport.ready ? "Connections checked" : "Connections need attention"), node("p", "", `Checked ${visibleReport.checkedAt}. This does not approve launch or pass checklist reviews.`));
       const updates = visibleReport.eventUpdates;
-      panel.append(node("p", "", updates.stopPending === true ? `${updates.detail || "Google removed the trigger; finish recording the stopped status."} Open event update controls, confirm the retired year there and choose Finish stopping updates.` : updates.status === "observed" ? `Automatic event edit delivered: ${updates.lastObservedAt}. Compare the Form choices after each approved event change.` : updates.status === "installed" ? "Automatic updates connected. Make a normal approved Events edit in Google Sheets, compare the Form choices, then check again to observe delivery." : updates.status === "error" ? `Automatic updates need attention: ${updates.detail || "Review the event list and retry."}` : visibleReport.readScope === "retirement" ? "Automatic event updates are stopped for this retired year." : "Automatic event updates are not connected yet."));
+      panel.append(node("p", "", updates.stopPending === true ? `${updates.detail || "Google removed the trigger; finish recording the stopped status."} Open event update controls, confirm the retired year there and choose Stop automatic event updates to finish its saved record.` : updates.status === "observed" ? `Automatic event edit delivered: ${updates.lastObservedAt}. Compare the Form choices after each approved event change.` : updates.status === "installed" ? "Automatic updates connected. Make a normal approved Events edit in Google Sheets, compare the Form choices, then check again to observe delivery." : updates.status === "error" ? `Automatic updates need attention: ${updates.detail || "Review the event list and retry."}` : visibleReport.readScope === "retirement" ? "Automatic event updates are stopped for this retired year." : "Automatic event updates are not connected yet."));
       const observations = node("ul");
       for (const item of visibleReport.checks) {
         const row = node("li", "", `${item.label}: ${item.status === "passed" ? "Checked" : item.status === "action_needed" ? "Action needed" : "Needs fixing"}. ${item.detail}`);
@@ -893,7 +893,7 @@ if (section) {
       try {
         const controlsContext = {...readinessContext(session.config), configRevision: session.config.configRevision};
         const href = annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, controlsContext);
-        const controls = resourceRow(href, "Open event update controls", "On the Google page, choose Connect automatic event updates or explicitly stop a closed, noncurrent year. Return here and Check connections. No copied-script editor is needed.");
+        const controls = resourceRow(href, "Open event update controls", "Use Chrome’s ASME profile with only asmeohiostate@gmail.com signed in. On that page, connect updates or stop a closed, noncurrent year. Return here and Check connections.");
         controls.querySelector("a").addEventListener("click", event => {
           try {
             assertSetupContext(session.reportContext);
