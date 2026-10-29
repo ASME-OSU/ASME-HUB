@@ -77,7 +77,7 @@ Use **Not checked**, **In progress**, **Blocked** or **Complete**, with the actu
 - [ ] Authorized operator records any approved switch, readback and launch rollback plan: previous year/settings, named restore operator, exact restore actions, failure/stop criteria and decision/contact route. An inactive saved row alone is not activation.
 - [ ] At approved activation time, settings owner sets verified new row is_active/is_current TRUE and Points Config!B5 LIVE, sets previous year is_current FALSE preserving records, and rechecks Hub, website, Form and newsletter. Do not clear previous is_active unless the approved plan requires it.
 - [ ] Agree outgoing access changes after incoming acceptance.
-- [ ] If retiring an old managed event connection, close its Form and make its row noncurrent first. Check retired-year connection, then Open event update controls. Confirm that exact year and choose Stop event updates on the Google page. If a pending-stop journal is reported, confirm Finish stopping updates there; do not delete unrelated triggers.
+- [ ] If retiring an old managed event connection, close its Form and make its row noncurrent first. Check retired-year connection, then Open event update controls. Confirm that exact year and choose Stop automatic event updates on the Google page. If a pending-stop journal is reported, confirm Stop automatic event updates there again to finish its saved record; do not delete unrelated triggers.
 
 | Action or decision | Observer or owner | Expected and observed result | Status | Time and private evidence | Next action |
 |---|---|---|---|---|---|
