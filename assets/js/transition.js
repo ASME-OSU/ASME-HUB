@@ -882,7 +882,11 @@ if (section) {
     eventCard.append(node("h5", "", "Automatic event updates"), node("p", "", retired ? "Review the recorded connection for this closed year." : "Required once for each new year. Keeps the attendance Form’s event choices up to date when Events changes."));
     const eventPassed = retired ? visibleReport.checks.find(check => check.id === "event_updates")?.status === "passed" : ["installed", "observed"].includes(visibleReport?.eventUpdates.status);
     result(eventCard, eventPassed, eventPassed ? retired ? "Stopped for this retired year." : "Connected" : retired ? "Retirement needs attention — open controls to finish stopping updates." : visibleReport?.eventUpdates.status === "error" ? "Needs attention — review the Google event controls." : visibleReport ? "Not connected yet." : "Not checked yet.");
-    if (!visibleReport || annualSetupPending || annualDrafts.has(annualRunKey())) eventCard.append(node("p", "transition-control-help", annualSetupPending ? "Wait for the current check to finish." : annualDrafts.has(annualRunKey()) ? "Save or discard unsaved link edits, then check connections." : !session.config?.runKey ? "Sign in below, then choose Check connections to enable the Google setup button." : "Choose Check connections below to enable the Google setup button."));
+    if (!visibleReport || annualSetupPending || annualDrafts.has(annualRunKey())) {
+      const pendingControls = node("button", "secondary-button", retired ? "Open controls ↗" : "Connect in Google ↗");
+      pendingControls.type = "button"; pendingControls.disabled = true; eventCard.append(pendingControls);
+      eventCard.append(node("p", "transition-control-help", annualSetupPending ? "Wait for the current check to finish." : annualDrafts.has(annualRunKey()) ? "Save or discard unsaved link edits, then check connections." : !session.config?.runKey ? "Sign in below, then choose Check connections to enable the Google setup button." : "Choose Check connections below to enable the Google setup button."));
+    }
     connectionCards.append(eventCard);
     const signIn = node("button", "secondary-button", session.error ? "Sign in again" : "Sign in with chapter Google account"); signIn.type = "button";
     signIn.disabled = annualSetupPending || !client?.ready;

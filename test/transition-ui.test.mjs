@@ -1539,7 +1539,7 @@ test('three connection actions are visible before checks without claiming a relo
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);
  for(const key of ['pointsExport','budgetExport','eventUpdates'])assert.equal(connectionState(ui,key),'unchecked');
  assert.match(connectionCard(ui,'eventUpdates').textContent,/Required once for each new year.*Not checked yet.*Check connections/s);
- assert.equal(eventLink(ui),null);assert.match(readinessPanel(ui).textContent,/Click a cell showing #REF!.*click Allow access/s);
+ assert.equal(eventLink(ui),null);assert.equal(readinessButton(ui,'Connect in Google ↗').disabled,true);assert.match(readinessPanel(ui).textContent,/Click a cell showing #REF!.*click Allow access/s);
 });
 test('connection badges reflect matching outputs, suppress old green summaries while pending and clear after error',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);
