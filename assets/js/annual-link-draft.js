@@ -1,4 +1,4 @@
-import { validTransitionYear } from "./transition-state.js?v=20261025a";
+import { validTransitionYear } from "./transition-state.js?v=20261028a";
 
 export const ANNUAL_HANDOFF_TYPE = "asme-annual-link-handoff";
 export const ANNUAL_LINK_FIELDS = [
