@@ -143,7 +143,7 @@ body[data-theme="dark"] .transition-dialog {
 .transition-step-actions { display: flex; flex: 0 0 auto; justify-content: space-between; gap: 12px; margin: 0; padding: 10px 22px; border-top: 1px solid var(--flow-border); background: var(--flow-surface); }
 .transition-step-actions button[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
 .transition-next-reason { color: var(--flow-secondary); font-size: 13px; line-height: 1.5; }
-.transition-tools { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--flow-border); font-size: 13px; }
+.transition-tools { margin-top: 10px; padding-top: 0; border-top: 1px solid var(--flow-border); font-size: 13px; }
 .transition-tools summary { min-height: 44px; color: var(--flow-text); font-weight: 600; cursor: pointer; }
 .transition-tools p { color: var(--flow-secondary); line-height: 1.6; }
 .transition-area-title { margin: 0 0 10px; font-size: 18px; color: var(--flow-text); }
@@ -253,7 +253,7 @@ body[data-theme="dark"] .transition-dialog {
 .transition-connected-setup { margin-top: 18px; padding: 16px; border: 1px solid var(--flow-border); border-radius: 12px; background: var(--flow-elevated); }
 .transition-connected-setup h4 { margin-top: 0; }
 .transition-connected-setup > .primary-button { margin-top: 12px; }
-.transition-connected-setup .transition-tools { margin-top: 8px; padding-top: 8px; }
+.transition-connected-setup .transition-tools { margin-top: 8px; padding-top: 0; }
 .transition-evidence-details > p { color: var(--flow-secondary); font-size: 13px; }
 .transition-files .transition-resource-copy small { display: none; }
 .transition-detailed-help .transition-tools { margin-top: 12px; }
@@ -282,3 +282,18 @@ body[data-theme="dark"] .transition-dialog {
 .transition-connection-result[data-state="passed"], .transition-connection-summary.is-passed { color: var(--flow-success-fg); font-weight: 700; }
 
 .transition-event-controls { display: grid; justify-items: start; gap: 10px; margin-top: 10px; }
+
+/* Closed help rows retain their tap target without accumulated empty gutters. */
+.transition-tools > summary { display: list-item; align-content: center; margin: 0; }
+.transition-tools[open] > summary { margin-bottom: 10px; }
+.transition-step2-files { margin-top: 18px; }
+.transition-step2-files h4 { margin-bottom: 8px; }
+.transition-step2-help { margin-top: 16px; }
+.transition-step2-help > .transition-tools { margin-top: 10px; }
+.transition-step2-help .transition-saved-tools { margin-top: 10px; padding: 12px; }
+.transition-step2-help .transition-saved-tools > summary { font-size: 13px; }
+
+.transition-review-confirmation { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: start; gap: 6px 10px; min-height: 44px; padding: 10px 0; color: var(--flow-text); font-size: 14px; line-height: 1.5; cursor: pointer; }
+.transition-review-confirmation input[type="checkbox"] { flex: 0 0 18px; width: 18px; height: 18px; min-height: 18px; padding: 0; margin: 2px 0 0; accent-color: var(--flow-accent); }
+
+.transition-review-confirmation > small { grid-column: 2; }

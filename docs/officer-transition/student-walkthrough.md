@@ -28,11 +28,13 @@ Sign in with **asmeohiostate@gmail.com**, which owns the chapter Google files. O
 
 Choose **Sign in with chapter Google account** in Step 2. Confirm the approved chapter account in Google’s sign-in window, check **Member goal for this year**, then choose **Create or reopen this year’s files**. Each member counts once; use the President’s approved goal. An existing year keeps its original goal.
 
-One designated operator creates or reopens files for the selected year and purpose. Real handoff and Practice must use separate approved workspaces. If the workspace purpose differs or access is missing, ask the President before continuing. Keep the Hub open; retry the same year and workspace after an interruption. The Hub saves all seven links under **Your files**. Existing files can be reopened with **Reopen setup**.
+One designated operator creates or reopens files for the selected year and purpose. Real handoff and Practice must use separate approved workspaces. If the workspace purpose differs or access is missing, ask the President before continuing. Keep the Hub open; retry the same year and workspace after an interruption. The Hub saves all seven links automatically. Use **Open files for review** for the main workbooks, Form and Control Center; **Help and recovery → All saved files and reference links** holds the full list. Existing files can be reopened with **Help and recovery → Reopen setup**.
 
 Setup fills dates, connects attendance and budget files and leaves the year inactive. Last year’s records are preserved. Officers still confirm the actual files and required reviews below.
 
-**If connected setup is unavailable:** open **Detailed instructions & troubleshooting → Manual fallback** and **More help for this step → Open Annual Setup — manual fallback**. For this external page, use Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**. Confirm the year, purpose and goal. Choose **Copy setup results**, return to the Hub, paste into **Paste setup results**, then **Save setup results**. Downloads are optional backups.
+**If connected setup is unavailable:** open **Help and recovery → Detailed instructions & troubleshooting → Manual fallback** and **More help for this step → Open Annual Setup — manual fallback**. For this external page, use Chrome’s ASME profile with **asmeohiostate@gmail.com as its only signed-in Google account**. Confirm the year, purpose and goal. Choose **Copy setup results**, return to the Hub, paste into **Paste setup results**, then **Save setup results**. Downloads are optional backups.
+
+The four **Confirm your file review** checkboxes record your own observations. They do not change Google settings. For another result, a skip reason or notes, open **Help and recovery**. Saved-link editing and separate backup tools are also there.
 
 ### Compare the four Step 2 reviews
 
