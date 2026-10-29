@@ -43,7 +43,9 @@ function harness(){
   const cfg=new Sheet('Config');[['B2','Fall 2027'],['B3','2027-28'],['B5','TESTING'],['B7','Form Responses 1'],['B17','Event ID']].forEach(([a,v])=>cfg.getRange(a).setValue(v));
   const eventHeaders=['event_id','event_name','event_date','term','academic_year','event_type','points','scoring_active','form_open'];
   const events=new Sheet('Events',[eventHeaders,['20270826-001','Welcome',45000,'Fall 2027','2027-28','General Body Meeting',5,true,true],['closed','Closed',45000,'Fall 2027','2027-28','General Body Meeting',5,true,false]]);
-  const sourceSheets=[cfg,new Sheet('_Raw_Ingest',[],[[ctx.ASME_RAW_INGEST_FORMULA]]),events,new Sheet('Roster',[],[["=INDEX('_Raw_Ingest'!C:C,ROW())"]]),new Sheet('Point Log',[],[['=INDEX(_Raw_Ingest!K:K,ROW())']]),new Sheet('Website Staging')];
+  const templateReadme=new Sheet('README', [['Canonical Points Master'],['Start Config and manually install FormEventUpdater; contact maintainer']]);
+  templateReadme.getRange('B106').setValue('Restore handleEventsEdit in copied script editor');
+  const sourceSheets=[cfg,templateReadme,new Sheet('_Raw_Ingest',[],[[ctx.ASME_RAW_INGEST_FORMULA]]),events,new Sheet('Roster',[],[["=INDEX('_Raw_Ingest'!C:C,ROW())"]]),new Sheet('Point Log',[],[['=INDEX(_Raw_Ingest!K:K,ROW())']]),new Sheet('Website Staging')];
   for(const [k,id]of Object.entries(ctx.ASME_ANNUAL_TEMPLATES)){new File(id,k,null,false,k==='attendanceForm'?'form':'sheet');if(k==='pointsMaster')book(id,sourceSheets);else if(k==='attendanceForm')form(id);else if(k==='budgetTracker')book(id,[new Sheet('Setup & Lists'),new Sheet('Start Here',[['ASME Budget Tracker — TEMPLATE — MAKE A COPY']]),new Sheet('Dashboard',[['ASME Budget Tracker — TEMPLATE — COPY BEFORE SETUP']])]);else book(id,[new Sheet('Config')]);}
   props.set('ANNUAL_PROVISIONER_CONFIG',JSON.stringify({rootFolderId:'root',controlCenterId:'center',engagementGoal:25,workspaceMode:'rehearsal',calendarIcalUrl:'https://example.org/calendar.ics'}));writes.length=0;
   // Model the UI's one-time fresh-execution resume, never generic retries.
@@ -62,6 +64,12 @@ test('actual provisioner creates five private copies, observed pointer, six date
   assert.equal(budget.getSheetByName('Dashboard').getRange('A1').getValue(),'ASME Budget Tracker 2027-2028 | Private annual copy');
   assert.match(master.getSheetByName('Config').getRange('B8').getValue(),/2027-2028.*TESTING.*review required/);
   assert.equal(h.books.get(h.ctx.ASME_ANNUAL_TEMPLATES.budgetTracker).getSheetByName('Start Here').getRange('A1').getValue(),'ASME Budget Tracker — TEMPLATE — MAKE A COPY');
+  const annualReadme=master.getSheetByName('README'),canonicalReadme=h.books.get(h.ctx.ASME_ANNUAL_TEMPLATES.pointsMaster).getSheetByName('README');
+  assert.equal(annualReadme.getRange('A1').getValue(),'ASME Points Master 2027-2028 | Private annual copy');
+  assert.match(annualReadme.getRange('A2').getValue(),/Hub Transition.*Open event update controls.*Connect automatic event updates.*Check connections/);
+  assert.match(annualReadme.getRange('B106').getValue(),/Reopen the saved year.*reconnect/);
+  assert.doesNotMatch(annualReadme.getRange('B106').getValue(),/handleEventsEdit|FormEventUpdater|maintainer/);
+  assert.equal(canonicalReadme.getRange('A1').getValue(),'Canonical Points Master');assert.match(canonicalReadme.getRange('A2').getValue(),/manually install FormEventUpdater/);assert.match(canonicalReadme.getRange('B106').getValue(),/handleEventsEdit/);
   const setup=h.books.get(s.ids.budgetTracker).getSheetByName('Setup & Lists');assert.deepEqual(['B4','B5','B11','B12','B13','B14'].map(a=>setup.getRange(a).getValue()),['2027-08-01','2028-07-31','2027-08-01','2027-12-31','2028-01-01','2028-05-31']);
   assert.equal(h.settings.values[1].length,20);assert.equal(h.settings.values[1][10],false);assert.equal(h.settings.values[1][11],false);assert.equal(h.triggers.length,0);assert.equal(form.choices[0],'20270826-001 - Welcome');
   const before=h.writes.length,stamp=h.settings.values[1][12],retry=h.run();assert.equal(h.writes.length,before);assert.equal(h.settings.values[1][12],stamp);assert.equal(h.settings.values.length,2);assert.equal(retry.readableReceipt,r.readableReceipt);
@@ -394,4 +402,13 @@ test('new destination returns pending before configuration and fresh execution r
  assert.equal(h.writes.filter(x=>x==='copy').length,5);assert.equal(h.writes.filter(x=>x==='destination').length,1);assert.equal(h.settings.values.length,2);
  assert.equal(form.accepting,false);assert.equal(h.settings.values[1][10],false);assert.equal(h.settings.values[1][11],false);
  const before=h.writes.length;h.runOnce();assert.equal(h.writes.length,before);
+});
+
+test('every annual README instruction cell refuses formulas before any label writes and preserves annual inputs',()=>{
+  const h=harness(),s=h.run().receipt,master=h.books.get(s.ids.pointsMaster),budget=h.books.get(s.ids.budgetTracker),readme=master.getSheetByName('README');
+  const block=scripts.match(/var instructions=\{([\s\S]*?)\n  \};/)[1],cells=[...block.matchAll(/^\s*([AB]\d+):/gm)].map(m=>m[1]);assert.ok(cells.includes('B46')&&cells.includes('B48')&&cells.includes('B49')&&cells.includes('B93'));
+  const events=JSON.stringify(master.getSheetByName('Events').values),before=JSON.stringify(readme.values);
+  for(const cell of cells){const match=/([AB])(\d+)/.exec(cell),r=+match[2]-1,c=match[1]==='A'?0:1;readme.formulas[r]??=[];readme.formulas[r][c]='=1+1';h.writes.length=0;
+    assert.throws(()=>h.ctx.asmeAnnualCopyLabels_(master,budget,'2027-2028'),new RegExp('README '+cell+' contains a formula'));assert.equal(h.writes.length,0);assert.equal(JSON.stringify(readme.values),before);assert.equal(JSON.stringify(master.getSheetByName('Events').values),events);readme.formulas[r][c]='';
+  }
 });

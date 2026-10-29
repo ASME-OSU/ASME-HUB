@@ -10,6 +10,8 @@ function page() {
     return {tag, value:'', textContent:'', hidden:false, disabled:false, dataset:{}, children:[], handlers:{}, addEventListener(name, handler){this.handlers[name] = handler;}, append(child){this.children.push(child);}, replaceChildren(){this.children=[];}, click(){downloads.push(this);}, submit(){this.handlers.submit({preventDefault(){}});}};
   }
   for (const match of html.matchAll(/<(\w+)[^>]*\bid="([^"]+)"[^>]*>/g)) elements.set(match[2],element(match[1]));
+  // doGet supplies the selected mode before the HTML service executes this script.
+  elements.get('mode').value='production';
   const runner = {withSuccessHandler(fn){this.success=fn;return this;},withFailureHandler(fn){this.failure=fn;return this;}};
   for (const method of ['getAnnualSetupConfig','saveAnnualSetupConfig','runAnnualSetup']) runner[method] = (arg,answers) => calls.push({method,arg,answers,success:runner.success,failure:runner.failure});
   const document = {getElementById:id=>elements.get(id),querySelectorAll:()=>[...elements.values()].filter(e=>['input','button'].includes(e.tag)),createElement:tag=>element(tag)};

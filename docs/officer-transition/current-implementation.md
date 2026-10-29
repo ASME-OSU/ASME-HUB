@@ -1,18 +1,18 @@
 # Current implementation and verification status
 
-Updated October 27, 2026 for connected setup recovery and current officer navigation. Use [the student walkthrough](student-walkthrough.md) for the current five-step route and [Start here](README.md) for roles and required private records. This page describes source behavior; GitHub Pages publication, installed Google code and actual annual acceptance have separate evidence.
+Updated October 28, 2026 for chapter-account self-service setup and connection checks. Use [the student walkthrough](student-walkthrough.md) for the current five-step route and [Start here](README.md) for roles and required private records. This page describes source behavior; GitHub Pages publication, installed Google code and actual annual acceptance have separate evidence.
 
-The President leads the handoff and names the setup operator, technical maintainer and recovery contact. A **maintainer** is the person who fixes and verifies the tools. A **readiness record** is that person's dated account of what was checked and what remains unresolved. Actual accounts, file IDs, approvals and evidence stay in the chapter-controlled private handoff.
+The President leads the handoff and names one setup operator. Officers sign in with asmeohiostate@gmail.com for chapter-owned Google resources, and use their approved OSU login for personal Microsoft/shared university resources where required. Routine access needs no separate reviewer approval. Private records hold the actual files, observations, approvals and backup locations. One-time Google installation and deployment must be completed before handoff; repository source alone is not evidence that Google is running it.
 
 ## Five steps
 
 | Step | Real handoff | Practice |
 |---|---|---|
-| 1 — Choose your year | Choose the starting year, identify the lead/account/contact and open the shared officer workspace | Identify the approved test account, private workspace and reviewer |
-| 2 — Prepare this year's files | One designated operator uses Annual Setup to create or reopen the same year's files, then copies and saves its setup results in the Hub | Use a separate private folder and copied settings sheet; create or reopen the practice files |
-| 3 — Check attendance and finances | Review actual events, approved finances, imports, role access and dated readiness evidence | Run the five fictional cases and sample budget only in the isolated copies |
+| 1 — Choose your year | Choose the starting year, identify the lead/account/contact and open the shared officer workspace | Use the chapter account and separate private Practice workspace |
+| 2 — Prepare this year's files | One designated operator uses Annual Setup to create or reopen the same year's files, and the Hub saves all seven links | Use a separate private folder and copied settings sheet; create or reopen the practice files |
+| 3 — Check attendance and finances | Check connections, actual events, approved finances, imports and chapter-login access | Run the five fictional cases and sample budget only in the isolated copies |
 | 4 — Check calendar and messages | Compare approved events, review editable drafts, keep three backups and obtain recovery evidence | Check the Newsletter's local fictional preview and the live public calendar, restore backups in a separate profile and keep drafts unsent |
-| 5 | **Approve and start the year:** record acceptance separately; only the approved settings owner switches the year after launch approval | **Close and review your practice run:** record retention/cleanup and reviewer acceptance; skip activation with a reason |
+| 5 | **Approve and start the year:** record acceptance separately; only the approved settings owner switches the year after launch approval | **Close and review your practice run:** record retention/cleanup and the practice result; skip activation with a reason |
 
 Step 1 asks for the starting year and purpose, then **Continue to access check** opens the required account and workspace confirmation. A completed saved checklist can be reopened with **Resume saved progress**. **Change year** returns to these controls from later steps; other attempts and notes are under **Help, notes and saved progress**. Each checklist is one attempt with separate notes and private links. Naming is optional. Exported mode values remain `production` and `rehearsal` for backup compatibility.
 
@@ -20,13 +20,21 @@ Step 2 uses **Sign in with chapter Google account → Create or reopen this year
 
 **Manual fallback**, under **Detailed instructions & troubleshooting**, opens the external Annual Setup page. Use Chrome’s ASME profile with only the approved chapter Google account signed in, then **Copy setup results → Paste setup results → Save setup results**. This fallback does not change the workspace purpose or approve any review.
 
-The four Step 2 reviews have a comparison aid naming the actual tool/cells, expected result and responsible person. Copying a summary supplies expected values; officers still open the actual Google files to compare them. The maintainer supplies clean-source and technical readiness evidence. No save, matching title or downloaded file automatically passes a review.
+The four Step 2 reviews have a comparison aid naming the actual tool/cells, expected result and responsible person. Copying a summary supplies expected values; officers still open the actual Google files to compare them. Officers inventory unexplained old/test inputs and check actual outputs. Connection checks report their structural scope explicitly; they do not certify clean canonical sources, scoring, user access or public/funding approval. No save, matching title or downloaded file automatically passes a review.
+
+### Check the annual connections
+
+After setup saves the seven links, choose **Check connections** in Hub Step 2 or 3. A fresh matching report reveals **Open event update controls**. Open that verified Google-hosted page and choose **Connect automatic event updates** there, then return to the Hub and check again. Google-hosted controls run the chapter-authorized standalone project; the Hub API only reads connection status. Routine officers do not authorize a new copied script. In each export, select Google’s import error cell and choose **Allow access** for its matching annual working source. Wait for calculation, then check connections again.
+
+The report checks the saved annual identities, eight Points structure checks, both exports’ reviewed six/35 import-cell map and source pointers, output headers/errors, and this project’s recorded automatic-update trigger. **Connected** means the trigger is installed. Make a normal approved **Events** edit in Google Sheets, compare the Form choices, then check again for **observed delivery**. API edits do not exercise a Sheets edit trigger. Other projects’ triggers are outside this report’s scope; do not enable a copied bound trigger as a second routine setup action.
+
+A successful report is a connection/structure result. It does not certify all source inputs, every scoring formula, bank balances, incoming access, public-field approval or launch. Inspect unexplained old/test inputs without clearing existing records, use actual annual data for Real handoff, and retain separate funding, reconciliation, public-sharing and launch decisions. Fictional scoring tests belong only in isolated Practice copies. A failed or unavailable check remains unresolved with its actual error; source changes require Google deployment before these actions become available.
 
 ## Current review requirements
 
-Guide 11 retains **20 Real handoff reviews** and **16 Practice reviews**. These instruction changes preserve existing run IDs, mode applicability, progress formats and manual approvals. The six fictional exercise checks V03, V04, V23, V24, V25 and V26 apply only to Practice. Real officers use actual data and maintainer evidence rather than entering fictional member or financial records.
+The current guide retains **20 Real handoff reviews** and **16 Practice reviews**. These instruction changes preserve existing run IDs, mode applicability, progress formats and manual approvals. The six fictional exercise checks V03, V04, V23, V24, V25 and V26 apply only to Practice. Real officers inspect actual data and connection results; no fictional member/financial exercise or expert certificate is required.
 
-Read later steps without completing earlier ones. Record Blocked or a failed result honestly. Practice completion requires its 16 reviews, completed Steps 1–4, safe settings, a reviewer decision and Step 5 skipped with a recorded reason. Practice completion never approves a real launch. The incoming team can accept custody with named open work while launch remains blocked.
+Read later steps without completing earlier ones. Record Blocked or a failed result honestly. Practice completion requires its 16 reviews, completed Steps 1–4, safe settings, a recorded practice result and its limits and Step 5 skipped with a recorded reason. Practice completion never approves a real launch. The incoming team can accept custody with named open work while launch remains blocked.
 
 ## Local records and transfers
 
@@ -34,11 +42,11 @@ Read later steps without completing earlier ones. Record Blocked or a failed res
 
 Keep three separate text backups: **Progress backup and print → Export progress**, **Saved links → Download private links backup**, and Newsletter **Templates → Export Draft .json**. Progress includes results and notes, not the private links. [The recovery procedure](recovery-practice.md) shows readable comparisons and a separate-profile restoration. A download alone is not recovery evidence.
 
-Practice uses **Reviewer sign-off record link** and **Recovery notes document link**. Real handoff uses incoming acceptance and coordinator launch approval records. Its rollback record is the actual launch-reversal plan: prior settings, named operator, restore actions, failure criteria and contact route. No private record's presence proves its contents or approval. Shared starting links explain how to request the filled records; dated archives are evidence, not today's annual files.
+Practice uses a practice result record and **Recovery notes document link**. Real handoff uses incoming acceptance and coordinator launch approval records. Its rollback record is the actual launch-reversal plan: prior settings, named operator, restore actions, failure criteria and contact route. No private record's presence proves its contents or approval. Shared starting links explain how to request the filled records; dated archives are evidence, not today's annual files.
 
 ## Operational evidence still required
 
-Annual Setup access in the intended single-account ASME profile, actual incoming access, native copy/scoring/import checks, financial approval and bank reconciliation, approved communications facts and three-file restoration need their own current records. The October 13 wording review did not perform these operations. It left the current chapter year at 2026–2027 and did not approve activation, cleanup, sending or website publication.
+Chapter sign-in, opening actual tools, resolved imports, unexplained-input review, financial approval and bank reconciliation, approved communications facts and three-file restoration need their own current observations. Fictional scoring is optional Practice work; it is not required in Real records. The October 13 wording review did not perform these operations. It left the current chapter year at 2026–2027 and did not approve activation, cleanup, sending or website publication.
 
 <details>
 <summary>Dated source, deployment and rehearsal evidence (reference only)</summary>

@@ -11,7 +11,7 @@
   <h1>ASME Annual Setup</h1>
   <aside id="account-warning" role="note"><strong>Before you continue: use Chrome’s ASME profile.</strong><p>Open Chrome’s profile menu (top right) and choose <strong>ASME</strong>. In that profile, <strong>asmeohiostate@gmail.com must be the only Google account signed in</strong>. Check the Google account menu; if another account is listed, ask the President to help prepare the ASME profile before continuing. Multiple signed-in accounts can stop this private setup page from opening.</p><p>This page cannot check your Chrome profile or count signed-in accounts. Confirm them yourself before creating files.</p></aside>
   <p>Answer the questions below. We reuse the chapter’s saved folder, settings sheet and calendar, and create fresh files for the new year. Last year’s files stay unchanged.</p>
-  <details id="configuration"><summary>Change saved workspace — President or maintainer</summary>
+  <details id="configuration"><summary>Change saved workspace — chapter setup owner</summary>
     <form id="config-form">
       <label>Where should the new files be stored? (Google Drive folder link)<input id="rootFolderId" required></label>
       <label>Which settings sheet should the chapter use? (Control Center link)<input id="controlCenterId" required></label>
@@ -23,6 +23,8 @@
     </form>
   </details>
   <form id="annual-form">
+    <input id="expected-run-key" type="hidden" value="__EXPECTED_RUN_KEY__">
+    <input id="expected-config-revision" type="hidden" value="__EXPECTED_CONFIG_REVISION__">
     <input id="mode" type="hidden" value="__MODE__">
     <label>Which academic year are you preparing?<input id="year" value="__YEAR__" placeholder="2027-2028" pattern="[0-9]{4}-[0-9]{4}" required><small>This comes from Step 1 in the Hub. Fall term and budget dates are filled in automatically.</small></label>
     <label>How many different members do you want to attend this year?<input id="annualGoal" type="number" min="1" step="1" required><small>Each person counts once, even if they attend several events. Ask the President to approve this goal.</small></label>
@@ -31,17 +33,28 @@
   </form>
   <p id="status" role="status" aria-live="polite">Loading chapter setup…</p>
   <p><strong>Setup summary:</strong> a downloadable text file listing this year’s seven links and the settings checked during setup. Keep it to reopen and verify the same files later.</p>
+  <section id="connection-panel" hidden><h2>Connections for this year</h2><p id="connection-context"></p><ul id="connection-files"></ul><p>These controls run on the chapter’s Google-hosted setup page. Connect once, make an approved edit on the Points Master’s Events tab, then check again. Open each export and choose <strong>Allow access</strong> if Google asks to connect the sheets.</p><button id="connect-updates" type="button">Connect automatic event updates</button> <button id="check-readiness" type="button">Check connections</button><h3>Retire a closed year</h3><p>Close the Form and make the saved year noncurrent before stopping its automatic updates. Historical LIVE mode and public exports can remain as reviewed.</p><button id="check-retirement" type="button">Check retirement status</button><label><input id="confirm-stop" type="checkbox" style="display:inline;width:auto"> I confirm stopping automatic event updates for this closed, noncurrent year.</label><button id="stop-updates" type="button" disabled>Stop automatic event updates</button><p id="event-update-status" role="status"></p><p id="readiness-scope"></p><ul id="readiness-results" aria-live="polite"></ul><ul id="readiness-limits"></ul></section>
   <section id="result" hidden><h2>Your annual files</h2><ul id="links"></ul><p id="next"></p><label>Setup results for Step 2 in the Hub<textarea id="hub-results" readonly></textarea></label><button id="copy" type="button">Copy setup results</button><p id="copy-status" role="status"></p><details><summary>Optional backup and detailed settings</summary><button id="download" type="button">Download setup summary</button><pre id="receipt"></pre></details></section>
   <script>
     const fields = ['rootFolderId','controlCenterId','engagementGoal','calendarIcalUrl','workspaceMode'];
-    let busy = false, receipt = '', receiptYear = '', savedConfig = null;
+    let busy = false, receipt = '', receiptYear = '', savedConfig = null, annualRunKey = '', connectionContext = null, loadSequence = 0;
+    const fileKeys = ['pointsMaster','attendanceForm','pointsExport','budgetTracker','budgetExport','controlCenter'];
+    const expectedRunKey = document.getElementById('expected-run-key').value, expectedConfigRevision = document.getElementById('expected-config-revision').value;
     const mode = document.getElementById('mode').value === 'rehearsal' ? 'rehearsal' : 'production';
     const status = document.getElementById('status');
-    function setBusy(value) { busy = value; document.querySelectorAll('button,input,select').forEach(el => el.disabled = value); }
+    function updateControls() {
+      document.getElementById('create').disabled = busy || !savedConfig || savedConfig.workspaceMode !== mode || !savedConfig.rootFolderId || !bindingMatches(savedConfig);
+      ['connect-updates','check-readiness','check-retirement'].forEach(id => document.getElementById(id).disabled = busy || !connectionContext);
+      document.getElementById('stop-updates').disabled = busy || !connectionContext || !document.getElementById('confirm-stop').checked;
+    }
+    function setBusy(value) { busy = value; document.querySelectorAll('button,input,select').forEach(el => el.disabled = value); updateControls(); }
+    function bindingMatches(config) { return !expectedRunKey && !expectedConfigRevision || expectedRunKey === config.runKey && expectedConfigRevision === config.configRevision; }
+    function validFileIds(ids) { return !!ids && fileKeys.every(key => typeof ids[key] === 'string' && /^[\w-]+$/.test(ids[key])); }
+    function clearConnections() { connectionContext = null; document.getElementById('connection-panel').hidden = true; document.getElementById('confirm-stop').checked = false; ['readiness-results','readiness-limits','connection-files'].forEach(id => document.getElementById(id).replaceChildren()); document.getElementById('event-update-status').textContent = ''; document.getElementById('readiness-scope').textContent = ''; }
     function say(message, error = false) { status.textContent = message; status.dataset.error = String(error); }
     function failed(error) { setBusy(false); say(error.message || String(error), true); }
-    function showConfig(config) {
-      savedConfig = config;
+    function showConfig(config, year = document.getElementById('year').value.trim()) {
+      savedConfig = config; clearConnections();
       fields.forEach(key => document.getElementById(key).value = config[key] || '');
       document.getElementById('annualGoal').value = config.engagementGoal;
       document.getElementById('goal-source').textContent = (config.goalSource || 'Saved chapter setup') + ': ' + config.engagementGoal + (config.existing ? ' members. This goal is saved for this year. Ask the President to review any changes.' : ' members. You can change the goal for a new year.');
@@ -49,38 +62,52 @@
       document.getElementById('configuration').open = !config.rootFolderId || config.workspaceMode !== mode;
       document.getElementById('create').disabled = config.workspaceMode !== mode || !config.rootFolderId;
       document.getElementById('annualGoal').readOnly = Boolean(config.existing);
-      if (config.workspaceMode !== mode) say('Ask the President to confirm the saved workspace for ' + (mode === 'production' ? 'Real handoff' : 'Practice') + ' before continuing.', true);
-      else say(config.existing ? 'This year already has files. Continue to reopen them using the goal saved when they were created. Ask the President to review any changes.' : 'Ready. Check the year and member goal.');
+      if (config.runKey && validFileIds(config.fileIds) && config.workspaceMode === mode && bindingMatches(config)) {
+        connectionContext = {year, mode, key:config.runKey, revision:config.configRevision, fileIds:{...config.fileIds}};
+        document.getElementById('connection-panel').hidden = false;
+        document.getElementById('connection-context').textContent = year + ' — ' + (mode === 'rehearsal' ? 'Practice only' : 'Real handoff') + '. Check that these are the annual files you selected in the Hub.';
+        const titles = {pointsMaster:'Points Master',attendanceForm:'Attendance Form editor',pointsExport:'Points Export',budgetTracker:'Budget Tracker',budgetExport:'Budget Export',controlCenter:'Control Center'};
+        fileKeys.forEach(key => { const li = document.createElement('li'), a = document.createElement('a'); a.textContent = titles[key]; a.href = 'https://docs.google.com/' + (key === 'attendanceForm' ? 'forms' : 'spreadsheets') + '/d/' + config.fileIds[key] + '/edit'; a.rel = 'noopener noreferrer'; li.append(a); document.getElementById('connection-files').append(li); });
+      }
+      updateControls();
+      if (!bindingMatches(config)) say('This page does not match the Hub’s selected year and workspace. Return to the Hub, check the selected files and open a fresh connection link.', true);
+      else if (config.workspaceMode !== mode) say('Ask the President to confirm the saved workspace for ' + (mode === 'production' ? 'Real handoff' : 'Practice') + ' before continuing.', true);
+      else say(config.existing ? 'This year already has files. Use the connection controls below without creating or reopening the year. Create/reopen remains available for an unfinished setup.' : 'Ready. Check the year and member goal.');
     }
     function loadConfig() {
-      setBusy(true);
-      google.script.run.withSuccessHandler(config => { setBusy(false); showConfig(config); }).withFailureHandler(failed).getAnnualSetupConfig(document.getElementById('year').value);
+      const year = document.getElementById('year').value.trim(), sequence = ++loadSequence;
+      clearConnections(); setBusy(true);
+      google.script.run.withSuccessHandler(config => {
+        if (sequence !== loadSequence || document.getElementById('year').value.trim() !== year) { setBusy(false); say('The year changed while loading. Select the year again.', true); return; }
+        setBusy(false); showConfig(config, year);
+      }).withFailureHandler(failed).getAnnualSetupConfig(year);
     }
     loadConfig();
-    document.getElementById('year').addEventListener('change', () => { document.getElementById('result').hidden = true; loadConfig(); });
+    document.getElementById('year').addEventListener('change', () => { document.getElementById('result').hidden = true; annualRunKey = ''; receiptYear = ''; loadConfig(); });
     document.getElementById('config-form').addEventListener('submit', event => {
       event.preventDefault(); if (busy) return;
-      document.getElementById('result').hidden = true; receipt = ''; receiptYear = '';
+      if (!savedConfig || !bindingMatches(savedConfig)) { failed(new Error('Open a fresh matching Hub link before changing this workspace.')); return; }
+      document.getElementById('result').hidden = true; receipt = ''; receiptYear = ''; annualRunKey = ''; clearConnections();
       const config = Object.fromEntries(fields.map(key => [key, document.getElementById(key).value]));
       setBusy(true); say('Checking and saving chapter setup…');
       google.script.run.withSuccessHandler(() => { loadConfig(); }).withFailureHandler(failed).saveAnnualSetupConfig(config);
     });
     document.getElementById('annual-form').addEventListener('submit', event => {
       event.preventDefault(); if (busy) return;
-      if (!savedConfig || savedConfig.workspaceMode !== mode) { say('The President must confirm this workspace first.', true); return; }
+      if (!savedConfig || savedConfig.workspaceMode !== mode || !bindingMatches(savedConfig)) { say('The President must confirm this workspace first.', true); return; }
       document.getElementById('result').hidden = true;
       const year = document.getElementById('year').value.trim(), approvedConfig = savedConfig;
       const answers = {engagementGoal:document.getElementById('annualGoal').value, mode:mode, rootFolderId:approvedConfig.rootFolderId, controlCenterId:approvedConfig.controlCenterId, configRevision:approvedConfig.configRevision};
       function assertContext() {
-        if (document.getElementById('year').value.trim() !== year || savedConfig !== approvedConfig || document.getElementById('annualGoal').value !== answers.engagementGoal) throw new Error('The year, workspace or goal changed during setup. Reopen the original year to resume.');
+        if (document.getElementById('year').value.trim() !== year || document.getElementById('mode').value !== mode || !bindingMatches(approvedConfig) || savedConfig !== approvedConfig || document.getElementById('annualGoal').value !== answers.engagementGoal) throw new Error('The year, workspace or goal changed during setup. Reopen the original year to resume.');
       }
       setBusy(true); say('Creating annual files. Keep this page open. If setup stops, run the same year again to resume.');
       function run(retried) {
       google.script.run.withSuccessHandler(result => {
         try { assertContext(); if (result.targetYear !== year) throw new Error('Google returned a different year. Reopen the original year to resume.'); }
         catch(error) { failed(error); return; }
-        setBusy(false); receipt = result.readableReceipt; receiptYear = result.targetYear;
-        showConfig({...approvedConfig, existing:true, engagementGoal:answers.engagementGoal, goalSource:'This year’s saved setup'});
+        setBusy(false); receipt = result.readableReceipt; receiptYear = result.targetYear; annualRunKey = result.runKey || '';
+        showConfig({...approvedConfig, runKey:annualRunKey, fileIds:result.fileIds, existing:true, engagementGoal:answers.engagementGoal, goalSource:'This year’s saved setup'});
         const links = document.getElementById('links'); links.replaceChildren();
         const targets = [['Annual folder', result.folderUrl], ['Points Master', result.links.pointsMaster], ['Attendance Form editor', result.formEditUrl], ['Attendance Form respondent', result.links.formRespondent], ['Points Export', result.links.pointsExport], ['Budget Tracker', result.links.budgetTracker], ['Budget Export', result.links.budgetExport]];
         targets.forEach(([title, url]) => { const li = document.createElement('li'), a = document.createElement('a'); a.textContent = title; a.href = url; a.rel = 'noopener noreferrer'; li.append(a); links.append(li); });
@@ -98,6 +125,53 @@
       }
       run(false);
     });
+    function captureConnections() {
+      const context = connectionContext;
+      if (!context || document.getElementById('year').value.trim() !== context.year || document.getElementById('mode').value !== context.mode || !savedConfig || savedConfig.runKey !== context.key || savedConfig.configRevision !== context.revision || savedConfig.workspaceMode !== context.mode || !bindingMatches(savedConfig) || !fileKeys.every(key => savedConfig.fileIds && savedConfig.fileIds[key] === context.fileIds[key])) throw new Error('The year, workspace or annual files changed. Reload the selected year before continuing.');
+      return context;
+    }
+    function assertConnections(context) { if (captureConnections() !== context) throw new Error('The selected annual context changed. Check the year again before continuing.'); }
+    function validateReport(report, context, retirement) {
+      assertConnections(context);
+      if (!report || report.version !== 1 || report.year !== context.year || report.runKey !== context.key || report.readScope !== (retirement ? 'retirement' : 'staging') || !validFileIds(report.fileIds) || !fileKeys.every(key => report.fileIds[key] === context.fileIds[key]) || !Array.isArray(report.checks) || !report.checks.every(check => check && ['passed','action_needed','failed'].includes(check.status) && typeof check.label === 'string' && typeof check.detail === 'string') || !report.eventUpdates || !['not_connected','installed','observed','error'].includes(report.eventUpdates.status) || !Array.isArray(report.limits)) throw new Error('Google returned a report for different files or an incomplete report. No further action was sent. Check the selected year again.');
+    }
+    function renderReport(report) {
+      const list = document.getElementById('readiness-results'); list.replaceChildren();
+      report.checks.forEach(check => { const li = document.createElement('li'); li.textContent = (check.status === 'passed' ? 'Passed: ' : check.status === 'failed' ? 'Review: ' : 'Action needed: ') + check.label + '. ' + check.detail; if (check.url && /^https:\/\/docs\.google\.com\//.test(check.url)) { const a = document.createElement('a'); a.href = check.url; a.textContent = ' Open in Google'; a.rel = 'noopener noreferrer'; li.append(a); } list.append(li); });
+      document.getElementById('readiness-scope').textContent = report.readyScope || 'Connection checks only; not launch approval.';
+      const limits = document.getElementById('readiness-limits'); limits.replaceChildren(); report.limits.forEach(detail => { const li = document.createElement('li'); li.textContent = String(detail); limits.append(li); });
+      const updates = report.eventUpdates;
+      document.getElementById('event-update-status').textContent = updates.stopPending ? 'Google removed the trigger; confirm Stop to finish recording the stopped status.' : updates.status === 'observed' ? 'Automatic updates connected; a matching Events edit was observed.' : updates.status === 'installed' ? 'Automatic updates installed. Delivery awaits a normal approved Events edit.' : updates.status === 'error' ? 'Automatic updates need review. Follow the reported action.' : report.readScope === 'retirement' ? 'No managed automatic updates are installed for this retired year.' : 'Automatic updates are not connected for this year.';
+    }
+    function annualReadiness(action) {
+      if (busy) return;
+      let context; try { context = captureConnections(); if (action === 'stop' && !document.getElementById('confirm-stop').checked) throw new Error('Check the confirmation before stopping this closed, noncurrent year.'); } catch(error) { failed(error); return; }
+      const retirement = action === 'retirement' || action === 'stop';
+      const input = {year:context.year, mode:context.mode, expectedConfigRevision:context.revision, expectedRunKey:context.key};
+      const readInput = retirement ? {...input, action:'stop'} : input;
+      setBusy(true); say(retirement ? 'Checking the closed, noncurrent annual files…' : 'Reading annual connections…');
+      google.script.run.withSuccessHandler(report => {
+        try {
+          validateReport(report, context, retirement); renderReport(report);
+          if (action !== 'connect' && action !== 'stop') { setBusy(false); say('Check complete. Follow the actions above; launch approval remains separate.'); return; }
+          if (action === 'stop') {
+            if (!document.getElementById('confirm-stop').checked) throw new Error('Stop confirmation changed. Review the closed year and confirm again.');
+            if (typeof report.eventUpdates.triggerUid !== 'string' || !report.eventUpdates.triggerUid) { setBusy(false); say('No recorded managed trigger is installed to stop. Review the retirement status above.'); return; }
+          }
+          assertConnections(context); say(action === 'connect' ? 'Connecting automatic updates on this Google-hosted page…' : 'Stopping the exact recorded annual trigger…');
+          const mutation = google.script.run.withSuccessHandler(result => {
+            try { validateReport(result, context, retirement); renderReport(result); if (action === 'stop') document.getElementById('confirm-stop').checked = false; setBusy(false); say(action === 'stop' ? 'Automatic updates stopped for this closed, noncurrent year. Annual records and launch settings were preserved.' : 'Connection returned. Verify a normal approved Events edit, then check again. Intake and launch settings were unchanged.'); }
+            catch(error) { failed(error); }
+          }).withFailureHandler(failed);
+          if (action === 'connect') mutation.enableAnnualEventUpdates(input); else mutation.stopAnnualEventUpdates({...input, confirmStop:true});
+        } catch(error) { failed(error); }
+      }).withFailureHandler(failed).checkAnnualReadiness(readInput);
+    }
+    document.getElementById('connect-updates').addEventListener('click', () => annualReadiness('connect'));
+    document.getElementById('check-readiness').addEventListener('click', () => annualReadiness('check'));
+    document.getElementById('check-retirement').addEventListener('click', () => annualReadiness('retirement'));
+    document.getElementById('stop-updates').addEventListener('click', () => annualReadiness('stop'));
+    document.getElementById('confirm-stop').addEventListener('change', updateControls);
     document.getElementById('copy').addEventListener('click', async () => {
       const text = document.getElementById('hub-results'); text.focus(); text.select();
       try { await navigator.clipboard.writeText(text.value); document.getElementById('copy-status').textContent = 'Copied. Return to Step 2 in the Hub, paste and choose Save setup results.'; }

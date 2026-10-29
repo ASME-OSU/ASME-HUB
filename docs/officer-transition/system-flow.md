@@ -1,12 +1,12 @@
 # System flow and ownership
 
-The Hub guides the real officer handoff by default. Incoming officers get access, review their annual tools, confirm Points and finance readiness, prepare communications and agree acceptance. Optional private practice is a separate maintainer exercise; ordinary handoff does not require five fictional submissions. The reviewed AnnualProvisioner creates the annual copies and inactive settings row. Officers compare that row with its private receipt. The Hub reads the chapter’s shared settings; a rehearsal uses its own private copied Control Center. The older authenticated annual-save service remains a separate workflow with its own supported template contract and journal.
+The Hub guides the real officer handoff by default. Incoming officers get access, review their annual tools, confirm Points and finance readiness, prepare communications and agree acceptance. Optional private practice is a separate officer exercise; ordinary handoff does not require five fictional submissions. The reviewed AnnualProvisioner creates the annual copies and inactive settings row. Officers compare that row with its private receipt. The Hub reads the chapter’s shared settings; a rehearsal uses its own private copied Control Center. The older authenticated annual-save service remains a separate workflow with its own supported template contract and journal.
 
-The current Guide 11 has five steps.
+The current guide has five steps.
 
 ```mermaid
 flowchart TD
- A[T01: year and incoming access] --> B[T02: annual tools and maintainer setup receipt]
+ A[T01: year and incoming access] --> B[T02: annual files and live connection checks]
  B --> C[Actual Form tab to Config B7 / protected raw proxy]
  B --> D[Export Config B1 to annual working master]
  B --> E[Read back inactive/noncurrent twenty-column row]
@@ -21,13 +21,17 @@ flowchart TD
 The shared private checklist is the team record; Hub progress and saved links are local to one device. The President names who copies or imports officer observations into the shared record. Acceptance of the handoff may include assigned open work. Activation requires the separate approved launch record, operator and time.
 
 <details>
-<summary>Maintainer architecture, storage and legacy service reference</summary>
+<summary>Technical architecture, storage and legacy service reference</summary>
 
-After the maintainer confirms the intended configuration, the chapter-admin operator calls `provisionReviewedAnnualYear(year)`; `provision2027_2028` is the editor entry for 2027–2028. The fall term is derived. The maintainer configures chapter root, Control Center, approved positive goal and calendar source once. AnnualProvisioner creates/resumes five private copies, observes Google's actual Form response tab, writes pointers/dates and reads back the inactive row. It performs initial event sync only. The readiness record selects the event-update method and responsible owner. For automatic updates, the chapter operator uses the copied Points Master's bound **ASME Tools → Enable automatic event sync** once, verifies that project's edit trigger and observes a later Events edit update the Form. For approved manual menu sync, the named owner runs **Sync Events to Google Form** after approved Events changes and before intake opens, then verifies the choices. Do not add a second standalone trigger or report manual operation as automatic.
+Complete one-time chapter configuration, reviewed canonical-source setup and Google API deployment before handoff. The normal officer route is Hub Step 2 → Sign in with chapter Google account → Create or reopen this year’s files. One operator uses asmeohiostate@gmail.com and teammates reuse its chapter-owned private Google files; use normal approved OSU login for Microsoft/shared university resources where applicable. Routine access has no independent reviewer gate. The editor functions `provisionReviewedAnnualYear(year)` and `provision2027_2028` remain technical recovery alternatives.
 
-Protected `_Raw_Ingest` reads Config B7; Roster/Point Log use stable proxy references. Both exports centralize import source IDs at Config B1 (six Points/35 Budget formula cells). One-time canonical migration belongs to the maintainer; annual copies do not require bulk formula replacement.
+AnnualProvisioner creates/resumes five private copies, observes Google’s actual Form response tab, writes pointers/dates and reads back the inactive row. After a fresh matching Hub connection report, **Open event update controls** opens the bound Google-hosted page. Its explicit **Connect automatic event updates** action performs initial sync and installs one recorded `asmeAnnualEventsEdited` trigger in the authorized standalone project. Trigger changes run through `google.script.run` on that page, not the Hub execution API. **Check connections** reads saved identities, eight Points structural checks, both exports’ six/35 import-cell maps and source arguments, output headers/errors, and this project’s managed trigger. Google’s two export **Allow access** prompts remain normal officer actions. Connected means installed; a normal Google Sheets Events edit and matching Form choices establish observed delivery. A report does not certify all source inputs, scoring, finances, public sharing, personal access or launch approval.
 
-The guide stores seven actual copied-file links, optional mock references and private record URLs by named run on the officer’s device. Format/duplicate/template checks do not certify Google access. Guide versions 2–8 preserve their raw originals during migration to Guide 9; passed checks reopen. A rehearsal or imported completion never authorizes production T05. A rehearsal can reach its separate completion GO after all 16 applicable checks pass, T01–T04 complete and T05 is skipped with a reason. Real handoff has 20 applicable reviews, excluding the six fictional exercise checks, and requires separate launch approval. Cleanup/handoff remains available while production is NO-GO.
+Existing copied **ASME Tools → Sync Events to Google Form / Enable automatic event sync** menus are optional compatibility tools and can request per-copy consent. They are not required by the new routine Real path. Avoid duplicate update routes: the standalone report cannot inspect or delete another bound project’s or another account’s triggers. To retire this project’s recorded connection, first close the saved Form and make the year noncurrent, then use Step 5’s read-only retirement check, then the verified link to the Google page for explicit confirmation/stop. Lost-stop acknowledgment recovery finalizes only the saved pending journal and does not delete unrelated triggers.
+
+Protected `_Raw_Ingest` reads Config B7; Roster/Point Log use stable proxy references. Both exports centralize import source IDs at Config B1 (six Points/35 Budget formula cells). Complete any one-time canonical migration with backed-up source/regression evidence before handoff; annual copies do not require bulk formula replacement.
+
+The guide stores seven actual copied-file links, optional mock references and private record URLs by named run on the officer’s device. Format/duplicate/template checks do not certify Google access. Guide migration preserves raw historical originals. The current self-service criteria reopen affected old observations while retaining unchanged reviews, notes and run identity; viewing alone does not rewrite saved progress. A rehearsal or imported completion never authorizes production T05. A rehearsal can reach its separate completion GO after all 16 applicable checks pass, T01–T04 complete and T05 is skipped with a reason. Real handoff has 20 applicable reviews, excluding the six fictional exercise checks, and requires separate launch approval. Cleanup/handoff remains available while production is NO-GO.
 
 The older authenticated annual-save service is a separate configured workflow. It does not adopt provisioner-created rows or validate the proxy/Config B1 import architecture; do not send those years through it. Its supported independent workflow is: **Open authorized annual save**, **Verify with Google**, review the public twenty-cell row/audience, **Save inactive year and confirm**, then independent **Compare with Google**. Its installation receipt does not certify the new helpers. Neither route activates the year, opens intake, grants sharing or approves a send.
 
@@ -40,7 +44,8 @@ Rehearsal T02 saves a private copied Control Center and optional provisioner-pro
 | Component | Host/control | What is stored there |
 |---|---|---|
 | Hub website and source | ASME-OSU GitHub organization / GitHub Pages | Public HTML, browser scripts, defaults and documentation |
-| Annual Verify and Save service | Chapter-owned standalone Google Apps Script project | Authenticated server code; self-only deployment running as the accessing chapter account |
+| Annual setup, connections and event updates | Chapter-owned standalone Google Apps Script project | Owner-only API executable; saved annual registry, read-only structural checks and one explicitly connected managed trigger per year |
+| Legacy Annual Verify and Save service | Chapter-owned standalone Google Apps Script project | Authenticated server code; self-only deployment running as the accessing chapter account |
 | Control Center | Chapter Google Drive / Sheets | Shared `Hub_Settings_Public` rows; the entire workbook is publicly readable |
 | Templates and annual copies | Chapter Google Drive | Canonical masters and new-year files; private masters are separate from reviewed public exports |
 | Rules, ledgers and operational evidence | Chapter's private administrative/handoff folders | Trusted configuration, operation history, source snapshots and acceptance records |
@@ -63,9 +68,7 @@ reviewed import-formula inventory. The save engine checks the settings schema,
 unique years, active/current flags and an unchanged baseline. Its review expires
 after 30 minutes; save takes the project lock and checks resources again.
 
-Officers still check response delivery/scoring, bound scripts and triggers,
-public export contents, finance totals/authority, incoming access and independent
-consumers. The service does not mark those checks PASS, open responses, change
+This paragraph describes the legacy verifier, not the current managed connection report. Officers still review actual public export contents, finance totals/authority, incoming chapter-login access and independent consumers. Optional delivery/scoring regression work belongs in isolated Practice copies; ordinary Real handoff does not require fictional records or copied-script consent. The service does not mark those checks PASS, open responses, change
 sharing or activate a year. See the [verification contract](../../integrations/apps-script/MANUAL_ANNUAL_VERIFICATION.md)
 for the exact conditions.
 

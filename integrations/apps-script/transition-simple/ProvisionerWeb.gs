@@ -7,18 +7,22 @@ function doGet(e) {
   asmeProvisionerActor_();
   var input = e && e.parameter || {}, year = String(input.year || ''), mode = input.mode === 'rehearsal' ? 'rehearsal' : 'production';
   if (year) asmeAnnualYear_(year, 'Fall ' + year.slice(0,4));
+  var expectedRunKey=String(input.expectedRunKey||''),expectedConfigRevision=String(input.expectedConfigRevision||'');
+  if(!!expectedRunKey!==!!expectedConfigRevision||expectedRunKey.length>700||expectedConfigRevision.length>2000)throw new Error('This connection link is incomplete or too long. Return to the Hub and check the selected year again.');
+  function attribute(value){return value.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   var html = HtmlService.createHtmlOutputFromFile('ProvisionerPage').getContent();
-  return HtmlService.createHtmlOutput(html.replace('value="__YEAR__"', 'value="' + year + '"').replace('value="__MODE__"', 'value="' + mode + '"')).setTitle('ASME Annual Setup');
+  return HtmlService.createHtmlOutput(html.replace('value="__YEAR__"', 'value="' + year + '"').replace('value="__MODE__"', 'value="' + mode + '"').replace('value="__EXPECTED_RUN_KEY__"',function(){return 'value="'+attribute(expectedRunKey)+'"';}).replace('value="__EXPECTED_CONFIG_REVISION__"',function(){return 'value="'+attribute(expectedConfigRevision)+'"';})).setTitle('ASME Annual Setup');
 }
 function getAnnualSetupConfig(year) {
   asmeProvisionerActor_();
   var config = JSON.parse(PropertiesService.getScriptProperties().getProperty('ANNUAL_PROVISIONER_CONFIG') || '{}');
-  var view = {rootFolderId: config.rootFolderId || '', controlCenterId: config.controlCenterId || '', engagementGoal: config.engagementGoal || '', calendarIcalUrl: config.calendarIcalUrl || '', workspaceMode: config.workspaceMode || '', configRevision: asmeAnnualConfigRevision_(config), goalSource: 'Saved chapter setup', existing: false};
+  var view = {rootFolderId: config.rootFolderId || '', controlCenterId: config.controlCenterId || '', engagementGoal: config.engagementGoal || '', calendarIcalUrl: config.calendarIcalUrl || '', runKey: '', workspaceMode: config.workspaceMode || '', configRevision: asmeAnnualConfigRevision_(config), goalSource: 'Saved chapter setup', existing: false};
   if (year && config.rootFolderId && config.controlCenterId) {
     var parts = asmeAnnualYear_(year, 'Fall ' + String(year).slice(0,4));
     var saved = JSON.parse(PropertiesService.getScriptProperties().getProperty(asmeAnnualRunKey_(year,config.rootFolderId,config.controlCenterId)) || '{}');
     if (saved.plan && saved.plan.rootFolderId === config.rootFolderId && saved.plan.controlCenterId === config.controlCenterId) {
-      view.engagementGoal = saved.plan.engagementGoal; view.goalSource = 'This year’s saved setup'; view.existing = true;
+      view.runKey = saved.runKey || '';
+      if(saved.phase==='draft_ready'&&saved.ids)view.fileIds={pointsMaster:saved.ids.pointsMaster,attendanceForm:saved.ids.attendanceForm,pointsExport:saved.ids.pointsExport,budgetTracker:saved.ids.budgetTracker,budgetExport:saved.ids.budgetExport,controlCenter:saved.plan.controlCenterId}; view.engagementGoal = saved.plan.engagementGoal; view.goalSource = 'This year’s saved setup'; view.existing = true;
     } else {
       var sheet = SpreadsheetApp.openById(config.controlCenterId).getSheetByName('Hub_Settings_Public');
       if (!sheet || sheet.getLastRow() > 1000 || JSON.stringify(sheet.getRange(1,1,1,20).getValues()[0]) !== JSON.stringify(ASME_ANNUAL_HEADERS)) throw new Error('Ask the President to check the saved settings sheet.');
@@ -74,5 +78,5 @@ function runAnnualSetup(year, answers) {
   var handoff = {schema:1,type:'asme-annual-link-handoff',year:result.targetYear,links:{annualFolder:result.receipt.folderUrl,pointsMaster:result.receipt.links.pointsMaster,attendanceFormEditor:result.receipt.formEditUrl,attendanceFormRespondent:result.receipt.links.formRespondent,pointsExport:result.receipt.links.pointsExport,budgetTracker:result.receipt.links.budgetTracker,budgetExport:result.receipt.links.budgetExport}};
   if (answers.mode === 'rehearsal') handoff.mock = {controlCenterUrl:'https://docs.google.com/spreadsheets/d/' + result.receipt.plan.controlCenterId + '/edit'};
   // Return plain data only: HTML service cannot transport Date instances.
-  return {success: result.success, targetYear: result.targetYear, readableReceipt: result.readableReceipt, folderUrl: result.receipt.folderUrl, formEditUrl: result.receipt.formEditUrl, links: result.receipt.links, next: result.next, hubHandoff: JSON.stringify(handoff)};
+  return {success: result.success, targetYear: result.targetYear, runKey: result.receipt.runKey, fileIds:{pointsMaster:result.receipt.ids.pointsMaster,attendanceForm:result.receipt.ids.attendanceForm,pointsExport:result.receipt.ids.pointsExport,budgetTracker:result.receipt.ids.budgetTracker,budgetExport:result.receipt.ids.budgetExport,controlCenter:result.receipt.plan.controlCenterId}, readableReceipt: result.readableReceipt, folderUrl: result.receipt.folderUrl, formEditUrl: result.receipt.formEditUrl, links: result.receipt.links, next: result.next, hubHandoff: JSON.stringify(handoff)};
 }

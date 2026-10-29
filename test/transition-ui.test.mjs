@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import * as state from "../assets/js/transition-state.js";
 import * as definitions from "../assets/js/transition-steps.js";
 import * as links from "../assets/js/annual-link-draft.js";
+import {validateAnnualReadiness, validAnnualRunKey, annualEventControlsUrl} from "../assets/js/annual-readiness.js";
 import "../assets/js/shared-resources.js";
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const source = readFileSync(new URL("../assets/js/transition.js", import.meta.url), "utf8").replace(/^import .*;\n/gm, "");
@@ -51,7 +52,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
   const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, location: {hash:""}, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener(name, callback) { windowListeners.set(name, callback); }, print() {} };
   if (setupClient) window.ASME_HUB_CONFIG.annualProvisioner = { api: { clientId: "fixture", deploymentId: "fixture", scopes: [] } };
-  const context = { ...state, ...definitions, ...links, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: faults.setTimeout || (() => {}), clearTimeout: faults.clearTimeout || (() => {}), CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
+  const context = { ...state, ...definitions, ...links, validateAnnualReadiness, validAnnualRunKey, annualEventControlsUrl, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: faults.setTimeout || (() => {}), clearTimeout: faults.clearTimeout || (() => {}), CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
   const control = id => $("transition-steps").querySelector(`[data-transition-control="${id}"]`);
   const go = async id => { $("transition-step-picker").value = id; await $("transition-step-picker").emit("change"); };
@@ -117,7 +118,7 @@ test("private record URL controls hide production records in practice and retain
  const field = (label) => ui.$("transition-dialog").find(node => node.tagName === "label" && node.textContent.startsWith(label));
  assert.equal(field("Approved communications record link").hidden, true);
  assert.equal(field("Coordinator launch approval record link").hidden, true);
- assert.equal(field("Reviewer sign-off record link").hidden, false);
+ assert.equal(field("Practice results record link").hidden, false);
  assert.equal(field("Recovery notes document link").hidden, false);
  const access = field("Access contact record link");
  assert.equal(access.find(node => node.tagName === "input").type, "url");
@@ -386,7 +387,7 @@ test('disposed blockers and skipped activation visibly retain missing rehearsal 
  for(const step of definitions.TRANSITION_STEPS){await ui.go(step.id);if(step.id==='T05'){await ui.reason('T05','Rehearsal only');await ui.choose('T05','skipped');}else await ui.choose(step.id,'blocked');}
  assert.match(ui.$('transition-summary').textContent,/Open the unfinished steps to resolve their blockers/);
  assert.equal(ui.saved().steps.T05,'skipped');
- assert.match(ui.$('transition-summary').textContent,/Cleanup: Not yet. Reviewer acceptance: Not yet/);
+ assert.match(ui.$('transition-summary').textContent,/Cleanup: Not yet. Practice results: Not yet/);
  assert.match(ui.$('transition-readiness').textContent,/Private rehearsal not complete/);
 });
 
@@ -434,7 +435,7 @@ test("Guide 9 migration keeps practice mode and evidence while reopening changed
     assert.equal(upgraded.run.mode, mode);
     assert.equal(upgraded.notes.T01, old.notes.T01);
     assert.equal(upgraded.checks.V16, mode === "production" ? "needs_recheck" : "passed");
-    assert.equal(upgraded.steps.T05, mode === "production" ? "in_progress" : "skipped");
+    assert.equal(upgraded.steps.T05, "in_progress");
     assert.equal(old.guideVersion, "officer-transition-guide-9");
     assert.equal(old.checks.V16, "passed");
   }
@@ -1460,4 +1461,63 @@ test("legacy clear can be retried after its storage write fails",async()=>{
  assert.match(ui.$("transition-saved-tools").textContent,/Annual link storage quota exceeded/);
  faults.failAnnual=false;await annualButton(ui,"Clear saved links for this run").click();
  assert.equal(annualField(ui).value,"");assert.match(ui.$("transition-saved-tools").textContent,/Annual links cleared/);
+});
+
+function managedFixture() {
+ const fixture=connectedFixture({config:{rootFolderId:'fixture_root_12345678901234567',controlCenterId:'fixture_center_1234567890123456',runKey:'ASME_SIMPLE_ANNUAL_'+JSON.stringify(['2027-2028','fixture_root_12345678901234567','fixture_center_1234567890123456'])}});fixture.result.runKey=fixture.config.runKey;
+ const handoff=JSON.parse(fixture.result.hubHandoff);
+ const id=value=>value.startsWith('https:')?value.match(/\/d\/([^/]+)\/edit/)[1]:value;
+ const fileIds={...Object.fromEntries(['pointsMaster','pointsExport','budgetTracker','budgetExport'].map(key=>[key,id(handoff.links[key])])),attendanceForm:id(handoff.links.attendanceFormEditor),controlCenter:fixture.config.controlCenterId};
+ fixture.report=(status='installed')=>({version:1,readScope:'staging',year:'2027-2028',runKey:fixture.config.runKey,checkedAt:new Date().toISOString(),ready:status!=='not_connected',readyScope:'Connections and structure only; not launch approval.',fileIds:{...fileIds},checks:[{id:'annual_identity',label:'Annual files',status:'passed',detail:'Matched saved annual run.'}],eventUpdates:status==='not_connected'?{status,scope:'This standalone project only.'}:{status,scope:'This standalone project only.',triggerUid:'trigger-1',installedAt:new Date().toISOString(),...(status==='observed'?{lastObservedAt:new Date().toISOString()}:{})},limits:['Not scoring, bank reconciliation or public-field approval.']});
+ const original=fixture.client.call;fixture.client.call=async(name,input)=>{
+  if(['getAnnualSetupConfig','runAnnualSetup'].includes(name))return original(name,input);
+  fixture.calls.push({name,parameters:input});if(fixture.action)return fixture.action(name,input);const report=fixture.report('not_connected');if(input[0]?.action==='stop')report.readScope='retirement';return report;
+ };
+ return fixture;
+}
+const readinessPanel=ui=>ui.$('transition-steps').find(n=>n.dataset.annualReadiness==='connections');
+const readinessButton=(ui,label)=>readinessPanel(ui).find(n=>n.tagName==='button'&&n.textContent===label);
+async function readyManaged(ui){ui.window.ASME_HUB_CONFIG.annualProvisioner.url='https://script.google.com/macros/s/MOCK_WEB_DEPLOYMENT_123456789012345/exec';await ui.go('T02');await connectSetup(ui);await runSetup(ui);}
+
+
+for(const mode of ['production','rehearsal']) test('Guide 13 '+mode+' view preserves raw progress and note save writes exact historical backup',async()=>{
+ const year='2027-2028',old=state.emptyProgress(year,state.createTransitionRun('Existing handoff',mode,'guide13-retained'));
+ old.guideVersion='officer-transition-guide-13';old.steps=Object.fromEntries(definitions.TRANSITION_STEPS.map(s=>[s.id,s.launch&&mode==='rehearsal'?'skipped':'complete']));old.checks=Object.fromEntries(definitions.TRANSITION_CHECKS.filter(c=>state.checkApplies(c,mode)).map(c=>[c.id,'passed']));old.checks.V10='unable';old.notes={T04:'Original communications evidence',V10:'Old expert access gate',T01:'Original access note'};if(mode==='rehearsal')old.reasons.T05='Practice only — no launch';
+ const raw=JSON.stringify(old),key=state.storageKey(year,old.run.id),existing=new Map([[key,raw],['asmeHubTransitionSelectedRunV2:'+year,old.run.id]]),ui=browser(existing);
+ await ui.go('T03');assert.equal(ui.$('transition-steps').find(n=>n.dataset.transitionControl==='V10').value,'needs_recheck');assert.equal(existing.get(key),raw);assert.equal(existing.has(key+':officer-transition-guide-13-backup'),false);
+ await ui.go('T01');await ui.reason('T01','Current account and folder opened');
+ assert.equal(existing.get(key+':officer-transition-guide-13-backup'),raw);const saved=ui.saved();assert.equal(saved.guideVersion,state.TRANSITION_GUIDE_VERSION);assert.equal(saved.run.id,old.run.id);assert.equal(saved.run.mode,mode);assert.equal(saved.notes.T04,old.notes.T04);assert.equal(saved.notes.V10,old.notes.V10);assert.equal(saved.checks.V10,'needs_recheck');assert.equal(saved.checks.V02,'passed');assert.equal(saved.checks.V17,mode==='rehearsal'?'needs_recheck':'passed');
+});
+
+
+const eventLink=ui=>readinessPanel(ui).find(n=>n.tagName==='a'&&n.attrs['aria-label']==='Open event update controls');
+test('Hub exposes only a verified bound Google-hosted update link and readonly check',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);assert.equal(eventLink(ui),null);
+ await readinessButton(ui,'Check connections').click();const url=new URL(eventLink(ui).href);
+ assert.equal(url.hostname,'script.google.com');assert.equal(url.searchParams.get('year'),'2027-2028');assert.equal(url.searchParams.get('mode'),'production');assert.equal(url.searchParams.get('expectedRunKey'),fixture.config.runKey);assert.equal(url.searchParams.get('expectedConfigRevision'),'revision-1');
+ assert.equal(readinessButton(ui,'Connect automatic event updates'),null);assert.equal(readinessButton(ui,'Stop event updates'),null);assert.deepEqual(ui.saved().checks,{});assert.deepEqual(fixture.calls.map(c=>c.name),['getAnnualSetupConfig','runAnnualSetup','checkAnnualReadiness']);
+});
+for(const mismatch of ['files','year','run','unsafe'])test('invalid '+mismatch+' report cannot expose hosted event controls',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);fixture.action=()=>{const value=fixture.report();if(mismatch==='files')value.fileIds.pointsMaster=value.fileIds.pointsExport;if(mismatch==='year')value.year='2028-2029';if(mismatch==='run')value.runKey='different';if(mismatch==='unsafe')value.checks[0].url='https://evil.test';return value;};await readinessButton(ui,'Check connections').click();assert.equal(eventLink(ui),null);assert.deepEqual(ui.saved().checks,{});
+});
+test('an unsafe configured web app cannot become an event controls link',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);ui.window.ASME_HUB_CONFIG.annualProvisioner.url='https://evil.test/macros/s/APP_DEPLOYMENT_123456789012345/exec';await readinessButton(ui,'Check connections').click();assert.equal(eventLink(ui),null);assert.match(readinessPanel(ui).textContent,/do not match the selected setup/);
+});
+test('readonly pending lifecycle preserves drafts and refuses a stale context',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),timers=setupTimers(),ui=browser(new Map(),[],false,fixture.client,timers);await readyManaged(ui);fixture.action=()=>pending.promise;
+ const note=observation(ui,'V01');note.value='MOCK in-progress officer note';await note.emit('input');const running=readinessButton(ui,'Check connections').click();await readinessButton(ui,'Check connections').click();assert.equal(fixture.calls.filter(c=>c.name==='checkAnnualReadiness').length,1);
+ let warning=false;ui.windowListeners.get('beforeunload')({preventDefault(){warning=true;}});assert.equal(warning,true);const input=annualField(ui);input.value='https://docs.google.com/spreadsheets/d/new_saved_draft_123456789012345/edit';await input.emit('input');pending.resolve(fixture.report());await running;
+ assert.equal(eventLink(ui),null);assert.equal(observation(ui,'V01').value,'MOCK in-progress officer note');assert.equal(input.value,'https://docs.google.com/spreadsheets/d/new_saved_draft_123456789012345/edit');assert.equal(timers.pending.size,0);
+});
+test('freshness is rechecked when opening a previously rendered Google link',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);await readinessButton(ui,'Check connections').click();const link=eventLink(ui),now=Date.now;let prevented=false;
+ try{Date.now=()=>now()+700000;await link.emit('click',{preventDefault(){prevented=true;}});}finally{Date.now=now;}
+ assert.equal(prevented,true);assert.equal(eventLink(ui),null);assert.match(ui.$('transition-status').textContent,/report is old/);
+});
+test('retirement pending-stop status links to Google confirmation without Hub mutations',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);await ui.go('T05');fixture.action=(name,input)=>{assert.equal(name,'checkAnnualReadiness');assert.equal(input[0].action,'stop');const value=fixture.report('not_connected');value.readScope='retirement';value.eventUpdates={status:'not_connected',scope:'This project.',triggerUid:'saved-uid',stopPending:true,detail:'Google removed the trigger; finish recording stopped status.'};return value;};await readinessButton(ui,'Check retired-year connection').click();
+ assert.ok(eventLink(ui));assert.match(readinessPanel(ui).textContent,/Open event update controls.*Finish stopping updates/s);assert.equal(readinessPanel(ui).find(n=>n.tagName==='input'&&n.type==='checkbox'),null);assert.equal(readinessButton(ui,'Stop event updates'),null);assert.deepEqual(ui.saved().checks,{});
+});
+test('reloaded Step3 signs in for readonly checks without recreating annual files',async()=>{
+ const fixture=managedFixture(),first=browser(new Map(),[],false,fixture.client);await readyManaged(first);const ui=browser(new Map(first.existing),[],false,fixture.client);ui.window.ASME_HUB_CONFIG.annualProvisioner.url=first.window.ASME_HUB_CONFIG.annualProvisioner.url;await ui.go('T03');await readinessButton(ui,'Sign in with chapter Google account').click();await readinessButton(ui,'Check connections').click();assert.ok(eventLink(ui));assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,1);
 });

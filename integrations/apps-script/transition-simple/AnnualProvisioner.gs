@@ -1,9 +1,9 @@
 /* Standalone chapter admin project. Run provision2027_2028() in editor, or
  * call provisionReviewedAnnualYear(year) from an authenticated chapter UI.
- * One-time maintainer config: ANNUAL_PROVISIONER_CONFIG JSON {rootFolderId,
+ * Chapter setup config: ANNUAL_PROVISIONER_CONFIG JSON {rootFolderId,
  * controlCenterId,engagementGoal,calendarIcalUrl}. No digest/ledger setup.
  * Does not publish files, grant access, open intake, or activate a year.
- * Include EventSync.gs and SanityCheck.gs in this standalone project as well.
+ * Include EventSync.gs, SanityCheck.gs and AnnualReadiness.gs in this standalone project as well.
  */
 var ASME_ANNUAL_HEADERS=['academic_year','display_label','engagement_goal','attendance_sheet_url','leaderboard_tab','dashboard_json_url','attendance_form_url','points_master_url','calendar_page_url','calendar_ical_url','is_active','is_current','last_updated','status_note','event_metrics_tab','budget_tracker_url','budget_export_sheet_url','budget_export_sheet_tab','banking_url','fundraising_url'];
 var ASME_ANNUAL_TEMPLATES={pointsMaster:'1UXprLAnzUjlzaojb7BDYTN9Om25xPFRYGQZIyHQRG2M',attendanceForm:'1ofRiLS_WtQpH_poxU4blyKn7pZVriUWL8dsvfCJLLYA',pointsExport:'1CESQs6sY_WC9u0wonYq_CFraFFymtTJkh9SSv2DTXuY',budgetTracker:'1KMIkxLjNMRFilpicXIqePvy6XvZxgmJrRO3VT7DiCW8',budgetExport:'1vDHoouuaWX3NvdrflUiulesHU9z1JZ383_Tnu3Wqz-s'};
@@ -14,7 +14,7 @@ function asmeCheckWorkspacePurpose_(properties, cfg) {
   var saved = properties.getProperties();
   Object.keys(saved).forEach(function(key) {
     if (key.indexOf('ASME_SIMPLE_ANNUAL_') !== 0) return;
-    var value; try { value = JSON.parse(saved[key]); } catch (ignored) { throw new Error('Saved workspace history needs maintainer review.'); }
+    var value; try { value = JSON.parse(saved[key]); } catch (ignored) { throw new Error('Saved workspace history needs review. Reopen the original workspace and compare its saved annual links.'); }
     if (!value.plan || (value.plan.rootFolderId !== cfg.rootFolderId && value.plan.controlCenterId !== cfg.controlCenterId)) return;
     if ((value.workspaceMode && value.workspaceMode !== cfg.workspaceMode) || (!value.workspaceMode && cfg.workspaceMode === 'production')) throw new Error('Existing files in this unconfirmed workspace or Practice workspace need review. Use a separate folder and settings sheet for Real handoff.');
   });
@@ -40,7 +40,7 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
     '',
     'Provisioner run key: '+(state.runKey||'ASME_SIMPLE_ANNUAL_'+state.year),
     'Hub run name: [coordinator records the matching private Hub run]',
-    'Technical maintainer/contact: [coordinator names a maintainer and private contact route]',
+    'Chapter setup owner/contact: [coordinator records the officer responsible and private contact route]',
     'Files created: '+(state.completedAt||'[not recorded]'),
     'Provisioner copy/draft verification: '+(state.checkedAt||'[not recorded]')+' (officer Google UI comparison remains open)',
     '',
@@ -81,12 +81,12 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
     'These dates are in the Budget Tracker; they are not columns in the 20-column settings row.',
     '',
     '## Separate human confirmations — UNVERIFIED until recorded with owner, time and evidence',
-    '- Clean-source verification for each canonical master: UNVERIFIED.',
-    '- Each incoming holder’s role-appropriate access using their own account: UNVERIFIED.',
+    '- Source content and reviewed scoring checks: UNVERIFIED. Run Check connections; structural checks and officer approvals are separate.',
+    '- Incoming officers’ access using the chapter Google login and approved OSU sign-ins where required: UNVERIFIED.',
     '- Points Export private import authorization and resolved output: UNVERIFIED.',
     '- Budget Export private import authorization and resolved output: UNVERIFIED.',
     '- Initial Form event-sync result: provisioner invoked sync; officer observation UNVERIFIED.',
-    '- Automatic event-sync trigger installation and a later observed edit: UNVERIFIED.',
+    '- Automatic event updates: use Connect automatic event updates, then make an approved Events edit and Check connections to observe delivery.',
     '- Real engagement goal/calendar approval, funding approval, bank reconciliation, public-field approval and launch approval: UNVERIFIED.',
     '- Incoming officer acceptance: UNVERIFIED.',
     '',
@@ -97,9 +97,33 @@ function asmeReadableAnnualReceipt_(state,settingsRowNumber){
 // Annual-copy labels are scoped to the copies after identity checks. Source
 // masters retain their make-a-copy instructions. Labels do not approve LIVE.
 function asmeAnnualCopyLabels_(master,budget,targetYear){
+  var readme=master.getSheetByName('README'),config=master.getSheetByName('Config'),start=budget.getSheetByName('Start Here'),dash=budget.getSheetByName('Dashboard');
+  if(!readme||!config||!start||!dash)throw new Error('Annual copy is missing Points README, Budget Start Here or Dashboard. Review its template structure.');
+  var route='Hub Transition → Open event update controls → Connect automatic event updates; return to Hub → Check connections';
+  var instructions={
+    A1:'ASME Points Master '+targetYear+' | Private annual copy',
+    A2:'These annual files are already connected by chapter setup. Use '+route+'. Enter approved event names, dates and types in Events columns B, C and F; preserve calculated columns. Keep intake closed until launch approval.',
+    B6:'Public sharing and launch need chapter approval. '+route+' checks connections; it does not publish files, approve public fields or open intake.',
+    B7:'Close attendance separately in the Form: turn Accepting responses off. Review Events form_open checkboxes as appropriate. Connecting updates never opens intake. Use '+route+' for connection checks.',
+    B20:'Use '+route+' to review annual connections. Form publication, approved export publication and opening intake remain separate officer actions after the applicable approvals.',
+    B35:'To close attendance, turn Accepting responses off in the Form and review the event’s form_open checkbox. Automatic choice updates do not close or open Form intake. Use '+route+' for connection checks.',
+    B46:'Event choice needs correction? Update the approved event inputs or eligibility checkboxes in Events, then use '+route+' and verify the resulting choice in the Form editor. Do not manually remove or re-add dropdown choices.',
+    B47:'Event missing? Review its approved name, date and type in Events B/C/F and its scoring_active/form_open checkboxes. Use '+route+', then open the Form editor and verify its Event ID choice after a normal Events edit.',
+    B48:'Duplicate Form choice? Check for duplicate or conflicting Events rows and correct the approved source inputs. Use '+route+', then verify the Form choice list. Keep attendance intake closed while resolving setup errors.',
+    B49:'Mode and intake are separate controls. Review the approved operating mode; close attendance by turning Accepting responses off in the Form. Use '+route+' to check event-choice connections; connecting never opens intake.',
+    B59:'Form choices did not update? Use '+route+' for the saved annual files. Read the displayed binding or Events error, correct the identified input, make a normal Events edit and verify the choice in the Form editor. Keep intake closed while resolving setup errors.',
+    B60:'Automatic updates run as the chapter Google account in the chapter setup script. Use '+route+' to verify the recorded annual connection. New managed runs do not need another copied-menu Enable action.',
+    B65:'Events B/C/F supply approved name/date/type inputs; preserve calculated columns. The chapter setup script reads eligible Events rows and updates this year’s bound Form choices. Open the Form editor to verify a choice after a normal Events edit. Intake is controlled separately. Use '+route+' to check this connection.',
+    B91:'Automatic event choices are connected through '+route+'. Make a normal approved Events edit and verify the result in the Form editor. Do not open a copied script editor or install a second trigger for a new managed run.',
+    B93:'After a Practice test, close Form intake and review the Practice event’s form_open checkbox. Use '+route+' and verify its choices in the Form editor; do not manually delete dropdown choices. Keep actual production records unchanged.',
+    B106:'Restore automatic updates through '+route+'. Reopen the saved year, check the reported Form binding and reconnect if the managed connection is missing. Make a normal Events edit, check again and verify the Form choice. Keep intake controls separate.'
+  };
+  // These are observed instruction cells only. Refuse formulas before any label
+  // write; never clear input ranges or rewrite a completed run on reopen.
+  Object.keys(instructions).forEach(function(a){if(readme.getRange(a).getFormula())throw new Error('Points README '+a+' contains a formula. No annual instruction labels were changed. Review that copy’s instruction layout.');});
+  [[config,'B8'],[start,'A1'],[start,'A3'],[dash,'A1'],[dash,'A3']].forEach(function(pair){if(pair[0].getRange(pair[1]).getFormula())throw new Error('An annual instruction label contains a formula. No instruction labels were changed. Review the copy’s instruction layout.');});
+  Object.keys(instructions).forEach(function(a){readme.getRange(a).setValue(instructions[a]);});
   master.getSheetByName('Config').getRange('B8').setValue(targetYear+' private annual copy. TESTING; review required before LIVE.');
-  var start=budget.getSheetByName('Start Here'),dash=budget.getSheetByName('Dashboard');
-  if(!start||!dash)throw new Error('Budget copy is missing Start Here or Dashboard.');
   var label='ASME Budget Tracker '+targetYear+' | Private annual copy';
   start.getRange('A1').setValue(label);
   start.getRange('A3').setValue('Annual copy already created. Review year settings, opening balances and funding. Only enter approved inputs; retain practice evidence until review.');
@@ -142,7 +166,7 @@ function asmeObserveResponseBinding_(master,form){
     // Reopen the same workbook so each observation reads current sheet metadata.
     var linked=SpreadsheetApp.openById(master.getId()).getSheets().filter(function(s){var url=s.getFormUrl();return url&&FormApp.openByUrl(url).getId()===form.getId();});
     if(linked.length===1)return linked;
-    if(linked.length>1)throw new Error('More than one response tab is linked to this Form. Ask the maintainer to review; no tab was guessed.');
+    if(linked.length>1)throw new Error('More than one response tab is linked to this Form. Review the Form response destination in Google; no tab was guessed.');
     if(attempt<29)Utilities.sleep(2000);
   }
   throw new Error('Google response tab not uniquely observed yet; retry this same run. No name was guessed.');
@@ -157,7 +181,7 @@ function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
     if (!Number.isInteger(goal) || goal <= 0) throw new Error('Enter a positive whole number for this year’s member goal.');
     cfg.engagementGoal = goal;
   }
-  if(!cfg.rootFolderId||!cfg.controlCenterId||cfg.rootFolderId===cfg.controlCenterId||cfg.rootFolderId==='125_HEyqM4T0lrSSuBfSzPT_o0B8kScHK'||Object.keys(ASME_ANNUAL_TEMPLATES).some(function(k){return [cfg.rootFolderId,cfg.controlCenterId].indexOf(ASME_ANNUAL_TEMPLATES[k])>=0;})||!Number.isInteger(cfg.engagementGoal)||cfg.engagementGoal<=0)throw new Error('Maintainer must configure chapter root, Control Center and approved positive goal once.');
+  if(!cfg.rootFolderId||!cfg.controlCenterId||cfg.rootFolderId===cfg.controlCenterId||cfg.rootFolderId==='125_HEyqM4T0lrSSuBfSzPT_o0B8kScHK'||Object.keys(ASME_ANNUAL_TEMPLATES).some(function(k){return [cfg.rootFolderId,cfg.controlCenterId].indexOf(ASME_ANNUAL_TEMPLATES[k])>=0;})||!Number.isInteger(cfg.engagementGoal)||cfg.engagementGoal<=0)throw new Error('Save the chapter workspace folder, Control Center and approved positive goal in Annual Setup first.');
   if(cfg.calendarIcalUrl && !/^https:\/\/[^\s]+$/.test(cfg.calendarIcalUrl))throw new Error('Calendar feed must be an HTTPS URL.');
   var lock=LockService.getScriptLock();if(!lock.tryLock(30000))throw new Error('Annual setup is already running.');
   var key=asmeAnnualRunKey_(targetYear,cfg.rootFolderId,cfg.controlCenterId),state;
@@ -172,7 +196,7 @@ function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
     // A different practice/production workspace keeps its own independent state.
     var migrateLegacy=false;
     if(!Object.keys(state).length){var legacy=JSON.parse(properties.getProperty('ASME_SIMPLE_ANNUAL_'+targetYear)||'{}');if(JSON.stringify(legacy.plan)===JSON.stringify(plan)){state=legacy;migrateLegacy=true;}}
-    if(Object.keys(state).length && (JSON.stringify(state.plan)!==JSON.stringify(plan)||!state.ids||typeof state.ids!=='object'||Array.isArray(state.ids)||['new','draft_ready'].indexOf(state.phase)<0||typeof state.draftTimestamp!=='string'||isNaN(Date.parse(state.draftTimestamp))||new Date(state.draftTimestamp).toISOString()!==state.draftTimestamp))throw new Error('Existing run configuration changed or its saved receipt is invalid; maintainer must review it.');
+    if(Object.keys(state).length && (JSON.stringify(state.plan)!==JSON.stringify(plan)||!state.ids||typeof state.ids!=='object'||Array.isArray(state.ids)||['new','draft_ready'].indexOf(state.phase)<0||typeof state.draftTimestamp!=='string'||isNaN(Date.parse(state.draftTimestamp))||new Date(state.draftTimestamp).toISOString()!==state.draftTimestamp))throw new Error('Existing run configuration changed or its saved receipt is invalid; reopen its original workspace and review the saved links before continuing.');
     if(!Object.keys(state).length)state={year:targetYear,rootFolderId:cfg.rootFolderId,plan:plan,ids:{},phase:'new',draftTimestamp:new Date().toISOString()};
     if (annualAnswers && Object.keys(state.ids || {}).length && ((!state.workspaceMode && annualAnswers.mode === 'production') || (state.workspaceMode && state.workspaceMode !== annualAnswers.mode))) throw new Error('These existing files are Practice or have an unconfirmed purpose. Use a separate reviewed Real handoff workspace.');
     if (!Object.keys(state.ids || {}).length) state.workspaceMode = cfg.workspaceMode || '';
@@ -261,6 +285,6 @@ function provisionAnnualYear(targetYear,fallTerm,annualAnswers){
     else settings.getRange(rowNumber,1,1,20).setValues([row]);
     SpreadsheetApp.flush();if(JSON.stringify(settings.getRange(rowNumber,1,1,20).getValues()[0])!==JSON.stringify(row))throw new Error('Draft readback failed; retry the same run to reconcile.');
     state.phase='draft_ready';state.responseTab=linked[0].getName();state.links=links;state.formEditUrl=form.getEditUrl();state.folderUrl=annual.getUrl();state.completedAt=state.completedAt||new Date().toISOString();state.checkedAt=new Date().toISOString();delete state.lastError;save();
-    return {success:true,targetYear:targetYear,receipt:state,readableReceipt:asmeReadableAnnualReceipt_(state,rowNumber),next:'Enable automatic event sync from the copied master menu, authorize both private imports, run pre-flight and actual scoring tests. Intake remains closed, TESTING, inactive and noncurrent.'};
+    return {success:true,targetYear:targetYear,receipt:state,readableReceipt:asmeReadableAnnualReceipt_(state,rowNumber),next:'Connect automatic event updates and Check connections here, then open both exports and choose Allow access. Review real inputs; use Practice files for fictional scoring tests. Intake remains closed, TESTING, inactive and noncurrent.'};
   }catch(e){if(state){state.lastError=String(e.message||e);try{properties.setProperty(key,JSON.stringify(state));}catch(ignore){/* Preserve the original failure; pending intent was saved first. */}}throw e;}finally{lock.releaseLock();}
 }

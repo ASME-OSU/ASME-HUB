@@ -34,6 +34,7 @@ for (const path of [
   "assets/js/transition-steps.js",
   "assets/js/annual-link-draft.js",
   "assets/js/annual-setup-api.js",
+  "assets/js/annual-readiness.js",
   "assets/js/annual-settings-input.js",
   "scripts/sync-calendar.mjs",
   "scripts/sync-social-automation.mjs",
@@ -48,6 +49,7 @@ for (const path of [
 
 for (const path of [
   "integrations/apps-script/transition-simple/AnnualProvisioner.gs",
+  "integrations/apps-script/transition-simple/AnnualReadiness.gs",
   "integrations/apps-script/transition-simple/EventSync.gs",
   "integrations/apps-script/transition-simple/SanityCheck.gs",
   "integrations/apps-script/transition-simple/TestCleanup.gs",

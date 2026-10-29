@@ -80,7 +80,7 @@ test('malformed HTTP 401 clears authorization before inspecting its response bod
  assert.equal(h.fetchCount,1);
 });
 test('non-JSON HTTP failures retain account and same-year recovery instructions',async()=>{
- for(const [status,message]of [[403,/denied access.*chapter account.*Cloud project/s],[500,/could not be reached.*same year/s]]){
+ for(const [status,message]of [[403,/denied access.*chapter account.*chapter configuration/s],[500,/could not be reached.*same year/s]]){
   let parsed=0;
   const h=harness({response:{ok:false,status,json:async()=>{parsed++;throw new SyntaxError('HTML upstream error');}}});
   await h.client.connect();await assert.rejects(h.client.call('runAnnualSetup',[]),message);assert.equal(parsed,0);
@@ -98,7 +98,7 @@ test('abort while reading a successful response uses connection recovery guidanc
  await assert.rejects(h.client.call('runAnnualSetup',[]),/connection stopped.*Files may already exist.*same year/s);
 });
 test('OAuth failures distinguish declined consent, account policy and client configuration',async()=>{
- for(const [error,message]of [['access_denied',/cancelled or permission was declined/],['admin_policy_enforced',/account policy blocked.*administrator/s],['invalid_client',/configured correctly.*OAuth client/s],['unauthorized_client',/not authorized.*OAuth configuration/s],['unexpected_error',/did not return authorization.*maintainer/s]]){
+ for(const [error,message]of [['access_denied',/cancelled or permission was declined/],['admin_policy_enforced',/account policy blocked.*administrator/s],['invalid_client',/configured correctly.*OAuth client/s],['unauthorized_client',/not authorized.*OAuth configuration/s],['unexpected_error',/did not return authorization.*Google access error/s]]){
   const h=harness({oauth:{error}});await assert.rejects(h.client.connect(),message);
   await assert.rejects(h.client.call('getAnnualSetupConfig',[]),/Sign in again/);assert.equal(h.fetchCount,0);
  }
@@ -262,4 +262,14 @@ test('identity loader starts a fresh request if the Google client disappears aft
   if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument;
   if(originalGoogle===undefined)delete globalThis.google;else globalThis.google=originalGoogle;
  }
+});
+
+test('connection API allowlist is read-only for trigger operations',async()=>{
+ const h=harness();await h.client.connect();const input={year:'2027-2028',mode:'production',expectedConfigRevision:'revision-1',expectedRunKey:'saved-run'};
+ await h.client.call('checkAnnualReadiness',[input]);assert.deepEqual(JSON.parse(h.sent.request.body),{function:'checkAnnualReadiness',parameters:[input],devMode:false});assert.equal(h.sent.request.headers.Authorization,'Bearer ephemeral-test-token');
+ for(const name of ['enableAnnualEventUpdates','stopAnnualEventUpdates','asmeAnnualEventsEdited'])await assert.rejects(h.client.call(name,[input]),/Unsupported/);
+ assert.equal(h.fetchCount,1);
+});
+test('an interrupted readonly check asks for recheck rather than implying new files',async()=>{
+ const h=harness({response:{ok:true,status:200,json:async()=>{throw new DOMException('stopped','AbortError');}}});await h.client.connect();await assert.rejects(h.client.call('checkAnnualReadiness',[]),/action was confirmed.*Check connections again/);
 });

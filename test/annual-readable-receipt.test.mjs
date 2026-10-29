@@ -31,8 +31,11 @@ test('private readable receipt maps saved identities, seven links and six dates 
   assert.match(receipt,/calendar_ical_url J12: https:\/\/example.org\/calendar.ics/);
   assert.match(receipt,/is_active K12: FALSE; is_current L12: FALSE/);
   for(const [cell,date] of [['B4','2031-08-01'],['B5','2032-07-31'],['B11','2031-08-01'],['B12','2031-12-31'],['B13','2032-01-01'],['B14','2032-05-31']])assert.ok(receipt.includes(`Setup & Lists!${cell}`)&&receipt.includes(date));
-  for(const label of ['Clean-source verification','role-appropriate access','Points Export private import authorization','Budget Export private import authorization','Automatic event-sync trigger','funding approval','Incoming officer acceptance'])assert.ok(receipt.includes(label),label);
-  assert.doesNotMatch(receipt,/PASS|approved source confirmed/);
+  for(const label of ['Source content and reviewed scoring checks','chapter Google login','Points Export private import authorization','Budget Export private import authorization','Connect automatic event updates','funding approval','Incoming officer acceptance'])assert.ok(receipt.includes(label),label);
+  assert.doesNotMatch(receipt,/PASS|approved source confirmed|Technical maintainer/);
+  assert.match(receipt,/structural checks and officer approvals are separate/);
+  assert.match(receipt,/Check connections/);
+  assert.match(receipt,/UNVERIFIED/);
 });
 
 test('incomplete saved runs cannot render as complete receipts',()=>{

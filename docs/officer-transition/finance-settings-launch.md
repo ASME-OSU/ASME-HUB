@@ -8,7 +8,7 @@
 4. Record incoming handoff acceptance and assigned open work in the shared checklist. Acceptance can occur while launch is blocked.
 5. Follow the separate private launch record only after the President approves activation. That record names the settings operator, approved switch time, required readback and rollback owner. The launch rollback plan identifies the previous year/settings and before-change snapshot, named restore operator, precise restore actions, failure/stop criteria and decision/contact route. A three-file recovery note is a separate record. An incoming officer's local checkmark or an inactive saved row does not activate the year.
 
-The fictional arithmetic and old check-ID mapping below are historical maintainer examples, not tasks for normal officer handoff. Current Real handoff has 20 applicable reviews; optional Practice has 16. Use the current Hub labels and shared checklist for the actual review.
+The fictional arithmetic and old check-ID mapping below are historical technical examples, not tasks for normal officer handoff. Current Real handoff has 20 applicable reviews; optional Practice has 16. Use the current Hub labels and shared checklist for the actual review.
 
 ## Practice only: budget procedure
 
@@ -26,7 +26,7 @@ funding, event bookings, public fields, activation or retention.
 
 The coordinator keeps exact resource IDs, named holders, evidence and snapshots
 in the private handoff tracker. The public examples here use resource labels.
-Ask the coordinator for the private list of this year’s files. Match each example label to the correct file link before editing; save the Treasurer, Points maintainer and settings editor contacts there.
+Ask the coordinator for the private list of this year’s files. Match each example label to the correct file link before editing; save the Treasurer, Points officer and settings editor contacts there.
 
 The chosen reporting convention is **August 1–July 31**, with **Fall August–
 December, Spring January–May and Summer June–July**. For 2027–2028, the Budget
@@ -48,7 +48,7 @@ In **Transition to New Year**, choose an academic year and **Practice** or **Rea
 
 To read ahead, use **Help, notes and saved progress → More options → Progress details → Jump to a step**, or **Preview next step** where offered. Reading ahead does not complete prerequisites. Record independent later observations with the dependency warning, without marking the earlier dependency passed. Use **Needs fixing**, **Need help** and **Not yet** truthfully; **Does not apply — add a reason** requires a saved reason. Optional notes stay collapsed until opened. Keep detailed evidence in the private tracker and use references in guide notes, because exports and printing include those notes.
 
-Every step having a disposition means the record can be reviewed; it does not imply finished closeout. V16 cleanup and V17 reviewer acceptance (incoming acceptance in production) remain independent of skipped activation; complete, skipped, failed and blocked counts remain separate from check results. A rehearsal reaches **GO — private rehearsal complete** only when T01–T04 are complete, all 16 applicable checks are passed, and T05 is skipped with a reason. Production-only checks appear separately as not applicable to rehearsal. The rehearsal remains **NO-GO for production**. T05 can be marked complete only in a production run with all T01–T04 complete and all required manual checks passed; the coordinator still reviews current private evidence and authorizes launch. A skipped T01 never becomes real officer access. T05 cleanup/handoff remains available after NO-GO; record rehearsal T05 as Skipped with its reason and retain the cleanup receipt in the private tracker. There is no cleanup mark that authorizes launch.
+Every step having a disposition means the record can be reviewed; it does not imply finished closeout. V16 cleanup and V17 recorded practice result (incoming acceptance in production) remain independent of skipped activation; complete, skipped, failed and blocked counts remain separate from check results. A rehearsal reaches **GO — private rehearsal complete** only when T01–T04 are complete, all 16 applicable checks are passed, and T05 is skipped with a reason. Production-only checks appear separately as not applicable to rehearsal. The rehearsal remains **NO-GO for production**. T05 can be marked complete only in a production run with all T01–T04 complete and all required manual checks passed; the coordinator still reviews current private evidence and authorizes launch. A skipped T01 never becomes real officer access. T05 cleanup/handoff remains available after NO-GO; record rehearsal T05 as Skipped with its reason and retain the cleanup receipt in the private tracker. There is no cleanup mark that authorizes launch.
 
 The schema/guide versions travel with the run’s ID/name/year/mode. Legacy year-only progress is retained as a legacy rehearsal. Old sixteen-step guide versions 2–6 and five-step guides 7–8 migrate to Guide 11, preserving the appropriate step mapping: step dispositions are summarized in notes, passed checks need recheck, and the complete raw original is backed up before any save. Named-run identity/mode survives migration; no old completion authorizes the revised launch. An import creates a separate run; imported production completions require fresh confirmation. Unknown/corrupt state is preserved, not overwritten. Create a new run to continue if recovery is needed. Exporting progress excludes annual private links; transfer those through the approved private handoff and review the destinations in the receiving browser.
 
@@ -58,7 +58,7 @@ Use the reviewed repaired template for fresh annual copies. **Setup & Lists B6/B
 
 Manual bank snapshots are separate: **Dashboard B27/B28** for OSU/Huntington, **C27/C28** for their as-of dates, and **D27/D28** for ledger differences. Both a snapshot and date are required for a reconciliation difference. The former Huntington C5 snapshot is preserved at B28. A ledger is not evidence that the bank is reconciled; the Treasurer records statement/outstanding-item evidence privately. Keep opening inputs and snapshots, and do not publish cash balances, payees or transactions in the sanitized export.
 
-For an isolated fixture, opening OSU $1,000/Huntington $500 and an approved Huntington expense $40 must produce $1,000/$460/$1,460 ledgers; a pending $25 expense affects projected combined cash to $1,435 only. Test income, transfer directions, Approved/Cleared/blank/Pending/Canceled states, July 31/August 1 and Fall/Spring/June–July. Funding/category-plan approval is a separate check. The remediation private copy passed sixteen native formula cases. Canonical ledger promotion and a fresh Budget copy’s matching C5 formula and zero baseline were subsequently confirmed by native readback; the full fresh-copy tracker/export/Hub operating loop still requires separate acceptance. If C5 remains a literal manual snapshot, ask the maintainer for the reviewed repair instead of overwriting it during routine setup.
+For an isolated fixture, opening OSU $1,000/Huntington $500 and an approved Huntington expense $40 must produce $1,000/$460/$1,460 ledgers; a pending $25 expense affects projected combined cash to $1,435 only. Test income, transfer directions, Approved/Cleared/blank/Pending/Canceled states, July 31/August 1 and Fall/Spring/June–July. Funding/category-plan approval is a separate check. The remediation private copy passed sixteen native formula cases. Canonical ledger promotion and a fresh Budget copy’s matching C5 formula and zero baseline were subsequently confirmed by native readback; the full fresh-copy tracker/export/Hub operating loop still requires separate acceptance. If C5 remains a literal manual snapshot, record the cell and observed value as Blocked; preserve the formula/history rather than replacing it during routine setup.
 
 ## T03: distinguish the funding plan from transactions and legacy totals
 
@@ -136,7 +136,7 @@ times. Connected exports can lag behind a completed review. If the tracker says
 Confirmed but the export still shows earlier figures, leave the reviewed inputs
 and B10 unchanged while the import refreshes; reopen the export and compare the
 funding status, plan, expenses and remaining amount. Do not redo approval just to
-force a refresh. If it remains stale or errors, ask the Treasurer and maintainer
+force a refresh. If it remains stale or errors, ask the Treasurer
 to check the import source, authorization and errors and record the unresolved
 check. Verify the Hub only after the export agrees. A private import authorization or spreadsheet readback does not establish
 a successful public Hub display. See the [funding workflow](../../README.md#funding-authority-confirmation-workflow).
@@ -166,7 +166,7 @@ and [readback/recovery rules](../../integrations/apps-script/SETTINGS_WRITE_CONT
 
 ### Provisioner readback and separate legacy annual-save route
 
-The coordinator names **one settings editor** in the private handoff. For a provisioner-created year, T02 compares the actual inactive row directly in the supplied Control Center with its receipt. The normal **Compare with Google** reads the chapter production Center and cannot verify a private copied Center. The older authenticated annual-save service is a separate legacy workflow: it does not adopt provisioner-created rows or validate proxy/Config B1 templates. Do not use it to save or reconcile those years. Only when the maintainer confirms a draft belongs to the supported legacy contract does the authorized editor use **Year Settings → Open authorized annual save**, sign in with the
+The coordinator names **one settings editor** in the private handoff. For a provisioner-created year, T02 compares the actual inactive row directly in the supplied Control Center with its receipt. The normal **Compare with Google** reads the chapter production Center and cannot verify a private copied Center. The older authenticated annual-save service is a separate legacy workflow: it does not adopt provisioner-created rows or validate proxy/Config B1 templates. Do not use it to save or reconcile those years. For a draft explicitly identified as a legacy annual-save draft, the authorized editor uses **Year Settings → Open authorized annual save**, sign in with the
 chapter Google account in its browser profile, chooses **Verify with Google**, reviews the full public
 row, then chooses **Save inactive year and confirm**. After saving, use **Compare
 with Google** and reopen the Control Center to compare all twenty columns A
@@ -182,8 +182,7 @@ only the approved target row in the exact column order below; keep K
 `is_active=FALSE` and L `is_current=FALSE`, preserve the outgoing/current row,
 and keep private notes out of this public sheet. Reopen it after saving and
 compare A:T plus the outgoing flags; confirm one row per academic-year key.
-A maintainer reviews uncertainty, conflicting values, duplicate rows or a
-changed schema before retrying. Routine officers do not activate a year while
+If values conflict, rows are duplicated or headers differ, stop and record the discrepancy before retrying; preserve the current row and before-state. Routine officers do not activate a year while
 saving its draft. The direct route is for the named authorized editor, not a
 second concurrent writer.
 
@@ -360,7 +359,7 @@ authorized decision.
 | Inventory item | Owner role | Closeout action and completion evidence |
 |---|---|---|
 | Outgoing annual Forms, response/Points workbooks, finance records | Points officer / Treasurer | Preserve historical source and recoverable version; identify archive location and approved access; record current operating links |
-| Incoming annual copies and settings rows | Coordinator / maintainers | Record exact IDs, flags, script/property/trigger disposition and operating owners; verify final target-year resources rather than copy titles |
+| Incoming annual copies and settings rows | Coordinator / officers | Record exact IDs, flags, script/property/trigger disposition and operating owners; verify final target-year resources rather than copy titles |
 | Settings/consumer snapshots and rollback record | Settings editor / consumer owners | Retain privately with source revisions and actual restored/launch outcome; record recovery owner |
 | Synthetic Form responses, roster/log entries, adjustments and test events | Points officer | Inventory exact test markers; reconcile dependencies before any approved cleanup; preserve receipts; independently verify intended clean state. Never delete real submissions |
 | Fictional finance inputs/transactions | Treasurer | Keep this mock worked example clearly labeled. Final real files must have approved real plan and no unexplained mock rows; record any approved cleanup and reconciliation |
@@ -369,7 +368,7 @@ authorized decision.
 | Mock evidence, screenshots, receipts and local drafts | Coordinator | Keep rehearsal evidence separate from actual acceptance; record retain/archive/dispose decision and owner; do not publish private payloads |
 | Shared private tracker and unresolved decisions | Incoming coordinator | Assign each open action, next step and due date; successor demonstrates resuming work from the inventory |
 
-### Test cleanup checklist for the Points maintainer
+### Test cleanup checklist for the Points officer
 
 The coordinator approves **retain as evidence** or **remove** for each marked
 test record. Keep failure reproductions and receipts while they are needed for
@@ -380,7 +379,7 @@ repair; do not interpret “cleanup” as permission to erase them.
    backup before any approved removal. Inventory each fictional identity,
    timestamp, event, Form response and linked response-sheet row; distinguish
    these from all real submissions.
-2. If approved for removal, the maintainer opens **Responses → Individual** in
+2. If approved for removal, the Points officer opens **Responses → Individual** in
    the exact copied Form, matches the marked test submission and removes that
    individual response. Never use **Delete all responses** when any real response
    or retained test exists. Form deletion and spreadsheet cleanup are separate;
