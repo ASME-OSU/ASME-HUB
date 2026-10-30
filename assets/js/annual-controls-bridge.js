@@ -31,7 +31,7 @@ export function runEmbeddedAnnualAction(options, environment = {}) {
       settled = true; cancel(timer); win.removeEventListener('message', receive); frame?.remove();
       if (error) reject(error); else resolve(value);
     };
-    const expired = () => finish(Error(started ? 'Google has not confirmed the action. Check connections before retrying; keep the same year and files.' : 'Google could not open the in-Hub controls. Allow Google sign-in, or use Open Google setup under Help and recovery. No connection action was sent.'));
+    const expired = () => finish(Error(started ? 'Google has not confirmed the action. Check connections before retrying; keep the same year and files.' : 'Google could not open the in-Hub controls. Use Chrome’s ASME profile with only the chapter account, or choose Open Google setup under Google sign-in or connection help. No connection action was sent.'));
     const context = Object.fromEntries(fields.map(key => [key, options.context?.[key]]));
     function receive(event) {
       const data = event.data;

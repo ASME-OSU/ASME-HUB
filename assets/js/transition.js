@@ -888,7 +888,7 @@ if (section) {
       connectionCards.append(item);
     }
     const eventCard = node("section", "transition-connection-card"); eventCard.dataset.connection = "eventUpdates";
-    eventCard.append(node("h5", "", "Automatic event updates"), node("p", "", retired ? "Review the recorded connection for this closed year." : "Required once for each new year. Keeps the attendance Form’s event choices up to date when Events changes."));
+    eventCard.append(node("h5", "", "Automatic event updates"), node("p", "", retired ? "Review the recorded connection for this closed year." : "Required once for each new year. Keeps the attendance Form’s event choices up to date when Events changes. Use the Hub in Chrome’s ASME profile, signed in only to asmeohiostate@gmail.com."));
     const eventPassed = retired ? visibleReport.eventUpdates.status === "not_connected" && !visibleReport.eventUpdates.triggerUid && !visibleReport.eventUpdates.stopPending && visibleReport.checks.find(check => check.id === "event_updates")?.status === "passed" : ["installed", "observed"].includes(visibleReport?.eventUpdates.status);
     result(eventCard, eventPassed, eventPassed ? retired ? "Stopped for this retired year." : "Connected" : retired ? "Retirement needs attention — open controls to finish stopping updates." : visibleReport?.eventUpdates.status === "error" ? "Needs attention — review the Google event controls." : visibleReport ? "Not connected yet." : "Not checked yet.");
     if (!visibleReport || annualSetupPending || annualDrafts.has(annualRunKey())) {

@@ -1545,6 +1545,28 @@ test('in-Hub connect revalidates report freshness before sending an embedded act
  try{Date.now=()=>now()+700000;await button.click();}finally{Date.now=now;}
  assert.equal(calls.length,0);assert.match(ui.$('transition-status').textContent,/report is old/);assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.deepEqual(ui.saved().checks,{});
 });
+test('a fresh embedded success is accepted when the old preflight expires after dispatch',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),calls=[],ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:options=>{calls.push(options);return pending.promise;}}),now=Date.now;
+ await readyManaged(ui);fixture.action=()=>{const value=fixture.report('not_connected');value.checkedAt=new Date(now()-590000).toISOString();return value;};await readinessButton(ui,'Check connections').click();
+ const running=readinessButton(ui,'Connect automatic event updates').click();assert.equal(calls.length,1);calls[0].assertBeforeSend();
+ try{
+  Date.now=()=>now()+20000;
+  assert.doesNotThrow(()=>calls[0].assertContext());assert.throws(()=>calls[0].assertBeforeSend(),/report is old/);
+  const fresh=fixture.report('installed');fresh.checkedAt=new Date(Date.now()).toISOString();pending.resolve(fresh);await running;
+  assert.equal(connectionState(ui,'eventUpdates'),'passed');assert.match(ui.$('transition-status').textContent,/Automatic event updates connected/);assert.deepEqual(ui.saved().checks,{});
+ }finally{Date.now=now;}
+});
+test('a preflight expiring while Google loads blocks dispatch through assertBeforeSend',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),calls=[],ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:options=>{calls.push(options);return pending.promise;}}),now=Date.now;
+ await readyManaged(ui);fixture.action=()=>{const value=fixture.report('not_connected');value.checkedAt=new Date(now()-590000).toISOString();return value;};await readinessButton(ui,'Check connections').click();
+ const running=readinessButton(ui,'Connect automatic event updates').click();assert.equal(calls.length,1);let sent=false;
+ try{
+  Date.now=()=>now()+20000;assert.doesNotThrow(()=>calls[0].assertContext());
+  let dispatchError;try{calls[0].assertBeforeSend();sent=true;}catch(error){dispatchError=error;}
+  assert.equal(sent,false);assert.match(dispatchError.message,/report is old/);pending.resolve(Promise.reject(dispatchError));await running;
+  assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.match(ui.$('transition-status').textContent,/report is old/);assert.deepEqual(ui.saved().checks,{});
+ }finally{Date.now=now;}
+});
 test('an embedded failure preserves unsaved notes and annual link edits and leaves connection unconfirmed',async()=>{
  const fixture=managedFixture(),pending=deferredSetup(),ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:()=>pending.promise});await readyManaged(ui);await readinessButton(ui,'Check connections').click();
  const note=observation(ui,'V01');note.value='MOCK officer draft kept through connection failure';await note.emit('input');
@@ -1571,6 +1593,12 @@ for(const remaining of ['installed','pending_record'])test('retired-year stop do
  await readyManaged(ui);await ui.go('T05');fixture.action=()=>{const value=fixture.report('installed');value.readScope='retirement';return value;};await readinessButton(ui,'Check retired-year connection').click();
  const box=connectionCard(ui,'eventUpdates').find(n=>n.tagName==='input'&&n.type==='checkbox');box.checked=true;await box.emit('change');await readinessButton(ui,'Stop automatic event updates').click();
  assert.match(ui.$('transition-status').textContent,/still needs attention/);assert.doesNotMatch(ui.$('transition-status').textContent,/Automatic updates stopped/);assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.ok(readinessButton(ui,'Stop automatic event updates'));assert.deepEqual(ui.saved().checks,{});
+});
+
+for(const status of ['installed','pending_record'])test('a contradictory retired passed check cannot turn '+status+' into a green stopped badge',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);await ui.go('T05');
+ fixture.action=()=>{const value=fixture.report(status==='installed'?'installed':'not_connected');value.readScope='retirement';if(status==='pending_record')value.eventUpdates={status:'not_connected',scope:'This project.',triggerUid:'saved-uid',stopPending:true,detail:'Finish the stopped record.'};value.checks.push({id:'event_updates',label:'Retired automatic updates',status:'passed',detail:'Contradictory MOCK passed detail.'});return value;};
+ await readinessButton(ui,'Check retired-year connection').click();assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.doesNotMatch(connectionCard(ui,'eventUpdates').textContent,/Stopped for this retired year/);assert.ok(readinessButton(ui,'Stop automatic event updates'));assert.deepEqual(ui.saved().checks,{});
 });
 
 test('reloaded Step3 signs in for readonly checks without recreating annual files',async()=>{
