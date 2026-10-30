@@ -731,6 +731,26 @@ if (section) {
     if (annualSetupStage) clearTimeout(annualSetupStage.timer);
     annualSetupStage = null;
   }
+  // Connection reports rebuild in place. Preserve the officer's current view,
+  // including a later scroll made while Google was working, rather than letting
+  // detaching the old card or browser scroll anchoring move the dialog.
+  function renderAnnualConnections() {
+    const body = dialog.querySelector(".transition-dialog-body");
+    const scrollTop = body.scrollTop;
+    const viewport = body.getBoundingClientRect?.();
+    const anchors = [];
+    if (viewport) for (const [attribute, key] of [["data-connection", "connection"], ["data-connection-actions", "connectionActions"], ["data-review-confirmation", "reviewConfirmation"]]) {
+      for (const element of body.querySelectorAll(`[${attribute}]`)) {
+        const rect = element.getBoundingClientRect();
+        if (rect.bottom > viewport.top && rect.top < viewport.bottom) anchors.push({selector: `[${attribute}="${element.dataset[key]}"]`, top: rect.top, distance: Math.abs(rect.top - viewport.top)});
+      }
+    }
+    anchors.sort((a, b) => a.distance - b.distance);
+    render();
+    const anchor = anchors.find(item => body.querySelector(item.selector));
+    if (anchor) body.scrollTop += body.querySelector(anchor.selector).getBoundingClientRect().top - anchor.top;
+    else body.scrollTop = scrollTop;
+  }
   function showAnnualSetupStage(session, context, message, slowMessage = "", panelSelector = ".transition-connected-setup") {
     clearAnnualSetupStage();
     const stage = {};
@@ -742,7 +762,7 @@ if (section) {
       const status = list.querySelector(panelSelector)?.querySelector(".transition-status");
       if (status) status.textContent = slowMessage;
     }, 30000);
-    render();
+    if (panelSelector === ".transition-annual-readiness") renderAnnualConnections(); else render();
   }
   function appendConnectedSetup(card) {
     const apiConfig = window.ASME_HUB_CONFIG?.annualProvisioner?.api;
@@ -900,7 +920,7 @@ if (section) {
     const signIn = node("button", "secondary-button", session.error ? "Sign in again" : "Sign in with chapter Google account"); signIn.type = "button";
     signIn.disabled = annualSetupPending || !client?.ready;
     signIn.hidden = Boolean(session.config?.runKey) && !session.error;
-    const actionsRow = node("div", "transition-work-actions"); actionsRow.append(signIn); panel.append(actionsRow);
+    const actionsRow = node("div", "transition-work-actions"); actionsRow.dataset.connectionActions = "true"; actionsRow.append(signIn); panel.append(actionsRow);
     const check = node("button", "secondary-button", "Check connections");
     check.type = "button"; check.disabled = annualSetupPending || !client?.ready || !session.config?.runKey; actionsRow.append(check);
     panel.append(node("p", "transition-control-help", retired ? "After reviewing or stopping updates, choose Check retired-year connection again." : "After allowing imports in Google Sheets, choose Check connections again. Connect automatic event updates here in the Hub."));
@@ -968,12 +988,12 @@ if (section) {
     function readinessContext(config) {
       return {year: selectedYear, mode: progress.run.mode, workspaceMode: config?.workspaceMode, runKey: config?.runKey, controlCenterId: config?.controlCenterId, rootFolderId: config?.rootFolderId, links: savedAnnualLinks};
     }
-    const finish = () => { clearAnnualSetupStage(); annualSetupPending = false; render(); };
+    const finish = () => { clearAnnualSetupStage(); annualSetupPending = false; renderAnnualConnections(); };
     signIn.addEventListener("click", async () => {
       if (annualSetupPending || !client?.ready) return;
       try {
         const context = captureSetupContext(); session.config = null; session.report = null; session.error = false; annualSetupPending = true;
-        showAnnualSetupStage(session, context, "Complete Google sign-in in the popup, then wait for this year’s saved workspace.");
+        showAnnualSetupStage(session, context, "Complete Google sign-in in the popup, then wait for this year’s saved workspace.", "", ".transition-annual-readiness");
         await client.connect(); assertSetupContext(context);
         const config = await client.call("getAnnualSetupConfig", [context.year]); assertSetupContext(context);
         if (!config || config.workspaceMode !== context.mode || !/^[A-Za-z0-9_-]{20,200}$/.test(config.rootFolderId || "") || !/^[A-Za-z0-9_-]{20,200}$/.test(config.controlCenterId || "") || typeof config.configRevision !== "string" || !config.configRevision || !validAnnualRunKey(config.runKey, context.year, config.controlCenterId, config.rootFolderId)) throw Error("No matching completed annual run was loaded. Reopen this year’s files in Step 2; sign-in alone cannot match different saved links.");

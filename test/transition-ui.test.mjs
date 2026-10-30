@@ -1665,3 +1665,40 @@ test('Step2 checkbox confirmations preserve existing results and require every r
  checkbox('V02').checked=false;await checkbox('V02').emit('change');
  assert.equal(ui.saved().checks.V02,undefined);assert.equal(ui.$('transition-steps').find(n=>n.className.includes('transition-finish-step')).disabled,true);
 });
+
+// Model the scroll clamp browsers can apply while the old step is detached.
+function detachScrollModel(ui) {
+ const body=ui.$('transition-dialog').querySelector('.transition-dialog-body'),list=ui.$('transition-steps'),replace=list.replaceChildren.bind(list);
+ body.scrollTop=0;list.replaceChildren=(...children)=>{replace(...children);body.scrollTop=0;};return body;
+}
+for(const outcome of ['success','failure'])test('connection check preserves the current reading position through start, slow status and '+outcome,async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),timers=setupTimers(),ui=browser(new Map(),[],false,fixture.client,timers);await readyManaged(ui);
+ const body=detachScrollModel(ui);body.scrollTop=640;fixture.action=()=>pending.promise;
+ const running=readinessButton(ui,'Check connections').click();assert.equal(body.scrollTop,640);assert.equal(ui.$('transition-steps').find(n=>n.focused),null);
+ body.scrollTop=810;timers.fire();assert.equal(body.scrollTop,810);
+ if(outcome==='success')pending.resolve(fixture.report('not_connected'));else pending.resolve(Promise.reject(Error('MOCK network failure')));
+ await running;assert.equal(body.scrollTop,810);assert.equal(ui.$('transition-steps').find(n=>n.focused),null);assert.deepEqual(ui.saved().checks,{});
+ await ui.go('T03');assert.equal(body.scrollTop,0);assert.ok(ui.$('transition-steps').find(n=>n.tagName==='h3'&&n.focused));
+});
+test('connect completion preserves a later user scroll rather than the original button position',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:()=>pending.promise});await readyManaged(ui);await readinessButton(ui,'Check connections').click();
+ const body=detachScrollModel(ui);body.scrollTop=500;
+ const running=readinessButton(ui,'Connect automatic event updates').click();assert.equal(body.scrollTop,500);
+ body.scrollTop=760;pending.resolve(fixture.report('installed'));await running;assert.equal(body.scrollTop,760);assert.equal(connectionState(ui,'eventUpdates'),'passed');assert.deepEqual(ui.saved().checks,{});
+});
+test('connection results keep a visible stable anchor when content above it changes height',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);
+ const body=detachScrollModel(ui);let layoutShift=0;
+ const all=()=>{const nodes=[];const visit=n=>{for(const c of n.children||[]){nodes.push(c);visit(c);}};visit(body);return nodes;};
+ const keyFor=attribute=>attribute.slice(5).replace(/-([a-z])/g,(_m,c)=>c.toUpperCase());
+ const decorate=node=>{if(!node)return node;if(!node.getBoundingClientRect){const shift=layoutShift;node.getBoundingClientRect=()=>{const base=node.dataset.connection==='eventUpdates'?620:node.dataset.connectionActions?800:node.dataset.reviewConfirmation?1000:node.dataset.connection==='budgetExport'?460:300;return {top:100+base+shift-body.scrollTop,bottom:200+base+shift-body.scrollTop};};}return node;};
+ const create=ui.document.createElement;ui.document.createElement=tag=>decorate(create(tag));
+ const original=body.querySelector.bind(body);
+ body.getBoundingClientRect=()=>({top:100,bottom:600});
+ body.querySelectorAll=selector=>{const key=keyFor(selector.slice(1,-1));return all().filter(n=>n.dataset[key]!==undefined).map(decorate);};
+ body.querySelector=selector=>{const match=selector.match(/^\[(data-[\w-]+)="([^"]+)"\]$/);return match?decorate(all().find(n=>n.dataset[keyFor(match[1])]===match[2])):original(selector);};
+ body.scrollTop=650;fixture.action=()=>pending.promise;const running=readinessButton(ui,'Check connections').click();assert.equal(body.scrollTop,650);
+ body.scrollTop=780;layoutShift=120;pending.resolve(fixture.report('installed'));await running;
+ assert.equal(body.scrollTop,900,'maintains the visible action row offset after the report changes its document position');
+ assert.equal(body.querySelector('[data-connection-actions="true"]').getBoundingClientRect().top,120);
+});
