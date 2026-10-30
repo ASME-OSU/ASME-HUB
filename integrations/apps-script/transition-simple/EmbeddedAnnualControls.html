@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;font:14px system-ui,sans-serif;color:#17202a;background:#f5f6f8}p{padding:12px;margin:0}</style></head>
+<body>
+  <input id="year" type="hidden" value="__YEAR__">
+  <input id="mode" type="hidden" value="__MODE__">
+  <input id="run-key" type="hidden" value="__EXPECTED_RUN_KEY__">
+  <input id="config-revision" type="hidden" value="__EXPECTED_CONFIG_REVISION__">
+  <input id="nonce" type="hidden" value="__NONCE__">
+  <p id="status" role="status" aria-live="polite">Connecting the chapter’s Google controls…</p>
+  <script>
+    (() => {
+      const origin = 'https://asme-osu.github.io', channel = 'asme-annual-controls-v1';
+      const value = id => document.getElementById(id).value;
+      const binding = {year:value('year'), mode:value('mode'), runKey:value('run-key'), configRevision:value('config-revision')};
+      const nonce = value('nonce'), fileKeys = ['pointsMaster','attendanceForm','pointsExport','budgetTracker','budgetExport','controlCenter'];
+      let config = null, ready = false, used = false;
+      const status = document.getElementById('status');
+      const send = (type, payload = {}) => window.top.postMessage({...binding, channel, nonce, type, ...payload}, origin);
+      function fail(error) {
+        const message = error && typeof error.message === 'string' ? error.message : 'Google could not confirm the annual connection. Check connections before retrying.';
+        status.textContent = message;
+        send('error', {message});
+      }
+      function validFileIds(ids) { return !!ids && fileKeys.every(key => typeof ids[key] === 'string' && /^[\w-]+$/.test(ids[key])); }
+      function validate(report, retirement) {
+        if (!report || report.version !== 1 || report.year !== binding.year || report.runKey !== binding.runKey || report.readScope !== (retirement ? 'retirement' : 'staging') || !config || !validFileIds(report.fileIds) || !fileKeys.every(key => report.fileIds[key] === config.fileIds[key]) || !Array.isArray(report.checks) || !report.checks.every(check => check && ['passed','action_needed','failed'].includes(check.status) && typeof check.label === 'string' && typeof check.detail === 'string') || !report.eventUpdates || !['not_connected','installed','observed','error'].includes(report.eventUpdates.status) || !Array.isArray(report.limits)) throw new Error('Google returned a report for different annual files. Check the selected year again.');
+      }
+      // A URL load only reads configuration. A trusted top-level Hub command
+      // is required before any trigger installation or removal is requested.
+      window.addEventListener('message', event => {
+        const data = event.data;
+        if (event.source !== window.top || event.origin !== origin || !data || typeof data !== 'object' || data.channel !== channel || data.nonce !== nonce || data.type !== 'run' || !Object.keys(binding).every(key => data[key] === binding[key]) || !['connect','stop'].includes(data.action) || (data.action === 'stop' && data.confirmStop !== true) || !ready || used) return;
+        used = true;
+        const retirement = data.action === 'stop';
+        const input = {year:binding.year, mode:binding.mode, expectedRunKey:binding.runKey, expectedConfigRevision:binding.configRevision};
+        status.textContent = retirement ? 'Checking this closed year before stopping updates…' : 'Checking this year before connecting updates…';
+        google.script.run.withSuccessHandler(report => {
+          try {
+            validate(report, retirement);
+            if (retirement && (typeof report.eventUpdates.triggerUid !== 'string' || !report.eventUpdates.triggerUid)) {
+              if (report.checks.find(check => check.id === 'event_updates')?.status !== 'passed') throw new Error('The retired connection needs review before it can be stopped.');
+              status.textContent = 'Automatic updates are already stopped for this year.';
+              send('result', {report}); return;
+            }
+            status.textContent = retirement ? 'Stopping this year’s recorded automatic updates…' : 'Connecting this year’s automatic updates…';
+            const mutation = google.script.run.withSuccessHandler(result => {
+              try { validate(result, retirement); status.textContent = 'Google returned the connection result. Review its status in the Hub.'; send('result', {report:result}); }
+              catch (error) { fail(error); }
+            }).withFailureHandler(fail);
+            if (retirement) mutation.stopAnnualEventUpdates({...input, confirmStop:true}); else mutation.enableAnnualEventUpdates(input);
+          } catch (error) { fail(error); }
+        }).withFailureHandler(fail).checkAnnualReadiness(retirement ? {...input, action:'stop'} : input);
+      });
+      if (!/^[a-f0-9]{64}$/.test(nonce)) { status.textContent = 'Open these controls from the Hub.'; return; }
+      google.script.run.withSuccessHandler(result => {
+        if (!result || result.workspaceMode !== binding.mode || result.runKey !== binding.runKey || result.configRevision !== binding.configRevision || !validFileIds(result.fileIds)) { fail(new Error('The chapter setup changed. Check the selected year again before connecting updates.')); return; }
+        config = result; ready = true; status.textContent = 'Chapter Google controls ready.'; send('ready');
+      }).withFailureHandler(fail).getAnnualSetupConfig(binding.year);
+    })();
+  </script>
+</body></html>

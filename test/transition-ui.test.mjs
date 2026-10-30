@@ -52,7 +52,7 @@ function browser(existing = new Map(), resourceSnapshot = [], failSelection = fa
   const document = { getElementById: $, createElement: tag => new Element(tag), createElementNS: (_ns, tag) => new Element(tag), activeElement: null, body: new Element(), addEventListener(name, callback) { documentListeners.set(name, callback); }, dispatchEvent(event) { dispatched.push(event); documentListeners.get(event.type)?.(event); } };
   const window = { ASME_SHARED_RESOURCES: globalThis.ASME_SHARED_RESOURCES, ASME_TRANSITION_RESOURCE_SNAPSHOT: !Array.isArray(resourceSnapshot) ? resourceSnapshot : null, location: {hash:""}, ASME_TRANSITION_RESOURCES: Array.isArray(resourceSnapshot) ? resourceSnapshot : resourceSnapshot.resources, ASME_HUB_CONFIG: { currentAcademicYear: "2026-2027" }, addEventListener(name, callback) { windowListeners.set(name, callback); }, print() {} };
   if (setupClient) window.ASME_HUB_CONFIG.annualProvisioner = { api: { clientId: "fixture", deploymentId: "fixture", scopes: [] } };
-  const context = { ...state, ...definitions, ...links, validateAnnualReadiness, validAnnualRunKey, annualEventControlsUrl, createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: faults.setTimeout || (() => {}), clearTimeout: faults.clearTimeout || (() => {}), CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
+  const context = { ...state, ...definitions, ...links, validateAnnualReadiness, validAnnualRunKey, annualEventControlsUrl, runEmbeddedAnnualAction: options => faults.runEmbeddedAnnualAction ? faults.runEmbeddedAnnualAction(options) : Promise.reject(Error("Embedded bridge was not stubbed")), createAnnualSetupClient: () => setupClient, document, window, localStorage, Option: function(text, value) { const node = new Element("option"); node.textContent = text; node.value = value; return node; }, Date, URL, Blob, setTimeout: faults.setTimeout || (() => {}), clearTimeout: faults.clearTimeout || (() => {}), CustomEvent: function(type, options) { this.type=type; this.detail=options?.detail; } };
   vm.runInNewContext(source, context, { filename: "transition.js" });
   const control = id => $("transition-steps").querySelector(`[data-transition-control="${id}"]`);
   const go = async id => { $("transition-step-picker").value = id; await $("transition-step-picker").emit("change"); };
@@ -1494,11 +1494,11 @@ for(const mode of ['production','rehearsal']) test('Guide 13 '+mode+' view prese
 
 
 const eventLink=ui=>readinessPanel(ui).find(n=>n.tagName==='a'&&n.dataset.eventControls==='true');
-test('Hub exposes only a verified bound Google-hosted update link and readonly check',async()=>{
+test('Hub exposes an in-place connection button only after a verified bound report',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);assert.equal(eventLink(ui),null);
  await readinessButton(ui,'Check connections').click();const url=new URL(eventLink(ui).href);
  assert.equal(url.hostname,'script.google.com');assert.equal(url.searchParams.get('year'),'2027-2028');assert.equal(url.searchParams.get('mode'),'production');assert.equal(url.searchParams.get('expectedRunKey'),fixture.config.runKey);assert.equal(url.searchParams.get('expectedConfigRevision'),'revision-1');
- assert.equal(readinessButton(ui,'Connect automatic event updates'),null);assert.equal(readinessButton(ui,'Stop event updates'),null);assert.deepEqual(ui.saved().checks,{});assert.deepEqual(fixture.calls.map(c=>c.name),['getAnnualSetupConfig','runAnnualSetup','checkAnnualReadiness']);
+ assert.notEqual(readinessButton(ui,'Connect automatic event updates').disabled,true);assert.equal(readinessButton(ui,'Stop automatic event updates'),null);assert.deepEqual(ui.saved().checks,{});assert.deepEqual(fixture.calls.map(c=>c.name),['getAnnualSetupConfig','runAnnualSetup','checkAnnualReadiness']);
 });
 for(const mismatch of ['files','year','run','unsafe'])test('invalid '+mismatch+' report cannot expose hosted event controls',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);fixture.action=()=>{const value=fixture.report();if(mismatch==='files')value.fileIds.pointsMaster=value.fileIds.pointsExport;if(mismatch==='year')value.year='2028-2029';if(mismatch==='run')value.runKey='different';if(mismatch==='unsafe')value.checks[0].url='https://evil.test';return value;};await readinessButton(ui,'Check connections').click();assert.equal(eventLink(ui),null);assert.deepEqual(ui.saved().checks,{});
@@ -1517,10 +1517,62 @@ test('freshness is rechecked when opening a previously rendered Google link',asy
  try{Date.now=()=>now()+700000;await link.emit('click',{preventDefault(){prevented=true;}});}finally{Date.now=now;}
  assert.equal(prevented,true);assert.equal(eventLink(ui),null);assert.match(ui.$('transition-status').textContent,/report is old/);
 });
-test('retirement pending-stop status links to Google confirmation without Hub mutations',async()=>{
+test('retirement pending-stop exposes an explicit in-Hub confirmation without sending an action',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);await ui.go('T05');fixture.action=(name,input)=>{assert.equal(name,'checkAnnualReadiness');assert.equal(input[0].action,'stop');const value=fixture.report('not_connected');value.readScope='retirement';value.eventUpdates={status:'not_connected',scope:'This project.',triggerUid:'saved-uid',stopPending:true,detail:'Google removed the trigger; finish recording stopped status.'};return value;};await readinessButton(ui,'Check retired-year connection').click();
- assert.ok(eventLink(ui));assert.match(readinessPanel(ui).textContent,/Retirement needs attention/);assert.doesNotMatch(connectionCard(ui,'eventUpdates').textContent,/Not connected yet/);assert.equal(connectionCard(ui,'pointsExport'),null);assert.match(readinessPanel(ui).textContent,/Open event update controls.*Stop automatic event updates.*finish its saved record/s);assert.equal(readinessPanel(ui).find(n=>n.tagName==='input'&&n.type==='checkbox'),null);assert.equal(readinessButton(ui,'Stop event updates'),null);assert.deepEqual(ui.saved().checks,{});
+ assert.ok(eventLink(ui));assert.match(readinessPanel(ui).textContent,/Retirement needs attention/);assert.doesNotMatch(connectionCard(ui,'eventUpdates').textContent,/Not connected yet/);assert.equal(connectionCard(ui,'pointsExport'),null);assert.match(readinessPanel(ui).textContent,/Stop automatic event updates to finish its saved record/s);assert.ok(connectionCard(ui,'eventUpdates').find(n=>n.tagName==='input'&&n.type==='checkbox'));assert.equal(readinessButton(ui,'Stop automatic event updates').disabled,true);assert.deepEqual(ui.saved().checks,{});
 });
+test('in-Hub connect uses the bound embedded channel, shows pending and never auto-passes officer checks',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),bridgeCalls=[],timers=setupTimers();
+ const ui=browser(new Map(),[],false,fixture.client,{...timers,runEmbeddedAnnualAction:options=>{bridgeCalls.push(options);return pending.promise;}});
+ await readyManaged(ui);await readinessButton(ui,'Check connections').click();
+ const button=readinessButton(ui,'Connect automatic event updates'),running=button.click();
+ assert.equal(bridgeCalls.length,1);const request=bridgeCalls[0];
+ assert.equal(request.action,'connect');assert.equal(request.confirmStop,false);assert.equal(request.context.year,'2027-2028');assert.equal(request.context.mode,'production');assert.equal(request.context.runKey,fixture.config.runKey);assert.equal(request.context.configRevision,fixture.config.configRevision);
+ assert.equal(connectionState(ui,'eventUpdates'),'pending');assert.equal(readinessPanel(ui).querySelector('.transition-status').dataset.working,'true');
+ await button.click();await readinessButton(ui,'Check connections').click();assert.equal(bridgeCalls.length,1);assert.equal(fixture.calls.filter(c=>c.name==='checkAnnualReadiness').length,1);
+ request.assertContext();pending.resolve(fixture.report('installed'));await running;
+ assert.equal(connectionState(ui,'eventUpdates'),'passed');assert.match(readinessPanel(ui).textContent,/Automatic event updates connected/);assert.equal(readinessButton(ui,'Connect automatic event updates'),null);assert.deepEqual(ui.saved().checks,{});assert.deepEqual(ui.saved().steps,{});assert.equal(timers.pending.size,0);
+ assert.ok(fixture.calls.every(c=>['getAnnualSetupConfig','runAnnualSetup','checkAnnualReadiness'].includes(c.name)));
+});
+for(const mismatch of ['files','year','run','scope'])test('in-Hub connect rejects a returned '+mismatch+' mismatch without recording success',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:async()=>{const value=fixture.report('installed');if(mismatch==='files')value.fileIds.pointsMaster=value.fileIds.pointsExport;if(mismatch==='year')value.year='2028-2029';if(mismatch==='run')value.runKey='other';if(mismatch==='scope')value.readScope='retirement';return value;}});
+ await readyManaged(ui);await readinessButton(ui,'Check connections').click();await readinessButton(ui,'Connect automatic event updates').click();
+ assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.equal(eventLink(ui),null);assert.doesNotMatch(readinessPanel(ui).textContent,/Automatic event updates connected/);assert.deepEqual(ui.saved().checks,{});
+});
+test('in-Hub connect revalidates report freshness before sending an embedded action',async()=>{
+ const fixture=managedFixture(),calls=[],ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:async options=>{calls.push(options);return fixture.report('installed');}});await readyManaged(ui);await readinessButton(ui,'Check connections').click();
+ const button=readinessButton(ui,'Connect automatic event updates'),now=Date.now;
+ try{Date.now=()=>now()+700000;await button.click();}finally{Date.now=now;}
+ assert.equal(calls.length,0);assert.match(ui.$('transition-status').textContent,/report is old/);assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.deepEqual(ui.saved().checks,{});
+});
+test('an embedded failure preserves unsaved notes and annual link edits and leaves connection unconfirmed',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:()=>pending.promise});await readyManaged(ui);await readinessButton(ui,'Check connections').click();
+ const note=observation(ui,'V01');note.value='MOCK officer draft kept through connection failure';await note.emit('input');
+ const running=readinessButton(ui,'Connect automatic event updates').click();const input=annualField(ui);input.value='https://docs.google.com/spreadsheets/d/draft_only_12345678901234567890/edit';await input.emit('input');
+ pending.resolve(Promise.reject(Error('Google could not confirm this action. Check connections before retrying.')));await running;
+ assert.equal(observation(ui,'V01').value,'MOCK officer draft kept through connection failure');assert.equal(annualField(ui).value,input.value);assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.deepEqual(ui.saved().checks,{});assert.match(ui.$('transition-status').textContent,/could not confirm/);
+});
+test('a link edit during an embedded action prevents its late report becoming current evidence',async()=>{
+ const fixture=managedFixture(),pending=deferredSetup(),calls=[],ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:options=>{calls.push(options);return pending.promise;}});await readyManaged(ui);await readinessButton(ui,'Check connections').click();
+ const running=readinessButton(ui,'Connect automatic event updates').click(),input=annualField(ui);input.value='https://docs.google.com/spreadsheets/d/changed_context_1234567890123456/edit';await input.emit('input');
+ assert.throws(()=>calls[0].assertContext(),/unsaved|changed/i);pending.resolve(fixture.report('installed'));await running;
+ assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.equal(eventLink(ui),null);assert.equal(annualField(ui).value,input.value);assert.deepEqual(ui.saved().checks,{});
+});
+test('retired-year stop needs the explicit checkbox and keeps mutations out of scripts.run',async()=>{
+ const fixture=managedFixture(),calls=[],ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:async options=>{calls.push(options);const stopped=fixture.report('not_connected');stopped.readScope='retirement';stopped.checks.push({id:'event_updates',label:'Retired automatic updates',status:'passed',detail:'No managed updater remains.'});return stopped;}});
+ await readyManaged(ui);await ui.go('T05');fixture.action=(name,input)=>{assert.equal(name,'checkAnnualReadiness');assert.equal(input[0].action,'stop');const value=fixture.report('installed');value.readScope='retirement';return value;};await readinessButton(ui,'Check retired-year connection').click();
+ const box=connectionCard(ui,'eventUpdates').find(n=>n.tagName==='input'&&n.type==='checkbox'),button=readinessButton(ui,'Stop automatic event updates');assert.equal(button.disabled,true);await button.click();assert.equal(calls.length,0);
+ box.checked=true;await box.emit('change');assert.equal(button.disabled,false);await button.click();
+ assert.equal(calls.length,1);assert.equal(calls[0].action,'stop');assert.equal(calls[0].confirmStop,true);assert.equal(calls[0].context.action,'stop');assert.equal(calls[0].context.runKey,fixture.config.runKey);assert.equal(connectionState(ui,'eventUpdates'),'passed');assert.match(readinessPanel(ui).textContent,/Automatic updates stopped for this closed year/);assert.deepEqual(ui.saved().checks,{});assert.equal(readinessButton(ui,'Stop automatic event updates'),null);assert.ok(fixture.calls.every(c=>['getAnnualSetupConfig','runAnnualSetup','checkAnnualReadiness'].includes(c.name)));
+});
+
+for(const remaining of ['installed','pending_record'])test('retired-year stop does not claim success while '+remaining+' remains',async()=>{
+ const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client,{runEmbeddedAnnualAction:async()=>{const value=fixture.report(remaining==='installed'?'installed':'not_connected');value.readScope='retirement';value.ready=false;if(remaining==='pending_record')value.eventUpdates={status:'not_connected',scope:'This project.',triggerUid:'saved-uid',stopPending:true,detail:'Trigger deletion needs its stopped record finalized.'};value.checks.push({id:'event_updates',label:'Retired automatic updates',status:'action_needed',detail:'The stop has not been confirmed complete.'});return value;}});
+ await readyManaged(ui);await ui.go('T05');fixture.action=()=>{const value=fixture.report('installed');value.readScope='retirement';return value;};await readinessButton(ui,'Check retired-year connection').click();
+ const box=connectionCard(ui,'eventUpdates').find(n=>n.tagName==='input'&&n.type==='checkbox');box.checked=true;await box.emit('change');await readinessButton(ui,'Stop automatic event updates').click();
+ assert.match(ui.$('transition-status').textContent,/still needs attention/);assert.doesNotMatch(ui.$('transition-status').textContent,/Automatic updates stopped/);assert.equal(connectionState(ui,'eventUpdates'),'unchecked');assert.ok(readinessButton(ui,'Stop automatic event updates'));assert.deepEqual(ui.saved().checks,{});
+});
+
 test('reloaded Step3 signs in for readonly checks without recreating annual files',async()=>{
  const fixture=managedFixture(),first=browser(new Map(),[],false,fixture.client);await readyManaged(first);const ui=browser(new Map(first.existing),[],false,fixture.client);ui.window.ASME_HUB_CONFIG.annualProvisioner.url=first.window.ASME_HUB_CONFIG.annualProvisioner.url;await ui.go('T03');await readinessButton(ui,'Sign in with chapter Google account').click();await readinessButton(ui,'Check connections').click();assert.ok(eventLink(ui));assert.equal(fixture.calls.filter(c=>c.name==='runAnnualSetup').length,1);
 });
@@ -1542,7 +1594,7 @@ test('three connection actions are visible before checks without claiming a relo
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);
  for(const key of ['pointsExport','budgetExport','eventUpdates'])assert.equal(connectionState(ui,key),'unchecked');
  assert.match(connectionCard(ui,'eventUpdates').textContent,/Required once for each new year.*Not checked yet.*Check connections/s);
- assert.equal(eventLink(ui),null);assert.equal(readinessButton(ui,'Connect in Google ↗').disabled,true);assert.match(readinessPanel(ui).textContent,/Click a cell showing #REF!.*click Allow access/s);
+ assert.equal(eventLink(ui),null);assert.equal(readinessButton(ui,'Connect automatic event updates').disabled,true);assert.match(readinessPanel(ui).textContent,/Click a cell showing #REF!.*click Allow access/s);
 });
 test('connection badges reflect matching outputs, suppress old green summaries while pending and clear after error',async()=>{
  const fixture=managedFixture(),ui=browser(new Map(),[],false,fixture.client);await readyManaged(ui);

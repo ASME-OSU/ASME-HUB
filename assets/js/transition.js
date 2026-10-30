@@ -4,6 +4,8 @@ import { ANNUAL_HANDOFF_TYPE, PRIVATE_RECORD_FIELDS, ANNUAL_LINK_FIELDS, MOCK_AN
 
 import { validateAnnualReadiness, validAnnualRunKey, annualEventControlsUrl } from "./annual-readiness.js?v=20261028a";
 
+import { runEmbeddedAnnualAction } from "./annual-controls-bridge.js?v=20261029c";
+
 import { createAnnualSetupClient } from "./annual-setup-api.js?v=20261028a";
 
 const section = document.getElementById("transition");
@@ -783,7 +785,13 @@ if (section) {
     panel.append(create, status);
     if (session.receipt) {
       const receipt = node("details", "transition-tools transition-backup-examples");
-      receipt.append(node("summary", "", "Optional backup and detailed settings"), node("p", "", "Compare this setup summary with the actual files below. It does not certify permissions, clean sources or completed reviews."), node("pre", "", session.receipt));
+      const download = node("button", "secondary-button", "Download setup summary"); download.type = "button";
+      download.addEventListener("click", () => {
+        const url = URL.createObjectURL(new Blob([session.receipt], {type: "text/plain;charset=utf-8"}));
+        const link = node("a"); link.href = url; link.download = `ASME-${selectedYear}-setup-receipt.txt`; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      receipt.append(node("summary", "", "Optional backup and detailed settings"), download, node("p", "", "Compare this setup summary with the actual files below. It does not certify permissions, clean sources or completed reviews."), node("pre", "", session.receipt));
       panel.append(receipt);
     }
     const finish = () => { clearAnnualSetupStage(); annualSetupPending = false; render(); };
@@ -881,12 +889,12 @@ if (section) {
     }
     const eventCard = node("section", "transition-connection-card"); eventCard.dataset.connection = "eventUpdates";
     eventCard.append(node("h5", "", "Automatic event updates"), node("p", "", retired ? "Review the recorded connection for this closed year." : "Required once for each new year. Keeps the attendance Form’s event choices up to date when Events changes."));
-    const eventPassed = retired ? visibleReport.checks.find(check => check.id === "event_updates")?.status === "passed" : ["installed", "observed"].includes(visibleReport?.eventUpdates.status);
+    const eventPassed = retired ? visibleReport.eventUpdates.status === "not_connected" && !visibleReport.eventUpdates.triggerUid && !visibleReport.eventUpdates.stopPending && visibleReport.checks.find(check => check.id === "event_updates")?.status === "passed" : ["installed", "observed"].includes(visibleReport?.eventUpdates.status);
     result(eventCard, eventPassed, eventPassed ? retired ? "Stopped for this retired year." : "Connected" : retired ? "Retirement needs attention — open controls to finish stopping updates." : visibleReport?.eventUpdates.status === "error" ? "Needs attention — review the Google event controls." : visibleReport ? "Not connected yet." : "Not checked yet.");
     if (!visibleReport || annualSetupPending || annualDrafts.has(annualRunKey())) {
-      const pendingControls = node("button", "secondary-button", retired ? "Open controls ↗" : "Connect in Google ↗");
+      const pendingControls = node("button", "secondary-button", retired ? "Stop automatic event updates" : "Connect automatic event updates");
       pendingControls.type = "button"; pendingControls.disabled = true; eventCard.append(pendingControls);
-      eventCard.append(node("p", "transition-control-help", annualSetupPending ? "Wait for the current check to finish." : annualDrafts.has(annualRunKey()) ? "Save or discard unsaved link edits, then check connections." : !session.config?.runKey ? "Sign in below, then choose Check connections to enable the Google setup button." : "Choose Check connections below to enable the Google setup button."));
+      eventCard.append(node("p", "transition-control-help", annualSetupPending ? "Wait for the current check to finish." : annualDrafts.has(annualRunKey()) ? "Save or discard unsaved link edits, then check connections." : !session.config?.runKey ? "Sign in below, then choose Check connections to enable this button." : "Choose Check connections below to enable this button."));
     }
     connectionCards.append(eventCard);
     const signIn = node("button", "secondary-button", session.error ? "Sign in again" : "Sign in with chapter Google account"); signIn.type = "button";
@@ -895,14 +903,14 @@ if (section) {
     const actionsRow = node("div", "transition-work-actions"); actionsRow.append(signIn); panel.append(actionsRow);
     const check = node("button", "secondary-button", "Check connections");
     check.type = "button"; check.disabled = annualSetupPending || !client?.ready || !session.config?.runKey; actionsRow.append(check);
-    panel.append(node("p", "transition-control-help", retired ? "After reviewing or stopping updates, choose Check retired-year connection again." : "After allowing imports or connecting event updates in Google, return here and choose Check connections again."));
+    panel.append(node("p", "transition-control-help", retired ? "After reviewing or stopping updates, choose Check retired-year connection again." : "After allowing imports in Google Sheets, choose Check connections again. Connect automatic event updates here in the Hub."));
     const status = node("p", "transition-status", !client?.ready ? "Connected checks are unavailable. Keep the current files and use the manual setup fallback if needed." : session.config && !session.config.runKey ? "This setup response has no saved connection identity. Sign in and reopen the same year in Step 2. Preserve the files if the updated chapter setup is unavailable." : session.message);
     status.dataset.working = String(annualSetupPending);
     status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.classList.toggle("is-error", session.error); panel.append(status);
     if (visibleReport && !annualSetupPending) {
       panel.append(node("h5", visibleReport.ready && !annualSetupPending ? "transition-connection-summary is-passed" : "transition-connection-summary", visibleReport.readScope === "retirement" ? "Retired-year connection status" : visibleReport.ready ? "✓ Connections checked" : "Connections need attention"), node("p", "", `Checked ${visibleReport.checkedAt}. This does not approve launch or pass checklist reviews.`));
       const updates = visibleReport.eventUpdates;
-      panel.append(node("p", "", updates.stopPending === true ? `${updates.detail || "Google removed the trigger; finish recording the stopped status."} Open event update controls, confirm the retired year there and choose Stop automatic event updates to finish its saved record.` : updates.status === "observed" ? `Automatic event edit delivered: ${updates.lastObservedAt}. Compare the Form choices after each approved event change.` : updates.status === "installed" ? "Automatic updates connected. Make a normal approved Events edit in Google Sheets, compare the Form choices, then check again to observe delivery." : updates.status === "error" ? `Automatic updates need attention: ${updates.detail || "Review the event list and retry."}` : visibleReport.readScope === "retirement" ? "Automatic event updates are stopped for this retired year." : "Automatic event updates are not connected yet."));
+      panel.append(node("p", "", updates.stopPending === true ? `${updates.detail || "Google removed the trigger; finish recording the stopped status."} Confirm the retired year here and choose Stop automatic event updates to finish its saved record.` : updates.status === "observed" ? `Automatic event edit delivered: ${updates.lastObservedAt}. Compare the Form choices after each approved event change.` : updates.status === "installed" ? "Automatic updates connected. Make a normal approved Events edit in Google Sheets, compare the Form choices, then check again to observe delivery." : updates.status === "error" ? `Automatic updates need attention: ${updates.detail || "Review the event list and retry."}` : visibleReport.readScope === "retirement" ? "Automatic event updates are stopped for this retired year." : "Automatic event updates are not connected yet."));
       const observations = node("ul");
       for (const item of visibleReport.checks) {
         const row = node("li", "", `${item.label}: ${item.status === "passed" ? "Checked" : item.status === "action_needed" ? "Action needed" : "Needs fixing"}. ${item.detail}`);
@@ -925,24 +933,33 @@ if (section) {
         const controlsContext = {...readinessContext(session.config), configRevision: session.config.configRevision};
         const href = annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, controlsContext);
         const controls = node("div", "transition-event-controls");
-        const controlsLink = node("a", "secondary-button", eventPassed || retired ? "Open controls ↗" : "Connect in Google ↗");
+        if (!retired && !eventPassed) {
+          const connectUpdates = node("button", "secondary-button", "Connect automatic event updates"); connectUpdates.type = "button";
+          connectUpdates.addEventListener("click", () => changeUpdates("connect")); controls.append(connectUpdates);
+        }
+        if (retired && visibleReport.eventUpdates.triggerUid) {
+          const label = node("label", "transition-review-confirmation"), confirmation = node("input"); confirmation.type = "checkbox";
+          label.append(confirmation, node("span", "", "I confirm stopping automatic event updates for this closed, noncurrent year."));
+          const stopUpdates = node("button", "secondary-button", "Stop automatic event updates"); stopUpdates.type = "button"; stopUpdates.disabled = true;
+          confirmation.addEventListener("change", () => { stopUpdates.disabled = !confirmation.checked; });
+          stopUpdates.addEventListener("click", () => { if (confirmation.checked) return changeUpdates("stop", true); });
+          controls.append(label, stopUpdates);
+        }
+        const fallback = node("details", "transition-tools"); fallback.append(node("summary", "", "Google sign-in or connection help"));
+        const controlsLink = node("a", "text-button", "Open Google setup ↗");
         controlsLink.href = href; controlsLink.target = "_blank"; controlsLink.rel = "noopener noreferrer";
-        controlsLink.setAttribute("aria-label", eventPassed || retired ? "Open event update controls" : "Connect automatic event updates");
-        controlsLink.dataset.eventControls = "true";
-        controls.append(controlsLink, node("p", "transition-control-help", `Open in Chrome’s ASME profile (asmeohiostate@gmail.com only). ${retired ? "Review or stop this closed year’s updates." : eventPassed ? "Review this year’s connection." : "On the Google page, choose Connect automatic event updates."}`));
-        controls.querySelector("a").addEventListener("click", event => {
-          try {
-            assertSetupContext(session.reportContext);
-            if (annualDrafts.has(annualRunKey())) throw Error("Save or discard your link edits before opening event controls.");
-            validateAnnualReadiness(session.report, {...readinessContext(session.config), ...(session.report.readScope === "retirement" ? {action: "stop"} : {})});
-            if (annualEventControlsUrl(window.ASME_HUB_CONFIG?.annualProvisioner?.url, {...readinessContext(session.config), configRevision: session.config.configRevision}) !== href) throw Error("The event-control setup changed. Check connections again.");
-          } catch (error) { event.preventDefault(); say(error.message, true); session.report = null; render(); }
+        controlsLink.setAttribute("aria-label", "Open event update controls"); controlsLink.dataset.eventControls = "true";
+        controlsLink.addEventListener("click", event => {
+          try { assertSetupContext(session.reportContext); validateAnnualReadiness(session.report, {...readinessContext(session.config), ...(retired ? {action: "stop"} : {})}); if (annualDrafts.has(annualRunKey())) throw Error("Save or discard your link edits first."); }
+          catch (error) { event.preventDefault(); say(error.message, true); session.report = null; render(); }
         });
+        fallback.append(node("p", "", "If Google blocks embedded sign-in, open the fallback in Chrome’s ASME profile with only asmeohiostate@gmail.com signed in. Required Google permissions and import approvals remain in Google."), controlsLink);
+        controls.append(fallback);
         eventCard.append(controls);
       } catch (error) { eventCard.append(node("p", "transition-warning", error.message)); }
     }
     if (step.id === "T05") {
-      const retire = node("details", "transition-tools"); retire.append(node("summary", "", "Check a retired year’s event connection"), node("p", "", "For a closed, noncurrent year, read its retirement status here. After a matching check, open event update controls and explicitly confirm any stop on that Google page. Pending-stop recovery is completed there."));
+      const retire = node("details", "transition-tools"); retire.append(node("summary", "", "Check a retired year’s event connection"), node("p", "", "For a closed, noncurrent year, check retirement status here, then explicitly confirm stopping its automatic updates. The Hub preserves annual records and launch settings."));
       const checkRetired = node("button", "secondary-button", "Check retired-year connection"); checkRetired.type = "button";
       checkRetired.disabled = annualSetupPending || !client?.ready || !session.config?.runKey;
       checkRetired.addEventListener("click", () => operate(true));
@@ -960,7 +977,7 @@ if (section) {
         await client.connect(); assertSetupContext(context);
         const config = await client.call("getAnnualSetupConfig", [context.year]); assertSetupContext(context);
         if (!config || config.workspaceMode !== context.mode || !/^[A-Za-z0-9_-]{20,200}$/.test(config.rootFolderId || "") || !/^[A-Za-z0-9_-]{20,200}$/.test(config.controlCenterId || "") || typeof config.configRevision !== "string" || !config.configRevision || !validAnnualRunKey(config.runKey, context.year, config.controlCenterId, config.rootFolderId)) throw Error("No matching completed annual run was loaded. Reopen this year’s files in Step 2; sign-in alone cannot match different saved links.");
-        session.config = config; session.message = "Chapter sign-in complete. Check connections to verify these files before opening Google-hosted event controls.";
+        session.config = config; session.message = "Chapter sign-in complete. Check connections to verify these files, then connect automatic event updates here.";
       } catch (error) { session.error = true; session.message = error.message || "Could not load connections. Sign in again if authorization expired."; say(session.message, true); }
       finally { finish(); }
     });
@@ -979,6 +996,29 @@ if (section) {
         session.message = report.ready ? "Connections checked. Record your own observations and required approvals separately." : "Connections need attention. Follow the reported Google action, then check again.";
         say(session.message);
       } catch (error) { session.error = true; session.report = null; session.message = error.message || "Connection check could not finish. Sign in again if authorization expired."; say(session.message, true); }
+      finally { finish(); }
+    }
+    async function changeUpdates(action, confirmed = false) {
+      if (annualSetupPending || !visibleReport || !session.config?.runKey) return;
+      try {
+        const context = captureSetupContext(), config = {...session.config};
+        const expected = {...readinessContext(config), ...(action === "stop" ? {action: "stop"} : {})};
+        const assertCurrent = () => {
+          assertSetupContext(context);
+          if (annualDrafts.has(annualRunKey())) throw Error("Save or discard your unsaved link edits before changing the connection.");
+          if (session.config !== config && (session.config?.configRevision !== config.configRevision || session.config?.runKey !== config.runKey)) throw Error("The workspace changed. Check connections again.");
+        };
+        const assertFreshReport = () => { assertCurrent(); validateAnnualReadiness(visibleReport, expected); };
+        assertFreshReport();
+        annualSetupPending = true; session.error = false;
+        showAnnualSetupStage(session, context, action === "stop" ? "Stopping this closed year’s automatic event updates…" : "Connecting automatic event updates…", "Google is still working. Keep this checklist open; check connections before retrying if the request stops.", ".transition-annual-readiness");
+        const result = await runEmbeddedAnnualAction({url: window.ASME_HUB_CONFIG?.annualProvisioner?.url, context: {...expected, configRevision: config.configRevision}, action, confirmStop: confirmed, assertContext: assertCurrent, assertBeforeSend: assertFreshReport});
+        assertCurrent(); const report = validateAnnualReadiness(result, expected);
+        session.report = report; session.reportContext = context;
+        const stopped = report.eventUpdates.status === "not_connected" && !report.eventUpdates.triggerUid && !report.eventUpdates.stopPending && report.checks.find(item => item.id === "event_updates")?.status === "passed";
+        session.message = action === "stop" && stopped ? "Automatic updates stopped for this closed year. Annual records were preserved." : action === "connect" && ["installed", "observed"].includes(report.eventUpdates.status) ? "Automatic event updates connected. Check delivery after your next approved Events edit." : "Google returned a result that still needs attention. Review the connection report.";
+        say(session.message);
+      } catch (error) { session.error = true; session.report = null; session.message = error.message || "Google could not confirm the action. Check connections before retrying."; say(session.message, true); }
       finally { finish(); }
     }
     function annualFileContextMismatch(config) {

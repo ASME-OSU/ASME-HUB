@@ -10,6 +10,15 @@ function doGet(e) {
   var expectedRunKey=String(input.expectedRunKey||''),expectedConfigRevision=String(input.expectedConfigRevision||'');
   if(!!expectedRunKey!==!!expectedConfigRevision||expectedRunKey.length>700||expectedConfigRevision.length>2000)throw new Error('This connection link is incomplete or too long. Return to the Hub and check the selected year again.');
   function attribute(value){return value.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  if(input.embed){
+    if(input.embed!=='hub'||!year||['production','rehearsal'].indexOf(input.mode)<0||!expectedRunKey||!expectedConfigRevision||!/^[a-f0-9]{64}$/.test(String(input.nonce||'')))throw new Error('Open these controls from the Hub for the selected year.');
+    // Only this minimal message-gated page may be embedded. The full setup page
+    // retains its default frame protection and its workspace configuration UI.
+    var embedded=HtmlService.createHtmlOutputFromFile('EmbeddedAnnualControls').getContent();
+    var replacements={YEAR:year,MODE:mode,EXPECTED_RUN_KEY:expectedRunKey,EXPECTED_CONFIG_REVISION:expectedConfigRevision,NONCE:String(input.nonce)};
+    Object.keys(replacements).forEach(function(key){embedded=embedded.replace('value="__'+key+'__"',function(){return 'value="'+attribute(replacements[key])+'"';});});
+    return HtmlService.createHtmlOutput(embedded).setTitle('ASME annual connection').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
   var html = HtmlService.createHtmlOutputFromFile('ProvisionerPage').getContent();
   return HtmlService.createHtmlOutput(html.replace('value="__YEAR__"', 'value="' + year + '"').replace('value="__MODE__"', 'value="' + mode + '"').replace('value="__EXPECTED_RUN_KEY__"',function(){return 'value="'+attribute(expectedRunKey)+'"';}).replace('value="__EXPECTED_CONFIG_REVISION__"',function(){return 'value="'+attribute(expectedConfigRevision)+'"';})).setTitle('ASME Annual Setup');
 }
