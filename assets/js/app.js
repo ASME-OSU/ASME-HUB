@@ -467,11 +467,11 @@
     const items = loadPersonalPriorities()
       .filter((item) => !item.completed && (selectedOfficerRole === "all" || item.role === "all" || item.role === selectedOfficerRole))
       .sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
-    if (!items.length) {
-      const empty = document.createElement("p");
-      empty.className = "briefing-empty is-clear";
-      empty.textContent = "No personal reminders for this role. Add one without copying private tracker data.";
-      elements.personalPriorityList.replaceChildren(empty);
+    const empty = items.length === 0;
+    document.getElementById("personal-priorities-card")?.classList.toggle("is-empty", empty);
+    elements.personalPriorityList.hidden = empty;
+    if (empty) {
+      elements.personalPriorityList.replaceChildren();
       return;
     }
     elements.personalPriorityList.replaceChildren(

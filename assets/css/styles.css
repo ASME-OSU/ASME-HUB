@@ -1612,6 +1612,20 @@ main {
   margin-bottom: 9px;
 }
 
+.command-card-personal.is-empty {
+  align-self: start;
+  padding: 10px 16px;
+}
+
+.command-card-personal.is-empty .command-card-heading {
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.command-card-personal.is-empty .eyebrow {
+  display: none;
+}
+
 .command-card-heading h4 {
   margin-top: 2px;
   color: var(--navy-900);
@@ -5863,7 +5877,8 @@ body.meeting-mode [data-mobile-sections] {
 }
 
 body.meeting-mode .global-quick-actions,
-body.meeting-mode .resources-section {
+body.meeting-mode .resources-section,
+body.meeting-mode .transition-section {
   display: none !important;
 }
 

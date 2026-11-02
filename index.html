@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261027a">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261102a">
   <link rel="stylesheet" href="assets/css/transition.css?v=20261029c">
 </head>
 <body>
@@ -409,15 +409,15 @@
               </div>
               <div class="briefing-priority-list" id="briefing-priorities"></div>
             </section>
-            <section class="command-card command-card-personal" aria-labelledby="personal-priorities-title">
+            <section class="command-card command-card-personal is-empty" id="personal-priorities-card" aria-labelledby="personal-priorities-title">
               <div class="command-card-heading">
                 <div>
                   <p class="eyebrow">Browser only</p>
-                  <h4 id="personal-priorities-title">My priorities</h4>
+                  <h4 id="personal-priorities-title">My Priorities</h4>
                 </div>
                 <button class="text-button command-card-button" id="manage-priorities" type="button">Manage</button>
               </div>
-              <div class="personal-priority-list" id="personal-priority-list"></div>
+              <div class="personal-priority-list" id="personal-priority-list" hidden></div>
             </section>
             <section class="command-card command-card-readiness" aria-labelledby="event-readiness-title" hidden>
               <div class="command-card-heading">
@@ -1071,7 +1071,7 @@
   <dialog class="settings-dialog personal-dialog" id="priorities-dialog" aria-labelledby="priorities-dialog-title">
     <div class="personal-dialog-shell">
       <div class="settings-header">
-        <div><p class="eyebrow">Saved on this device</p><h2 id="priorities-dialog-title">My priorities</h2></div>
+        <div><p class="eyebrow">Saved on this device</p><h2 id="priorities-dialog-title">My Priorities</h2></div>
         <button class="settings-close" id="priorities-close" type="button" aria-label="Close priorities"><svg class="ui-icon" aria-hidden="true"><use href="#icon-close"></use></svg></button>
       </div>
       <p class="privacy-notice"><svg class="ui-icon" aria-hidden="true"><use href="#icon-lock"></use></svg><span>Use this for brief personal reminders only. Do not enter member names, financial details, credentials, or private tracker content.</span></p>
@@ -1140,7 +1140,7 @@
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
   <script src="assets/js/social-health.js?v=20261019b"></script>
-  <script src="assets/js/app.js?v=20261028b"></script>
+  <script src="assets/js/app.js?v=20261102a"></script>
   <script type="module" src="assets/js/transition.js?v=20261029d"></script>
   <script src="assets/js/pwa.js?v=20261027a"></script>
 </body>
