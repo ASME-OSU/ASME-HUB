@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/hub-mark.svg?v=20260801b" type="image/svg+xml" sizes="any">
   <link rel="alternate icon" href="assets/icons/icon-192.png?v=20260919b" type="image/png">
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png?v=20260919b">
-  <link rel="stylesheet" href="assets/css/styles.css?v=20261102a">
+  <link rel="stylesheet" href="assets/css/styles.css?v=20261102c">
   <link rel="stylesheet" href="assets/css/transition.css?v=20261029c">
 </head>
 <body>
@@ -379,6 +379,7 @@
             </div>
           </div>
           <div class="command-center-grid">
+            <div class="command-card-stack">
             <section class="command-card command-card-role" id="briefing-role-card" aria-labelledby="briefing-role-title">
               <div class="command-card-heading">
                 <div>
@@ -389,6 +390,17 @@
               <p class="role-snapshot-copy" id="briefing-role-copy">A concise view of what matters most for this role.</p>
               <div class="role-snapshot-metrics" id="briefing-role-metrics"></div>
             </section>
+            <section class="command-card command-card-personal is-empty" id="personal-priorities-card" aria-labelledby="personal-priorities-title">
+              <div class="command-card-heading">
+                <div>
+                  <p class="eyebrow">Browser only</p>
+                  <h4 id="personal-priorities-title">My Priorities</h4>
+                </div>
+                <button class="text-button command-card-button" id="manage-priorities" type="button">Manage</button>
+              </div>
+              <div class="personal-priority-list" id="personal-priority-list" hidden></div>
+            </section>
+            </div>
             <section class="command-card command-card-upcoming" aria-labelledby="briefing-upcoming-title">
               <div class="command-card-heading">
                 <div>
@@ -408,16 +420,6 @@
                 <span class="panel-chip panel-chip-alert" id="briefing-priority-count">0 open</span>
               </div>
               <div class="briefing-priority-list" id="briefing-priorities"></div>
-            </section>
-            <section class="command-card command-card-personal is-empty" id="personal-priorities-card" aria-labelledby="personal-priorities-title">
-              <div class="command-card-heading">
-                <div>
-                  <p class="eyebrow">Browser only</p>
-                  <h4 id="personal-priorities-title">My Priorities</h4>
-                </div>
-                <button class="text-button command-card-button" id="manage-priorities" type="button">Manage</button>
-              </div>
-              <div class="personal-priority-list" id="personal-priority-list" hidden></div>
             </section>
             <section class="command-card command-card-readiness" aria-labelledby="event-readiness-title" hidden>
               <div class="command-card-heading">
@@ -1140,7 +1142,7 @@
   <script src="assets/js/shared-resources.js?v=20260928b"></script>
   <script src="assets/js/settings-readback.js?v=20261002a"></script>
   <script src="assets/js/social-health.js?v=20261019b"></script>
-  <script src="assets/js/app.js?v=20261102a"></script>
+  <script src="assets/js/app.js?v=20261102b"></script>
   <script type="module" src="assets/js/transition.js?v=20261029d"></script>
   <script src="assets/js/pwa.js?v=20261027a"></script>
 </body>
