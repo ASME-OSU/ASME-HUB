@@ -933,7 +933,7 @@
   }
 
   function applyCommandCardOrder() {
-    const grid = elements.briefingRoleCard?.parentElement;
+    const grid = elements.briefingRoleCard?.closest(".command-center-grid") || elements.briefingRoleCard?.parentElement;
     if (!grid) return;
     const cards = {
       role: elements.briefingRoleCard,
@@ -942,9 +942,12 @@
       personal: grid.querySelector(".command-card-personal"),
       readiness: grid.querySelector(".command-card-readiness"),
     };
-    officerRole().commandOrder.forEach((key, index) => {
+    const order = officerRole().commandOrder;
+    order.forEach((key, index) => {
       if (cards[key]) cards[key].style.order = String(index);
     });
+    const stack = grid.querySelector(".command-card-stack");
+    if (stack) stack.style.order = String(Math.min(order.indexOf("role"), order.indexOf("personal")));
   }
 
   function renderOfficerCommandCenter() {
