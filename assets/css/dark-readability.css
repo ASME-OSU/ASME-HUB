@@ -1,0 +1,75 @@
+/* Dark-mode readability, matched to the Social Hub. */
+@media screen {
+body[data-theme="dark"] {
+  --canvas: #091525;
+  --ink: #eef2f7;
+  --muted: #bac6d5;
+  --control-border: #617b98;
+  --readability-focus: #b4d7ff;
+  --surface: #112238;
+  --surface-soft: #182d45;
+  --border: #344b66;
+  --muted-light: #bac6d5;
+  --status-good: #9ee2bf;
+  --status-good-surface: #123b31;
+  --status-warn: #f5d785;
+  --status-warn-surface: #3c331c;
+  --status-danger: #ffb4c3;
+  --status-danger-surface: #412633;
+  --text-2xs: 0.8125rem;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-base: 0.875rem;
+  font-size: 14px;
+}
+
+body[data-theme="dark"] :is(.panel-heading h2, .command-center-heading h3, .command-card-heading h4, .briefing-event strong, .briefing-priority strong, .quick-actions-heading strong, .budget-insight-heading h3, .resource-card h3) {
+  color: var(--ink);
+}
+body[data-theme="dark"] :is(small, .nav-count, .status-pill, .pace-chip, .performance-status, .panel-chip, .panel-chip-alert, .event-detail, .quick-action small, .install-hint) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+body[data-theme="dark"] :is(input, select, textarea, .secondary-button, .icon-button, .year-select, .sidebar-collapse, .password-field) {
+  border-color: var(--control-border);
+}
+body[data-theme="dark"] :is(input, textarea)::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+body[data-theme="dark"] :is(.primary-button, .nav-link.is-active .nav-icon, .mobile-section-link.is-active, .nav-count, .topbar-meeting-button[aria-pressed="true"], .attention-card > span:first-child, .metric-empty-actions a:first-child, .skip-link) {
+  color: #ffffff;
+  background: #ba0c2f;
+}
+body[data-theme="dark"] .primary-button:hover { background: #970925; }
+body[data-theme="dark"] :is(button, a, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--readability-focus);
+  outline-offset: 3px;
+}
+body[data-theme="dark"] .transition-dialog {
+  --flow-page: var(--canvas);
+  --flow-surface: var(--surface);
+  --flow-elevated: var(--surface-soft);
+  --flow-text: var(--ink);
+  --flow-secondary: var(--muted);
+  --flow-border: var(--control-border);
+  --flow-input: var(--surface);
+  --flow-success-bg: var(--status-good-surface);
+  --flow-success-fg: var(--status-good);
+  --flow-warning-bg: var(--status-danger-surface);
+  --flow-warning-fg: var(--status-danger);
+  --flow-focus: rgba(180, 215, 255, 0.22);
+}
+body[data-theme="dark"] .transition-dialog :is(small, .transition-step-state, .transition-control-help, .transition-check-control, .transition-status-control) {
+  font-size: 13px;
+  line-height: 1.5;
+}
+body[data-theme="dark"] .transition-dialog :is(button, a, input, select, textarea, summary):focus-visible {
+  outline-color: var(--readability-focus);
+}
+}
+
+@media screen and (max-width: 699px) {
+  body[data-theme="dark"] :is(.settings-dialog, .personal-dialog, .transition-dialog) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 16px; }
+}

@@ -1,5 +1,6 @@
-const SHELL_CACHE = "asme-hub-shell-v151";
+const SHELL_CACHE = "asme-hub-shell-v152";
 const SHELL_ASSETS = [
+  "./assets/css/dark-readability.css?v=20261103a",
   "./assets/css/transition.css?v=20261029c",
   "./",
   "./index.html",
