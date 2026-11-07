@@ -644,3 +644,21 @@ test('hero and all action counters share operational items while role reminders 
   assert.equal(r.node('briefing-priority-count').textContent,'1 priority');
   assert.doesNotMatch(r.node('hero-briefing-title').textContent,/need.*attention/);
 });
+
+
+test('dense turnout charts keep every event inspectable while spacing axis numbers', () => {
+  const run = runtime();
+  const items = Array.from({ length: 100 }, (_, index) => ({ label: `Workshop ${index + 1}`, attendance: index + 1 }));
+  run.api.renderAttendanceChart(items);
+  const chart = run.node('attendance-chart');
+  assert.equal(chart.children.filter(child => child.attributes.role === 'button').length, 100);
+  const picker = run.node('attendance-event-picker');
+  assert.equal(picker.children.length, 100);
+  const labels = chart.children.filter(child => child.attributes.class === 'chart-axis-label' && Number(child.attributes.y) === 273);
+  assert.equal(labels[0].textContent, '1');
+  assert.equal(labels.at(-1).textContent, '100');
+  assert.ok(labels.length < 50, 'Axis numbers must leave room for readable labels');
+  picker.value = '41'; picker.onchange();
+  assert.equal(run.node('attendance-event-name').textContent, 'Workshop 42');
+  assert.equal(run.node('attendance-event-count').textContent, '42');
+});

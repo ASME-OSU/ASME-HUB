@@ -4024,6 +4024,8 @@
       });
     };
 
+    // Keep the event numbers readable when a narrow chart contains many events.
+    const axisLabelStride = Math.max(1, Math.ceil(32 / xStep));
     points.forEach((point, index) => {
       const valueLabel = svgElement("text", {
         x: point.x,
@@ -4072,7 +4074,9 @@
         }
       });
       pointButtons.push(button);
-      svg.append(valueLabel, xLabel, button);
+      svg.append(valueLabel);
+      if (index === 0 || index === items.length - 1 || (index % axisLabelStride === 0 && index <= items.length - 1 - axisLabelStride)) svg.append(xLabel);
+      svg.append(button);
     });
 
     if (picker) picker.onchange = () => selectEvent(Number(picker.value));
