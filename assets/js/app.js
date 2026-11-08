@@ -4551,6 +4551,30 @@
     const attention = items.filter(
       (item) => String(item.status || "").toUpperCase() !== "LIVE",
     );
+    const meetingStatus = document.getElementById("meeting-health-status");
+    if (meetingStatus) {
+      const overall = items.length === 0 ? "Unavailable" : attention.length ? "Unhealthy" : "Healthy";
+      meetingStatus.textContent = `Overall: ${overall}`;
+      meetingStatus.classList.toggle("is-healthy", overall === "Healthy");
+      meetingStatus.classList.toggle("is-unhealthy", overall === "Unhealthy");
+      meetingStatus.title = attention.length
+        ? `${attention.length} system${attention.length === 1 ? " needs" : "s need"} attention; see details below.`
+        : overall === "Healthy" ? "All connected systems are reporting normally." : "System status is not available yet.";
+    }
+    const meetingSystems = document.getElementById("meeting-system-list");
+    if (meetingSystems) {
+      meetingSystems.replaceChildren(...items.map((item) => {
+        const isHealthy = String(item.status || "").toUpperCase() === "LIVE";
+        const row = document.createElement("div");
+        row.className = `meeting-system-row${isHealthy ? "" : " is-issue"}`;
+        const label = document.createElement("strong");
+        label.textContent = item.label;
+        const status = document.createElement("span");
+        status.textContent = isHealthy ? "Healthy" : (item.detail || "Status unavailable");
+        row.append(label, status);
+        return row;
+      }));
+    }
     healthyContainer.replaceChildren(...healthy.map(createHealthItem));
     attentionContainer.replaceChildren(...attention.map(createHealthItem));
     attentionContainer.hidden = attention.length === 0;
