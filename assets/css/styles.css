@@ -3192,13 +3192,32 @@ main {
   font-weight: 800;
 }
 
-.resource-toolbar select {
+.resource-select-wrap {
+  position: relative;
   flex: 0 1 240px;
   width: 240px;
   min-width: 0;
   max-width: 100%;
+}
+
+.resource-select-chevron {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  color: white;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.resource-toolbar select {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
-  padding: 0 34px 0 12px;
+  padding: 0 48px 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 9px;
   color: white;
@@ -5001,9 +5020,12 @@ body[data-theme="dark"] .hub-search-result-copy strong {
     flex-direction: column;
   }
 
-  .resource-toolbar select {
+  .resource-select-wrap {
     flex: none;
     width: 100%;
+  }
+
+  .resource-toolbar select {
     font-size: 16px;
   }
 
