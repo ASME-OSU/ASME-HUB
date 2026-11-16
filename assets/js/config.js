@@ -161,9 +161,9 @@ window.ASME_HUB_CONFIG = {
     {
       id: "shared-documents",
       title: "Shared Documents",
-      description: "Open the Executive Board document library for chapter files and working materials.",
+      description: "Open the General folder for chapter files and working materials.",
       label: "Open documents",
-      url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Shared%20Documents/Forms/AllItems.aspx",
+      url: "https://buckeyemailosu.sharepoint.com/sites/ASMEExecutiveBoard/Shared%20Documents/Forms/AllItems.aspx?id=%2Fsites%2FASMEExecutiveBoard%2FShared%20Documents%2FGeneral",
       category: "Operations",
       access: "m365",
       icon: "settings",
