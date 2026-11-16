@@ -1,4 +1,4 @@
-const SHELL_CACHE = "asme-hub-shell-v155";
+const SHELL_CACHE = "asme-hub-shell-v156";
 const SHELL_ASSETS = [
   "./assets/css/dark-readability.css?v=20261103b",
   "./assets/css/transition.css?v=20261029c",
@@ -6,11 +6,11 @@ const SHELL_ASSETS = [
   "./index.html",
   "./manifest.webmanifest?v=20260919b",
   "./assets/hub-mark.svg?v=20260801b",
-  "./assets/css/styles.css?v=20261102c",
+  "./assets/css/styles.css?v=20261116a",
   "./assets/css/meeting.css?v=20261107d",
   "./assets/fonts/dm-serif-display-latin.woff2",
   "./assets/fonts/inter-latin.woff2",
-  "./assets/js/config.js?v=20261019b",
+  "./assets/js/config.js?v=20261116a",
   "./assets/js/shared-resources.js?v=20260928b",
   "./assets/js/settings-readback.js?v=20261002a",
   "./assets/js/social-health.js?v=20261019b",
